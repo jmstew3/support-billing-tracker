@@ -120,9 +120,12 @@ export function Dashboard() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Helper function to get day of week
+  // Helper function to get day of week - fixed to avoid timezone issues
   const getDayOfWeek = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse date string (YYYY-MM-DD) manually to avoid timezone issues
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Create date with explicit year, month (0-indexed), day to avoid UTC conversion
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   };
 
