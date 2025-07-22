@@ -1,7 +1,7 @@
 date,time,month,request_type,category,description,urgency,effort
-2025-05-13,16:55:44,2025-05,General Request,Migration,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
-2025-05-23,08:13:36,2025-05,General Request,Migration,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium
-2025-05-23,08:56:00,2025-05,General Request,Migration,"Why not just wait to update the license until the website is live?",MEDIUM,Small
+2025-05-13,16:55:44,2025-05,General Request,Email,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
+2025-05-23,08:13:36,2025-05,General Request,Advisory,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium
+2025-05-23,08:56:00,2025-05,General Request,Advisory,"Why not just wait to update the license until the website is live?",MEDIUM,Small
 2025-05-25,08:04:28,2025-05,General Request,Advisory,"I’m checking out AE’s staging site, their embedded lead form at the top of the homepage is not formatting correctly?",MEDIUM,Medium
 2025-05-28,08:56:39,2025-05,General Request,Advisory,"There’s not a way to set the image display to do a fixed crop format on different size images?",MEDIUM,Medium
 2025-05-30,17:27:57,2025-05,General Request,Advisory,"Can we migrate a Squarespace site? I assumed it’d have to be copied to Wordpress somehow",MEDIUM,Large

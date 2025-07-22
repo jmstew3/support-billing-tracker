@@ -1,7 +1,6 @@
 date,time,month,request_type,category,description,urgency,effort
-2025-05-13,16:55:44,2025-05,General Request,Migration,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
-2025-05-23,08:13:36,2025-05,General Request,Migration,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium
-2025-05-23,08:56:00,2025-05,General Request,Migration,"Why not just wait to update the license until the website is live?",MEDIUM,Small
+2025-05-23,08:13:36,2025-05,General Request,Advisory,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium
+2025-05-23,08:56:00,2025-05,General Request,Advisory,"Why not just wait to update the license until the website is live?",MEDIUM,Small
 2025-05-25,08:04:28,2025-05,General Request,Advisory,"I’m checking out AE’s staging site, their embedded lead form at the top of the homepage is not formatting correctly?",MEDIUM,Medium
 2025-05-28,08:56:39,2025-05,General Request,Advisory,"There’s not a way to set the image display to do a fixed crop format on different size images?",MEDIUM,Medium
 2025-05-30,17:27:57,2025-05,General Request,Advisory,"Can we migrate a Squarespace site? I assumed it’d have to be copied to Wordpress somehow",MEDIUM,Large
@@ -141,6 +140,7 @@ date,time,month,request_type,category,description,urgency,effort
 2025-07-11,17:08:06,2025-07,General Request,Support,"We need to feature all of these companies plus the Film Force logo and Velocity logo",MEDIUM,Medium
 2025-07-14,09:49:17,2025-07,General Request,Forms,"Also how do I add a webhook to their Fluent Form? I know how to do it in Gravity Forms but not Fluent",MEDIUM,Small
 2025-07-14,11:26:25,2025-07,General Request,Forms,"And another thing, still need Gravity Forms license updated for Neighbors so I can add a webhook to his lead form",MEDIUM,Small
+2025-05-13,16:55:44,2025-05,General Request,Migration,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
 2025-05-16,10:04:30,2025-05,General Request,Migration,"Got for it, do whatever you need to do",MEDIUM,Medium
 2025-05-15,07:14:02,2025-05,General Request,Non-billable,"Up to 36 websites now and still counting that I’ll need help migrating, still working through the list",MEDIUM,Medium
 2025-05-15,17:59:34,2025-05,General Request,Non-billable,"BlueHost is working through it now. It is but BlueHost does daily backups",MEDIUM,Medium

@@ -1,15 +1,37 @@
 date,time,month,request_type,category,description,urgency,effort
-2025-05-13,16:55:44,2025-05,General Request,Migration,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
-2025-05-23,08:13:36,2025-05,General Request,Migration,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium
-2025-05-23,08:56:00,2025-05,General Request,Migration,"Why not just wait to update the license until the website is live?",MEDIUM,Small
+2025-05-23,08:56:00,2025-05,General Request,Advisory,"Why not just wait to update the license until the website is live?",MEDIUM,Small
+2025-05-23,08:57:30,2025-05,General Request,Advisory,"Let’s just do that, don’t need to overcomplicate it",MEDIUM,Medium
+2025-05-23,18:46:50,2025-05,General Request,Advisory,"The top priority will be zipping all the sites first and foremost now you know we’re good there. Staging and DNS updates can wait until all zips are d",MEDIUM,Medium
+2025-05-24,07:50:49,2025-05,General Request,Advisory,"I just added Capital’s login as well, no activity plugins there so good to zip that one as well",MEDIUM,Medium
+2025-05-24,07:59:29,2025-05,General Request,Advisory,"I’m adding all the websites I had previously zipped since I had deleted activity plugins on most of those. AE, Automotive Elegance, is one of my bigge",MEDIUM,Medium
+2025-05-24,12:03:12,2025-05,General Request,Advisory,"Looks good on mobile. The image at the top of the PPF page seems it’s not adjusting for mobile well but I checked the original site and it’s messed up",MEDIUM,Medium
+2025-05-25,07:23:16,2025-05,General Request,Advisory,"I’m game, whatever we need to do",MEDIUM,Medium
 2025-05-25,08:04:28,2025-05,General Request,Advisory,"I’m checking out AE’s staging site, their embedded lead form at the top of the homepage is not formatting correctly?",MEDIUM,Medium
+2025-05-25,08:47:11,2025-05,General Request,Advisory,"Will do, I’m highlighting new logins in yellow. Please feel free to reset that to blank when you’re done with staging.",MEDIUM,Medium
+2025-05-25,09:04:56,2025-05,General Request,Advisory,"We’re going to change DNS one at a time on these because a lot of these sites have CRMs tied to them and those can’t go live until I have their lead f",MEDIUM,Medium
+2025-05-25,10:00:05,2025-05,General Request,Advisory,"I added a column to the end with a link to the screenshot of AE’s original plugins",MEDIUM,Medium
+2025-05-25,10:09:26,2025-05,General Request,Advisory,"I’m game for whatever we need to add as this goes live and we take the rest of the industry by storm",MEDIUM,Medium
+2025-05-25,11:33:56,2025-05,General Request,Advisory,"I think I had old credentials written down on my other sheet, just fixed it",MEDIUM,Medium
+2025-05-25,12:20:45,2025-05,General Request,Advisory,"Please note him and Brunswick are not high speed so don’t worry about any of those plugins",MEDIUM,Medium
+2025-05-25,12:47:25,2025-05,General Request,Advisory,"Looks like they might have been using All-in-One WP Migration Unlimited Extension for their site migrations",MEDIUM,Large
+2025-05-26,10:19:53,2025-05,General Request,Advisory,"I’m finishing up the next batch. I added a highlighted note for Simple Details, they’ve got a really high mobile performance score of 96 right now so",MEDIUM,Medium
+2025-05-26,15:43:39,2025-05,General Request,Advisory,"I’m not opposed to it, $20/domain/month stacks up a bit so just need to make sure it’s worth it",MEDIUM,Medium
+2025-05-27,14:55:53,2025-05,General Request,Advisory,"I can’t have this happen at all so whatever we need to do, let’s do it",MEDIUM,Medium
 2025-05-28,08:56:39,2025-05,General Request,Advisory,"There’s not a way to set the image display to do a fixed crop format on different size images?",MEDIUM,Medium
+2025-05-28,10:37:14,2025-05,General Request,Advisory,"Redline is ready to go live, that one just got built and so is Nash, just added those credentials",MEDIUM,Medium
+2025-05-28,10:37:35,2025-05,General Request,Advisory,"Also just got another migration from Evolved, waiting on domain access and website login credentials from them",MEDIUM,Large
+2025-05-28,14:05:14,2025-05,General Request,Advisory,"For GoDaddy, it was a delegate access invite. It should be tied to your phone number with the hosting email",MEDIUM,Medium
+2025-05-28,14:17:48,2025-05,General Request,Advisory,"You should’ve just gotten a GoDaddy invite from Alicia Smith for Evolved’s hosting migration",MEDIUM,Medium
+2025-05-29,10:58:17,2025-05,General Request,Advisory,"The big thing this afternoon is zipping the last sites we don’t have login credentials to. That’s absolute priority #1 the moment I take the email ove",MEDIUM,Medium
+2025-05-29,15:55:59,2025-05,General Request,Advisory,"Having a good call with Bren, he’s using WP Vivid Migration for migrating sites",MEDIUM,Large
+2025-05-29,16:36:23,2025-05,General Request,Advisory,"Bren is going to setup a forwarding text number for us to be able to login to the Support email for all the DNS records",MEDIUM,Medium
+2025-05-30,17:27:10,2025-05,General Request,Advisory,"This is the GoDaddy site:",MEDIUM,Medium
 2025-05-30,17:27:57,2025-05,General Request,Advisory,"Can we migrate a Squarespace site? I assumed it’d have to be copied to Wordpress somehow",MEDIUM,Large
 2025-05-30,17:59:58,2025-05,General Request,Advisory,"Would needing to update the Elementor license or anything affect her work?",MEDIUM,Small
 2025-05-31,19:14:46,2025-05,General Request,Advisory,"Alright if I add Activity Log and WP Activity Log to these sites?",MEDIUM,Medium
-2025-06-02,10:01:12,2025-06,General Request,Advisory,"Can we go ahead and update DNS records for redline and Nash? Both are ready to go live and are new website builds",MEDIUM,Medium
-2025-06-02,10:03:56,2025-06,General Request,Advisory,"Guys are blowing me up because they’re both leaving Sun Stoppers but need those sites up",MEDIUM,Medium
-2025-06-02,10:55:46,2025-06,General Request,Advisory,"Redline needed me to buy a domain for them, just did in Namecheap and invited the hosting email to access it",MEDIUM,Medium
+2025-06-02,10:01:12,2025-06,General Request,Support,"Can we go ahead and update DNS records for redline and Nash? Both are ready to go live and are new website builds",MEDIUM,Medium
+2025-06-02,10:03:56,2025-06,General Request,Support,"Guys are blowing me up because they’re both leaving Sun Stoppers but need those sites up",MEDIUM,Medium
+2025-06-02,10:55:46,2025-06,General Request,Support,"Redline needed me to buy a domain for them, just did in Namecheap and invited the hosting email to access it",MEDIUM,Medium
 2025-06-02,10:59:44,2025-06,General Request,Support,"Do you prefer Rank Math for meta title and description editing or Yoast SEO? I need to add one to Redline",MEDIUM,Medium
 2025-06-02,11:43:36,2025-06,General Request,Support,"I dropped in the wrong login fro Brunswick, that was Brownsville’s login, just fixed it",MEDIUM,Medium
 2025-06-02,17:04:42,2025-06,General Request,Support,"I’m getting these last login credentials added to the sheet",MEDIUM,Medium
@@ -32,7 +54,7 @@ date,time,month,request_type,category,description,urgency,effort
 2025-06-04,21:19:37,2025-06,General Request,Support,"No worries, we can fix it after the migration",MEDIUM,Medium
 2025-06-05,10:46:46,2025-06,General Request,Forms,"Can you remove the location drop down from Redline’s lead form?",MEDIUM,Small
 2025-06-06,12:23:07,2025-06,General Request,Support,"Just need to create one",MEDIUM,Medium
-2025-06-06,23:16:19,2025-06,General Request,Advisory,"Here’s a folder with all the GoDaddy DNS settings I’m downloading:",MEDIUM,Medium
+2025-06-06,23:16:19,2025-06,General Request,Support,"Here’s a folder with all the GoDaddy DNS settings I’m downloading:",MEDIUM,Medium
 2025-06-07,09:24:34,2025-06,General Request,Support,"Good thing we downloaded all the sites when we did, looks like Bren changed my access back to no longer Admin. Simple Details is another one we’ll nee",HIGH,Medium
 2025-06-07,09:38:44,2025-06,General Request,Support,"What’s your thoughts on being introduced to some of my larger accounts in the coming weeks? With this Mike bullshit, I would like them to meet some of",MEDIUM,Medium
 2025-06-07,18:59:05,2025-06,General Request,Hosting,"I think that’s good, I’m texting Bren every time we migrate a site. You did officially do Bakers right?",MEDIUM,Large
@@ -141,11 +163,12 @@ date,time,month,request_type,category,description,urgency,effort
 2025-07-11,17:08:06,2025-07,General Request,Support,"We need to feature all of these companies plus the Film Force logo and Velocity logo",MEDIUM,Medium
 2025-07-14,09:49:17,2025-07,General Request,Forms,"Also how do I add a webhook to their Fluent Form? I know how to do it in Gravity Forms but not Fluent",MEDIUM,Small
 2025-07-14,11:26:25,2025-07,General Request,Forms,"And another thing, still need Gravity Forms license updated for Neighbors so I can add a webhook to his lead form",MEDIUM,Small
-2025-05-16,10:04:30,2025-05,General Request,Migration,"Got for it, do whatever you need to do",MEDIUM,Medium
+2025-05-13,16:55:44,2025-05,General Request,Non-billable,"I might need your help, basically have to build my own team in house about overnight",MEDIUM,Medium
 2025-05-15,07:14:02,2025-05,General Request,Non-billable,"Up to 36 websites now and still counting that I’ll need help migrating, still working through the list",MEDIUM,Medium
 2025-05-15,17:59:34,2025-05,General Request,Non-billable,"BlueHost is working through it now. It is but BlueHost does daily backups",MEDIUM,Medium
 2025-05-15,18:01:12,2025-05,General Request,Non-billable,"They said the backups are on a separate server",MEDIUM,Medium
 2025-05-15,18:03:26,2025-05,General Request,Non-billable,"They’re not 100% sure on which level backup, lol",MEDIUM,Medium
+2025-05-16,10:04:30,2025-05,General Request,Non-billable,"Got for it, do whatever you need to do",MEDIUM,Medium
 2025-05-16,10:34:53,2025-05,General Request,Non-billable,"I do have a couple extra domains, all of mine are in Namecheap. Add your Peak One email as delegate access?",MEDIUM,Medium
 2025-05-16,13:40:28,2025-05,General Request,Non-billable,"K, I’m doing full file exports for now. Can we work with those on these other sites to test out that avenue?",MEDIUM,Medium
 2025-05-16,17:34:10,2025-05,General Request,Non-billable,"I never saw anything come through, I’ll set you up a Velocity email and add you as an admin to the site",MEDIUM,Medium
@@ -159,27 +182,4 @@ date,time,month,request_type,category,description,urgency,effort
 2025-05-22,15:48:37,2025-05,General Request,Non-billable,"I just added login credentials for Distinct, that’s a good one to do next on staging",MEDIUM,Medium
 2025-05-22,15:58:08,2025-05,General Request,Non-billable,"Guardian Graphics is also good to stage, that one was built by my new cheap website builder so we can migrate that staged site as well after Distinct,",MEDIUM,Large
 2025-05-22,16:52:10,2025-05,General Request,Non-billable,"All websites have been added",MEDIUM,Medium
-2025-05-23,08:57:30,2025-05,General Request,Non-billable,"Let’s just do that, don’t need to overcomplicate it",MEDIUM,Medium
-2025-05-23,18:46:50,2025-05,General Request,Non-billable,"The top priority will be zipping all the sites first and foremost now you know we’re good there. Staging and DNS updates can wait until all zips are d",MEDIUM,Medium
-2025-05-24,07:50:49,2025-05,General Request,Non-billable,"I just added Capital’s login as well, no activity plugins there so good to zip that one as well",MEDIUM,Medium
-2025-05-24,07:59:29,2025-05,General Request,Non-billable,"I’m adding all the websites I had previously zipped since I had deleted activity plugins on most of those. AE, Automotive Elegance, is one of my bigge",MEDIUM,Medium
-2025-05-24,12:03:12,2025-05,General Request,Non-billable,"Looks good on mobile. The image at the top of the PPF page seems it’s not adjusting for mobile well but I checked the original site and it’s messed up",MEDIUM,Medium
-2025-05-25,07:23:16,2025-05,General Request,Non-billable,"I’m game, whatever we need to do",MEDIUM,Medium
-2025-05-25,08:47:11,2025-05,General Request,Non-billable,"Will do, I’m highlighting new logins in yellow. Please feel free to reset that to blank when you’re done with staging.",MEDIUM,Medium
-2025-05-25,09:04:56,2025-05,General Request,Non-billable,"We’re going to change DNS one at a time on these because a lot of these sites have CRMs tied to them and those can’t go live until I have their lead f",MEDIUM,Medium
-2025-05-25,10:00:05,2025-05,General Request,Non-billable,"I added a column to the end with a link to the screenshot of AE’s original plugins",MEDIUM,Medium
-2025-05-25,10:09:26,2025-05,General Request,Non-billable,"I’m game for whatever we need to add as this goes live and we take the rest of the industry by storm",MEDIUM,Medium
-2025-05-25,11:33:56,2025-05,General Request,Non-billable,"I think I had old credentials written down on my other sheet, just fixed it",MEDIUM,Medium
-2025-05-25,12:20:45,2025-05,General Request,Non-billable,"Please note him and Brunswick are not high speed so don’t worry about any of those plugins",MEDIUM,Medium
-2025-05-25,12:47:25,2025-05,General Request,Non-billable,"Looks like they might have been using All-in-One WP Migration Unlimited Extension for their site migrations",MEDIUM,Large
-2025-05-26,10:19:53,2025-05,General Request,Non-billable,"I’m finishing up the next batch. I added a highlighted note for Simple Details, they’ve got a really high mobile performance score of 96 right now so",MEDIUM,Medium
-2025-05-26,15:43:39,2025-05,General Request,Non-billable,"I’m not opposed to it, $20/domain/month stacks up a bit so just need to make sure it’s worth it",MEDIUM,Medium
-2025-05-27,14:55:53,2025-05,General Request,Non-billable,"I can’t have this happen at all so whatever we need to do, let’s do it",MEDIUM,Medium
-2025-05-28,10:37:14,2025-05,General Request,Non-billable,"Redline is ready to go live, that one just got built and so is Nash, just added those credentials",MEDIUM,Medium
-2025-05-28,10:37:35,2025-05,General Request,Non-billable,"Also just got another migration from Evolved, waiting on domain access and website login credentials from them",MEDIUM,Large
-2025-05-28,14:05:14,2025-05,General Request,Non-billable,"For GoDaddy, it was a delegate access invite. It should be tied to your phone number with the hosting email",MEDIUM,Medium
-2025-05-28,14:17:48,2025-05,General Request,Non-billable,"You should’ve just gotten a GoDaddy invite from Alicia Smith for Evolved’s hosting migration",MEDIUM,Medium
-2025-05-29,10:58:17,2025-05,General Request,Non-billable,"The big thing this afternoon is zipping the last sites we don’t have login credentials to. That’s absolute priority #1 the moment I take the email ove",MEDIUM,Medium
-2025-05-29,15:55:59,2025-05,General Request,Non-billable,"Having a good call with Bren, he’s using WP Vivid Migration for migrating sites",MEDIUM,Large
-2025-05-29,16:36:23,2025-05,General Request,Non-billable,"Bren is going to setup a forwarding text number for us to be able to login to the Support email for all the DNS records",MEDIUM,Medium
-2025-05-30,17:27:10,2025-05,General Request,Non-billable,"This is the GoDaddy site:",MEDIUM,Medium
+2025-05-23,08:13:36,2025-05,General Request,Non-billable,"I’ll buy a license and let’s update them as we stage them before DNS records get changed",MEDIUM,Medium

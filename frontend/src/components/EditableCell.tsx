@@ -15,6 +15,8 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  console.log('EditableCell render - value:', value, 'options:', options);
 
   // Close dropdown when value changes (e.g., when switching between billable/non-billable)
   useEffect(() => {
@@ -73,11 +75,15 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   };
 
   const handleOptionClick = (newValue: string) => {
+    console.log('EditableCell: Option clicked:', newValue, 'Current value:', value);
     setIsOpen(false); // Close dropdown immediately
     // Use setTimeout to ensure state update happens after DOM update
     setTimeout(() => {
       if (newValue !== value) {
+        console.log('EditableCell: Calling onSave with:', newValue);
         onSave(newValue);
+      } else {
+        console.log('EditableCell: No change needed, values are the same');
       }
     }, 0);
   };

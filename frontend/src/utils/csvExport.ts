@@ -7,11 +7,11 @@ import type { ChatRequest } from '../types/request';
 // };
 
 // Create timestamped filename
-const createTimestampedFilename = (baseName: string, extension: string = 'csv') => {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5); // YYYY-MM-DDTHH-mm-ss
-  const nameWithoutExt = baseName.replace(/\.[^/.]+$/, ''); // Remove existing extension
-  return `${nameWithoutExt}_${timestamp}.${extension}`;
-};
+// const createTimestampedFilename = (baseName: string, extension: string = 'csv') => {
+//   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5); // YYYY-MM-DDTHH-mm-ss
+//   const nameWithoutExt = baseName.replace(/\.[^/.]+$/, ''); // Remove existing extension
+//   return `${nameWithoutExt}_${timestamp}.${extension}`;
+// };
 
 // Generate CSV content from request data
 const generateCSVContent = (requests: ChatRequest[]) => {
@@ -76,17 +76,17 @@ export function exportToCSV(requests: ChatRequest[], filename: string = 'thad_re
   }
 }
 
-// Auto-save with timestamped working files using data API
+// Simplified save system - single working file that updates incrementally
 export async function saveToDataDirectory(billableRequests: ChatRequest[], nonBillableRequests: ChatRequest[] = []) {
   // Combine all requests for complete dataset
   const allRequests = [...billableRequests, ...nonBillableRequests];
   
   try {
-    // Generate CSV content
+    // Generate CSV content for all requests
     const csvContent = generateCSVContent(allRequests);
     const workingFilename = 'thad_requests_working.csv';
     
-    // Save to data directory via API
+    // Save single working file to data directory via API
     const response = await fetch('http://localhost:3001/api/save-csv', {
       method: 'POST',
       headers: {
@@ -95,7 +95,7 @@ export async function saveToDataDirectory(billableRequests: ChatRequest[], nonBi
       body: JSON.stringify({
         csvContent,
         filename: workingFilename,
-        createBackup: true
+        createBackup: false  // Simplified - no automatic backups
       })
     });
     
@@ -104,34 +104,12 @@ export async function saveToDataDirectory(billableRequests: ChatRequest[], nonBi
     }
     
     const result = await response.json();
-    console.log(`Successfully saved to data directory: ${result.filename}`);
-    console.log(`Backup created: ${result.backupFilename}`);
+    console.log(`Successfully updated working file: ${result.filename}`);
     
-    // Save non-billable requests separately if needed
-    if (nonBillableRequests.length > 0) {
-      const nonBillableCSV = generateCSVContent(nonBillableRequests);
-      await fetch('http://localhost:3001/api/save-csv', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          csvContent: nonBillableCSV,
-          filename: 'thad_non_billable_working.csv',
-          createBackup: false
-        })
-      });
-    }
-    
-    return { success: true, filename: result.filename, timestamp: result.timestamp };
+    return { success: true, filename: result.filename };
     
   } catch (error) {
     console.error('Error saving working version:', error);
-    // Fallback to download method
-    console.log('Falling back to download method...');
-    const timestampedFilename = createTimestampedFilename('thad_requests_download');
-    downloadCSV(allRequests, timestampedFilename);
-    
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -199,6 +177,7 @@ async function saveCSVToFile(requests: ChatRequest[], filePath: string) {
 */
 
 // Helper function to save CSV to public directory (will be accessible to the app)
+// @ts-ignore - Function kept for future use
 async function saveCSVToPublic(requests: ChatRequest[], filename: string) {
   const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
   

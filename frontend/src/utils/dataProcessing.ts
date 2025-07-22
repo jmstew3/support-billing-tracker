@@ -160,7 +160,7 @@ export const loadRequestData = async (): Promise<{
         throw new Error(`Working version not available: ${response.status}`);
       }
     } catch (error) {
-      console.log('Working version not available, falling back to original:', error.message);
+      console.log('Working version not available, falling back to original:', (error as Error).message);
       // Fall back to original table from public directory
       response = await fetch('/thad_requests_table.csv');
       if (!response.ok) {

@@ -8,7 +8,7 @@ import { EditableCell } from './EditableCell';
 import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
-import { saveRequestChanges, saveToDataDirectory } from '../utils/csvExport';
+import { saveToDataDirectory } from '../utils/csvExport';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, ChevronRight, ChevronDown as ChevronDownIcon, Filter } from 'lucide-react';
 
 export function Dashboard() {
@@ -19,9 +19,9 @@ export function Dashboard() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Auto-save debounce timer
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<number | null>(null);
   
-  // Auto-save function with debouncing
+  // Simplified auto-save function with debouncing
   const triggerAutoSave = useCallback(async (requestsToSave: ChatRequest[]) => {
     // Clear any existing timeout
     if (autoSaveTimeoutRef.current) {
@@ -31,23 +31,19 @@ export function Dashboard() {
     // Set up debounced auto-save (wait 2 seconds after last change)
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
-        const billableRequestsForSave = requestsToSave.filter(request => 
-          request.Category !== 'Non-billable' && request.Category !== 'Migration'
-        );
-        const nonBillableRequestsForSave = requestsToSave.filter(request => 
-          request.Category === 'Non-billable' || request.Category === 'Migration'
-        );
-        
-        const result = await saveToDataDirectory(billableRequestsForSave, nonBillableRequestsForSave);
+        setHasUnsavedChanges(true);
+        // Pass all requests - the save function handles everything internally
+        const result = await saveToDataDirectory(requestsToSave, []);
         
         if (result.success) {
           console.log('Auto-saved successfully');
           setIsWorkingVersion(true);
-          setCurrentVersion(`working_${result.timestamp}`);
+          setCurrentVersion('working');
           setHasUnsavedChanges(false);
         }
       } catch (error) {
         console.warn('Auto-save failed:', error);
+        setHasUnsavedChanges(false);
       }
     }, 2000); // 2 second debounce
   }, []);
@@ -445,7 +441,7 @@ export function Dashboard() {
 
   const handlePageSizeChange = (size: number | 'all') => {
     if (size === 'all') {
-      setPageSize(requests.length);
+      setPageSize(filteredAndSortedRequests.length);
     } else {
       setPageSize(size);
     }
@@ -457,6 +453,7 @@ export function Dashboard() {
   };
 
   const updateRequest = (index: number, field: keyof ChatRequest, value: string) => {
+    console.log(`Dashboard updateRequest called: index=${index}, field=${field}, value=${value}`);
     preserveScrollPosition();
     const newRequests = [...requests];
     // Convert display values back to stored values for Urgency
@@ -465,32 +462,26 @@ export function Dashboard() {
       actualValue = value.toUpperCase();
     }
     
+    console.log(`Before update - current value: ${newRequests[index][field]}, new value: ${actualValue}`);
     newRequests[index] = { ...newRequests[index], [field]: actualValue };
     setRequests(newRequests);
     setHasUnsavedChanges(true);
     
     console.log(`Updated request ${index}: ${field} = ${actualValue}`);
     
-    // Trigger auto-save
-    triggerAutoSave(newRequests);
+    // Auto-save disabled - user must manually save changes
   };
 
   const handleSaveChanges = async () => {
-    const billableRequestsForSave = requests.filter(request => request.Category !== 'Non-billable' && request.Category !== 'Migration');
-    const nonBillableRequestsForSave = requests.filter(request => request.Category === 'Non-billable' || request.Category === 'Migration');
-    
     try {
-      // Save using the new versioning system
-      await saveToDataDirectory(billableRequestsForSave, nonBillableRequestsForSave);
-      console.log('Successfully created/updated working version');
+      // Save simplified - pass all requests, function handles everything internally
+      await saveToDataDirectory(requests, []);
+      console.log('Successfully saved working version');
       
       setHasUnsavedChanges(false);
-      setIsWorkingVersion(true); // We now have a working version
+      setIsWorkingVersion(true);
     } catch (error) {
-      console.warn('Could not save working version, using fallback:', error);
-      // Fallback to the original download method
-      saveRequestChanges(billableRequestsForSave, nonBillableRequestsForSave);
-      
+      console.warn('Save failed:', error);
       setHasUnsavedChanges(false);
     }
   };
@@ -784,7 +775,7 @@ export function Dashboard() {
             <p className="text-muted-foreground">
               Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
               {nonBillableRequests.length > 0 && (
-                <span className="text-gray-600"> • {nonBillableRequests.length} non-billable/migration</span>
+                <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
               )}
             </p>
             <div className="flex items-center space-x-3 mt-2">
@@ -794,12 +785,14 @@ export function Dashboard() {
                   <span>Working Version ({currentVersion})</span>
                 </div>
               )}
-              <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-                <Clock className="w-3 h-3" />
-                <span>{hasUnsavedChanges ? 'Auto-saving...' : 'Auto-saved'}</span>
-              </div>
+              {hasUnsavedChanges && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-md text-xs">
+                  <Clock className="w-3 h-3" />
+                  <span>Unsaved changes - click Save button</span>
+                </div>
+              )}
               <span className="text-xs text-gray-500">
-                Changes auto-save after 2 seconds • Original data protected
+                Manual save required • Original data protected
               </span>
             </div>
           </div>
@@ -1057,7 +1050,7 @@ export function Dashboard() {
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
               >
                 <Download className="w-4 h-4" />
-                <span>Force Save Now</span>
+                <span>Save Changes</span>
               </button>
             )}
           </div>
@@ -1346,11 +1339,17 @@ export function Dashboard() {
             </TableHeader>
             <TableBody>
               {paginatedRequests.map((request, paginatedIndex) => {
-                const actualIndex = startIndex + paginatedIndex;
-                const isNonBillable = request.Category === 'Non-billable';
+                const filteredIndex = startIndex + paginatedIndex;
+                // Find the actual index in the original requests array
+                const actualIndex = requests.findIndex(r => 
+                  r.Date === request.Date && 
+                  r.Time === request.Time && 
+                  r.Request_Summary === request.Request_Summary
+                );
+                const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
                 return (
                   <TableRow 
-                    key={actualIndex} 
+                    key={filteredIndex} 
                     className={`cursor-pointer transition-colors ${
                       isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${
@@ -1362,7 +1361,7 @@ export function Dashboard() {
                       <input
                         type="checkbox"
                         checked={selectedRequestIds.has(actualIndex)}
-                        onChange={(e) => handleSelectRequest(actualIndex, e.nativeEvent)}
+                        onChange={(e) => handleSelectRequest(actualIndex, e as any)}
                         className="rounded border-gray-300 focus:ring-blue-500"
                       />
                     </TableCell>
@@ -1389,13 +1388,16 @@ export function Dashboard() {
                     </TableCell>
                     <TableCell className="min-w-[150px]">
                       <EditableCell
-                        key={`category-${actualIndex}-${isNonBillable}-${request.Category}`}
+                        key={`category-${filteredIndex}-${isNonBillable}`}
                         value={request.Category || categorizeRequest(request.Request_Summary)}
                         options={categoryOptions}
                         onSave={(newValue) => {
-                          updateRequest(actualIndex, 'Category', newValue);
-                          // Force re-render by updating the key
-                          setHasUnsavedChanges(prev => !prev && true);
+                          console.log('Category EditableCell onSave called with:', newValue);
+                          if (actualIndex !== -1) {
+                            updateRequest(actualIndex, 'Category', newValue);
+                          } else {
+                            console.error('Could not find request in original array');
+                          }
                         }}
                       />
                     </TableCell>
@@ -1406,10 +1408,17 @@ export function Dashboard() {
                         </span>
                       ) : (
                         <EditableCell
-                          key={`urgency-${actualIndex}-${isNonBillable}`}
+                          key={`urgency-${filteredIndex}-${isNonBillable}`}
                           value={request.Urgency}
                           options={urgencyOptions}
-                          onSave={(newValue) => updateRequest(actualIndex, 'Urgency', newValue)}
+                          onSave={(newValue) => {
+                            console.log('Urgency EditableCell onSave called with:', newValue);
+                            if (actualIndex !== -1) {
+                              updateRequest(actualIndex, 'Urgency', newValue);
+                            } else {
+                              console.error('Could not find request in original array');
+                            }
+                          }}
                           formatDisplayValue={formatUrgencyDisplay}
                         />
                       )}

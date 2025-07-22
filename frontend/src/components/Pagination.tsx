@@ -87,7 +87,9 @@ export function Pagination({
               </option>
             ))}
           </select>
-          <span className="text-sm text-muted-foreground">entries</span>
+          <span className="text-sm text-muted-foreground">
+            {pageSize === totalItems ? 'All entries' : 'entries'}
+          </span>
         </div>
       </div>
 
