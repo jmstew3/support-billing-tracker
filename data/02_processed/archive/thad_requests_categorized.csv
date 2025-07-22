@@ -1,0 +1,185 @@
+Date,Time,Request_Summary,Category,Urgency,Effort
+2025-05-08,04:17 PM,"Please see attached the new order confirmation for the motor and the return authorization. Once the customer has received the new motor, please let me...",Support,MEDIUM,Medium
+2025-05-15,05:59 PM,JBlueHost is working through it now. It is but BlueHost does daily backups,Hosting,HIGH,Medium
+2025-05-15,06:01 PM,hey said the backups are on a separate server,Hosting,MEDIUM,Medium
+2025-05-15,06:03 PM,"2They’re not 100% sure on which level backup, lol",Hosting,MEDIUM,Medium
+2025-05-15,06:03 PM,"I’m supposed to have an onboarding call at 9:15 tomorrow, do you want to be on that? Not a big deal if you can’t make it",Support,MEDIUM,Large
+2025-05-16,10:04 AM,"'Got for it, do whatever you need to do",Support,MEDIUM,Medium
+2025-05-16,10:34 AM,"lI do have a couple extra domains, all of mine are in Namecheap. Add your Peak One email as delegate access?",Hosting,MEDIUM,Medium
+2025-05-16,01:40 PM,"oK, I’m doing full file exports for now. Can we work with those on these other sites to test out that avenue?",Support,HIGH,Medium
+2025-05-16,05:34 PM,"jI never saw anything come through, I’ll set you up a Velocity email and add you as an admin to the site",Email,MEDIUM,Medium
+2025-05-17,03:20 PM,0Emphasized “Then I can import this website’s .zip export file and test out the import on a subdomain. If everything looks good then I’ll record what ...,Hosting,MEDIUM,Large
+2025-05-18,09:29 AM,OCan you check if those selections look good before I start knocking these out?,Support,MEDIUM,Medium
+2025-05-18,11:34 AM,Dropping all website backups into this folder:,Hosting,MEDIUM,Medium
+2025-05-19,08:35 AM,"kGood morning sir, I got 10 total websites zipped yesterday. Most of the Other Files were different than the first one so I just selected all Other Fi...",Hosting,MEDIUM,Small
+2025-05-19,09:15 AM,"XI just got an email notification of the DNS change, do you want me to forward you that?",Hosting,MEDIUM,Small
+2025-05-19,05:56 PM,"QLiked “Once you install that plugin, follow the directions on this page for backing up each site. Start with one and then let me move it onto the ser...",Hosting,MEDIUM,Large
+2025-05-20,03:15 PM,"0Phantom hadn’t shared domain registration access yet, I’m on the phone with him now and he’s adding my email as well as the hosting email to it now. ...",Hosting,HIGH,Medium
+2025-05-20,06:06 PM,Please use this: 301 S McDowell St. Suite 125 - 1361 Charlotte NC 28204,Support,MEDIUM,Medium
+2025-05-21,10:30 AM,"Operation World Domination might start this afternoon, tired of this limbo, nothing with you just is wearing me out trying to get all this done quietl...",Development,HIGH,Large
+2025-05-22,07:36 AM,SWe’ll need to update that on every site. Mine hasn’t been used this whole time,Support,MEDIUM,Large
+2025-05-22,01:51 PM,dDo you want me to add you to my license and add a second website login credentials to try to stage?,Support,MEDIUM,Medium
+2025-05-22,03:58 PM,"Guardian Graphics is also good to stage, that one was built by my new cheap website builder so we can migrate that staged site as well after Distinct,...",Hosting,MEDIUM,Large
+2025-05-23,08:13 AM,I’ll buy a license and let’s update them as we stage them before DNS records get changed,Hosting,MEDIUM,Medium
+2025-05-23,08:56 AM,CWhy not just wait to update the license until the website is live?,Support,MEDIUM,Small
+2025-05-23,08:57 AM,"7Let’s just do that, don’t need to overcomplicate it",Support,MEDIUM,Small
+2025-05-23,05:46 PM,"CPerfect, everything is looking good to take over Google Ads Tuesday afternoon. I need to see how the onboarding call goes, which will be at 1:30. Aft...",Support,MEDIUM,Large
+2025-05-23,06:46 PM,5The top priority will be zipping all the sites first and foremost now you know we’re good there. Staging and DNS updates can wait until all zips are ...,Hosting,HIGH,Large
+2025-05-24,12:03 PM,Looks good on mobile. The image at the top of the PPF page seems it’s not adjusting for mobile well but I checked the original site and it’s messed up...,Development,MEDIUM,Small
+2025-05-25,07:23 AM,"I’m game, whatever we need to do",Support,MEDIUM,Medium
+2025-05-25,08:47 AM,"Will do, I’m highlighting new logins in yellow. Please feel free to reset that to blank when you’re done with staging.",Support,MEDIUM,Medium
+2025-05-25,09:04 AM,We’re going to change DNS one at a time on these because a lot of these sites have CRMs tied to them and those can’t go live until I have their lead f...,Support,MEDIUM,Medium
+2025-05-25,09:45 AM,"NWorks for me, I’ll know to look when you add the staging URL into the sheet",Support,MEDIUM,Medium
+2025-05-25,10:09 AM,gI’m game for whatever we need to add as this goes live and we take the rest of the industry by storm,Support,MEDIUM,Medium
+2025-05-25,12:20 PM,Please note him and Brunswick are not high speed so don’t worry about any of those plugins,Support,MEDIUM,Medium
+2025-05-26,03:10 PM,PEmphasized “All of the new sites you added to the sheet have been migrated!”,Support,MEDIUM,Large
+2025-05-26,03:43 PM,"dI’m not opposed to it, $20/domain/month stacks up a bit so just need to make sure it’s worth it",Hosting,MEDIUM,Small
+2025-05-27,02:55 PM,"KI can’t have this happen at all so whatever we need to do, let’s do it",Support,MEDIUM,Medium
+2025-05-28,12:19 PM,"MPlease don’t say bad news in that context, going to give me a heard attack",Support,MEDIUM,Medium
+2025-05-28,12:35 PM,"+Easy, please go ahead and do it if you can",Support,MEDIUM,Small
+2025-05-29,10:58 AM,8The big thing this afternoon is zipping the last sites we don’t have login credentials to. That’s absolute priority #1 the moment I take the email ov...,Email,HIGH,Large
+2025-05-29,03:30 PM,eAs in we can start publishing the staging sites whenever you’re ready for me to change DNS records,Hosting,LOW,Medium
+2025-05-29,04:36 PM,xBren is going to setup a forwarding text number for us to be able to login to the Support email for all the DNS records,Hosting,MEDIUM,Medium
+2025-05-30,05:27 PM,Can we migrate a Squarespace site? I assumed it’d have to be copied to Wordpress somehow,Hosting,MEDIUM,Large
+2025-05-30,05:59 PM,KWould needing to update the Elementor license or anything affect her work?,Development,MEDIUM,Medium
+2025-06-02,10:01 AM,qCan we go ahead and update DNS records for redline and Nash? Both are ready to go live and are new website builds,Hosting,MEDIUM,Medium
+2025-06-02,10:59 AM,jDo you prefer Rank Math for meta title and description editing or Yoast SEO? I need to add one to Redline,SEO,MEDIUM,Medium
+2025-06-02,11:40 AM,"LBren recommended using WP Vivid Migration, do you want to try that for AP3?",Support,MEDIUM,Large
+2025-06-02,07:50 PM,"2I know, please disregard, that was his old domain",Hosting,MEDIUM,Medium
+2025-06-02,08:24 PM,"2Seriously, need to get rid of that ASAP if we can",Support,HIGH,Medium
+2025-06-03,05:04 PM,Nash is live! Can we try Velocity next?,Support,MEDIUM,Medium
+2025-06-03,05:33 PM,5Should I install this plugin for this mobile fix?,Support,MEDIUM,Medium
+2025-06-03,05:43 PM,I’m trying to double check lead form settings for Nash but not seeing a Forms section on his site in Wordpress?,Forms,MEDIUM,Medium
+2025-06-03,06:12 PM,Most lead forms have a forms tab pop up so not sure how this one is different or where to check the lead form notifications,Forms,MEDIUM,Medium
+2025-06-03,06:24 PM,"No sir, we need to remove them",Support,MEDIUM,Medium
+2025-06-03,06:26 PM,MSupport will need to go to the Google Ads team because it’s in all the GBPs,Support,MEDIUM,Medium
+2025-06-03,06:59 PM,zLiked “Ok it’s installed but I think we need to get you an SMTP plugin installed alongside it so it can send emails”,Email,MEDIUM,Medium
+2025-06-04,09:04 AM,"Squarespace is his old domain, please use the Namecheap domain",Hosting,MEDIUM,Medium
+2025-06-04,12:59 PM,Showing pending invitation. Do you want me to resend it?,Support,MEDIUM,Medium
+2025-06-04,01:10 PM,"We need to fix a few things for the Simple Details website, I’ll have to call you later on it",Support,LOW,Small
+2025-06-04,02:41 PM,"5All good, can you focus on those last staging sites?",Support,MEDIUM,Large
+2025-06-05,10:46 AM,ECan you remove the location drop down from Redline’s lead form?,Forms,MEDIUM,Medium
+2025-06-05,05:51 PM,dSorry for the late text. Do you think we could prioritize Automobilia and change their DNS tomorrow?,Hosting,MEDIUM,Medium
+2025-06-06,12:22 PM,bLiked “Take note of the security question in case you need to reset the password or something”,Support,MEDIUM,Medium
+2025-06-06,12:23 PM,Just need to create one,Development,MEDIUM,Small
+2025-06-06,12:23 PM,"DPlease offer anything you can, we need everything separate from him",Support,MEDIUM,Medium
+2025-06-07,09:24 AM,"Good thing we downloaded all the sites when we did, looks like Bren changed my access back to no longer Admin. Simple Details is another one we’ll nee...",Support,HIGH,Large
+2025-06-07,09:38 AM,"What’s your thoughts on being introduced to some of my larger accounts in the coming weeks? With this Mike bullshit, I would like them to meet some of...",Support,MEDIUM,Large
+2025-06-07,06:59 PM,"lI think that’s good, I’m texting Bren every time we migrate a site. You did officially do Bakers right?",Hosting,MEDIUM,Large
+2025-06-08,04:08 PM,hI was trying to change my email on my actual user login and that email never sent to accept that change,Email,MEDIUM,Medium
+2025-06-08,04:43 PM,"kThe Support email I deactivated over the weekend, please change the Admin email to hosting@velocity-seo.com",Hosting,MEDIUM,Medium
+2025-06-09,09:20 AM,FPlease set them all to your hosting email if you’re good with that?,Hosting,MEDIUM,Medium
+2025-06-09,01:20 PM,YI’ll probably have to change those for you because they’re tied to the Support email,Email,MEDIUM,Medium
+2025-06-10,11:46 AM,I’m seeing a couple more campaigns being flagged. Can we try turning off the Cloudflare bit?,Support,MEDIUM,Medium
+2025-06-10,01:58 PM,4Can we try changing the permalink adding a “-2”,Support,MEDIUM,Medium
+2025-06-10,02:03 PM,"pOne other thing, not urgent today. We do need to build 2 conversion landing pages for 2 new Google Ads campaigns",Development,HIGH,Medium
+2025-06-10,04:34 PM,"xI know, it’s a GoDaddy native site so need to discuss building it in WordPress. Also any luck with the locator quote?",Development,MEDIUM,Medium
+2025-06-11,07:10 AM,"hey did check spam and didn’t receive it, that’s why I was going to test it with my email",Support,MEDIUM,Medium
+2025-06-11,07:22 AM,"dYou and me both, I’ve had people check the wrong damn email even when I tell them what email, lol",Email,MEDIUM,Medium
+2025-06-11,08:21 AM,"bNo worries, also need to go over SEO needs for this month when you’re ready, I’m good until 10",SEO,MEDIUM,Medium
+2025-06-11,10:24 AM,Just got this from AE: There is no longer a drop down menu where people can pick the year make model and trim… now its an open field for them to type ...,Forms,HIGH,Small
+2025-06-11,10:30 AM,"I know, those are either in the works to migrate",Support,MEDIUM,Large
+2025-06-12,09:33 AM,"kI would focus on the server stuff, that lead form can be fixed after. I need to call them about it anyways",Support,MEDIUM,Medium
+2025-06-12,09:39 AM,"One small thing, can you help me with adding this tracking code to Nash’s site? I tried to do it in Theme, Customize, Additional CSS but it gave me an...",Support,MEDIUM,Small
+2025-06-12,02:34 PM,"pHey bud, I just got this text. Could you tell me what I need to do to fix this? Just got this from Veridical",Support,MEDIUM,Small
+2025-06-12,04:02 PM,LCan we also double check this website lead form? Same guys built it as Nash:,Forms,MEDIUM,Medium
+2025-06-12,04:56 PM,Can we keep making edits to the https://car-window-tinting.com/ website?,Support,MEDIUM,Medium
+2025-06-13,08:11 AM,"IAP3’s website isn’t loading right for me, can you take a look at it?",Support,MEDIUM,Medium
+2025-06-13,08:37 AM,"hat might be the issue with those plugins that Bren said were creating headaches, we’ll need to look into that more later",Support,LOW,Medium
+2025-06-13,12:44 PM,Can you double check the lead form after the server migration are going to this email sales@guardian-graphics.com properly?,Hosting,MEDIUM,Large
+2025-06-13,06:01 PM,"uIt’s not a matter of cancel, I just need to downgrade to monthly, which will move everything to a different server",Hosting,MEDIUM,Small
+2025-06-15,04:56 PM,"WHappy Father’s Day! No need to deal with this today but Redline let me know they did not receive a test lead from their website, they got confused an...",Forms,MEDIUM,Small
+2025-06-15,05:15 PM,"Good news, the email change request did finally come through",Email,MEDIUM,Medium
+2025-06-16,12:57 PM,vI’ll ask. Do you have a good reporter point of contact at the news still? Will need to keep the source confidential,Support,MEDIUM,Medium
+2025-06-16,01:18 PM,"VGotta go full steam ASAP, please go ahead and do AP3 as soon as you’re ready for it",Support,HIGH,Medium
+2025-06-16,02:14 PM,Can you do that? We’re stuck to doing that,Support,MEDIUM,Medium
+2025-06-17,08:15 AM,Can we prioritize Window Film Solutions out of all of those today? They’re wanting to make edits to their own site soon,Support,HIGH,Medium
+2025-06-17,10:16 AM,We might need to undo the Webhook delete I just did,Forms,MEDIUM,Small
+2025-06-17,11:09 AM,"xIt doesn’t look like I can setup a login for Squarespace, I can make those changes as soon as you’re ready on those",Support,HIGH,Medium
+2025-06-17,11:12 AM,"xI get it man, just please remember to bill for all those fixes separate from the migrations so I have that to show Bren",Support,MEDIUM,Large
+2025-06-17,11:12 AM,"qWe can hack it after we migrate all of these, might just go ahead and do it for him, he’s a really good client",Support,MEDIUM,Large
+2025-06-17,11:15 AM,wWe also need to prioritize https://home-window-tinting.com/ so we can get the conversion landing page added to that one,Development,MEDIUM,Medium
+2025-06-17,01:34 PM,"I know, we might just need to nuke that form and start over",Forms,MEDIUM,Small
+2025-06-18,03:12 PM,0Can we fix the icons at the bottom of this page?,Support,MEDIUM,Medium
+2025-06-18,05:19 PM,wCan we try to fix Guardian and Auto Concierge sites that are stuck? I’m starting to run out of DNS records to update,Support,MEDIUM,Medium
+2025-06-18,06:24 PM,"iOne more edit, can you remove the 2 auto services on SunMasters form? He only needs home and office tint",Forms,MEDIUM,Small
+2025-06-18,06:25 PM,EPlease change for these: - Blinds and roller shades - Smart Tint Film,Support,MEDIUM,Medium
+2025-06-18,06:33 PM,JDo I need to change their name servers? I don’t remember what they were,Hosting,MEDIUM,Medium
+2025-06-19,10:43 AM,ECan we fix this? I was going there to do a test lead and saw this,Support,MEDIUM,Medium
+2025-06-20,09:20 AM,"eSounds good, we can send them the zip file. Also did you get a chance to work on that website quote?",Support,MEDIUM,Medium
+2025-06-20,11:13 AM,Works for me. Also can you add this to the Shades of Gray page? https://car-window-tinting.com/shades-of-gray/ here is the tag to add in the <head> se...,Support,MEDIUM,Medium
+2025-06-20,04:37 PM,"LFor Simple Details leads, please have them go to yohance@simpledetailsva.com",Forms,MEDIUM,Small
+2025-06-20,04:58 PM,qI added a fourth tab for active LPs to start outlining which ones we need to check and fix for that phone number,Support,MEDIUM,Medium
+2025-06-20,07:28 PM,"SPlease remove the Yohance email from that lead form, he just called me, not urgent",Forms,MEDIUM,Small
+2025-06-21,06:52 AM,"For sure, looks like a good starting point. What are your thoughts on piecemealing it to speed up the timeline? In standard bigger website builds, tha...",Support,MEDIUM,Large
+2025-06-21,07:17 AM,Also got a late text from AE. Apparently that form with the year/make/model dropdown isn’t emailing them. Do we setup SMTP for their site? That form s...,Forms,MEDIUM,Medium
+2025-06-21,11:25 AM,"9All good man on fixing it now, it can wait if we need to",Support,MEDIUM,Medium
+2025-06-22,05:01 PM,"4Happy Sunday! Hustling, got another potential locator to do. This one would be just the locator and a single location page with dedicated lead form o...",Forms,MEDIUM,Small
+2025-06-23,10:15 AM,"I just set the hosting email as the Admin to the Capital Autobahnd website, can you accept that whenever you get a chance?",Hosting,LOW,Small
+2025-06-23,10:17 AM,hat’s exactly what Bren was doing. He never communicated with customers and it was all fielded either through myself or Brittney. I think there’s oppo...,Forms,MEDIUM,Large
+2025-06-23,11:37 AM,cI think we need to make sure SMTP is working properly first then change the Admin email to hosting,Hosting,MEDIUM,Medium
+2025-06-23,11:38 AM,"Correct, trying to remove that from every site",Support,MEDIUM,Large
+2025-06-23,01:02 PM,4Just Sitemanager and Support need to go on all sites,Support,MEDIUM,Large
+2025-06-23,01:08 PM,hThat’d be good to add to the sheet as well so we know what we need to go back and potentially address,Support,MEDIUM,Medium
+2025-06-23,01:13 PM,ZAll of those are done? Also need to update the Admin email on Elite Glass Tinting website,Email,MEDIUM,Medium
+2025-06-23,01:21 PM,"SPlease do Phantom first, he sent me that on Friday and it slipped through on my end",Support,MEDIUM,Medium
+2025-06-23,01:42 PM,"Wait, never mind, we migrated that one as is",Support,MEDIUM,Large
+2025-06-23,01:49 PM,CWe can start simple with a Google Form if that’s easiest to setup,Forms,MEDIUM,Small
+2025-06-23,03:03 PM,"MLet’s please change them to that, something Bren was doing has been broken",Support,MEDIUM,Medium
+2025-06-23,06:18 PM,And he wants to add a custom lead form for his dealerships so a one extra lead form,Forms,MEDIUM,Medium
+2025-06-24,08:03 AM,"Please do, is that for Nash?",Support,MEDIUM,Medium
+2025-06-24,08:03 AM,AGreat news! Do we know what caused it? Wasnt that a Fluent Form?,Forms,MEDIUM,Medium
+2025-06-24,08:06 AM,Should we go back to Gravity Forms?,Forms,MEDIUM,Medium
+2025-06-24,08:28 AM,Is Esoteric fully migrated?,Support,MEDIUM,Large
+2025-06-24,10:03 AM,GCan we focus on Detail Driven? Their site is completely down right now,Support,HIGH,Medium
+2025-06-24,10:24 AM,"FThat’s fine, can we remove that BlogVault Firewall? Is it a plugin?",Support,MEDIUM,Medium
+2025-06-24,06:52 PM,Please do iI NSDictionary,Support,MEDIUM,Medium
+2025-06-25,12:43 PM,"old tight, found one other fix I need to make",Support,MEDIUM,Medium
+2025-06-25,08:28 PM,"WTF, might need to just rebuild it as in duplicate it like we talked about maybe doing with AP3",Development,MEDIUM,Large
+2025-06-26,08:14 AM,MDo I need to start taking before screenshots of old Nameservers from now on?,Hosting,HIGH,Medium
+2025-06-26,08:35 AM,"We can fix their email later, just need to get their website up",Support,LOW,Small
+2025-06-26,03:44 PM,cI’ve asked Bren’s software engineer if he can grab a screenshot for us from an old site backup,Hosting,MEDIUM,Medium
+2025-06-26,04:31 PM,"Infinite’s ads are still down, just wanted to double check the Cloudflare stuff is still off even with their site changes?",Support,MEDIUM,Small
+2025-06-27,12:08 PM,ALiked “And they might need to verify domain ownership for…”,Hosting,MEDIUM,Medium
+2025-06-27,02:03 PM,"pYep, got access to Legacy’s DNS and can update their Nameservers. I reference the sheet on which ones to use?",Hosting,MEDIUM,Medium
+2025-06-27,04:44 PM,"LPlease do, the campaign was just finished, I still have to review it though",Support,MEDIUM,Small
+2025-06-30,08:15 AM,"K, please be gentle, lol",Support,MEDIUM,Medium
+2025-06-30,08:33 AM,7Can you help with fixing the footer icons on this page?,Support,MEDIUM,Medium
+2025-06-30,10:54 AM,I just got this from Bakers in regards to their lead form. Did this get changed when we setup their SMTP?: It did have that “get a quote” section remo...,Forms,HIGH,Small
+2025-06-30,12:37 PM,8Uploading files in a gravity form seems to be broken?,Support,MEDIUM,Medium
+2025-06-30,04:56 PM,aEmphasized “Need to clean up the styling on the form page but other than that it’s cooking”,Forms,MEDIUM,Medium
+2025-06-30,05:10 PM,"oI was trying to update the lead form for Auto Concierge, it should be the same selections as Windshields Xpress",Forms,MEDIUM,Medium
+2025-06-30,05:42 PM,I already changed the fields in Fluent forms,Forms,MEDIUM,Medium
+2025-07-01,09:37 AM,"GHe didn’t answer, can you just allow it for now until I talk to him?",Support,HIGH,Small
+2025-07-01,10:40 AM,Please use this email for Windshields Xpress leads: Windshieldxpressleads@gmail.com,Forms,MEDIUM,Medium
+2025-07-01,12:44 PM,"FCorrect, please leave it for now, they won’t transition for 30 days",Support,HIGH,Medium
+2025-07-02,08:34 AM,"JPlease do just to be safe, I’ll go ahead and update the Nameservers now",Hosting,HIGH,Small
+2025-07-03,11:35 AM,"UI’m in Subzero’s domain registration, am I good to update these name servers?",Hosting,MEDIUM,Medium
+2025-07-03,02:30 PM,9I’m not trying to be overly critical here especially with the AP3 save yesterday but these details are more important to me always than speed. I coul...,Forms,HIGH,Medium
+2025-07-03,02:49 PM,"Justin, respectfully conversations like these from chief to chief need to be over a call, not text. You completely took my text personal and the wrong...",Support,MEDIUM,Small
+2025-07-07,05:35 PM,Can you change that to thad@velocity-seo.com?,SEO,MEDIUM,Medium
+2025-07-07,05:44 PM,JCan you reset the PW? Doesn’t seem to be working with that email either,Email,MEDIUM,Medium
+2025-07-07,06:42 PM,Can you help with this first thing tomorrow for Sun Masters conversion landing page? It looks like the Google Ads tag for SunMasters is still not on t...,Support,MEDIUM,Small
+2025-07-07,07:41 PM,VI had sent this tag to you to install before so I’m honestly not sure at this point,Support,MEDIUM,Medium
+2025-07-07,07:47 PM,"Yes, he had a tag setup there before",Support,MEDIUM,Medium
+2025-07-07,07:48 PM,CWe can’t delete the tag for Guardian when we add Sun Masters tag,Support,MEDIUM,Medium
+2025-07-07,08:01 PM,"pWe just need to understand even if that’s in a text, we never do that for these conversion landing page sites",Development,MEDIUM,Small
+2025-07-08,09:19 AM,"Good morning, can you help fix this on Automobilia’s homepage? It’s strictly a problem on desktop, looks fine on mobile",Support,MEDIUM,Medium
+2025-07-08,10:41 AM,"hank you sir, please list that under Bren fixes",Support,MEDIUM,Medium
+2025-07-08,12:51 PM,"I think this is the new homepage for Legacy, can you take a look at it when you get a chance:",Support,MEDIUM,Medium
+2025-07-08,03:28 PM,LPlease go ahead and totally suspend those 2 as well as Eurotech’s website,Support,MEDIUM,Medium
+2025-07-09,08:01 AM,"nRahal sent me this, can we fix this one too? I’d just remove the phone number for now if that’s easier",Support,HIGH,Small
+2025-07-09,03:43 PM,"0Looking into this issue further, it looks like Sun Master's Google Tag is on the landing page but it is not on the https://home-window-tinting.com/ge...",Support,MEDIUM,Medium
+2025-07-09,04:14 PM,"gBit of an emergency fix on this: it looks like the CTA is completely broken....I clicked the ""Get Free Quote"" button and it took me to a completely b...",Support,HIGH,Medium
+2025-07-09,04:36 PM,XI got all the buttons fixed. Testimonials still need to be updated though on that page.,Support,MEDIUM,Medium
+2025-07-09,08:28 PM,"Seriously, still need to introduce you to my bourbon smoker",Support,MEDIUM,Medium
+2025-07-10,02:48 PM,GPlease setup both logins for Cavazos for myself and your hosting emial,Hosting,MEDIUM,Medium
+2025-07-11,09:14 AM,"One more thing, need to quote a domain name change for Garage 42 whenever you’ve got time",Hosting,LOW,Small
+2025-07-11,09:44 AM,"VAnd one other thing, need this tag added. Do you want to show me how to do this so I can help with it? https://paintprotectionfilmnearme.com/stay-coo...",Support,MEDIUM,Medium
+2025-07-11,10:01 AM,YPlease mimic their current website lead form but as a Gravity Form to keep it consistent:,Forms,MEDIUM,Medium
+2025-07-11,10:17 AM,l1) Ability to add webhook to AC’s replace windshield LP 2) Same for Neighbors website 3) Same for Redline,Forms,MEDIUM,Medium
+2025-07-11,05:08 PM,XWe need to feature all of these companies plus the Film Force logo and Velocity logo,Support,MEDIUM,Medium
+2025-07-14,09:49 AM,fAlso how do I add a webhook to their Fluent Form? I know how to do it in Gravity Forms but not Fluent,Forms,MEDIUM,Medium
+2025-07-14,09:52 AM,hank you. Google Ads team asked me this in regards to Stay Cool’s tag manager code: Can you also send the TYP for this?,SEO,MEDIUM,Medium
+2025-07-14,09:52 AM,5Windshields Xpress is using Gravity Forms on that LP,Forms,MEDIUM,Medium
+2025-07-14,11:26 AM,"And another thing, still need Gravity Forms license updated for Neighbors so I can add a webhook to his lead form",Forms,MEDIUM,Medium

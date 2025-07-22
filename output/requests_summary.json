@@ -1,0 +1,29 @@
+{
+  "total_requests": 209,
+  "date_range": {
+    "start": "2025-05-13",
+    "end": "2025-07-14"
+  },
+  "by_month": {
+    "2025-05": 57,
+    "2025-06": 116,
+    "2025-07": 36
+  },
+  "by_category": {
+    "Support": 178,
+    "Hosting": 23,
+    "Forms": 5,
+    "Billing": 2,
+    "Email": 1
+  },
+  "by_urgency": {
+    "Medium": 191,
+    "High": 15,
+    "Low": 3
+  },
+  "by_effort": {
+    "Medium": 188,
+    "Large": 13,
+    "Small": 8
+  }
+}
