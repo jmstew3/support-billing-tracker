@@ -13,6 +13,30 @@ const createTimestampedFilename = (baseName: string, extension: string = 'csv') 
   return `${nameWithoutExt}_${timestamp}.${extension}`;
 };
 
+// Generate CSV content from request data
+const generateCSVContent = (requests: ChatRequest[]) => {
+  const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
+  
+  const csvData = requests.map(request => {
+    const date = request.Date;
+    const month = date.substring(0, 7); // Extract YYYY-MM from YYYY-MM-DD
+    
+    return [
+      date,
+      request.Time,
+      month,
+      'General Request', // Default request type
+      request.Category || 'Support',
+      `"${request.Request_Summary?.replace(/"/g, '""') || ''}"`, // Escape quotes in CSV
+      request.Urgency,
+      request.EstimatedHours === 0.25 ? 'Small' : 
+      request.EstimatedHours === 1.0 ? 'Large' : 'Medium'
+    ].join(',');
+  });
+  
+  return [headers.join(','), ...csvData].join('\n');
+};
+
 export function exportToCSV(requests: ChatRequest[], filename: string = 'thad_requests_updated.csv') {
   // Convert requests to CSV format matching the original structure
   const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
@@ -52,29 +76,54 @@ export function exportToCSV(requests: ChatRequest[], filename: string = 'thad_re
   }
 }
 
-// Save files with versioning system: preserves original, creates working version
+// Auto-save with timestamped working files using data API
 export async function saveToDataDirectory(billableRequests: ChatRequest[], nonBillableRequests: ChatRequest[] = []) {
   // Combine all requests for complete dataset
   const allRequests = [...billableRequests, ...nonBillableRequests];
   
   try {
-    // IMPORTANT: Never overwrite the original data file
-    // Instead, create/update a working version that will be loaded next time
+    // Generate CSV content
+    const csvContent = generateCSVContent(allRequests);
+    const workingFilename = 'thad_requests_working.csv';
     
-    // 1. Save working version to public directory (this will be loaded next time)
-    await saveCSVToPublic(allRequests, 'thad_requests_working.csv');
+    // Save to data directory via API
+    const response = await fetch('http://localhost:3001/api/save-csv', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        csvContent,
+        filename: workingFilename,
+        createBackup: true
+      })
+    });
     
-    // 2. Create timestamped backup for version history
-    const backupFilename = createTimestampedFilename('thad_requests_version');
-    await downloadCSV(allRequests, backupFilename);
-    
-    // 3. Save non-billable requests separately for reference (in public)
-    if (nonBillableRequests.length > 0) {
-      await saveCSVToPublic(nonBillableRequests, 'thad_non_billable_working.csv');
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
     }
     
-    console.log('Successfully created working version - this will be used on next refresh');
-    console.log('Original data preserved as thad_requests_table.csv');
+    const result = await response.json();
+    console.log(`Successfully saved to data directory: ${result.filename}`);
+    console.log(`Backup created: ${result.backupFilename}`);
+    
+    // Save non-billable requests separately if needed
+    if (nonBillableRequests.length > 0) {
+      const nonBillableCSV = generateCSVContent(nonBillableRequests);
+      await fetch('http://localhost:3001/api/save-csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csvContent: nonBillableCSV,
+          filename: 'thad_non_billable_working.csv',
+          createBackup: false
+        })
+      });
+    }
+    
+    return { success: true, filename: result.filename, timestamp: result.timestamp };
     
   } catch (error) {
     console.error('Error saving working version:', error);
@@ -82,6 +131,8 @@ export async function saveToDataDirectory(billableRequests: ChatRequest[], nonBi
     console.log('Falling back to download method...');
     const timestampedFilename = createTimestampedFilename('thad_requests_download');
     downloadCSV(allRequests, timestampedFilename);
+    
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 

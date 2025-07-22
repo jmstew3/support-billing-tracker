@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { RequestBarChart } from './RequestBarChart';
@@ -15,6 +15,51 @@ export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isWorkingVersion, setIsWorkingVersion] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState<string>('original');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Auto-save debounce timer
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Auto-save function with debouncing
+  const triggerAutoSave = useCallback(async (requestsToSave: ChatRequest[]) => {
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Set up debounced auto-save (wait 2 seconds after last change)
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const billableRequestsForSave = requestsToSave.filter(request => 
+          request.Category !== 'Non-billable' && request.Category !== 'Migration'
+        );
+        const nonBillableRequestsForSave = requestsToSave.filter(request => 
+          request.Category === 'Non-billable' || request.Category === 'Migration'
+        );
+        
+        const result = await saveToDataDirectory(billableRequestsForSave, nonBillableRequestsForSave);
+        
+        if (result.success) {
+          console.log('Auto-saved successfully');
+          setIsWorkingVersion(true);
+          setCurrentVersion(`working_${result.timestamp}`);
+          setHasUnsavedChanges(false);
+        }
+      } catch (error) {
+        console.warn('Auto-save failed:', error);
+      }
+    }, 2000); // 2 second debounce
+  }, []);
+  
+  // Cleanup auto-save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Deleted requests functionality removed
   
@@ -22,9 +67,6 @@ export function Dashboard() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(20);
-  
-  // Edit state
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Date filtering state
   const [selectedYear, setSelectedYear] = useState<number>(2025);
@@ -144,26 +186,18 @@ export function Dashboard() {
   // Note: CSV parsing for deleted requests removed - now handled via Status field
 
   const loadData = async () => {
+    console.log('Dashboard loadData starting...');
     try {
-      // Check if working version exists by trying to fetch it first
-      let workingVersionExists = false;
-      try {
-        const workingResponse = await fetch('/thad_requests_working.csv');
-        if (workingResponse.ok) {
-          workingVersionExists = true;
-        }
-      } catch (error) {
-        // Working version doesn't exist
-      }
-      
       // Load data using the updated utility function
-      const data = await loadRequestData();
+      const result = await loadRequestData();
+      console.log('Received result:', { dataLength: result.data.length, version: result.version, isWorking: result.isWorking });
       
-      // Set version flag based on what we found
-      setIsWorkingVersion(workingVersionExists);
+      // Set version information
+      setIsWorkingVersion(result.isWorking);
+      setCurrentVersion(result.version);
       
       // Convert to ChatRequest format for compatibility
-      const requestData: ChatRequest[] = data.map(item => ({
+      const requestData: ChatRequest[] = result.data.map(item => ({
         Date: item.date,
         Time: item.time,
         Request_Summary: item.description,
@@ -172,8 +206,10 @@ export function Dashboard() {
         EstimatedHours: item.effort === 'Small' ? 0.25 : item.effort === 'Large' ? 1.0 : 0.5
       }));
       
+      console.log('Converted to ChatRequest format:', { count: requestData.length, sample: requestData[0] });
+      
       // Save original data as backup (only if not already saved and not working version)
-      if (!localStorage.getItem('originalRequestsBackup') && !workingVersionExists) {
+      if (!localStorage.getItem('originalRequestsBackup') && !result.isWorking) {
         localStorage.setItem('originalRequestsBackup', JSON.stringify(requestData));
       }
       
@@ -414,6 +450,9 @@ export function Dashboard() {
     setHasUnsavedChanges(true);
     
     console.log(`Updated request ${index}: ${field} = ${actualValue}`);
+    
+    // Trigger auto-save
+    triggerAutoSave(newRequests);
   };
 
   const handleSaveChanges = async () => {
@@ -533,6 +572,9 @@ export function Dashboard() {
     // Keep selections active for additional bulk operations
     
     console.log(`Updated ${selectedRequestIds.size} requests to category: ${newCategory}`);
+    
+    // Trigger auto-save
+    triggerAutoSave(newRequests);
   };
 
   const handleBulkUrgencyChange = (newUrgency: string) => {
@@ -550,6 +592,9 @@ export function Dashboard() {
     // Keep selections active for additional bulk operations
     
     console.log(`Updated urgency for ${selectedRequestIds.size} selected requests`);
+    
+    // Trigger auto-save
+    triggerAutoSave(newRequests);
   };
 
   const handleYearChange = (year: number) => {
@@ -722,17 +767,21 @@ export function Dashboard() {
                 <span className="text-gray-600"> • {nonBillableRequests.length} non-billable/migration</span>
               )}
             </p>
-            {isWorkingVersion && (
-              <div className="flex items-center space-x-2 mt-2">
+            <div className="flex items-center space-x-3 mt-2">
+              {isWorkingVersion && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
-                  <span>Using Working Version</span>
+                  <span>Working Version ({currentVersion})</span>
                 </div>
-                <span className="text-xs text-gray-500">
-                  Your changes are preserved • Original data protected
-                </span>
+              )}
+              <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+                <Clock className="w-3 h-3" />
+                <span>{hasUnsavedChanges ? 'Auto-saving...' : 'Auto-saved'}</span>
               </div>
-            )}
+              <span className="text-xs text-gray-500">
+                Changes auto-save after 2 seconds • Original data protected
+              </span>
+            </div>
           </div>
           
           {/* Compact Filter Controls */}
@@ -988,7 +1037,7 @@ export function Dashboard() {
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
               >
                 <Download className="w-4 h-4" />
-                <span>Save Changes</span>
+                <span>Force Save Now</span>
               </button>
             )}
           </div>
