@@ -9,7 +9,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, ChevronRight, ChevronDown as ChevronDownIcon, Filter } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter } from 'lucide-react';
 
 export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -76,11 +76,11 @@ export function Dashboard() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Column filter state
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [dayFilter, setDayFilter] = useState<string>('all');
+  // Column filter state - changed to arrays for multiple selections
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [urgencyFilter, setUrgencyFilter] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>('all'); // Keep as dropdown
+  const [dayFilter, setDayFilter] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState<{
     date: boolean;
     day: boolean;
@@ -97,8 +97,7 @@ export function Dashboard() {
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   
-  // Row expansion state for request summaries
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  // Row expansion removed - request summaries now always wrap
 
   // Scroll position preservation
   const scrollPositionRef = useRef<number>(0);
@@ -262,11 +261,11 @@ export function Dashboard() {
       if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
       if (selectedDay !== 'all' && request.Date !== selectedDay) return false;
       
-      // Column filters
-      if (categoryFilter !== 'all' && request.Category !== categoryFilter) return false;
-      if (urgencyFilter !== 'all' && request.Urgency !== urgencyFilter.toUpperCase()) return false;
+      // Column filters - updated for checkbox arrays
+      if (categoryFilter.length > 0 && !categoryFilter.includes(request.Category || 'Support')) return false;
+      if (urgencyFilter.length > 0 && !urgencyFilter.includes(request.Urgency)) return false;
       if (dateFilter !== 'all' && request.Date !== dateFilter) return false;
-      if (dayFilter !== 'all' && requestDayOfWeek !== dayFilter) return false;
+      if (dayFilter.length > 0 && !dayFilter.includes(requestDayOfWeek)) return false;
       
       return true;
     });
@@ -436,7 +435,6 @@ export function Dashboard() {
     setSelectedRequestIds(new Set()); // Clear selections when changing page
     setSelectAll(false);
     setLastSelectedIndex(null); // Clear selection anchor when changing page
-    setExpandedRows(new Set()); // Clear expanded rows when changing page
   };
 
   const handlePageSizeChange = (size: number | 'all') => {
@@ -449,7 +447,6 @@ export function Dashboard() {
     setSelectedRequestIds(new Set()); // Clear selections when changing page size
     setSelectAll(false);
     setLastSelectedIndex(null); // Clear selection anchor when changing page size
-    setExpandedRows(new Set()); // Clear expanded rows when changing page size
   };
 
   const updateRequest = (index: number, field: keyof ChatRequest, value: string) => {
@@ -614,16 +611,15 @@ export function Dashboard() {
     setSelectedRequestIds(new Set()); // Clear selections when filter changes
     setSelectAll(false);
     setLastSelectedIndex(null); // Clear selection anchor when filter changes
-    setExpandedRows(new Set()); // Clear expanded rows when filter changes
     
     // Reset month to 'all' when changing years to avoid invalid month selections
     setSelectedMonth('all');
     
     // Reset column filters
-    setCategoryFilter('all');
-    setUrgencyFilter('all');
+    setCategoryFilter([]);
+    setUrgencyFilter([]);
     setDateFilter('all');
-    setDayFilter('all');
+    setDayFilter([]);
   };
 
   const handleMonthChange = (month: number | 'all') => {
@@ -632,12 +628,11 @@ export function Dashboard() {
     setSelectedRequestIds(new Set()); // Clear selections when filter changes
     setSelectAll(false);
     setLastSelectedIndex(null); // Clear selection anchor when filter changes
-    setExpandedRows(new Set()); // Clear expanded rows when filter changes
     setSelectedDay('all'); // Reset day filter when changing month
     
     // Reset some column filters (keep category and urgency as they span across months)
     setDateFilter('all');
-    setDayFilter('all');
+    setDayFilter([]);
     
     // Auto-adjust time view mode
     if (month === 'all') {
@@ -653,11 +648,10 @@ export function Dashboard() {
     setSelectedRequestIds(new Set()); // Clear selections when filter changes
     setSelectAll(false);
     setLastSelectedIndex(null); // Clear selection anchor when filter changes
-    setExpandedRows(new Set()); // Clear expanded rows when filter changes
     
     // Reset some column filters when changing specific day selection
     setDateFilter('all');
-    setDayFilter('all');
+    setDayFilter([]);
     
     // Auto-adjust time view mode
     if (day === 'all') {
@@ -689,28 +683,18 @@ export function Dashboard() {
     setSortColumn(null);
     setSortDirection('asc');
     setCurrentPage(1);
-    setExpandedRows(new Set()); // Clear expanded rows when resetting filters
     // Reset column filters
-    setCategoryFilter('all');
-    setUrgencyFilter('all');
+    setCategoryFilter([]);
+    setUrgencyFilter([]);
     setDateFilter('all');
-    setDayFilter('all');
+    setDayFilter([]);
   };
 
   const formatUrgencyDisplay = (urgency: string) => {
     return urgency.charAt(0).toUpperCase() + urgency.slice(1).toLowerCase();
   };
 
-  // Toggle row expansion for request summaries
-  const toggleRowExpansion = (index: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedRows(newExpanded);
-  };
+  // Row expansion functionality removed - summaries now always wrap
 
   // Helper function to preserve scroll position during state changes
   const preserveScrollPosition = () => {
@@ -1108,7 +1092,7 @@ export function Dashboard() {
                   </button>
                 </div>
               )}
-              {(sortColumn !== null || categoryFilter !== 'all' || urgencyFilter !== 'all' || dateFilter !== 'all' || dayFilter !== 'all') && (
+              {(sortColumn !== null || categoryFilter.length > 0 || urgencyFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0) && (
                 <button
                   onClick={resetTableFilters}
                   className="text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -1202,22 +1186,28 @@ export function Dashboard() {
                       </button>
                     </div>
                     {showFilters.day && (
-                      <select
-                        value={dayFilter}
-                        onChange={(e) => {
-                          preserveScrollPosition();
-                          setDayFilter(e.target.value);
-                          setCurrentPage(1);
-                          setSelectedRequestIds(new Set());
-                          setSelectAll(false);
-                        }}
-                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                      >
-                        <option value="all">All Days</option>
+                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white">
                         {getUniqueDays().map(day => (
-                          <option key={day} value={day}>{day}</option>
+                          <label key={day} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={dayFilter.includes(day)}
+                              onChange={(e) => {
+                                preserveScrollPosition();
+                                const newFilter = e.target.checked
+                                  ? [...dayFilter, day]
+                                  : dayFilter.filter(d => d !== day);
+                                setDayFilter(newFilter);
+                                setCurrentPage(1);
+                                setSelectedRequestIds(new Set());
+                                setSelectAll(false);
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span>{day}</span>
+                          </label>
                         ))}
-                      </select>
+                      </div>
                     )}
                   </div>
                 </TableHead>
@@ -1241,9 +1231,8 @@ export function Dashboard() {
                     </button>
                     <div 
                       className="flex items-center space-x-1 cursor-help hover:text-blue-600 transition-colors"
-                      title="Click chevron icons to expand/collapse full request text"
+                      title="Full request text is always visible with line wrapping"
                     >
-                      <ChevronRight className="w-3 h-3 text-gray-400" />
                       <Info className="w-3 h-3 text-gray-400" />
                     </div>
                   </div>
@@ -1272,22 +1261,28 @@ export function Dashboard() {
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
                     {showFilters.category && (
-                      <select
-                        value={categoryFilter}
-                        onChange={(e) => {
-                          preserveScrollPosition();
-                          setCategoryFilter(e.target.value);
-                          setCurrentPage(1);
-                          setSelectedRequestIds(new Set());
-                          setSelectAll(false);
-                        }}
-                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                      >
-                        <option value="all">All Categories</option>
+                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white max-h-40 overflow-y-auto">
                         {getUniqueCategories().map(category => (
-                          <option key={category} value={category}>{category}</option>
+                          <label key={category} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={categoryFilter.includes(category)}
+                              onChange={(e) => {
+                                preserveScrollPosition();
+                                const newFilter = e.target.checked
+                                  ? [...categoryFilter, category]
+                                  : categoryFilter.filter(c => c !== category);
+                                setCategoryFilter(newFilter);
+                                setCurrentPage(1);
+                                setSelectedRequestIds(new Set());
+                                setSelectAll(false);
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span className="truncate">{category}</span>
+                          </label>
                         ))}
-                      </select>
+                      </div>
                     )}
                   </div>
                 </TableHead>
@@ -1315,22 +1310,28 @@ export function Dashboard() {
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
                     {showFilters.urgency && (
-                      <select
-                        value={urgencyFilter}
-                        onChange={(e) => {
-                          preserveScrollPosition();
-                          setUrgencyFilter(e.target.value);
-                          setCurrentPage(1);
-                          setSelectedRequestIds(new Set());
-                          setSelectAll(false);
-                        }}
-                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                      >
-                        <option value="all">All Urgencies</option>
+                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white">
                         {getUniqueUrgencies().map(urgency => (
-                          <option key={urgency} value={urgency}>{formatUrgencyDisplay(urgency)}</option>
+                          <label key={urgency} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={urgencyFilter.includes(urgency)}
+                              onChange={(e) => {
+                                preserveScrollPosition();
+                                const newFilter = e.target.checked
+                                  ? [...urgencyFilter, urgency]
+                                  : urgencyFilter.filter(u => u !== urgency);
+                                setUrgencyFilter(newFilter);
+                                setCurrentPage(1);
+                                setSelectedRequestIds(new Set());
+                                setSelectAll(false);
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span>{formatUrgencyDisplay(urgency)}</span>
+                          </label>
                         ))}
-                      </select>
+                      </div>
                     )}
                   </div>
                 </TableHead>
@@ -1369,21 +1370,8 @@ export function Dashboard() {
                     <TableCell className={`text-sm ${isNonBillable ? 'text-gray-400' : 'text-gray-600'}`}>{getDayOfWeek(request.Date)}</TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="max-w-md">
-                      <div className="flex items-start space-x-2">
-                        <button
-                          onClick={() => toggleRowExpansion(actualIndex)}
-                          className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors mt-0.5"
-                          title={expandedRows.has(actualIndex) ? "Collapse summary" : "Expand summary"}
-                        >
-                          {expandedRows.has(actualIndex) ? (
-                            <ChevronDownIcon className="w-4 h-4 text-gray-500" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-500" />
-                          )}
-                        </button>
-                        <div className={`${expandedRows.has(actualIndex) ? '' : 'truncate'} ${isNonBillable ? 'text-gray-400' : ''}`}>
-                          {request.Request_Summary}
-                        </div>
+                      <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
+                        {request.Request_Summary}
                       </div>
                     </TableCell>
                     <TableCell className="min-w-[150px]">

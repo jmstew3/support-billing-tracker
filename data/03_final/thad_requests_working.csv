@@ -7,48 +7,48 @@ date,time,month,request_type,category,description,urgency,effort
 2025-05-30,17:27:57,2025-05,General Request,Advisory,"Can we migrate a Squarespace site? I assumed it’d have to be copied to Wordpress somehow",MEDIUM,Large
 2025-05-30,17:59:58,2025-05,General Request,Advisory,"Would needing to update the Elementor license or anything affect her work?",MEDIUM,Small
 2025-05-31,19:14:46,2025-05,General Request,Advisory,"Alright if I add Activity Log and WP Activity Log to these sites?",MEDIUM,Medium
-2025-06-02,10:01:12,2025-06,General Request,Advisory,"Can we go ahead and update DNS records for redline and Nash? Both are ready to go live and are new website builds",MEDIUM,Medium
-2025-06-02,10:03:56,2025-06,General Request,Advisory,"Guys are blowing me up because they’re both leaving Sun Stoppers but need those sites up",MEDIUM,Medium
-2025-06-02,10:55:46,2025-06,General Request,Advisory,"Redline needed me to buy a domain for them, just did in Namecheap and invited the hosting email to access it",MEDIUM,Medium
-2025-06-02,10:59:44,2025-06,General Request,Support,"Do you prefer Rank Math for meta title and description editing or Yoast SEO? I need to add one to Redline",MEDIUM,Medium
-2025-06-02,11:43:36,2025-06,General Request,Support,"I dropped in the wrong login fro Brunswick, that was Brownsville’s login, just fixed it",MEDIUM,Medium
-2025-06-02,17:04:42,2025-06,General Request,Support,"I’m getting these last login credentials added to the sheet",MEDIUM,Medium
-2025-06-02,19:50:19,2025-06,General Request,Support,"I know, please disregard, that was his old domain",MEDIUM,Medium
-2025-06-02,20:24:30,2025-06,General Request,Support,"Seriously, need to get rid of that ASAP if we can",HIGH,Medium
-2025-06-02,20:25:49,2025-06,General Request,Support,"Almost all of them are Elementor, Legacy is one long overdue for a fix",MEDIUM,Medium
-2025-06-03,08:27:51,2025-06,General Request,Support,"Good morning, finally got ALL website login credentials on the sheet, just added the last ones for RCWT and Streetside. The Cookeville and Neighbors w",MEDIUM,Medium
-2025-06-03,08:54:50,2025-06,General Request,Support,"Yes sir, that site has some basic GoDaddy site up currently that’s not being used so we’re good to go on changing it",MEDIUM,Medium
-2025-06-03,17:33:25,2025-06,General Request,Support,"Should I install this plugin for this mobile fix?",MEDIUM,Medium
-2025-06-03,17:43:32,2025-06,General Request,Support,"I’m trying to double check lead form settings for Nash but not seeing a Forms section on his site in Wordpress?",MEDIUM,Medium
-2025-06-03,17:55:59,2025-06,General Request,Support,"The Nash site? The owner said the image issue is fixed",MEDIUM,Medium
-2025-06-03,18:12:11,2025-06,General Request,Support,"I did, I added it to the website sheet",MEDIUM,Medium
-2025-06-03,18:12:55,2025-06,General Request,Support,"Most lead forms have a forms tab pop up so not sure how this one is different or where to check the lead form notifications",MEDIUM,Medium
-2025-06-03,18:24:49,2025-06,General Request,Support,"No sir, we need to remove them",MEDIUM,Medium
-2025-06-03,18:26:45,2025-06,General Request,Support,"Support will need to go to the Google Ads team because it’s in all the GBPs",MEDIUM,Medium
-2025-06-04,06:47:08,2025-06,General Request,Support,"Good morning, the following domain access invites from myself via Namecheap should be in the hosting email inbox. I checked and these are still pendin",HIGH,Medium
-2025-06-04,08:56:56,2025-06,General Request,Hosting,"But I would do migrations first, yes, then finish those staging sites",MEDIUM,Large
-2025-06-04,09:04:17,2025-06,General Request,Support,"Squarespace is his old domain, please use the Namecheap domain",MEDIUM,Medium
-2025-06-04,13:10:07,2025-06,General Request,Support,"We need to fix a few things for the Simple Details website, I’ll have to call you later on it",MEDIUM,Medium
-2025-06-04,21:19:37,2025-06,General Request,Support,"No worries, we can fix it after the migration",MEDIUM,Medium
-2025-06-05,10:46:46,2025-06,General Request,Forms,"Can you remove the location drop down from Redline’s lead form?",MEDIUM,Small
-2025-06-06,12:23:07,2025-06,General Request,Support,"Just need to create one",MEDIUM,Medium
+2025-06-02,10:01:12,2025-06,General Request,Migration,"Can we go ahead and update DNS records for redline and Nash? Both are ready to go live and are new website builds",MEDIUM,Medium
+2025-06-02,10:03:56,2025-06,General Request,Migration,"Guys are blowing me up because they’re both leaving Sun Stoppers but need those sites up",MEDIUM,Medium
+2025-06-02,10:55:46,2025-06,General Request,Migration,"Redline needed me to buy a domain for them, just did in Namecheap and invited the hosting email to access it",MEDIUM,Medium
+2025-06-02,10:59:44,2025-06,General Request,Advisory,"Do you prefer Rank Math for meta title and description editing or Yoast SEO? I need to add one to Redline",MEDIUM,Medium
+2025-06-02,11:43:36,2025-06,General Request,Migration,"I dropped in the wrong login fro Brunswick, that was Brownsville’s login, just fixed it",MEDIUM,Medium
+2025-06-02,17:04:42,2025-06,General Request,Migration,"I’m getting these last login credentials added to the sheet",MEDIUM,Medium
+2025-06-02,19:50:19,2025-06,General Request,Migration,"I know, please disregard, that was his old domain",MEDIUM,Medium
+2025-06-02,20:24:30,2025-06,General Request,Advisory,"Seriously, need to get rid of that ASAP if we can",HIGH,Medium
+2025-06-02,20:25:49,2025-06,General Request,Non-billable,"Almost all of them are Elementor, Legacy is one long overdue for a fix",MEDIUM,Medium
+2025-06-03,08:27:51,2025-06,General Request,Migration,"Good morning, finally got ALL website login credentials on the sheet, just added the last ones for RCWT and Streetside. The Cookeville and Neighbors w",MEDIUM,Medium
+2025-06-03,08:54:50,2025-06,General Request,Migration,"Yes sir, that site has some basic GoDaddy site up currently that’s not being used so we’re good to go on changing it",MEDIUM,Medium
+2025-06-03,17:33:25,2025-06,General Request,Advisory,"Should I install this plugin for this mobile fix?",MEDIUM,Medium
+2025-06-03,17:43:32,2025-06,General Request,Advisory,"I’m trying to double check lead form settings for Nash but not seeing a Forms section on his site in Wordpress?",MEDIUM,Medium
+2025-06-03,17:55:59,2025-06,General Request,Advisory,"The Nash site? The owner said the image issue is fixed",MEDIUM,Medium
+2025-06-03,18:12:11,2025-06,General Request,Migration,"I did, I added it to the website sheet",MEDIUM,Medium
+2025-06-03,18:12:55,2025-06,General Request,Advisory,"Most lead forms have a forms tab pop up so not sure how this one is different or where to check the lead form notifications",MEDIUM,Medium
+2025-06-03,18:24:49,2025-06,General Request,Non-billable,"No sir, we need to remove them",MEDIUM,Medium
+2025-06-03,18:26:45,2025-06,General Request,Advisory,"Support will need to go to the Google Ads team because it’s in all the GBPs",MEDIUM,Medium
+2025-06-04,06:47:08,2025-06,General Request,Migration,"Good morning, the following domain access invites from myself via Namecheap should be in the hosting email inbox. I checked and these are still pendin",HIGH,Medium
+2025-06-04,08:56:56,2025-06,General Request,Migration,"But I would do migrations first, yes, then finish those staging sites",MEDIUM,Large
+2025-06-04,09:04:17,2025-06,General Request,Migration,"Squarespace is his old domain, please use the Namecheap domain",MEDIUM,Medium
+2025-06-04,13:10:07,2025-06,General Request,Non-billable,"We need to fix a few things for the Simple Details website, I’ll have to call you later on it",MEDIUM,Medium
+2025-06-04,21:19:37,2025-06,General Request,Non-billable,"No worries, we can fix it after the migration",MEDIUM,Medium
+2025-06-05,10:46:46,2025-06,General Request,Support,"Can you remove the location drop down from Redline’s lead form?",MEDIUM,Small
+2025-06-06,12:23:07,2025-06,General Request,Non-billable,"Just need to create one",MEDIUM,Medium
 2025-06-06,23:16:19,2025-06,General Request,Advisory,"Here’s a folder with all the GoDaddy DNS settings I’m downloading:",MEDIUM,Medium
-2025-06-07,09:24:34,2025-06,General Request,Support,"Good thing we downloaded all the sites when we did, looks like Bren changed my access back to no longer Admin. Simple Details is another one we’ll nee",HIGH,Medium
-2025-06-07,09:38:44,2025-06,General Request,Support,"What’s your thoughts on being introduced to some of my larger accounts in the coming weeks? With this Mike bullshit, I would like them to meet some of",MEDIUM,Medium
-2025-06-07,18:59:05,2025-06,General Request,Hosting,"I think that’s good, I’m texting Bren every time we migrate a site. You did officially do Bakers right?",MEDIUM,Large
-2025-06-08,16:43:31,2025-06,General Request,Support,"The Support email I deactivated over the weekend, please change the Admin email to hosting@velocity-seo.com",MEDIUM,Medium
-2025-06-09,09:20:21,2025-06,General Request,Support,"Please set them all to your hosting email if you’re good with that?",MEDIUM,Medium
-2025-06-10,08:09:01,2025-06,General Request,Hosting,"Good morning, I’m not sure if this got changed in the sheet but the AWT conversion landing page needed to wait to be cutover. I got a ton of Google Ad",MEDIUM,Large
-2025-06-10,08:54:37,2025-06,General Request,Support,"I’m at the ready with anything you need help with",MEDIUM,Medium
-2025-06-10,14:03:23,2025-06,General Request,Support,"One other thing, not urgent today. We do need to build 2 conversion landing pages for 2 new Google Ads campaigns",HIGH,Medium
-2025-06-10,16:34:49,2025-06,General Request,Support,"I know, it’s a GoDaddy native site so need to discuss building it in WordPress. Also any luck with the locator quote?",MEDIUM,Medium
-2025-06-11,07:10:53,2025-06,General Request,Support,"They did check spam and didn’t receive it, that’s why I was going to test it with my email",MEDIUM,Medium
-2025-06-11,07:22:59,2025-06,General Request,Support,"You and me both, I’ve had people check the wrong damn email even when I tell them what email, lol",MEDIUM,Medium
+2025-06-07,09:24:34,2025-06,General Request,Migration,"Good thing we downloaded all the sites when we did, looks like Bren changed my access back to no longer Admin. Simple Details is another one we’ll nee",HIGH,Medium
+2025-06-07,09:38:44,2025-06,General Request,Advisory,"What’s your thoughts on being introduced to some of my larger accounts in the coming weeks? With this Mike bullshit, I would like them to meet some of",LOW,Medium
+2025-06-07,18:59:05,2025-06,General Request,Migration,"I think that’s good, I’m texting Bren every time we migrate a site. You did officially do Bakers right?",MEDIUM,Large
+2025-06-08,16:43:31,2025-06,General Request,Support,"The Support email I deactivated over the weekend, please change the Admin email to hosting@velocity-seo.com",LOW,Medium
+2025-06-09,09:20:21,2025-06,General Request,Support,"Please set them all to your hosting email if you’re good with that?",LOW,Medium
+2025-06-10,08:09:01,2025-06,General Request,Migration,"Good morning, I’m not sure if this got changed in the sheet but the AWT conversion landing page needed to wait to be cutover. I got a ton of Google Ad",MEDIUM,Large
+2025-06-10,08:54:37,2025-06,General Request,Non-billable,"I’m at the ready with anything you need help with",MEDIUM,Medium
+2025-06-10,14:03:23,2025-06,General Request,Non-billable,"One other thing, not urgent today. We do need to build 2 conversion landing pages for 2 new Google Ads campaigns",LOW,Medium
+2025-06-10,16:34:49,2025-06,General Request,Non-billable,"I know, it’s a GoDaddy native site so need to discuss building it in WordPress. Also any luck with the locator quote?",MEDIUM,Medium
+2025-06-11,07:10:53,2025-06,General Request,Support,"They did check spam and didn’t receive it, that’s why I was going to test it with my email",HIGH,Medium
+2025-06-11,07:22:59,2025-06,General Request,Non-billable,"You and me both, I’ve had people check the wrong damn email even when I tell them what email, lol",MEDIUM,Medium
 2025-06-11,08:21:07,2025-06,General Request,Support,"Let’s plan on doing a full test submission every time we launch one of these B grade sites from the other company",MEDIUM,Medium
-2025-06-11,08:21:33,2025-06,General Request,Support,"No worries, also need to go over SEO needs for this month when you’re ready, I’m good until 10",MEDIUM,Medium
-2025-06-12,09:33:00,2025-06,General Request,Support,"I would focus on the server stuff, that lead form can be fixed after. I need to call them about it anyways",MEDIUM,Medium
+2025-06-11,08:21:33,2025-06,General Request,Advisory,"No worries, also need to go over SEO needs for this month when you’re ready, I’m good until 10",MEDIUM,Medium
+2025-06-12,09:33:00,2025-06,General Request,Migration,"I would focus on the server stuff, that lead form can be fixed after. I need to call them about it anyways",MEDIUM,Medium
 2025-06-12,09:39:14,2025-06,General Request,Support,"One small thing, can you help me with adding this tracking code to Nash’s site? I tried to do it in Theme, Customize, Additional CSS but it gave me an",MEDIUM,Medium
-2025-06-12,14:34:58,2025-06,General Request,Support,"Hey bud, I just got this text. Could you tell me what I need to do to fix this? Just got this from Veridical",MEDIUM,Medium
+2025-06-12,14:34:58,2025-06,General Request,Advisory,"Hey bud, I just got this text. Could you tell me what I need to do to fix this? Just got this from Veridical",MEDIUM,Medium
 2025-06-12,16:02:17,2025-06,General Request,Support,"Can we also double check this website lead form? Same guys built it as Nash:",MEDIUM,Medium
 2025-06-13,08:11:50,2025-06,General Request,Support,"AP3’s website isn’t loading right for me, can you take a look at it?",MEDIUM,Medium
 2025-06-13,08:37:15,2025-06,General Request,Support,"That might be the issue with those plugins that Bren said were creating headaches, we’ll need to look into that more later",MEDIUM,Medium
@@ -56,59 +56,59 @@ date,time,month,request_type,category,description,urgency,effort
 2025-06-13,15:57:48,2025-06,General Request,Support,"I just added Cookeville’s login credentials to the sheet, that one is ready when you’re done with the server",MEDIUM,Medium
 2025-06-13,18:01:38,2025-06,General Request,Support,"It’s not a matter of cancel, I just need to downgrade to monthly, which will move everything to a different server",MEDIUM,Medium
 2025-06-15,16:56:21,2025-06,General Request,Support,"Happy Father’s Day! No need to deal with this today but Redline let me know they did not receive a test lead from their website, they got confused and",HIGH,Medium
-2025-06-16,11:10:40,2025-06,General Request,Support,"Whenever you’re ready, I can also do all those GoDaddy sites",LOW,Medium
-2025-06-16,12:57:37,2025-06,General Request,Support,"I’ll ask. Do you have a good reporter point of contact at the news still? Will need to keep the source confidential",MEDIUM,Medium
-2025-06-16,13:06:02,2025-06,General Request,Support,"I just need all websites live ASAP",HIGH,Medium
+2025-06-16,11:10:40,2025-06,General Request,Migration,"Whenever you’re ready, I can also do all those GoDaddy sites",LOW,Medium
+2025-06-16,12:57:37,2025-06,General Request,Advisory,"I’ll ask. Do you have a good reporter point of contact at the news still? Will need to keep the source confidential",MEDIUM,Medium
+2025-06-16,13:06:02,2025-06,General Request,Migration,"I just need all websites live ASAP",HIGH,Medium
 2025-06-17,09:59:45,2025-06,General Request,Support,"Also did we get that Shades of Gray form all fixed?",MEDIUM,Medium
 2025-06-17,10:16:23,2025-06,General Request,Support,"We might need to undo the Webhook delete I just did",MEDIUM,Medium
 2025-06-17,11:03:03,2025-06,General Request,Support,"Might need your help with this Shades of Gray lead form, still giving us a hard time and not sending the lead to the customer",MEDIUM,Medium
 2025-06-17,11:08:17,2025-06,General Request,Support,"It had a webhook from the duplicated lead form so I deleted that. I just can’t tell if the notifications are still tied to the webhook took. I set the",MEDIUM,Medium
 2025-06-17,11:09:27,2025-06,General Request,Support,"It doesn’t look like I can setup a login for Squarespace, I can make those changes as soon as you’re ready on those",MEDIUM,Medium
-2025-06-17,11:12:02,2025-06,General Request,Support,"I get it man, just please remember to bill for all those fixes separate from the migrations so I have that to show Bren",MEDIUM,Medium
-2025-06-17,11:15:22,2025-06,General Request,Support,"We also need to prioritize https://home-window-tinting.com/ so we can get the conversion landing page added to that one",MEDIUM,Medium
+2025-06-17,11:12:02,2025-06,General Request,Non-billable,"I get it man, just please remember to bill for all those fixes separate from the migrations so I have that to show Bren",MEDIUM,Medium
+2025-06-17,11:15:22,2025-06,General Request,Non-billable,"We also need to prioritize https://home-window-tinting.com/ so we can get the conversion landing page added to that one",MEDIUM,Medium
 2025-06-17,13:34:10,2025-06,General Request,Support,"I know, we might just need to nuke that form and start over",MEDIUM,Medium
-2025-06-17,16:58:43,2025-06,General Request,Hosting,"K, found several of these migration status’s as stuck. Are we ok on those sites?",MEDIUM,Large
-2025-06-18,16:59:01,2025-06,General Request,Support,"So click on Use Custom Nameservers and add the 2 we’ve been using?",MEDIUM,Medium
-2025-06-18,17:19:10,2025-06,General Request,Support,"Can we try to fix Guardian and Auto Concierge sites that are stuck? I’m starting to run out of DNS records to update",MEDIUM,Medium
-2025-06-18,18:24:24,2025-06,General Request,Forms,"One more edit, can you remove the 2 auto services on SunMasters form? He only needs home and office tint",MEDIUM,Small
-2025-06-18,18:33:50,2025-06,General Request,Support,"Do I need to change their name servers? I don’t remember what they were",MEDIUM,Medium
-2025-06-20,12:34:39,2025-06,General Request,Support,"It was them, just found the email tied to the test",MEDIUM,Medium
+2025-06-17,16:58:43,2025-06,General Request,Migration,"K, found several of these migration status’s as stuck. Are we ok on those sites?",MEDIUM,Large
+2025-06-18,16:59:01,2025-06,General Request,Migration,"So click on Use Custom Nameservers and add the 2 we’ve been using?",MEDIUM,Medium
+2025-06-18,17:19:10,2025-06,General Request,Migration,"Can we try to fix Guardian and Auto Concierge sites that are stuck? I’m starting to run out of DNS records to update",MEDIUM,Medium
+2025-06-18,18:24:24,2025-06,General Request,Support,"One more edit, can you remove the 2 auto services on SunMasters form? He only needs home and office tint",MEDIUM,Small
+2025-06-18,18:33:50,2025-06,General Request,Migration,"Do I need to change their name servers? I don’t remember what they were",MEDIUM,Medium
+2025-06-20,12:34:39,2025-06,General Request,Non-billable,"It was them, just found the email tied to the test",MEDIUM,Medium
 2025-06-20,16:37:32,2025-06,General Request,Support,"For Simple Details leads, please have them go to yohance@simpledetailsva.com",MEDIUM,Medium
-2025-06-20,16:58:09,2025-06,General Request,Support,"I added a fourth tab for active LPs to start outlining which ones we need to check and fix for that phone number",MEDIUM,Medium
-2025-06-20,19:28:16,2025-06,General Request,Forms,"Please remove the Yohance email from that lead form, he just called me, not urgent",HIGH,Small
+2025-06-20,16:58:09,2025-06,General Request,Non-billable,"I added a fourth tab for active LPs to start outlining which ones we need to check and fix for that phone number",MEDIUM,Medium
+2025-06-20,19:28:16,2025-06,General Request,Support,"Please remove the Yohance email from that lead form, he just called me, not urgent",MEDIUM,Small
 2025-06-21,06:52:32,2025-06,General Request,Support,"For sure, looks like a good starting point. What are your thoughts on piecemealing it to speed up the timeline? In standard bigger website builds, tha",MEDIUM,Medium
 2025-06-21,07:17:20,2025-06,General Request,Support,"Also got a late text from AE. Apparently that form with the year/make/model dropdown isn’t emailing them. Do we setup SMTP for their site? That form s",MEDIUM,Medium
-2025-06-22,17:01:51,2025-06,General Request,Support,"Happy Sunday! Hustling, got another potential locator to do. This one would be just the locator and a single location page with dedicated lead form on",MEDIUM,Medium
-2025-06-22,20:26:23,2025-06,General Request,Hosting,"I didn’t get a chance to fully read this yesterday. The key in all of this is timing and stopping the bleeding. Right now we have I think 38 out of 64",MEDIUM,Large
+2025-06-22,17:01:51,2025-06,General Request,Non-billable,"Happy Sunday! Hustling, got another potential locator to do. This one would be just the locator and a single location page with dedicated lead form on",MEDIUM,Medium
+2025-06-22,20:26:23,2025-06,General Request,Non-billable,"I didn’t get a chance to fully read this yesterday. The key in all of this is timing and stopping the bleeding. Right now we have I think 38 out of 64",MEDIUM,Large
 2025-06-23,10:15:32,2025-06,General Request,Support,"I just set the hosting email as the Admin to the Capital Autobahnd website, can you accept that whenever you get a chance?",LOW,Medium
-2025-06-23,10:17:51,2025-06,General Request,Support,"That’s exactly what Bren was doing. He never communicated with customers and it was all fielded either through myself or Brittney. I think there’s opp",MEDIUM,Medium
-2025-06-23,11:37:42,2025-06,General Request,Support,"I think we need to make sure SMTP is working properly first then change the Admin email to hosting",MEDIUM,Medium
+2025-06-23,10:17:51,2025-06,General Request,Non-billable,"That’s exactly what Bren was doing. He never communicated with customers and it was all fielded either through myself or Brittney. I think there’s opp",MEDIUM,Medium
+2025-06-23,11:37:42,2025-06,General Request,Support,"I think we need to make sure SMTP is working properly first then change the Admin email to hosting",HIGH,Medium
 2025-06-23,11:38:46,2025-06,General Request,Support,"Correct, trying to remove that from every site",MEDIUM,Medium
 2025-06-23,13:02:52,2025-06,General Request,Support,"Just Sitemanager and Support need to go on all sites",MEDIUM,Medium
 2025-06-23,13:05:22,2025-06,General Request,Support,"I checked and that location has a webhook so we should be good as long as that didn’t break for any reason",MEDIUM,Medium
 2025-06-23,13:08:21,2025-06,General Request,Support,"That’d be good to add to the sheet as well so we know what we need to go back and potentially address",MEDIUM,Medium
 2025-06-23,13:13:25,2025-06,General Request,Support,"All of those are done? Also need to update the Admin email on Elite Glass Tinting website",MEDIUM,Medium
-2025-06-23,13:44:33,2025-06,General Request,Support,"Not sure if I told you but EZ is ready now and just updated Distinct’s Nameservers as well",MEDIUM,Medium
-2025-06-23,13:49:38,2025-06,General Request,Support,"We can start simple with a Google Form if that’s easiest to setup",MEDIUM,Medium
-2025-06-23,17:02:02,2025-06,General Request,Support,"Nash just called, his customers are seeing this when they submit their leads as a thank you page. I just did a test lead",MEDIUM,Medium
+2025-06-23,13:44:33,2025-06,General Request,Migration,"Not sure if I told you but EZ is ready now and just updated Distinct’s Nameservers as well",MEDIUM,Medium
+2025-06-23,13:49:38,2025-06,General Request,Non-billable,"We can start simple with a Google Form if that’s easiest to setup",MEDIUM,Medium
+2025-06-23,17:02:02,2025-06,General Request,Support,"Nash just called, his customers are seeing this when they submit their leads as a thank you page. I just did a test lead",HIGH,Medium
 2025-06-23,18:18:03,2025-06,General Request,Support,"And he wants to add a custom lead form for his dealerships so a one extra lead form",MEDIUM,Medium
-2025-06-24,10:24:58,2025-06,General Request,Support,"That’s fine, can we remove that BlogVault Firewall? Is it a plugin?",MEDIUM,Medium
-2025-06-25,12:43:24,2025-06,General Request,Support,"Hold tight, found one other fix I need to make",MEDIUM,Medium
-2025-06-25,13:43:47,2025-06,General Request,Support,"I just updated Nameservers for Sun Masters",MEDIUM,Medium
-2025-06-25,20:28:20,2025-06,General Request,Support,"WTF, might need to just rebuild it as in duplicate it like we talked about maybe doing with AP3",MEDIUM,Medium
-2025-06-26,08:14:34,2025-06,General Request,Support,"Do I need to start taking before screenshots of old Nameservers from now on?",MEDIUM,Medium
-2025-06-26,08:35:53,2025-06,General Request,Support,"We can fix their email later, just need to get their website up",MEDIUM,Medium
-2025-06-26,15:44:18,2025-06,General Request,Hosting,"I’ve asked Bren’s software engineer if he can grab a screenshot for us from an old site backup",MEDIUM,Medium
+2025-06-24,10:24:58,2025-06,General Request,Advisory,"That’s fine, can we remove that BlogVault Firewall? Is it a plugin?",MEDIUM,Medium
+2025-06-25,12:43:24,2025-06,General Request,Non-billable,"Hold tight, found one other fix I need to make",MEDIUM,Medium
+2025-06-25,13:43:47,2025-06,General Request,Migration,"I just updated Nameservers for Sun Masters",MEDIUM,Medium
+2025-06-25,20:28:20,2025-06,General Request,Non-billable,"WTF, might need to just rebuild it as in duplicate it like we talked about maybe doing with AP3",MEDIUM,Medium
+2025-06-26,08:14:34,2025-06,General Request,Advisory,"Do I need to start taking before screenshots of old Nameservers from now on?",MEDIUM,Medium
+2025-06-26,08:35:53,2025-06,General Request,Migration,"We can fix their email later, just need to get their website up",MEDIUM,Medium
+2025-06-26,15:44:18,2025-06,General Request,Migration,"I’ve asked Bren’s software engineer if he can grab a screenshot for us from an old site backup",MEDIUM,Medium
 2025-06-26,16:31:39,2025-06,General Request,Support,"Infinite’s ads are still down, just wanted to double check the Cloudflare stuff is still off even with their site changes?",MEDIUM,Medium
 2025-06-27,11:38:31,2025-06,General Request,Support,"One other thing, Sun Masters said their email isn’t working now. Is that an easy fix?",MEDIUM,Medium
-2025-06-27,14:03:29,2025-06,General Request,Support,"Yep, got access to Legacy’s DNS and can update their Nameservers. I reference the sheet on which ones to use?",MEDIUM,Medium
-2025-06-27,15:00:57,2025-06,General Request,Support,"Legacy Nameservers are updated",MEDIUM,Medium
+2025-06-27,14:03:29,2025-06,General Request,Migration,"Yep, got access to Legacy’s DNS and can update their Nameservers. I reference the sheet on which ones to use?",MEDIUM,Medium
+2025-06-27,15:00:57,2025-06,General Request,Migration,"Legacy Nameservers are updated",MEDIUM,Medium
 2025-06-30,08:33:18,2025-06,General Request,Support,"Can you help with fixing the footer icons on this page?",MEDIUM,Medium
 2025-06-30,10:54:15,2025-06,General Request,Support,"I just got this from Bakers in regards to their lead form. Did this get changed when we setup their SMTP?: It did have that “get a quote” section remo",MEDIUM,Medium
-2025-06-30,13:10:43,2025-06,General Request,Support,"Yeah, he didn’t listen to any of that, they’re working through bouncing between HR systems right now so it is what it is. I’d just leave them wide ope",MEDIUM,Medium
+2025-06-30,13:10:43,2025-06,General Request,Advisory,"Yeah, he didn’t listen to any of that, they’re working through bouncing between HR systems right now so it is what it is. I’d just leave them wide ope",MEDIUM,Medium
 2025-06-30,17:05:07,2025-06,General Request,Support,"Doesn’t look like it’s been changed, you added the login on the 29th",MEDIUM,Medium
 2025-06-30,17:10:34,2025-06,General Request,Support,"I was trying to update the lead form for Auto Concierge, it should be the same selections as Windshields Xpress",MEDIUM,Medium
-2025-07-01,10:40:55,2025-07,General Request,Email,"Please use this email for Windshields Xpress leads: Windshieldxpressleads@gmail.com",MEDIUM,Small
+2025-07-01,10:40:55,2025-07,General Request,Support,"Please use this email for Windshields Xpress leads: Windshieldxpressleads@gmail.com",MEDIUM,Small
 2025-07-02,07:59:02,2025-07,General Request,Support,"Good morning, am I good to update the Nameservers for Neighbors?",MEDIUM,Medium
 2025-07-02,08:34:02,2025-07,General Request,Support,"Please do just to be safe, I’ll go ahead and update the Nameservers now",MEDIUM,Medium
 2025-07-02,08:39:03,2025-07,General Request,Support,"Nameservers are updated for Neighbors",MEDIUM,Medium
