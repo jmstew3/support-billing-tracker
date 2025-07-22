@@ -9,7 +9,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveRequestChanges, saveToDataDirectory } from '../utils/csvExport';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, ChevronRight, ChevronDown as ChevronDownIcon } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, ChevronRight, ChevronDown as ChevronDownIcon, Filter } from 'lucide-react';
 
 export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -85,6 +85,17 @@ export function Dashboard() {
   const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [dayFilter, setDayFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState<{
+    date: boolean;
+    day: boolean;
+    category: boolean;
+    urgency: boolean;
+  }>({
+    date: false,
+    day: false,
+    category: false,
+    urgency: false
+  });
 
   // Bulk selection state
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set());
@@ -100,6 +111,14 @@ export function Dashboard() {
   // Dropdown options
   const urgencyOptions = ['Low', 'Medium', 'High'];
   const categoryOptions = ['Advisory', 'Email', 'Forms', 'General', 'Hosting', 'Migration', 'Non-billable', 'Support'];
+  
+  // Toggle individual column filter visibility
+  const toggleColumnFilter = (column: 'date' | 'day' | 'category' | 'urgency') => {
+    setShowFilters(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
   
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -397,6 +416,7 @@ export function Dashboard() {
   const chartData = getChartData();
   const filteredCategoryData = processCategoryData(billableFilteredRequests);
   const filteredCosts = calculateCosts(billableFilteredRequests);
+  
 
   // Scroll position preservation effect
   useEffect(() => {
@@ -1125,57 +1145,87 @@ export function Dashboard() {
                   />
                 </TableHead>
                 <TableHead>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => handleSort('Date')}
-                      className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                    >
-                      <span>Date</span>
-                      {getSortIcon('Date')}
-                    </button>
-                    <select
-                      value={dateFilter}
-                      onChange={(e) => {
-                        preserveScrollPosition();
-                        setDateFilter(e.target.value);
-                        setCurrentPage(1);
-                        setSelectedRequestIds(new Set());
-                        setSelectAll(false);
-                      }}
-                      className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                    >
-                      <option value="all">All Dates</option>
-                      {getUniqueDates().map(date => (
-                        <option key={date} value={date}>{date}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => toggleColumnFilter('date')}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Toggle date filter"
+                      >
+                        <Filter className={`w-3 h-3 transition-colors ${
+                          showFilters.date ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                        }`} />
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleSort('Date')}
+                        className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                      >
+                        <span>Date</span>
+                        {getSortIcon('Date')}
+                      </button>
+                    </div>
+                    {showFilters.date && (
+                      <select
+                        value={dateFilter}
+                        onChange={(e) => {
+                          preserveScrollPosition();
+                          setDateFilter(e.target.value);
+                          setCurrentPage(1);
+                          setSelectedRequestIds(new Set());
+                          setSelectAll(false);
+                        }}
+                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="all">All Dates</option>
+                        {getUniqueDates().map(date => (
+                          <option key={date} value={date}>{date}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </TableHead>
                 <TableHead>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => handleSort('DayOfWeek')}
-                      className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-                    >
-                      <span>Day</span>
-                      {getSortIcon('DayOfWeek')}
-                    </button>
-                    <select
-                      value={dayFilter}
-                      onChange={(e) => {
-                        preserveScrollPosition();
-                        setDayFilter(e.target.value);
-                        setCurrentPage(1);
-                        setSelectedRequestIds(new Set());
-                        setSelectAll(false);
-                      }}
-                      className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                    >
-                      <option value="all">All Days</option>
-                      {getUniqueDays().map(day => (
-                        <option key={day} value={day}>{day}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => toggleColumnFilter('day')}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Toggle day filter"
+                      >
+                        <Filter className={`w-3 h-3 transition-colors ${
+                          showFilters.day ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                        }`} />
+                      </button>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => handleSort('DayOfWeek')}
+                        className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                      >
+                        <span>Day</span>
+                        {getSortIcon('DayOfWeek')}
+                      </button>
+                    </div>
+                    {showFilters.day && (
+                      <select
+                        value={dayFilter}
+                        onChange={(e) => {
+                          preserveScrollPosition();
+                          setDayFilter(e.target.value);
+                          setCurrentPage(1);
+                          setSelectedRequestIds(new Set());
+                          setSelectAll(false);
+                        }}
+                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="all">All Days</option>
+                        {getUniqueDays().map(day => (
+                          <option key={day} value={day}>{day}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </TableHead>
                 <TableHead>
@@ -1206,7 +1256,18 @@ export function Dashboard() {
                   </div>
                 </TableHead>
                 <TableHead>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => toggleColumnFilter('category')}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Toggle category filter"
+                      >
+                        <Filter className={`w-3 h-3 transition-colors ${
+                          showFilters.category ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                        }`} />
+                      </button>
+                    </div>
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => handleSort('Category')}
@@ -1217,26 +1278,39 @@ export function Dashboard() {
                       </button>
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => {
-                        preserveScrollPosition();
-                        setCategoryFilter(e.target.value);
-                        setCurrentPage(1);
-                        setSelectedRequestIds(new Set());
-                        setSelectAll(false);
-                      }}
-                      className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                    >
-                      <option value="all">All Categories</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
+                    {showFilters.category && (
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => {
+                          preserveScrollPosition();
+                          setCategoryFilter(e.target.value);
+                          setCurrentPage(1);
+                          setSelectedRequestIds(new Set());
+                          setSelectAll(false);
+                        }}
+                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="all">All Categories</option>
+                        {getUniqueCategories().map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </TableHead>
                 <TableHead>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => toggleColumnFilter('urgency')}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Toggle urgency filter"
+                      >
+                        <Filter className={`w-3 h-3 transition-colors ${
+                          showFilters.urgency ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                        }`} />
+                      </button>
+                    </div>
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => handleSort('Urgency')}
@@ -1247,22 +1321,24 @@ export function Dashboard() {
                       </button>
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
-                    <select
-                      value={urgencyFilter}
-                      onChange={(e) => {
-                        preserveScrollPosition();
-                        setUrgencyFilter(e.target.value);
-                        setCurrentPage(1);
-                        setSelectedRequestIds(new Set());
-                        setSelectAll(false);
-                      }}
-                      className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
-                    >
-                      <option value="all">All Urgencies</option>
-                      {getUniqueUrgencies().map(urgency => (
-                        <option key={urgency} value={urgency}>{formatUrgencyDisplay(urgency)}</option>
-                      ))}
-                    </select>
+                    {showFilters.urgency && (
+                      <select
+                        value={urgencyFilter}
+                        onChange={(e) => {
+                          preserveScrollPosition();
+                          setUrgencyFilter(e.target.value);
+                          setCurrentPage(1);
+                          setSelectedRequestIds(new Set());
+                          setSelectAll(false);
+                        }}
+                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="all">All Urgencies</option>
+                        {getUniqueUrgencies().map(urgency => (
+                          <option key={urgency} value={urgency}>{formatUrgencyDisplay(urgency)}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </TableHead>
                 {/* Actions column removed */}
