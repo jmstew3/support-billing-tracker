@@ -1220,25 +1220,100 @@ export function Dashboard() {
 
       {/* Request Table */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle>Billable Requests</CardTitle>
-              <CardDescription>Complete list of support requests - click category or urgency to edit</CardDescription>
+        {/* Sticky Header for Billable Requests */}
+        <CardHeader className="sticky top-16 z-30 bg-white border-b border-gray-200">
+          <div className="space-y-3">
+            {/* Title Row */}
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>Billable Requests</CardTitle>
+                <CardDescription>Complete list of support requests - click category or urgency to edit</CardDescription>
+              </div>
+              {hasUnsavedChanges && dataSource === 'csv' && (
+                <button
+                  onClick={handleSaveChanges}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Save Changes</span>
+                </button>
+              )}
             </div>
-            {hasUnsavedChanges && dataSource === 'csv' && (
-              <button
-                onClick={handleSaveChanges}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-              >
-                <Download className="w-4 h-4" />
-                <span>Save Changes</span>
-              </button>
+
+            {/* Bulk Selection UI - Moved here from CardContent */}
+            {selectedRequestIds.size > 0 && (
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <span className="text-sm font-medium text-blue-900">
+                  {selectedRequestIds.size} selected{selectedRequestIds.size === paginatedRequests.length && paginatedRequests.length < filteredAndSortedRequests.length ? ' (current page)' : ''}:
+                </span>
+
+                {/* Note: Delete functionality removed - use Non-billable category instead */}
+
+                {/* Bulk Category Change */}
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-600">Category:</span>
+                  <select
+                    value={stagedBulkCategory}
+                    onChange={(e) => setStagedBulkCategory(e.target.value)}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[100px]"
+                  >
+                    <option value="">Change to...</option>
+                    {categoryOptions.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Bulk Urgency Change */}
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-600">Urgency:</span>
+                  <select
+                    value={stagedBulkUrgency}
+                    onChange={(e) => setStagedBulkUrgency(e.target.value)}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[90px]"
+                  >
+                    <option value="">Change to...</option>
+                    {urgencyOptions.map(urgency => (
+                      <option key={urgency} value={urgency}>{urgency}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Action Buttons */}
+                {(stagedBulkCategory || stagedBulkUrgency) ? (
+                  <>
+                    <button
+                      onClick={applyBulkChanges}
+                      className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Apply Changes
+                    </button>
+                    <button
+                      onClick={clearStagedChanges}
+                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSelectedRequestIds(new Set());
+                      setSelectAll(false);
+                      clearStagedChanges();
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                )}
+              </div>
             )}
           </div>
-          
+        </CardHeader>
+        <CardContent className="overflow-visible">
           {/* Table Actions */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+          <div className="flex items-center justify-between mb-4 pt-4">
             <div className="flex items-center space-x-4 flex-1">
               {/* Search Bar */}
               <div className="relative flex-1 max-w-md">
@@ -1266,74 +1341,6 @@ export function Dashboard() {
                 )}
               </div>
 
-              {selectedRequestIds.size > 0 && (
-                <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <span className="text-sm font-medium text-blue-900">
-                    {selectedRequestIds.size} selected{selectedRequestIds.size === paginatedRequests.length && paginatedRequests.length < filteredAndSortedRequests.length ? ' (current page)' : ''}:
-                  </span>
-                  
-                  {/* Note: Delete functionality removed - use Non-billable category instead */}
-
-                  {/* Bulk Category Change */}
-                  <div className="flex items-center space-x-1">
-                    <span className="text-xs text-gray-600">Category:</span>
-                    <select
-                      value={stagedBulkCategory}
-                      onChange={(e) => setStagedBulkCategory(e.target.value)}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[100px]"
-                    >
-                      <option value="">Change to...</option>
-                      {categoryOptions.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Bulk Urgency Change */}
-                  <div className="flex items-center space-x-1">
-                    <span className="text-xs text-gray-600">Urgency:</span>
-                    <select
-                      value={stagedBulkUrgency}
-                      onChange={(e) => setStagedBulkUrgency(e.target.value)}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[90px]"
-                    >
-                      <option value="">Change to...</option>
-                      {urgencyOptions.map(urgency => (
-                        <option key={urgency} value={urgency}>{urgency}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Action Buttons */}
-                  {(stagedBulkCategory || stagedBulkUrgency) ? (
-                    <>
-                      <button
-                        onClick={applyBulkChanges}
-                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        Apply Changes
-                      </button>
-                      <button
-                        onClick={clearStagedChanges}
-                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setSelectedRequestIds(new Set());
-                        setSelectAll(false);
-                        clearStagedChanges();
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                    >
-                      Clear Selection
-                    </button>
-                  )}
-                </div>
-              )}
               {(sortColumn !== null || categoryFilter.length > 0 || urgencyFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0 || searchQuery !== '') && (
                 <button
                   onClick={resetTableFilters}
@@ -1343,13 +1350,12 @@ export function Dashboard() {
                 </button>
               )}
             </div>
-            
+
             <div className="text-sm text-muted-foreground">
               <span>Showing {filteredAndSortedRequests.length} requests</span>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="overflow-visible">
+
           <div className="overflow-visible" style={{position: 'static'}}>
             <Table>
               <TableHeader>
