@@ -304,7 +304,11 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 - **Real-Time Persistence**: All edits automatically saved to database
 - **API-First Architecture**: Frontend uses API with CSV fallback for reliability
 
-### September 2025
+### September 2025 - UI/UX Enhancements
+- **Bulk Actions with Apply Pattern**: Implemented two-stage bulk editing with Apply button for safer batch operations
+- **Enhanced Pie Chart Labels**: Added callout lines with optimized positioning for better label readability
+- **Complete Category Support**: Added all 9 categories (including Non-billable, Advisory, General) to charts
+- **API Health Endpoint**: Added `/api/health` endpoint for proper API mode detection and automatic save handling
 - **NSAttributedString Cleaning**: Enhanced regex pattern to remove all `streamtyped @ NS*` artifacts
 - **iMessage Export Integration**: Direct export from macOS Messages database
 - **Expanded Data Range**: Now processing May-September 2025 (430 requests from 6,156 messages)

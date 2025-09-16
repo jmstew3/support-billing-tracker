@@ -248,6 +248,33 @@ thad-chat/
 
 ### Recent Major Updates
 
+#### UI/UX Enhancements (September 16, 2025) 🎨
+- **Bulk Actions with Apply Pattern**:
+  - Implemented two-stage confirmation pattern for bulk operations
+  - Added staged changes with Apply/Cancel buttons
+  - Automatic selection clearing after successful application
+  - Prevents accidental bulk changes with explicit user confirmation
+  - Files Modified: `Dashboard.tsx` (lines 105-106, 670-733, 1266-1323)
+
+- **Enhanced Pie Chart Labels**:
+  - Added callout lines connecting slices to labels
+  - Optimized label positioning with dynamic text anchoring
+  - Smart label hiding for small slices (<1%) to prevent overlap
+  - Improved tooltip formatting with request counts
+  - Files Modified: `CategoryPieChart.tsx` (complete refactor)
+
+- **Complete Category Support**:
+  - Added all 9 categories to both radar and pie charts
+  - Categories: Support, Hosting, Forms, Billing, Email, Migration, Non-billable, Advisory, General
+  - Consistent color mapping across all visualizations
+  - Files Modified: `CategoryRadarChart.tsx`, `CategoryPieChart.tsx`
+
+- **API Health Endpoint**:
+  - Added `/api/health` endpoint for proper API mode detection
+  - Includes database connectivity check
+  - Enables automatic save without manual button in API mode
+  - Files Modified: `backend/routes/requests.js` (lines 7-26)
+
 #### Enhanced Data Visualizations (September 2025) 📊
 - **Feature**: Added radar chart and modernized pie chart for better data insights
 - **Components**:
