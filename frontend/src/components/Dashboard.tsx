@@ -1716,7 +1716,7 @@ export function Dashboard() {
                           e.stopPropagation();
                           handleDeleteRequest(actualIndex);
                         }}
-                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200"
                         title="Delete request"
                       >
                         <Trash2 className="w-4 h-4" />
