@@ -1,0 +1,35 @@
+data/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+env/
+venv/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+*.sqlite3
+*.db
+*.log
+output/
+
+# Node.js / JS / TS
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.parcel-cache/
+*.tsbuildinfo
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
