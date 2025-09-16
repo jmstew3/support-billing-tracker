@@ -145,6 +145,40 @@ export function Dashboard() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  // Helper function to parse time string (e.g., "7:10 PM") to comparable number
+  const parseTimeToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 0;
+
+    try {
+      // Match both 12-hour format (e.g., "7:10 PM") and 24-hour format (e.g., "19:10:00")
+      const twelveHourMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+
+      if (twelveHourMatch) {
+        let hours = parseInt(twelveHourMatch[1]);
+        const minutes = parseInt(twelveHourMatch[2]);
+        const isPM = twelveHourMatch[3].toUpperCase() === 'PM';
+
+        // Convert 12-hour to 24-hour format
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+
+        return hours * 60 + minutes;
+      }
+
+      // Try 24-hour format
+      const twentyFourHourMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (twentyFourHourMatch) {
+        const hours = parseInt(twentyFourHourMatch[1]);
+        const minutes = parseInt(twentyFourHourMatch[2]);
+        return hours * 60 + minutes;
+      }
+
+      return 0;
+    } catch {
+      return 0;
+    }
+  };
+
   // Helper function to get day of week - fixed to avoid timezone issues
   const getDayOfWeek = (dateStr: string) => {
     // Parse date string (YYYY-MM-DD) manually to avoid timezone issues
@@ -365,7 +399,7 @@ export function Dashboard() {
       return true;
     });
 
-    // Then sort
+    // Then sort with multi-level sorting (always maintain chronological order as secondary)
     if (!sortColumn) return filtered;
 
     return filtered.sort((a, b) => {
@@ -381,8 +415,8 @@ export function Dashboard() {
           bValue = getDayOfWeek(b.Date);
           break;
         case 'Time':
-          aValue = a.Time;
-          bValue = b.Time;
+          aValue = parseTimeToMinutes(a.Time);
+          bValue = parseTimeToMinutes(b.Time);
           break;
         case 'Request_Summary':
           aValue = a.Request_Summary.toLowerCase();
@@ -402,8 +436,23 @@ export function Dashboard() {
           return 0;
       }
 
+      // Primary sort by selected column
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+
+      // If primary values are equal, maintain chronological order
+      // Secondary sort by date (always ascending for consistency)
+      const dateA = new Date(a.Date);
+      const dateB = new Date(b.Date);
+      if (dateA < dateB) return -1;
+      if (dateA > dateB) return 1;
+
+      // If dates are also equal, tertiary sort by time (always ascending)
+      const timeA = parseTimeToMinutes(a.Time);
+      const timeB = parseTimeToMinutes(b.Time);
+      if (timeA < timeB) return -1;
+      if (timeA > timeB) return 1;
+
       return 0;
     });
   })();
