@@ -113,6 +113,12 @@ export function Dashboard() {
   // Chart type toggle
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
 
+  // Non-billable items visibility toggle
+  const [showNonBillable, setShowNonBillable] = useState<boolean>(() => {
+    const saved = localStorage.getItem('showNonBillable');
+    return saved !== null ? JSON.parse(saved) : true; // Default to showing all items
+  });
+
   // Delete confirmation dialog state
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -278,6 +284,11 @@ export function Dashboard() {
     loadData();
   }, []);
 
+  // Save showNonBillable preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('showNonBillable', JSON.stringify(showNonBillable));
+  }, [showNonBillable]);
+
   // Set initial year when data loads
   useEffect(() => {
     if (requests.length > 0 && availableYears.length > 0) {
@@ -377,6 +388,12 @@ export function Dashboard() {
       const requestYear = requestDate.getFullYear();
       const requestMonth = requestDate.getMonth() + 1; // JavaScript months are 0-indexed
       const requestDayOfWeek = getDayOfWeek(request.Date);
+
+      // Apply non-billable filter if toggle is off
+      if (!showNonBillable) {
+        const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
+        if (isNonBillable) return false;
+      }
 
       // Date/time filters
       if (requestYear !== selectedYear) return false;
@@ -933,24 +950,6 @@ export function Dashboard() {
     shouldPreserveScrollRef.current = true;
   };
 
-  // Get unique values for column filters
-  const getUniqueCategories = () => {
-    const categories = Array.from(new Set(
-      requests
-        .filter(request => {
-          const requestDate = new Date(request.Date);
-          const requestYear = requestDate.getFullYear();
-          const requestMonth = requestDate.getMonth() + 1;
-          if (requestYear !== selectedYear) return false;
-          if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
-          if (selectedDay !== 'all' && request.Date !== selectedDay) return false;
-          return true;
-        })
-        .map(request => request.Category || 'Support')
-        .filter(Boolean)
-    )).sort();
-    return categories;
-  };
 
   const getUniqueUrgencies = () => {
     return ['HIGH', 'MEDIUM', 'LOW'];
@@ -1088,6 +1087,9 @@ export function Dashboard() {
           Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
           {nonBillableRequests.length > 0 && (
             <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
+          )}
+          {!showNonBillable && nonBillableRequests.length > 0 && (
+            <span className="text-orange-600 font-medium"> • Hiding {nonBillableRequests.length} non-billable items</span>
           )}
         </p>
         <div className="flex items-center space-x-3">
@@ -1329,15 +1331,33 @@ export function Dashboard() {
                 <CardTitle>Billable Requests</CardTitle>
                 <CardDescription>Complete list of support requests - click category or urgency to edit</CardDescription>
               </div>
-              {hasUnsavedChanges && dataSource === 'csv' && (
-                <button
-                  onClick={handleSaveChanges}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Save Changes</span>
-                </button>
-              )}
+              <div className="flex items-center space-x-4">
+                {/* Toggle for Non-Billable Items */}
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showNonBillable}
+                    onChange={(e) => setShowNonBillable(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className="relative">
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${showNonBillable ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${showNonBillable ? 'transform translate-x-4' : ''}`}></div>
+                  </div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">
+                    Show Non-Billable
+                  </span>
+                </label>
+                {hasUnsavedChanges && dataSource === 'csv' && (
+                  <button
+                    onClick={handleSaveChanges}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Save Changes</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Bulk Selection UI - Moved here from CardContent */}
@@ -1610,17 +1630,29 @@ export function Dashboard() {
                     </div>
                     {showFilters.category && (
                       <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white max-h-40 overflow-y-auto">
-                        {getUniqueCategories().map(category => (
-                          <label key={category} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={categoryFilter.includes(category)}
-                              onChange={(e) => {
-                                preserveScrollPosition();
-                                const newFilter = e.target.checked
-                                  ? [...categoryFilter, category]
-                                  : categoryFilter.filter(c => c !== category);
-                                setCategoryFilter(newFilter);
+                        {categoryOptions.map(category => {
+                          // Count how many items have this category in the current view
+                          const count = requests.filter(request => {
+                            const requestDate = new Date(request.Date);
+                            const requestYear = requestDate.getFullYear();
+                            const requestMonth = requestDate.getMonth() + 1;
+                            if (requestYear !== selectedYear) return false;
+                            if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
+                            if (selectedDay !== 'all' && request.Date !== selectedDay) return false;
+                            return request.Category === category;
+                          }).length;
+
+                          return (
+                            <label key={category} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={categoryFilter.includes(category)}
+                                onChange={(e) => {
+                                  preserveScrollPosition();
+                                  const newFilter = e.target.checked
+                                    ? [...categoryFilter, category]
+                                    : categoryFilter.filter(c => c !== category);
+                                  setCategoryFilter(newFilter);
                                 setCurrentPage(1);
                                 setSelectedRequestIds(new Set());
                                 setSelectAll(false);
@@ -1628,8 +1660,12 @@ export function Dashboard() {
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                             />
                             <span className="truncate">{category}</span>
+                            {count > 0 && (
+                              <span className="text-gray-500 ml-auto">({count})</span>
+                            )}
                           </label>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
