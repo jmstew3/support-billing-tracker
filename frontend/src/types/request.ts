@@ -1,10 +1,15 @@
 export interface ChatRequest {
+  id?: number; // Optional ID from database
   Date: string;
   Time: string;
   Request_Summary: string;
   Urgency: 'HIGH' | 'MEDIUM' | 'LOW';
   Category?: string;
   EstimatedHours?: number;
+  Status?: 'active' | 'deleted' | 'ignored';
+  Request_Type?: string;
+  Month?: string;
+  Effort?: string;
 }
 
 export interface DailyRequestCount {
