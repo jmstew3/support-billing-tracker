@@ -11,8 +11,8 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
-import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2 } from 'lucide-react';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight } from 'lucide-react';
 
 export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -114,9 +114,9 @@ export function Dashboard() {
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
 
   // Non-billable items visibility toggle
-  const [showNonBillable, setShowNonBillable] = useState<boolean>(() => {
-    const saved = localStorage.getItem('showNonBillable');
-    return saved !== null ? JSON.parse(saved) : true; // Default to showing all items
+  const [hideNonBillable, setHideNonBillable] = useState<boolean>(() => {
+    const saved = localStorage.getItem('hideNonBillable');
+    return saved !== null ? JSON.parse(saved) : true; // Default to hiding non-billable items
   });
 
   // Delete confirmation dialog state
@@ -127,7 +127,10 @@ export function Dashboard() {
     isOpen: false,
     requestIndex: null
   });
-  
+
+  // Archive section visibility
+  const [showArchived, setShowArchived] = useState(false);
+
   // Row expansion removed - request summaries now always wrap
 
   // Scroll position preservation
@@ -252,6 +255,9 @@ export function Dashboard() {
   const billableRequests = requests.filter(request => request.Category !== 'Non-billable' && request.Category !== 'Migration');
   const nonBillableRequests = requests.filter(request => request.Category === 'Non-billable' || request.Category === 'Migration');
 
+  // Get archived requests
+  const archivedRequests = requests.filter(request => request.Status === 'deleted');
+
   // Calculate available years and months from all data (billable and non-billable)
   const availableYears = Array.from(new Set(
     requests.map(request => new Date(request.Date).getFullYear())
@@ -284,10 +290,10 @@ export function Dashboard() {
     loadData();
   }, []);
 
-  // Save showNonBillable preference to localStorage
+  // Save hideNonBillable preference to localStorage
   useEffect(() => {
-    localStorage.setItem('showNonBillable', JSON.stringify(showNonBillable));
-  }, [showNonBillable]);
+    localStorage.setItem('hideNonBillable', JSON.stringify(hideNonBillable));
+  }, [hideNonBillable]);
 
   // Set initial year when data loads
   useEffect(() => {
@@ -324,9 +330,8 @@ export function Dashboard() {
         const apiRequests = await fetchRequests({ status: 'all' });
         console.log('Received from API:', { count: apiRequests.length, sample: apiRequests[0] });
 
-        // Filter to only active requests for display
-        const activeRequests = apiRequests.filter(req => req.Status === 'active');
-        setRequests(activeRequests);
+        // Keep ALL requests (including deleted) for archive functionality
+        setRequests(apiRequests);
         setIsWorkingVersion(false);
         setCurrentVersion('database');
       } else {
@@ -384,13 +389,16 @@ export function Dashboard() {
   const filteredAndSortedRequests = (() => {
     // First filter by year, month, day, column filters, and search query
     const filtered = requests.filter(request => {
+      // Exclude deleted items from main table (only show active items)
+      if (request.Status === 'deleted') return false;
+
       const requestDate = new Date(request.Date);
       const requestYear = requestDate.getFullYear();
       const requestMonth = requestDate.getMonth() + 1; // JavaScript months are 0-indexed
       const requestDayOfWeek = getDayOfWeek(request.Date);
 
-      // Apply non-billable filter if toggle is off
-      if (!showNonBillable) {
+      // Apply non-billable filter if toggle is on
+      if (hideNonBillable) {
         const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
         if (isNonBillable) return false;
       }
@@ -573,8 +581,20 @@ export function Dashboard() {
 
   const chartData = getChartData();
   const filteredCategoryData = processCategoryData(billableFilteredRequests);
-  // Create separate category data for charts that includes ALL categories (including non-billable and migration)
-  const allCategoryDataForCharts = processCategoryData(filteredAndSortedRequests);
+  // Create category data for charts that ALWAYS includes ALL categories (unaffected by hideNonBillable toggle)
+  // This filters by date/time but NOT by non-billable status
+  const allRequestsForCharts = requests.filter(request => {
+    const requestDate = new Date(request.Date);
+    const requestYear = requestDate.getFullYear();
+    const requestMonth = requestDate.getMonth() + 1;
+
+    if (requestYear !== selectedYear) return false;
+    if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
+    if (selectedDay !== 'all' && request.Date !== selectedDay) return false;
+
+    return true;
+  });
+  const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
   const filteredCosts = calculateCosts(billableFilteredRequests);
   
 
@@ -655,12 +675,30 @@ export function Dashboard() {
   const confirmDelete = async () => {
     if (deleteConfirmation.requestIndex === null) return;
 
-    const newRequests = [...requests];
-    newRequests.splice(deleteConfirmation.requestIndex, 1);
-    setRequests(newRequests);
+    const requestToDelete = requests[deleteConfirmation.requestIndex];
 
-    // Trigger auto-save after deletion
-    if (!apiAvailable) {
+    if (apiAvailable && requestToDelete.id) {
+      // API mode - soft delete by updating status
+      try {
+        await deleteRequest(requestToDelete.id, false); // false = soft delete
+
+        // Update local state - mark as deleted instead of removing
+        const newRequests = [...requests];
+        newRequests[deleteConfirmation.requestIndex] = {
+          ...requestToDelete,
+          Status: 'deleted'
+        };
+        setRequests(newRequests);
+
+        console.log(`Request ${requestToDelete.id} marked as deleted`);
+      } catch (error) {
+        console.error('Failed to delete request:', error);
+      }
+    } else {
+      // CSV mode - remove from array (original behavior)
+      const newRequests = [...requests];
+      newRequests.splice(deleteConfirmation.requestIndex, 1);
+      setRequests(newRequests);
       triggerAutoSave(newRequests);
     }
 
@@ -682,6 +720,27 @@ export function Dashboard() {
       isOpen: false,
       requestIndex: null
     });
+  };
+
+  const handleRestoreRequest = async (requestId: number | undefined, index: number) => {
+    if (!requestId) return;
+
+    try {
+      // Update status back to active via API
+      await updateRequestAPI(requestId, { Status: 'active' });
+
+      // Update local state
+      const newRequests = [...requests];
+      newRequests[index] = {
+        ...newRequests[index],
+        Status: 'active'
+      };
+      setRequests(newRequests);
+
+      console.log(`Request ${requestId} restored to active`);
+    } catch (error) {
+      console.error('Failed to restore request:', error);
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -1088,7 +1147,7 @@ export function Dashboard() {
           {nonBillableRequests.length > 0 && (
             <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
           )}
-          {!showNonBillable && nonBillableRequests.length > 0 && (
+          {hideNonBillable && nonBillableRequests.length > 0 && (
             <span className="text-orange-600 font-medium"> • Hiding {nonBillableRequests.length} non-billable items</span>
           )}
         </p>
@@ -1336,16 +1395,16 @@ export function Dashboard() {
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={showNonBillable}
-                    onChange={(e) => setShowNonBillable(e.target.checked)}
+                    checked={hideNonBillable}
+                    onChange={(e) => setHideNonBillable(e.target.checked)}
                     className="sr-only"
                   />
                   <div className="relative">
-                    <div className={`block w-10 h-6 rounded-full transition-colors ${showNonBillable ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                    <div className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${showNonBillable ? 'transform translate-x-4' : ''}`}></div>
+                    <div className={`block w-10 h-6 rounded-full transition-colors ${hideNonBillable ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${hideNonBillable ? 'transform translate-x-4' : ''}`}></div>
                   </div>
                   <span className="ml-3 text-sm font-medium text-gray-700">
-                    Show Non-Billable
+                    Hide Non-Billable
                   </span>
                 </label>
                 {hasUnsavedChanges && dataSource === 'csv' && (
@@ -1825,22 +1884,107 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Deleted requests section removed - now using Non-billable category system */}
+      {/* Archived Requests Section */}
+      {apiAvailable && archivedRequests.length > 0 && (
+        <Card className="mt-4">
+          <CardContent className="p-4">
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              <div className="flex items-center space-x-2">
+                <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
+                <Archive className="w-4 h-4 text-gray-500" />
+                <h3 className="font-semibold text-gray-700">
+                  Archived Requests ({archivedRequests.length})
+                </h3>
+              </div>
+              <span className="text-sm text-gray-500">
+                Click to {showArchived ? 'hide' : 'show'}
+              </span>
+            </div>
+
+            {showArchived && (
+              <div className="mt-4 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Summary</TableHead>
+                      <TableHead>Urgency</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {archivedRequests.map((request) => {
+                      const originalIndex = requests.findIndex(r => r === request);
+                      return (
+                        <TableRow key={originalIndex} className="opacity-60">
+                          <TableCell className="text-sm">
+                            {new Date(request.Date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-sm">{request.Time}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              {request.Category || 'Support'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-md">
+                            <div className="text-sm text-gray-700 whitespace-normal break-words">
+                              {request.Request_Summary}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              request.Urgency === 'HIGH'
+                                ? 'bg-red-100 text-red-800'
+                                : request.Urgency === 'MEDIUM'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {request.Urgency}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleRestoreRequest(request.id, originalIndex)}
+                              className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-all duration-200"
+                              title="Restore request"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteConfirmation.isOpen}
-        title="Delete Request"
-        message={`Are you sure you want to delete this request?
+        title="Archive Request"
+        message={apiAvailable
+          ? `Are you sure you want to archive this request?
 
-⚠️ WARNING: This action is PERMANENT and cannot be undone.
+The request will be moved to the archived section and can be restored at any time.`
+          : `Are you sure you want to delete this request?
 
-The request will be completely removed from the database and cannot be recovered.`}
-        confirmText="Delete Permanently"
+⚠️ WARNING: This action is PERMANENT and cannot be undone in CSV mode.
+
+The request will be completely removed and cannot be recovered.`}
+        confirmText={apiAvailable ? "Archive Request" : "Delete Permanently"}
         cancelText="Cancel"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
-        isDestructive={true}
+        isDestructive={!apiAvailable}
       />
       </div>
     </div>
