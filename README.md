@@ -297,6 +297,13 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 
 ## 📝 Recent Updates
 
+### September 16, 2025 - Header & Navigation Improvements
+- **Sticky Header**: Period and View controls stay visible while scrolling, with full-width separator
+- **CORS Configuration**: Fixed API connectivity for multiple localhost ports (5173, 5174, etc.)
+- **Clean UI Design**: Removed emoji icons from view toggles, applied flat design principles
+- **Smart Status Messages**: "Manual save required" hidden when connected to database
+- **Improved Layout**: Title left-aligned with controls right-aligned in sticky header
+
 ### September 2025 (Latest)
 - **MySQL Database Integration**: Migrated from CSV to MySQL backend for real-time persistence
 - **RESTful API**: Full CRUD operations via Express.js backend
