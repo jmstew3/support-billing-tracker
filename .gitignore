@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 .env
+.env.docker
 .venv/
 env/
 venv/

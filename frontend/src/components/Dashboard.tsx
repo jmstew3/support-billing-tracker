@@ -10,6 +10,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest, checkAPIHealth } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X } from 'lucide-react';
 
 export function Dashboard() {
@@ -18,6 +19,8 @@ export function Dashboard() {
   const [isWorkingVersion, setIsWorkingVersion] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string>('original');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [apiAvailable, setApiAvailable] = useState(false);
+  const [dataSource, setDataSource] = useState<'api' | 'csv'>('csv');
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef<number | null>(null);
@@ -246,32 +249,57 @@ export function Dashboard() {
   const loadData = async () => {
     console.log('Dashboard loadData starting...');
     try {
-      // Load data using the updated utility function
-      const result = await loadRequestData();
-      console.log('Received result:', { dataLength: result.data.length, version: result.version, isWorking: result.isWorking });
-      
-      // Set version information
-      setIsWorkingVersion(result.isWorking);
-      setCurrentVersion(result.version);
-      
-      // Convert to ChatRequest format for compatibility
-      const requestData: ChatRequest[] = result.data.map(item => ({
-        Date: item.date,
-        Time: item.time,
-        Request_Summary: item.description,
-        Category: item.category,
-        Urgency: item.urgency, // This is now guaranteed to be uppercase
-        EstimatedHours: item.effort === 'Small' ? 0.25 : item.effort === 'Large' ? 1.0 : 0.5
-      }));
-      
-      console.log('Converted to ChatRequest format:', { count: requestData.length, sample: requestData[0] });
-      
-      // Save original data as backup (only if not already saved and not working version)
-      if (!localStorage.getItem('originalRequestsBackup') && !result.isWorking) {
-        localStorage.setItem('originalRequestsBackup', JSON.stringify(requestData));
+      // First, check if API is available
+      const apiHealthy = await checkAPIHealth();
+      console.log('API health check:', apiHealthy);
+
+      if (apiHealthy) {
+        // Use API to load data
+        console.log('Loading data from API...');
+        setDataSource('api');
+        setApiAvailable(true);
+
+        // Fetch all requests regardless of status
+        const apiRequests = await fetchRequests({ status: 'all' });
+        console.log('Received from API:', { count: apiRequests.length, sample: apiRequests[0] });
+
+        // Filter to only active requests for display
+        const activeRequests = apiRequests.filter(req => req.Status === 'active');
+        setRequests(activeRequests);
+        setIsWorkingVersion(false);
+        setCurrentVersion('database');
+      } else {
+        // Fall back to CSV loading
+        console.log('API not available, loading from CSV...');
+        setDataSource('csv');
+        setApiAvailable(false);
+
+        const result = await loadRequestData();
+        console.log('Received result:', { dataLength: result.data.length, version: result.version, isWorking: result.isWorking });
+
+        setIsWorkingVersion(result.isWorking);
+        setCurrentVersion(result.version);
+
+        // Convert to ChatRequest format for compatibility
+        const requestData: ChatRequest[] = result.data.map(item => ({
+          Date: item.date,
+          Time: item.time,
+          Request_Summary: item.description,
+          Category: item.category,
+          Urgency: item.urgency,
+          EstimatedHours: item.effort === 'Small' ? 0.25 : item.effort === 'Large' ? 1.0 : 0.5
+        }));
+
+        console.log('Converted to ChatRequest format:', { count: requestData.length, sample: requestData[0] });
+
+        // Save original data as backup (only if not already saved and not working version)
+        if (!localStorage.getItem('originalRequestsBackup') && !result.isWorking) {
+          localStorage.setItem('originalRequestsBackup', JSON.stringify(requestData));
+        }
+
+        setRequests(requestData);
       }
-      
-      setRequests(requestData);
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -502,7 +530,7 @@ export function Dashboard() {
     setLastSelectedIndex(null); // Clear selection anchor when changing page size
   };
 
-  const updateRequest = (index: number, field: keyof ChatRequest, value: string) => {
+  const updateRequest = async (index: number, field: keyof ChatRequest, value: string) => {
     console.log(`Dashboard updateRequest called: index=${index}, field=${field}, value=${value}`);
     preserveScrollPosition();
     const newRequests = [...requests];
@@ -511,25 +539,41 @@ export function Dashboard() {
     if (field === 'Urgency') {
       actualValue = value.toUpperCase();
     }
-    
+
     console.log(`Before update - current value: ${newRequests[index][field]}, new value: ${actualValue}`);
     newRequests[index] = { ...newRequests[index], [field]: actualValue };
     setRequests(newRequests);
-    setHasUnsavedChanges(true);
-    
-    console.log(`Updated request ${index}: ${field} = ${actualValue}`);
-    
-    // Auto-save disabled - user must manually save changes
+
+    // If API is available, update in database
+    if (apiAvailable && newRequests[index].id) {
+      try {
+        await updateRequestAPI(newRequests[index].id, { [field]: actualValue });
+        console.log(`Updated request ${index} in database: ${field} = ${actualValue}`);
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Failed to update in database:', error);
+        setHasUnsavedChanges(true);
+      }
+    } else {
+      // CSV mode - mark as having unsaved changes
+      setHasUnsavedChanges(true);
+      console.log(`Updated request ${index} locally: ${field} = ${actualValue}`);
+    }
   };
 
   const handleSaveChanges = async () => {
     try {
-      // Save simplified - pass all requests, function handles everything internally
-      await saveToDataDirectory(requests, []);
-      console.log('Successfully saved working version');
-      
-      setHasUnsavedChanges(false);
-      setIsWorkingVersion(true);
+      if (apiAvailable) {
+        // API mode - changes are already saved in real-time
+        console.log('Changes already saved to database');
+        setHasUnsavedChanges(false);
+      } else {
+        // CSV mode - save to file
+        await saveToDataDirectory(requests, []);
+        console.log('Successfully saved working version');
+        setHasUnsavedChanges(false);
+        setIsWorkingVersion(true);
+      }
     } catch (error) {
       console.warn('Save failed:', error);
       setHasUnsavedChanges(false);
@@ -619,43 +663,73 @@ export function Dashboard() {
 
   // Bulk delete function removed - now using Non-billable category system
 
-  const handleBulkCategoryChange = (newCategory: string) => {
+  const handleBulkCategoryChange = async (newCategory: string) => {
     if (selectedRequestIds.size === 0) return;
-    
+
     preserveScrollPosition();
     const newRequests = [...requests];
+    const idsToUpdate: number[] = [];
+
     selectedRequestIds.forEach(index => {
       newRequests[index] = { ...newRequests[index], Category: newCategory };
+      if (newRequests[index].id) {
+        idsToUpdate.push(newRequests[index].id!);
+      }
     });
-    
+
     setRequests(newRequests);
-    setHasUnsavedChanges(true);
-    // Keep selections active for additional bulk operations
-    
-    console.log(`Updated ${selectedRequestIds.size} requests to category: ${newCategory}`);
-    
-    // Trigger auto-save
-    triggerAutoSave(newRequests);
+
+    // If API is available, update in database
+    if (apiAvailable && idsToUpdate.length > 0) {
+      try {
+        await bulkUpdateRequests(idsToUpdate, { Category: newCategory });
+        console.log(`Updated ${idsToUpdate.length} requests to category: ${newCategory} in database`);
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Failed to bulk update in database:', error);
+        setHasUnsavedChanges(true);
+      }
+    } else {
+      // CSV mode or no IDs - mark as having unsaved changes
+      setHasUnsavedChanges(true);
+      console.log(`Updated ${selectedRequestIds.size} requests to category: ${newCategory} locally`);
+      triggerAutoSave(newRequests);
+    }
   };
 
-  const handleBulkUrgencyChange = (newUrgency: string) => {
+  const handleBulkUrgencyChange = async (newUrgency: string) => {
     if (selectedRequestIds.size === 0) return;
-    
+
     preserveScrollPosition();
     const newRequests = [...requests];
     const actualUrgency = newUrgency.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW';
+    const idsToUpdate: number[] = [];
+
     selectedRequestIds.forEach(index => {
       newRequests[index] = { ...newRequests[index], Urgency: actualUrgency };
+      if (newRequests[index].id) {
+        idsToUpdate.push(newRequests[index].id!);
+      }
     });
-    
+
     setRequests(newRequests);
-    setHasUnsavedChanges(true);
-    // Keep selections active for additional bulk operations
-    
-    console.log(`Updated urgency for ${selectedRequestIds.size} selected requests`);
-    
-    // Trigger auto-save
-    triggerAutoSave(newRequests);
+
+    // If API is available, update in database
+    if (apiAvailable && idsToUpdate.length > 0) {
+      try {
+        await bulkUpdateRequests(idsToUpdate, { Urgency: actualUrgency });
+        console.log(`Updated urgency for ${idsToUpdate.length} requests in database`);
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Failed to bulk update urgency in database:', error);
+        setHasUnsavedChanges(true);
+      }
+    } else {
+      // CSV mode or no IDs - mark as having unsaved changes
+      setHasUnsavedChanges(true);
+      console.log(`Updated urgency for ${selectedRequestIds.size} selected requests locally`);
+      triggerAutoSave(newRequests);
+    }
   };
 
   const handleYearChange = (year: number) => {
@@ -818,12 +892,17 @@ export function Dashboard() {
               )}
             </p>
             <div className="flex items-center space-x-3 mt-2">
-              {isWorkingVersion && (
+              {dataSource === 'api' ? (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+                  <Info className="w-3 h-3" />
+                  <span>Connected to Database</span>
+                </div>
+              ) : isWorkingVersion ? (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
-                  <span>Working Version ({currentVersion})</span>
+                  <span>Working Version (CSV)</span>
                 </div>
-              )}
+              ) : null}
               {hasUnsavedChanges && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-md text-xs">
                   <Clock className="w-3 h-3" />
@@ -1136,7 +1215,7 @@ export function Dashboard() {
               <CardTitle>Billable Requests</CardTitle>
               <CardDescription>Complete list of support requests - click category or urgency to edit</CardDescription>
             </div>
-            {hasUnsavedChanges && (
+            {hasUnsavedChanges && dataSource === 'csv' && (
               <button
                 onClick={handleSaveChanges}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"

@@ -4,7 +4,26 @@ A comprehensive business intelligence dashboard that processes iMessage conversa
 
 ## 🚀 Quick Start
 
-### Complete Data Processing Pipeline
+### Using Docker with MySQL Backend (Recommended)
+
+1. **Start all services with Docker**:
+```bash
+docker-compose up -d
+```
+
+2. **Import existing data** (if you have CSV data):
+```bash
+./docker-import.sh data/03_final/thad_requests_table.csv
+```
+
+3. **Access the dashboard**:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001/api
+- MySQL: localhost:3307 (user: ***REMOVED***, password: ***REMOVED***)
+
+See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
+
+### Manual Setup (Without Docker)
 
 1. **Export messages from iMessage database**:
 ```bash
@@ -34,20 +53,30 @@ npm run dev
 
 ```
 thad-chat/
-├── export_imessages.py     # iMessage database export utility
-├── src/                    # Python source code
-│   ├── data_preprocessor.py        # Data cleaning (NSAttributedString removal)
-│   └── thad-request-extractor/     # Request extraction
-│       ├── main.py                  # Entry point
-│       ├── request_extractor.py     # Core extraction logic
-│       └── request_patterns.py      # Pattern definitions
+├── backend/                # Express.js API server
+│   ├── db/                        # Database configuration
+│   │   └── schema.sql             # MySQL schema definition
+│   ├── routes/                    # API endpoints
+│   │   └── requests.js            # CRUD operations for requests
+│   ├── models/                    # Data models
+│   └── utils/                     # Utilities
+│       └── import-csv.js          # CSV to MySQL importer
 ├── frontend/               # React dashboard
-│   ├── src/components/             # UI components
-│   └── public/                     # Static assets
+│   ├── src/
+│   │   ├── components/            # UI components
+│   │   │   └── Dashboard.tsx      # Main dashboard with API integration
+│   │   └── utils/
+│   │       └── api.ts             # API client for backend
+│   └── public/                    # Static assets
+├── src/                    # Python ETL pipeline
+│   ├── data_preprocessor.py       # Data cleaning
+│   └── thad-request-extractor/    # Request extraction
 ├── data/                   # Data pipeline directories
 │   ├── 01_raw/                    # Raw iMessage exports
 │   ├── 02_processed/              # Cleaned messages
-│   └── 03_final/                  # Production data with status
+│   └── 03_final/                  # Production data
+├── docker-compose.yml      # Docker orchestration
+├── docker-import.sh        # Data import script
 └── CLAUDE.md              # Comprehensive documentation
 ```
 
@@ -75,8 +104,70 @@ thad-chat/
 - 📋 Real-time searchable request table
 - ✅ Status-based management (active/deleted/ignored)
 - 🔄 Bulk selection and editing
-- 💾 Auto-save with versioned backups
+- 💾 Real-time database persistence
 - 📈 Time-based filtering (All/Month/Day views)
+
+### Database Persistence & CRUD Operations
+
+#### Real-Time Data Persistence
+All edits in the dashboard are **automatically saved to the MySQL database** in real-time:
+
+1. **Inline Editing**: Click any Category or Urgency cell to edit
+   - Changes are saved instantly to the database
+   - No manual save button needed
+   - Visual feedback confirms the update
+
+2. **Bulk Operations**: Select multiple requests using checkboxes
+   - Change category for all selected items
+   - Update urgency levels in bulk
+   - Mark requests as deleted (soft delete)
+
+3. **Status Management**:
+   - **Active**: Normal requests included in all calculations
+   - **Deleted**: Excluded from metrics but recoverable
+   - **Ignored**: Marked as non-billable or irrelevant
+
+#### How CRUD Operations Work
+
+**CREATE** - Add new requests:
+```javascript
+POST /api/requests
+{
+  "date": "2025-09-16",
+  "time": "10:30:00",
+  "category": "Support",
+  "description": "Help with website",
+  "urgency": "MEDIUM"
+}
+```
+
+**READ** - Fetch requests with filtering:
+```javascript
+GET /api/requests?status=active&category=Support
+```
+
+**UPDATE** - Edit existing requests:
+```javascript
+PUT /api/requests/123
+{
+  "category": "Hosting",
+  "urgency": "HIGH"
+}
+```
+
+**DELETE** - Soft delete (change status):
+```javascript
+DELETE /api/requests/123  // Soft delete
+DELETE /api/requests/123?permanent=true  // Permanent delete
+```
+
+#### Database Schema
+The MySQL database stores all request data with:
+- Auto-generated IDs
+- Timestamps for creation and updates
+- Calculated fields for estimated hours
+- Indexes for fast querying
+- Status field for soft deletes
 
 ## 📊 Output Files
 
@@ -119,13 +210,60 @@ Uses sophisticated pattern matching to identify:
 - Technical keywords (webhook, DNS, backup)
 - Urgency indicators (urgent, ASAP, critical)
 
+## 🗄️ Data Management
+
+### Accessing the Database
+
+**Via MySQL Client**:
+```bash
+mysql -h localhost -P 3307 -u ***REMOVED*** -p
+# Password: ***REMOVED***
+USE thad_chat;
+SELECT * FROM requests WHERE status = 'active' LIMIT 10;
+```
+
+**Via API Endpoints**:
+- View all requests: http://localhost:3001/api/requests
+- Get statistics: http://localhost:3001/api/statistics
+- Export to CSV: http://localhost:3001/api/export-csv
+
+### Data Import/Export
+
+**Import CSV to Database**:
+```bash
+./docker-import.sh data/03_final/thad_requests_table.csv
+```
+
+**Export Database to CSV**:
+```bash
+curl http://localhost:3001/api/export-csv > export.csv
+```
+
+### Backup and Recovery
+
+**Backup Database**:
+```bash
+docker exec thad-chat-mysql mysqldump -u root -prootpassword thad_chat > backup.sql
+```
+
+**Restore Database**:
+```bash
+docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.sql
+```
+
 ## 💻 Requirements
 
+### For Docker Setup (Recommended)
+- Docker Desktop
+- 4GB+ RAM available for Docker
+
+### For Manual Setup
 - Python 3.7+
 - pandas
 - sqlite3
 - plistlib (for NSAttributedString handling)
 - Node.js 16+ (for frontend)
+- MySQL 5.7+ or 8.0+
 - React 18
 - Vite
 - Tailwind CSS
@@ -140,6 +278,13 @@ Uses sophisticated pattern matching to identify:
 - **Workflow Management**: Bulk operations for efficient request processing
 
 ## 📝 Recent Updates
+
+### September 2025 (Latest)
+- **MySQL Database Integration**: Migrated from CSV to MySQL backend for real-time persistence
+- **RESTful API**: Full CRUD operations via Express.js backend
+- **Docker Orchestration**: Complete containerized setup with MySQL, Backend, and Frontend
+- **Real-Time Persistence**: All edits automatically saved to database
+- **API-First Architecture**: Frontend uses API with CSV fallback for reliability
 
 ### September 2025
 - **NSAttributedString Cleaning**: Enhanced regex pattern to remove all `streamtyped @ NS*` artifacts
