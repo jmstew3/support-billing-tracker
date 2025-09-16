@@ -4,6 +4,27 @@ import Request from '../models/Request.js';
 
 const router = express.Router();
 
+// Health check endpoint
+router.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    const [rows] = await pool.execute('SELECT 1');
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: error.message
+    });
+  }
+});
+
 // GET all requests
 router.get('/requests', async (req, res) => {
   try {

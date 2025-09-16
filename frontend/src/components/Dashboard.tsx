@@ -101,6 +101,10 @@ export function Dashboard() {
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
 
+  // Staged bulk changes
+  const [stagedBulkCategory, setStagedBulkCategory] = useState<string>('');
+  const [stagedBulkUrgency, setStagedBulkUrgency] = useState<string>('');
+
   // Search functionality
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -663,27 +667,46 @@ export function Dashboard() {
 
   // Bulk delete function removed - now using Non-billable category system
 
-  const handleBulkCategoryChange = async (newCategory: string) => {
+  // Apply staged bulk changes
+  const applyBulkChanges = async () => {
     if (selectedRequestIds.size === 0) return;
+    if (!stagedBulkCategory && !stagedBulkUrgency) return;
 
     preserveScrollPosition();
     const newRequests = [...requests];
     const idsToUpdate: number[] = [];
 
+    // Apply staged changes to selected requests
     selectedRequestIds.forEach(index => {
-      newRequests[index] = { ...newRequests[index], Category: newCategory };
-      if (newRequests[index].id) {
-        idsToUpdate.push(newRequests[index].id!);
+      const updatedRequest = { ...newRequests[index] };
+
+      if (stagedBulkCategory) {
+        updatedRequest.Category = stagedBulkCategory;
+      }
+
+      if (stagedBulkUrgency) {
+        updatedRequest.Urgency = stagedBulkUrgency.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW';
+      }
+
+      newRequests[index] = updatedRequest;
+
+      if (updatedRequest.id) {
+        idsToUpdate.push(updatedRequest.id!);
       }
     });
 
     setRequests(newRequests);
 
+    // Build update payload
+    const updatePayload: any = {};
+    if (stagedBulkCategory) updatePayload.Category = stagedBulkCategory;
+    if (stagedBulkUrgency) updatePayload.Urgency = stagedBulkUrgency.toUpperCase();
+
     // If API is available, update in database
-    if (apiAvailable && idsToUpdate.length > 0) {
+    if (apiAvailable && idsToUpdate.length > 0 && Object.keys(updatePayload).length > 0) {
       try {
-        await bulkUpdateRequests(idsToUpdate, { Category: newCategory });
-        console.log(`Updated ${idsToUpdate.length} requests to category: ${newCategory} in database`);
+        await bulkUpdateRequests(idsToUpdate, updatePayload);
+        console.log(`Updated ${idsToUpdate.length} requests in database`);
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Failed to bulk update in database:', error);
@@ -692,44 +715,21 @@ export function Dashboard() {
     } else {
       // CSV mode or no IDs - mark as having unsaved changes
       setHasUnsavedChanges(true);
-      console.log(`Updated ${selectedRequestIds.size} requests to category: ${newCategory} locally`);
+      console.log(`Updated ${selectedRequestIds.size} requests locally`);
       triggerAutoSave(newRequests);
     }
+
+    // Clear selections and staged changes after applying
+    setSelectedRequestIds(new Set());
+    setSelectAll(false);
+    setStagedBulkCategory('');
+    setStagedBulkUrgency('');
   };
 
-  const handleBulkUrgencyChange = async (newUrgency: string) => {
-    if (selectedRequestIds.size === 0) return;
-
-    preserveScrollPosition();
-    const newRequests = [...requests];
-    const actualUrgency = newUrgency.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW';
-    const idsToUpdate: number[] = [];
-
-    selectedRequestIds.forEach(index => {
-      newRequests[index] = { ...newRequests[index], Urgency: actualUrgency };
-      if (newRequests[index].id) {
-        idsToUpdate.push(newRequests[index].id!);
-      }
-    });
-
-    setRequests(newRequests);
-
-    // If API is available, update in database
-    if (apiAvailable && idsToUpdate.length > 0) {
-      try {
-        await bulkUpdateRequests(idsToUpdate, { Urgency: actualUrgency });
-        console.log(`Updated urgency for ${idsToUpdate.length} requests in database`);
-        setHasUnsavedChanges(false);
-      } catch (error) {
-        console.error('Failed to bulk update urgency in database:', error);
-        setHasUnsavedChanges(true);
-      }
-    } else {
-      // CSV mode or no IDs - mark as having unsaved changes
-      setHasUnsavedChanges(true);
-      console.log(`Updated urgency for ${selectedRequestIds.size} selected requests locally`);
-      triggerAutoSave(newRequests);
-    }
+  // Clear staged changes
+  const clearStagedChanges = () => {
+    setStagedBulkCategory('');
+    setStagedBulkUrgency('');
   };
 
   const handleYearChange = (year: number) => {
@@ -1262,47 +1262,65 @@ export function Dashboard() {
                   </span>
                   
                   {/* Note: Delete functionality removed - use Non-billable category instead */}
-                  
+
                   {/* Bulk Category Change */}
                   <div className="flex items-center space-x-1">
                     <span className="text-xs text-gray-600">Category:</span>
                     <select
-                      onChange={(e) => handleBulkCategoryChange(e.target.value)}
-                      defaultValue=""
+                      value={stagedBulkCategory}
+                      onChange={(e) => setStagedBulkCategory(e.target.value)}
                       className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[100px]"
                     >
-                      <option value="" disabled>Change to...</option>
+                      <option value="">Change to...</option>
                       {categoryOptions.map(category => (
                         <option key={category} value={category}>{category}</option>
                       ))}
                     </select>
                   </div>
-                  
+
                   {/* Bulk Urgency Change */}
                   <div className="flex items-center space-x-1">
                     <span className="text-xs text-gray-600">Urgency:</span>
                     <select
-                      onChange={(e) => handleBulkUrgencyChange(e.target.value)}
-                      defaultValue=""
+                      value={stagedBulkUrgency}
+                      onChange={(e) => setStagedBulkUrgency(e.target.value)}
                       className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[90px]"
                     >
-                      <option value="" disabled>Change to...</option>
+                      <option value="">Change to...</option>
                       {urgencyOptions.map(urgency => (
                         <option key={urgency} value={urgency}>{urgency}</option>
                       ))}
                     </select>
                   </div>
-                  
-                  {/* Clear Selection Button */}
-                  <button
-                    onClick={() => {
-                      setSelectedRequestIds(new Set());
-                      setSelectAll(false);
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                  >
-                    Clear
-                  </button>
+
+                  {/* Action Buttons */}
+                  {(stagedBulkCategory || stagedBulkUrgency) ? (
+                    <>
+                      <button
+                        onClick={applyBulkChanges}
+                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Apply Changes
+                      </button>
+                      <button
+                        onClick={clearStagedChanges}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedRequestIds(new Set());
+                        setSelectAll(false);
+                        clearStagedChanges();
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                    >
+                      Clear Selection
+                    </button>
+                  )}
                 </div>
               )}
               {(sortColumn !== null || categoryFilter.length > 0 || urgencyFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0 || searchQuery !== '') && (
