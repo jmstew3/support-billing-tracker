@@ -223,7 +223,7 @@ export async function importCSV(csvData: any[]): Promise<{
 // Check if API is available
 export async function checkAPIHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`, {
+    const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       mode: 'cors',
     });

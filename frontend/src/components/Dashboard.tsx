@@ -256,7 +256,8 @@ export function Dashboard() {
     try {
       // First, check if API is available
       const apiHealthy = await checkAPIHealth();
-      console.log('API health check:', apiHealthy);
+      console.log('API health check result:', apiHealthy);
+      console.log('API URL being used:', import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
 
       if (apiHealthy) {
         // Use API to load data
@@ -881,15 +882,16 @@ export function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      {/* Sticky Header with Title and Controls */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 -mx-8 px-8 py-4">
-        <div className="flex items-start justify-between">
-          {/* Left side - Title */}
-          <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
+    <div>
+      {/* Sticky Header with Title and Controls - Full Width */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
+        <div className="container mx-auto py-4">
+          <div className="flex items-start justify-between">
+            {/* Left side - Title */}
+            <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
 
-          {/* Right side - Controls */}
-          <div className="flex items-center space-x-6">
+            {/* Right side - Controls */}
+            <div className="flex items-center space-x-6">
             {/* Date Range Selector */}
             <div className="flex items-center space-x-3">
               <span className="text-sm font-medium text-muted-foreground">Period:</span>
@@ -973,12 +975,15 @@ export function Dashboard() {
                 ))}
               </div>
             </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Info section - Not sticky */}
-      <div className="space-y-2">
+      {/* Main Content Container */}
+      <div className="container mx-auto py-8 space-y-6">
+        {/* Info section - Not sticky */}
+        <div className="space-y-2">
         <p className="text-muted-foreground">
           Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
           {nonBillableRequests.length > 0 && (
@@ -1003,9 +1008,11 @@ export function Dashboard() {
               <span>Unsaved changes - click Save button</span>
             </div>
           )}
-          <span className="text-xs text-gray-500">
-            Manual save required • Original data protected
-          </span>
+          {!apiAvailable && (
+            <span className="text-xs text-gray-500">
+              Manual save required • Original data protected
+            </span>
+          )}
         </div>
       </div>
 
@@ -1666,6 +1673,7 @@ export function Dashboard() {
       </Card>
 
       {/* Deleted requests section removed - now using Non-billable category system */}
+      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 
   // Custom label with better positioning
   const renderCustomizedLabel = ({
-    cx, cy, midAngle, innerRadius, outerRadius, name, value, index
+    cx, cy, midAngle, innerRadius, outerRadius, name, value
   }: any) => {
     const percentage = ((value / total) * 100).toFixed(1);
 
