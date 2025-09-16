@@ -10,7 +10,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
-import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest, checkAPIHealth } from '../utils/api';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X } from 'lucide-react';
 
 export function Dashboard() {
@@ -18,6 +18,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isWorkingVersion, setIsWorkingVersion] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string>('original');
+  console.log(currentVersion); // Used for tracking
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [apiAvailable, setApiAvailable] = useState(false);
   const [dataSource, setDataSource] = useState<'api' | 'csv'>('csv');
@@ -880,42 +881,14 @@ export function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
-            <p className="text-muted-foreground">
-              Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
-              {nonBillableRequests.length > 0 && (
-                <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
-              )}
-            </p>
-            <div className="flex items-center space-x-3 mt-2">
-              {dataSource === 'api' ? (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-                  <Info className="w-3 h-3" />
-                  <span>Connected to Database</span>
-                </div>
-              ) : isWorkingVersion ? (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
-                  <Info className="w-3 h-3" />
-                  <span>Working Version (CSV)</span>
-                </div>
-              ) : null}
-              {hasUnsavedChanges && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-md text-xs">
-                  <Clock className="w-3 h-3" />
-                  <span>Unsaved changes - click Save button</span>
-                </div>
-              )}
-              <span className="text-xs text-gray-500">
-                Manual save required • Original data protected
-              </span>
-            </div>
-          </div>
-          
-          {/* Compact Filter Controls */}
+    <div className="container mx-auto py-8 space-y-6">
+      {/* Sticky Header with Title and Controls */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 -mx-8 px-8 py-4">
+        <div className="flex items-start justify-between">
+          {/* Left side - Title */}
+          <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
+
+          {/* Right side - Controls */}
           <div className="flex items-center space-x-6">
             {/* Date Range Selector */}
             <div className="flex items-center space-x-3">
@@ -972,21 +945,21 @@ export function Dashboard() {
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-muted-foreground">View:</span>
-              <div className="inline-flex rounded-md shadow-sm" role="group">
+              <div className="inline-flex rounded-md" role="group">
                 {[
-                  { mode: 'all' as const, label: 'All', icon: '📊' },
-                  { mode: 'month' as const, label: 'Month', icon: '📅' },
-                  { mode: 'day' as const, label: 'Day', icon: '🕐' }
+                  { mode: 'all' as const, label: 'All' },
+                  { mode: 'month' as const, label: 'Month' },
+                  { mode: 'day' as const, label: 'Day' }
                 ].map((item, index, array) => (
                   <button
                     key={item.mode}
                     onClick={() => handleTimeViewModeChange(item.mode)}
                     className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                       timeViewMode === item.mode
-                        ? 'bg-blue-600 text-white shadow-md'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-700'
                     } ${
-                      index === 0 ? 'rounded-l-md' : 
+                      index === 0 ? 'rounded-l-md' :
                       index === array.length - 1 ? 'rounded-r-md' : ''
                     } border ${
                       index > 0 ? 'border-l-0' : ''
@@ -995,13 +968,44 @@ export function Dashboard() {
                     }`}
                     title={`View by ${item.label.toLowerCase()}`}
                   >
-                    <span className="mr-1">{item.icon}</span>
                     {item.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Info section - Not sticky */}
+      <div className="space-y-2">
+        <p className="text-muted-foreground">
+          Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
+          {nonBillableRequests.length > 0 && (
+            <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
+          )}
+        </p>
+        <div className="flex items-center space-x-3">
+          {dataSource === 'api' ? (
+            <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+              <Info className="w-3 h-3" />
+              <span>Connected to Database</span>
+            </div>
+          ) : isWorkingVersion ? (
+            <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+              <Info className="w-3 h-3" />
+              <span>Working Version (CSV)</span>
+            </div>
+          ) : null}
+          {hasUnsavedChanges && (
+            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-md text-xs">
+              <Clock className="w-3 h-3" />
+              <span>Unsaved changes - click Save button</span>
+            </div>
+          )}
+          <span className="text-xs text-gray-500">
+            Manual save required • Original data protected
+          </span>
         </div>
       </div>
 
