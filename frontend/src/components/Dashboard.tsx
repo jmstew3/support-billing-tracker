@@ -6,12 +6,13 @@ import CategoryRadarChart from './CategoryRadarChart';
 import { CategoryPieChart } from './CategoryPieChart';
 import { Pagination } from './Pagination';
 import { EditableCell } from './EditableCell';
+import { ConfirmDialog } from './ConfirmDialog';
 import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2 } from 'lucide-react';
 
 export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -111,6 +112,15 @@ export function Dashboard() {
 
   // Chart type toggle
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
+
+  // Delete confirmation dialog state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    requestIndex: number | null;
+  }>({
+    isOpen: false,
+    requestIndex: null
+  });
   
   // Row expansion removed - request summaries now always wrap
 
@@ -497,6 +507,8 @@ export function Dashboard() {
 
   const chartData = getChartData();
   const filteredCategoryData = processCategoryData(billableFilteredRequests);
+  // Create separate category data for charts that includes ALL categories (including non-billable and migration)
+  const allCategoryDataForCharts = processCategoryData(filteredAndSortedRequests);
   const filteredCosts = calculateCosts(billableFilteredRequests);
   
 
@@ -565,6 +577,45 @@ export function Dashboard() {
       setHasUnsavedChanges(true);
       console.log(`Updated request ${index} locally: ${field} = ${actualValue}`);
     }
+  };
+
+  const handleDeleteRequest = (index: number) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      requestIndex: index
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmation.requestIndex === null) return;
+
+    const newRequests = [...requests];
+    newRequests.splice(deleteConfirmation.requestIndex, 1);
+    setRequests(newRequests);
+
+    // Trigger auto-save after deletion
+    if (!apiAvailable) {
+      triggerAutoSave(newRequests);
+    }
+
+    setDeleteConfirmation({
+      isOpen: false,
+      requestIndex: null
+    });
+
+    // Clear selection if deleted item was selected
+    if (selectedRequestIds.has(deleteConfirmation.requestIndex)) {
+      const newSelection = new Set(selectedRequestIds);
+      newSelection.delete(deleteConfirmation.requestIndex);
+      setSelectedRequestIds(newSelection);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      requestIndex: null
+    });
   };
 
   const handleSaveChanges = async () => {
@@ -1159,9 +1210,9 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             {chartType === 'radar' ? (
-              <CategoryRadarChart data={filteredCategoryData} />
+              <CategoryRadarChart data={allCategoryDataForCharts} />
             ) : (
-              <CategoryPieChart data={filteredCategoryData} />
+              <CategoryPieChart data={allCategoryDataForCharts} />
             )}
           </CardContent>
         </Card>
@@ -1583,7 +1634,7 @@ export function Dashboard() {
                     )}
                   </div>
                 </TableHead>
-                {/* Actions column removed */}
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1659,7 +1710,18 @@ export function Dashboard() {
                         />
                       )}
                     </TableCell>
-                    {/* Actions column removed */}
+                    <TableCell>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRequest(actualIndex);
+                        }}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                        title="Delete request"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -1679,6 +1741,22 @@ export function Dashboard() {
       </Card>
 
       {/* Deleted requests section removed - now using Non-billable category system */}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirmation.isOpen}
+        title="Delete Request"
+        message={`Are you sure you want to delete this request?
+
+⚠️ WARNING: This action is PERMANENT and cannot be undone.
+
+The request will be completely removed from the database and cannot be recovered.`}
+        confirmText="Delete Permanently"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        isDestructive={true}
+      />
       </div>
     </div>
   );
