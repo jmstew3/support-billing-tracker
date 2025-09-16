@@ -6,20 +6,29 @@ A comprehensive business intelligence dashboard that processes iMessage conversa
 
 ### Using Docker with MySQL Backend (Recommended)
 
-1. **Start all services with Docker**:
+1. **Set up environment variables**:
+```bash
+# Copy the example environment file
+cp .env.docker.example .env.docker
+
+# Edit .env.docker with your preferred passwords
+# (Default passwords are provided for local development)
+```
+
+2. **Start all services with Docker**:
 ```bash
 docker-compose up -d
 ```
 
-2. **Import existing data** (if you have CSV data):
+3. **Import existing data** (if you have CSV data):
 ```bash
 ./docker-import.sh data/03_final/thad_requests_table.csv
 ```
 
-3. **Access the dashboard**:
+4. **Access the dashboard**:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3001/api
-- MySQL: localhost:3307 (user: ***REMOVED***, password: ***REMOVED***)
+- MySQL: localhost:3307 (user: ***REMOVED***, password: from .env.docker)
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
@@ -214,10 +223,19 @@ Uses sophisticated pattern matching to identify:
 
 ### Accessing the Database
 
-**Via MySQL Client**:
+**Via TablePlus or Other GUI Client**:
+```
+Host: 127.0.0.1 or localhost
+Port: 3307 (not 3306)
+User: ***REMOVED***
+Password: [from .env.docker]
+Database: thad_chat
+```
+
+**Via MySQL Command Line**:
 ```bash
 mysql -h localhost -P 3307 -u ***REMOVED*** -p
-# Password: ***REMOVED***
+# Enter password from .env.docker
 USE thad_chat;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
