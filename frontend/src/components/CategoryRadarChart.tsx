@@ -7,7 +7,7 @@ interface CategoryRadarChartProps {
 
 const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data }) => {
   // Transform data for radar chart - ensure we have values for all categories
-  const categories = ['Non-billable', 'Advisory', 'General', 'Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration'];
+  const categories = ['Non-billable', 'Support', 'Advisory', 'Forms', 'Hosting', 'Billing', 'Email', 'General', 'Migration'];
 
   const radarData = categories.map(category => {
     const item = data.find(d => d.name === category);

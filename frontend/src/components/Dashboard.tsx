@@ -255,8 +255,21 @@ export function Dashboard() {
   const billableRequests = requests.filter(request => request.Category !== 'Non-billable' && request.Category !== 'Migration');
   const nonBillableRequests = requests.filter(request => request.Category === 'Non-billable' || request.Category === 'Migration');
 
-  // Get archived requests
-  const archivedRequests = requests.filter(request => request.Status === 'deleted');
+  // Get archived requests - sorted chronologically
+  const archivedRequests = requests
+    .filter(request => request.Status === 'deleted')
+    .sort((a, b) => {
+      // Sort by date first
+      const dateA = new Date(a.Date);
+      const dateB = new Date(b.Date);
+      if (dateA < dateB) return -1;
+      if (dateA > dateB) return 1;
+
+      // If dates are equal, sort by time
+      const timeA = parseTimeToMinutes(a.Time);
+      const timeB = parseTimeToMinutes(b.Time);
+      return timeA - timeB;
+    });
 
   // Calculate available years and months from all data (billable and non-billable)
   const availableYears = Array.from(new Set(
