@@ -25,10 +25,13 @@ class RequestExtractor:
             (self.df['message_text'].notna())
         ].copy()
         
-        # Convert message_date to datetime
-        self.df['datetime'] = pd.to_datetime(self.df['message_date'])
+        # Convert message_date to datetime (treating as UTC and converting to EDT)
+        self.df['datetime'] = pd.to_datetime(self.df['message_date'], utc=True)
+        # Convert UTC to EDT (UTC-4) - America/New_York handles EDT/EST automatically
+        self.df['datetime'] = self.df['datetime'].dt.tz_convert('America/New_York')
         self.df['date'] = self.df['datetime'].dt.date
-        self.df['time'] = self.df['datetime'].dt.time
+        # Format time as 12-hour format string (e.g., "8:47 AM" instead of time object)
+        self.df['time'] = self.df['datetime'].dt.strftime('%I:%M %p').str.lstrip('0')
         self.df['month'] = self.df['datetime'].dt.to_period('M')
         
         print(f"Loaded {len(self.df)} messages from Thad Norman")
