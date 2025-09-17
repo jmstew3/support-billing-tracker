@@ -115,6 +115,7 @@ thad-chat/
 - 🔄 Bulk selection and editing
 - 💾 Real-time database persistence
 - 📈 Time-based filtering (All/Month/Day views)
+- 📅 Modern calendar date picker with month selection capability
 
 ### Database Persistence & CRUD Operations
 
@@ -296,6 +297,14 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 - **Workflow Management**: Bulk operations for efficient request processing
 
 ## 📝 Recent Updates
+
+### September 17, 2025 - Modern Calendar Date Picker
+- **Calendar Dropdown**: Replaced three separate select boxes (Year/Month/Day) with a modern calendar popover
+- **Month Selection**: Click the month name in the calendar to select an entire month at once
+- **Visual Calendar**: Interactive calendar grid with hover effects and visual feedback
+- **Quick Presets**: Added "Today", "This Month", "This Year", and "All Time" quick select options
+- **Improved UX**: Single-click interface reduces clicks needed to select dates
+- **Visual Indicators**: Selected dates/months highlighted, with clear visual feedback for selections
 
 ### September 16, 2025 - Header & Navigation Improvements
 - **Sticky Header**: Period and View controls stay visible while scrolling, with full-width separator
