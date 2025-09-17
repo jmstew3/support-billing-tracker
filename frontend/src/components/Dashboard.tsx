@@ -7,12 +7,13 @@ import { CategoryPieChart } from './CategoryPieChart';
 import { Pagination } from './Pagination';
 import { EditableCell } from './EditableCell';
 import { ConfirmDialog } from './ConfirmDialog';
+import { DatePickerPopover } from './DatePickerPopover';
 import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight, Calendar, TrendingUp, BarChart3, Tag } from 'lucide-react';
 
 export function Dashboard() {
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -195,6 +196,164 @@ export function Dashboard() {
     // Create date with explicit year, month (0-indexed), day to avoid UTC conversion
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  // Activity Metric Helper Functions
+  const getMostActiveDay = (requests: ChatRequest[]) => {
+    if (requests.length === 0) return { dates: [], count: 0, displayText: 'N/A', subtitle: '' };
+
+    const dayCount: Record<string, number> = {};
+    requests.forEach(request => {
+      dayCount[request.Date] = (dayCount[request.Date] || 0) + 1;
+    });
+
+    // Find maximum count
+    let maxCount = 0;
+    Object.values(dayCount).forEach(count => {
+      if (count > maxCount) maxCount = count;
+    });
+
+    // Find ALL dates with maximum count
+    const topDates: string[] = [];
+    Object.entries(dayCount).forEach(([date, count]) => {
+      if (count === maxCount) {
+        topDates.push(date);
+      }
+    });
+
+    // Sort dates chronologically
+    topDates.sort();
+
+    // Format display text based on number of ties
+    let displayText = 'N/A';
+    let subtitle = '';
+
+    if (topDates.length === 1) {
+      // Single date - format as before
+      const [year, month, day] = topDates[0].split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      displayText = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
+    } else if (topDates.length === 2) {
+      // Two dates - show both
+      const formatted = topDates.map(d => {
+        const [year, month, day] = d.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+      });
+      displayText = formatted.join(' & ');
+    } else if (topDates.length > 2) {
+      // Multiple dates - show count
+      displayText = `${topDates.length} days tied`;
+      // Format first few for subtitle
+      const formatted = topDates.slice(0, 3).map(d => {
+        const [year, month, day] = d.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        });
+      });
+      subtitle = formatted.join(', ') + (topDates.length > 3 ? '...' : '');
+    }
+
+    return {
+      dates: topDates,
+      count: maxCount,
+      displayText,
+      subtitle
+    };
+  };
+
+  const getMostActiveTimeRange = (requests: ChatRequest[]) => {
+    if (requests.length === 0) return { range: 'N/A', count: 0 };
+
+    const ranges = {
+      'Morning (8AM-12PM)': 0,
+      'Afternoon (12PM-4PM)': 0,
+      'Evening (4PM-6PM)': 0,
+      'Night (6PM-10PM)': 0,
+      'Late Night (10PM-8AM)': 0
+    };
+
+    requests.forEach(request => {
+      const minutes = parseTimeToMinutes(request.Time);
+      const hours = Math.floor(minutes / 60);
+
+      if (hours >= 8 && hours < 12) {
+        ranges['Morning (8AM-12PM)']++;
+      } else if (hours >= 12 && hours < 16) {
+        ranges['Afternoon (12PM-4PM)']++;
+      } else if (hours >= 16 && hours < 18) {
+        ranges['Evening (4PM-6PM)']++;
+      } else if (hours >= 18 && hours < 22) {
+        ranges['Night (6PM-10PM)']++;
+      } else {
+        ranges['Late Night (10PM-8AM)']++;
+      }
+    });
+
+    let maxRange = '';
+    let maxCount = 0;
+    Object.entries(ranges).forEach(([range, count]) => {
+      if (count > maxCount) {
+        maxRange = range;
+        maxCount = count;
+      }
+    });
+
+    return { range: maxRange || 'N/A', count: maxCount };
+  };
+
+  const getBusiestDayOfWeek = (requests: ChatRequest[]) => {
+    if (requests.length === 0) return { day: 'N/A', count: 0 };
+
+    const dayCount: Record<string, number> = {};
+    const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    requests.forEach(request => {
+      const dayName = getDayOfWeek(request.Date);
+      dayCount[dayName] = (dayCount[dayName] || 0) + 1;
+    });
+
+    let maxDay = '';
+    let maxCount = 0;
+    Object.entries(dayCount).forEach(([day, count]) => {
+      if (count > maxCount) {
+        maxDay = day;
+        maxCount = count;
+      }
+    });
+
+    return { day: maxDay || 'N/A', count: maxCount };
+  };
+
+  const getTopCategory = (requests: ChatRequest[]) => {
+    if (requests.length === 0) return { category: 'N/A', count: 0, percentage: 0 };
+
+    const categoryCount: Record<string, number> = {};
+    requests.forEach(request => {
+      const category = request.Category || 'Support';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+
+    let maxCategory = '';
+    let maxCount = 0;
+    Object.entries(categoryCount).forEach(([category, count]) => {
+      if (count > maxCount) {
+        maxCategory = category;
+        maxCount = count;
+      }
+    });
+
+    const percentage = requests.length > 0 ? Math.round((maxCount / requests.length) * 100) : 0;
+
+    return { category: maxCategory || 'N/A', count: maxCount, percentage };
   };
 
   // Sorting function
@@ -609,7 +768,12 @@ export function Dashboard() {
   });
   const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
   const filteredCosts = calculateCosts(billableFilteredRequests);
-  
+
+  // Calculate activity metrics based on filtered billable requests
+  const mostActiveDay = getMostActiveDay(billableFilteredRequests);
+  const mostActiveTimeRange = getMostActiveTimeRange(billableFilteredRequests);
+  const busiestDayOfWeek = getBusiestDayOfWeek(billableFilteredRequests);
+  const topCategory = getTopCategory(billableFilteredRequests);
 
   // Scroll position preservation effect
   useEffect(() => {
@@ -1058,61 +1222,33 @@ export function Dashboard() {
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="container mx-auto py-4">
           <div className="flex items-start justify-between">
-            {/* Left side - Title */}
-            <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
+            {/* Left side - Title and Database Status */}
+            <div className="flex items-center space-x-3">
+              <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
+              {dataSource === 'api' && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
+                  <Info className="w-3 h-3" />
+                  <span>Connected to Database</span>
+                </div>
+              )}
+            </div>
 
             {/* Right side - Controls */}
             <div className="flex items-center space-x-6">
             {/* Date Range Selector */}
             <div className="flex items-center space-x-3">
               <span className="text-sm font-medium text-muted-foreground">Period:</span>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => handleYearChange(Number(e.target.value))}
-                  className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm min-w-[70px]"
-                >
-                  {availableYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-                
-                <span className="text-gray-400">→</span>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => handleMonthChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                  className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm min-w-[90px]"
-                >
-                  <option value="all">All Months</option>
-                  {availableMonthsForYear.map(month => (
-                    <option key={month} value={month}>
-                      {monthNames[month - 1]}
-                    </option>
-                  ))}
-                </select>
-                
-                {selectedMonth !== 'all' && (
-                  <>
-                    <span className="text-gray-400">→</span>
-                    <select
-                      value={selectedDay}
-                      onChange={(e) => handleDayChange(e.target.value)}
-                      className="border border-gray-300 rounded-md px-2 py-1 bg-white text-sm min-w-[100px]"
-                    >
-                      <option value="all">All Days</option>
-                      {availableDates.map(date => (
-                        <option key={date} value={date}>
-                          {new Date(date).toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                )}
-              </div>
+              <DatePickerPopover
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                selectedDay={selectedDay}
+                availableYears={availableYears}
+                availableMonths={availableMonthsForYear}
+                availableDates={availableDates}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
+                onDayChange={handleDayChange}
+              />
             </div>
 
             {/* View Mode Toggle */}
@@ -1165,12 +1301,7 @@ export function Dashboard() {
           )}
         </p>
         <div className="flex items-center space-x-3">
-          {dataSource === 'api' ? (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-              <Info className="w-3 h-3" />
-              <span>Connected to Database</span>
-            </div>
-          ) : isWorkingVersion ? (
+          {isWorkingVersion ? (
             <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
               <Info className="w-3 h-3" />
               <span>Working Version (CSV)</span>
@@ -1257,6 +1388,74 @@ export function Dashboard() {
             </div>
             <p className="text-xs text-muted-foreground">
               {billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Activity Insights Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Most Active Day</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={mostActiveDay.dates.length > 2 ? "text-xl font-bold" : "text-2xl font-bold"}>
+              {mostActiveDay.displayText}
+            </div>
+            {mostActiveDay.subtitle && (
+              <p className="text-xs text-gray-600 mt-1">
+                {mostActiveDay.subtitle}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {mostActiveDay.count} requests{mostActiveDay.dates.length > 1 ? ' each' : ''}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Peak Time</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">
+              {mostActiveTimeRange.range.split(' (')[0]}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {mostActiveTimeRange.count} requests
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Busiest Day</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {busiestDayOfWeek.day}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {busiestDayOfWeek.count} requests on average
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Category</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {topCategory.category}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {topCategory.percentage}% of requests
             </p>
           </CardContent>
         </Card>

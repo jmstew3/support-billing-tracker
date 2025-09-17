@@ -482,3 +482,44 @@ This application provides a complete solution for transforming conversational da
 - **Batch Operations**: Bulk actions process multiple requests efficiently
 - **Memory Management**: Status-based filtering reduces memory usage for large datasets
 - **Real-Time Updates**: Immediate UI feedback with persistent background saves
+
+## Date and Time Handling (Critical) #memorize
+
+### Database Storage
+- **MySQL TIME field**: Stores times in 24-hour format (e.g., `08:47:07`)
+- **MySQL DATE field**: Stores dates as `YYYY-MM-DD` format
+- **Timezone**: Times are stored in EDT (Eastern Daylight Time, UTC-4)
+- **Conversion**: When importing from iMessage exports (which are in UTC), we subtract 4 hours using `SUBTIME(time, '04:00:00')`
+- **Midnight Crossings**: Handled by adjusting both date and time when conversion crosses day boundary
+
+### Frontend Display
+- **Date Parsing Issue**: JavaScript's `new Date("2025-06-23")` interprets as UTC midnight, causing timezone shift
+- **Solution**: Parse date components manually to avoid timezone issues:
+  ```javascript
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month is 0-indexed
+  ```
+- **Time Format**: Display as 12-hour with AM/PM (e.g., "8:47 AM")
+- **Chart Data**: Uses the same manual parsing to ensure consistency
+
+### Request Extractor (Python)
+- **Timezone Conversion**: Treats incoming timestamps as UTC and converts to EDT:
+  ```python
+  self.df['datetime'] = pd.to_datetime(self.df['message_date'], utc=True)
+  self.df['datetime'] = self.df['datetime'].dt.tz_convert('America/New_York')
+  ```
+- **Time Formatting**: Outputs as 12-hour format: `strftime('%I:%M %p').str.lstrip('0')`
+- **Date Output**: Maintains `YYYY-MM-DD` format for consistency
+
+### Known Issues & Solutions
+1. **Problem**: Scorecard showing wrong date (e.g., Jun 22 instead of Jun 23)
+   - **Cause**: `new Date()` timezone conversion
+   - **Fix**: Manual date component parsing
+
+2. **Problem**: Times off by 4 hours
+   - **Cause**: iMessage exports in UTC, displayed in EDT
+   - **Fix**: Timezone conversion in request extractor and database update
+
+3. **Problem**: Archived requests not sorted chronologically
+   - **Cause**: Missing sort logic
+   - **Fix**: Added date/time sorting using `parseTimeToMinutes` helper
