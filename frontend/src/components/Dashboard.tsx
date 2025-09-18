@@ -1401,7 +1401,7 @@ export function Dashboard() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={mostActiveDay.dates.length > 2 ? "text-xl font-bold" : "text-2xl font-bold"}>
+            <div className="text-2xl font-bold">
               {mostActiveDay.displayText}
             </div>
             {mostActiveDay.subtitle && (
@@ -1421,7 +1421,7 @@ export function Dashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">
+            <div className="text-2xl font-bold">
               {mostActiveTimeRange.range.split(' (')[0]}
             </div>
             <p className="text-xs text-muted-foreground">
