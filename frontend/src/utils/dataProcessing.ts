@@ -1,4 +1,5 @@
 import type { ChatRequest, DailyRequestCount, CategoryCount, CostCalculation } from '../types/request';
+import { RATES, FLAT_RATE, DEFAULT_HOURS } from '../config/pricing';
 
 // Request data interface for processed data
 export interface RequestData {
@@ -94,20 +95,13 @@ export function processCategoryData(requests: ChatRequest[]): CategoryCount[] {
 
 // Calculate costs based on urgency and estimated hours
 export function calculateCosts(requests: ChatRequest[]): CostCalculation {
-  const HOURS_PER_REQUEST = 0.5;
-  const RATES = {
-    regular: 200,
-    sameDay: 250,
-    emergency: 300
-  };
-  const FLAT_RATE = 125;
 
   let regularHours = 0;
   let sameDayHours = 0;
   let emergencyHours = 0;
 
   requests.forEach(request => {
-    const hours = request.EstimatedHours || HOURS_PER_REQUEST;
+    const hours = request.EstimatedHours || DEFAULT_HOURS;
 
     switch (request.Urgency) {
       case 'LOW':
