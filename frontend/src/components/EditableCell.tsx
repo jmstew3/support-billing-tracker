@@ -110,26 +110,26 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
         ref={buttonRef}
         onClick={handleToggleOpen}
         onKeyDown={handleKeyDown}
-        className={`flex items-center justify-between w-full px-3 py-2 text-left border border-gray-200 rounded-md bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors ${className} ${isOpen ? 'border-blue-300 bg-blue-50' : ''}`}
+        className={`flex items-center justify-between w-full px-3 py-2 text-left text-foreground border border-border rounded-md bg-card hover:border-border hover:bg-accent transition-colors ${className} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
         title="Click to edit"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
         <span>{formatDisplayValue ? formatDisplayValue(value) : value}</span>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && createPortal(
         <div 
           ref={dropdownRef}
-          className="bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+          className="bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
           style={{
             position: 'absolute',
             top: dropdownPosition.top + 4,
             left: dropdownPosition.left,
             width: dropdownPosition.width,
             zIndex: 999999,
-            backgroundColor: 'white',
+            backgroundColor: 'var(--card)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
         >
@@ -137,8 +137,8 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
             <button
               key={option}
               onClick={() => handleOptionClick(option)}
-              className={`w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors ${
-                option === value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-900'
+              className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors ${
+                option === value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium' : 'text-foreground'
               }`}
               role="option"
               aria-selected={option === value}

@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  darkMode: 'class', // Enable class-based dark mode
   safelist: [
     'bg-background',
-    'text-foreground', 
+    'text-foreground',
     'text-muted-foreground',
     'bg-muted',
     'border-border',
@@ -11,6 +12,7 @@ export default {
     'text-card-foreground',
     'bg-primary',
     'text-primary-foreground',
+    'dark', // Add dark class to safelist
   ],
   theme: {
     extend: {
@@ -47,6 +49,18 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Chart colors from design tokens
+        chart: {
+          support: "var(--chart-color-support)",
+          hosting: "var(--chart-color-hosting)",
+          forms: "var(--chart-color-forms)",
+          billing: "var(--chart-color-billing)",
+          email: "var(--chart-color-email)",
+          migration: "var(--chart-color-migration)",
+          'non-billable': "var(--chart-color-non-billable)",
+          advisory: "var(--chart-color-advisory)",
+          general: "var(--chart-color-general)",
         },
       },
       borderRadius: {
