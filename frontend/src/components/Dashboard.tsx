@@ -16,7 +16,13 @@ import { processDailyRequests, processCategoryData, calculateCosts, categorizeRe
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
+import { PRICING_CONFIG } from '../config/pricing';
+
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme();
@@ -1147,6 +1153,201 @@ export function Dashboard() {
     }
   };
 
+  // Navigation functions for month arrows
+  const handlePreviousMonth = () => {
+    let newMonth: number;
+    let newYear: number = selectedYear;
+
+    if (selectedMonth === 'all') {
+      // If currently viewing all months, go to the most recent month
+      if (availableMonthsForYear.length > 0) {
+        newMonth = availableMonthsForYear[availableMonthsForYear.length - 1];
+      } else {
+        return; // No months available
+      }
+    } else {
+      newMonth = selectedMonth - 1;
+
+      // If we go before January, go to December of previous year
+      if (newMonth < 1) {
+        newMonth = 12;
+        newYear = selectedYear - 1;
+
+        // Check if previous year exists in available years
+        if (!availableYears.includes(newYear)) {
+          return; // Can't go to previous year
+        }
+      }
+    }
+
+    // Check if the target month has data
+    const targetMonthHasData = requests.some(request => {
+      const requestDate = new Date(request.Date);
+      return requestDate.getFullYear() === newYear &&
+             requestDate.getMonth() + 1 === newMonth;
+    });
+
+    if (!targetMonthHasData) {
+      // Try to find the nearest previous month with data
+      for (let y = newYear; y >= Math.min(...availableYears); y--) {
+        for (let m = (y === newYear ? newMonth : 12); m >= 1; m--) {
+          const hasData = requests.some(request => {
+            const requestDate = new Date(request.Date);
+            return requestDate.getFullYear() === y &&
+                   requestDate.getMonth() + 1 === m;
+          });
+          if (hasData) {
+            newYear = y;
+            newMonth = m;
+            break;
+          }
+        }
+        if (newMonth !== (y === newYear ? newMonth : 12)) break;
+      }
+    }
+
+    // Update the state
+    if (newYear !== selectedYear) {
+      setSelectedYear(newYear);
+    }
+    setSelectedMonth(newMonth);
+    setSelectedDay('all');
+    setTimeViewMode('month');
+    setCurrentPage(1);
+    setSelectedRequestIds(new Set());
+    setSelectAll(false);
+  };
+
+  const handleNextMonth = () => {
+    let newMonth: number;
+    let newYear: number = selectedYear;
+
+    if (selectedMonth === 'all') {
+      // If currently viewing all months, go to the first month
+      if (availableMonthsForYear.length > 0) {
+        newMonth = availableMonthsForYear[0];
+      } else {
+        return; // No months available
+      }
+    } else {
+      newMonth = selectedMonth + 1;
+
+      // If we go past December, go to January of next year
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear = selectedYear + 1;
+
+        // Check if next year exists in available years
+        if (!availableYears.includes(newYear)) {
+          return; // Can't go to next year
+        }
+      }
+    }
+
+    // Check if the target month has data
+    const targetMonthHasData = requests.some(request => {
+      const requestDate = new Date(request.Date);
+      return requestDate.getFullYear() === newYear &&
+             requestDate.getMonth() + 1 === newMonth;
+    });
+
+    if (!targetMonthHasData) {
+      // Try to find the nearest next month with data
+      for (let y = newYear; y <= Math.max(...availableYears); y++) {
+        for (let m = (y === newYear ? newMonth : 1); m <= 12; m++) {
+          const hasData = requests.some(request => {
+            const requestDate = new Date(request.Date);
+            return requestDate.getFullYear() === y &&
+                   requestDate.getMonth() + 1 === m;
+          });
+          if (hasData) {
+            newYear = y;
+            newMonth = m;
+            break;
+          }
+        }
+        if (newMonth !== (y === newYear ? newMonth : 1)) break;
+      }
+    }
+
+    // Update the state
+    if (newYear !== selectedYear) {
+      setSelectedYear(newYear);
+    }
+    setSelectedMonth(newMonth);
+    setSelectedDay('all');
+    setTimeViewMode('month');
+    setCurrentPage(1);
+    setSelectedRequestIds(new Set());
+    setSelectAll(false);
+  };
+
+  // Check if we can navigate to previous/next month
+  const canNavigatePrevious = () => {
+    if (requests.length === 0) return false;
+
+    if (selectedMonth === 'all') {
+      return availableMonthsForYear.length > 0;
+    }
+
+    // Check if there's any data before current month
+    return requests.some(request => {
+      const requestDate = new Date(request.Date);
+      const requestYear = requestDate.getFullYear();
+      const requestMonth = requestDate.getMonth() + 1;
+
+      return requestYear < selectedYear ||
+             (requestYear === selectedYear && requestMonth < selectedMonth);
+    });
+  };
+
+  const canNavigateNext = () => {
+    if (requests.length === 0) return false;
+
+    if (selectedMonth === 'all') {
+      return availableMonthsForYear.length > 0;
+    }
+
+    // Check if there's any data after current month
+    return requests.some(request => {
+      const requestDate = new Date(request.Date);
+      const requestYear = requestDate.getFullYear();
+      const requestMonth = requestDate.getMonth() + 1;
+
+      return requestYear > selectedYear ||
+             (requestYear === selectedYear && requestMonth > selectedMonth);
+    });
+  };
+
+  // Get tooltip text for navigation buttons
+  const getPreviousMonthTooltip = () => {
+    if (selectedMonth === 'all') {
+      if (availableMonthsForYear.length > 0) {
+        const lastMonth = availableMonthsForYear[availableMonthsForYear.length - 1];
+        return `Go to ${monthNames[lastMonth - 1]} ${selectedYear}`;
+      }
+      return 'Previous month';
+    }
+
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+    return `Go to ${monthNames[prevMonth - 1]} ${prevYear}`;
+  };
+
+  const getNextMonthTooltip = () => {
+    if (selectedMonth === 'all') {
+      if (availableMonthsForYear.length > 0) {
+        const firstMonth = availableMonthsForYear[0];
+        return `Go to ${monthNames[firstMonth - 1]} ${selectedYear}`;
+      }
+      return 'Next month';
+    }
+
+    const nextMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
+    const nextYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
+    return `Go to ${monthNames[nextMonth - 1]} ${nextYear}`;
+  };
+
   const handleTimeViewModeChange = (mode: 'all' | 'month' | 'day') => {
     setTimeViewMode(mode);
     // Auto-adjust filters based on view mode
@@ -1242,17 +1443,51 @@ export function Dashboard() {
             {/* Date Range Selector */}
             <div className="flex items-center space-x-3">
               <span className="text-sm font-medium text-muted-foreground">Period:</span>
-              <DatePickerPopover
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                selectedDay={selectedDay}
-                availableYears={availableYears}
-                availableMonths={availableMonthsForYear}
-                availableDates={availableDates}
-                onYearChange={handleYearChange}
-                onMonthChange={handleMonthChange}
-                onDayChange={handleDayChange}
-              />
+
+              {/* Navigation arrows and date picker */}
+              <div className="flex items-center space-x-1">
+                {/* Previous Month Arrow */}
+                <button
+                  onClick={handlePreviousMonth}
+                  disabled={!canNavigatePrevious()}
+                  className={`p-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors ${
+                    !canNavigatePrevious()
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  }`}
+                  title={canNavigatePrevious() ? getPreviousMonthTooltip() : 'No previous data'}
+                  aria-label="Navigate to previous month"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <DatePickerPopover
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  selectedDay={selectedDay}
+                  availableYears={availableYears}
+                  availableMonths={availableMonthsForYear}
+                  availableDates={availableDates}
+                  onYearChange={handleYearChange}
+                  onMonthChange={handleMonthChange}
+                  onDayChange={handleDayChange}
+                />
+
+                {/* Next Month Arrow */}
+                <button
+                  onClick={handleNextMonth}
+                  disabled={!canNavigateNext()}
+                  className={`p-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors ${
+                    !canNavigateNext()
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  }`}
+                  title={canNavigateNext() ? getNextMonthTooltip() : 'No future data'}
+                  aria-label="Navigate to next month"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* View Mode Toggle */}
@@ -1502,45 +1737,65 @@ export function Dashboard() {
               <CardTitle>Cost Calculation</CardTitle>
               <CardDescription>Tiered pricing vs flat rate comparison (0.5 hour increments)</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-center">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Regular Support ($200/hr)</p>
-                  <p className="text-2xl font-bold">{filteredCosts.regularHours} hours</p>
-                  <p className="text-lg">${filteredCosts.regularCost.toLocaleString()}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Same Day ($250/hr)</p>
-                  <p className="text-2xl font-bold">{filteredCosts.sameDayHours} hours</p>
-                  <p className="text-lg">${filteredCosts.sameDayCost.toLocaleString()}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Emergency ($300/hr)</p>
-                  <p className="text-2xl font-bold">{filteredCosts.emergencyHours} hours</p>
-                  <p className="text-lg">${filteredCosts.emergencyCost.toLocaleString()}</p>
-                </div>
-              </div>
-              <div className="px-6 py-4 -mx-6 mt-8 border-t bg-gray-50 dark:bg-gray-800/50">
-                <div className="flex justify-between items-center w-full">
-                  <p className="text-lg font-semibold">Total (Tiered Pricing)</p>
-                  <p className="text-lg font-semibold">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)} hours</p>
-                  <p className="text-lg font-semibold">${filteredCosts.totalCost.toLocaleString()}</p>
-                </div>
+            <CardContent className="flex-1 flex flex-col">
+              {/* Tiered Pricing Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
+                      <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
+                      <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
+                      <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
+                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
+                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours}</td>
+                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.regularCost.toLocaleString()}</td>
+                    </tr>
+                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
+                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
+                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours}</td>
+                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.sameDayCost.toLocaleString()}</td>
+                    </tr>
+                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
+                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
+                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours}</td>
+                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
+                    </tr>
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
+                      <td className="py-3 px-4">Total (Tiered)</td>
+                      <td className="text-center py-3 px-4">-</td>
+                      <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)}</td>
+                      <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              {/* Flat Rate Pricing with Savings */}
-              <div className="px-6 py-4 -mx-6 -mb-6 border-t bg-green-50 dark:bg-green-900/20">
-                <div className="flex justify-between items-center w-full mb-3">
-                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">Flat Rate ($125/hr)</p>
-                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">{filteredCosts.flatRateHours.toFixed(1)} hours</p>
-                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">${filteredCosts.flatRateCost.toLocaleString()}</p>
-                </div>
-                <div className="flex justify-between items-center w-full pt-3 border-t border-green-200 dark:border-green-800">
-                  <p className="text-lg font-bold text-green-700 dark:text-green-300">Your Savings</p>
-                  <p className="text-lg font-bold text-green-700 dark:text-green-300">
-                    ${filteredCosts.savings.toLocaleString()} ({filteredCosts.savingsPercentage.toFixed(1)}%)
-                  </p>
-                </div>
+              {/* Flat Rate Comparison */}
+              <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <table className="w-full">
+                  <tbody>
+                    <tr className="border-b border-green-200 dark:border-green-800">
+                      <td className="py-3 px-4 text-green-800 dark:text-green-200 font-semibold">Flat Rate</td>
+                      <td className="text-center py-3 px-4 text-green-800 dark:text-green-200">${PRICING_CONFIG.flatRate}/hr</td>
+                      <td className="text-center py-3 px-4 text-green-800 dark:text-green-200 font-semibold">{filteredCosts.flatRateHours.toFixed(1)}</td>
+                      <td className="text-right py-3 px-4 text-green-800 dark:text-green-200 font-semibold">${filteredCosts.flatRateCost.toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3} className="py-3 px-4 text-green-700 dark:text-green-300 font-bold">Your Savings</td>
+                      <td className="text-right py-3 px-4 text-green-700 dark:text-green-300 font-bold">
+                        ${filteredCosts.savings.toLocaleString()} ({filteredCosts.savingsPercentage.toFixed(1)}%)
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
