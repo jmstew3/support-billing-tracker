@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Scorecard } from './ui/Scorecard';
+import { ThemeToggle } from './ui/ThemeToggle';
+import { useTheme } from '../hooks/useTheme';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { RequestCalendarHeatmap } from './RequestCalendarHeatmap';
 import CategoryRadarChart from './CategoryRadarChart';
@@ -13,9 +16,10 @@ import { processDailyRequests, processCategoryData, calculateCosts, categorizeRe
 import { formatTime } from '../utils/timeUtils';
 import { saveToDataDirectory } from '../utils/csvExport';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight, Calendar, TrendingUp, BarChart3, Tag } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, ChevronRight, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
 
 export function Dashboard() {
+  const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isWorkingVersion, setIsWorkingVersion] = useState(false);
@@ -1219,7 +1223,7 @@ export function Dashboard() {
   return (
     <div>
       {/* Sticky Header with Title and Controls - Full Width */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="container mx-auto py-4">
           <div className="flex items-start justify-between">
             {/* Left side - Title and Database Status */}
@@ -1266,14 +1270,14 @@ export function Dashboard() {
                     className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                       timeViewMode === item.mode
                         ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+                        : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
                     } ${
                       index === 0 ? 'rounded-l-md' :
                       index === array.length - 1 ? 'rounded-r-md' : ''
                     } border ${
                       index > 0 ? 'border-l-0' : ''
                     } ${
-                      timeViewMode === item.mode ? 'border-blue-600' : 'border-gray-300'
+                      timeViewMode === item.mode ? 'border-blue-600' : 'border-border'
                     }`}
                     title={`View by ${item.label.toLowerCase()}`}
                   >
@@ -1282,6 +1286,9 @@ export function Dashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             </div>
           </div>
         </div>
@@ -1294,27 +1301,27 @@ export function Dashboard() {
         <p className="text-muted-foreground">
           Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
           {nonBillableRequests.length > 0 && (
-            <span className="text-gray-600"> • {nonBillableRequests.length} non-billable</span>
+            <span className="text-muted-foreground"> • {nonBillableRequests.length} non-billable</span>
           )}
           {hideNonBillable && nonBillableRequests.length > 0 && (
-            <span className="text-orange-600 font-medium"> • Hiding {nonBillableRequests.length} non-billable items</span>
+            <span className="text-orange-600 dark:text-orange-400 font-medium"> • Hiding {nonBillableRequests.length} non-billable items</span>
           )}
         </p>
         <div className="flex items-center space-x-3">
           {isWorkingVersion ? (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs">
+            <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-md text-xs">
               <Info className="w-3 h-3" />
               <span>Working Version (CSV)</span>
             </div>
           ) : null}
           {hasUnsavedChanges && (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-md text-xs">
+            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-md text-xs">
               <Clock className="w-3 h-3" />
               <span>Unsaved changes - click Save button</span>
             </div>
           )}
           {!apiAvailable && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               Manual save required • Original data protected
             </span>
           )}
@@ -1323,142 +1330,92 @@ export function Dashboard() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{billableFilteredRequests.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {timeViewMode === 'day' && selectedDay !== 'all' 
-                ? `Across ${chartData.length} hours`
-                : `Across ${chartData.length} days`
-              }
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="Total Requests"
+          value={billableFilteredRequests.length}
+          description={timeViewMode === 'day' && selectedDay !== 'all'
+            ? `Across ${chartData.length} hours`
+            : `Across ${chartData.length} days`
+          }
+          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Hours</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1) : 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              At 0.5 hours per request
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="Total Hours"
+          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1) : 0}
+          description="At 0.5 hours per request"
+          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
+        <Scorecard
+          title="Total Cost"
+          value={
+            <div className="space-y-0.5">
               <div className="text-2xl font-bold">
                 ${filteredCosts?.flatRateCost.toLocaleString() || 0}
               </div>
               <div className="text-sm text-muted-foreground line-through">
                 ${filteredCosts?.totalCost.toLocaleString() || 0}
               </div>
-              <div className="text-sm font-semibold text-green-600">
+              <div className="text-sm font-semibold text-green-600 dark:text-green-400">
                 Save ${filteredCosts?.savings.toLocaleString() || 0}
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Flat rate ($125/hr)
-            </p>
-          </CardContent>
-        </Card>
+          }
+          description="Flat rate ($125/hr)"
+          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          valueClassName="!p-0"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">High Priority</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="High Priority"
+          value={billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length}
+          description={`${billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable`}
+          icon={<AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+        />
       </div>
 
       {/* Activity Insights Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Most Active Day</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {mostActiveDay.displayText}
+        <Scorecard
+          title="Most Active Day"
+          value={
+            <div>
+              <div className="text-2xl font-bold">
+                {mostActiveDay.displayText}
+              </div>
+              {mostActiveDay.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {mostActiveDay.subtitle}
+                </p>
+              )}
             </div>
-            {mostActiveDay.subtitle && (
-              <p className="text-xs text-gray-600 mt-1">
-                {mostActiveDay.subtitle}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {mostActiveDay.count} requests{mostActiveDay.dates.length > 1 ? ' each' : ''}
-            </p>
-          </CardContent>
-        </Card>
+          }
+          description={`${mostActiveDay.count} requests${mostActiveDay.dates.length > 1 ? ' each' : ''}`}
+          icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+          valueClassName="!p-0"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Peak Time</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {mostActiveTimeRange.range.split(' (')[0]}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {mostActiveTimeRange.count} requests
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="Peak Time"
+          value={mostActiveTimeRange.range.split(' (')[0]}
+          description={`${mostActiveTimeRange.count} requests`}
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Busiest Day</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {busiestDayOfWeek.day}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {busiestDayOfWeek.count} requests on average
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="Busiest Day"
+          value={busiestDayOfWeek.day}
+          description={`${busiestDayOfWeek.count} requests on average`}
+          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Category</CardTitle>
-            <Tag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {topCategory.category}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {topCategory.percentage}% of requests
-            </p>
-          </CardContent>
-        </Card>
+        <Scorecard
+          title="Top Category"
+          value={topCategory.category}
+          description={`${topCategory.percentage}% of requests`}
+          icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+        />
       </div>
 
       {/* Requests Over Time - Full Width */}
@@ -1546,7 +1503,6 @@ export function Dashboard() {
               <CardDescription>Tiered pricing vs flat rate comparison (0.5 hour increments)</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-between">
-              <div></div>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-center">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Regular Support ($200/hr)</p>
@@ -1564,7 +1520,7 @@ export function Dashboard() {
                   <p className="text-lg">${filteredCosts.emergencyCost.toLocaleString()}</p>
                 </div>
               </div>
-              <div className="px-6 py-4 -mx-6 mt-8 border-t bg-gray-50">
+              <div className="px-6 py-4 -mx-6 mt-8 border-t bg-gray-50 dark:bg-gray-800/50">
                 <div className="flex justify-between items-center w-full">
                   <p className="text-lg font-semibold">Total (Tiered Pricing)</p>
                   <p className="text-lg font-semibold">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)} hours</p>
@@ -1573,15 +1529,15 @@ export function Dashboard() {
               </div>
 
               {/* Flat Rate Pricing with Savings */}
-              <div className="px-6 py-4 -mx-6 -mb-6 border-t bg-green-50">
+              <div className="px-6 py-4 -mx-6 -mb-6 border-t bg-green-50 dark:bg-green-900/20">
                 <div className="flex justify-between items-center w-full mb-3">
-                  <p className="text-lg font-semibold text-green-800">Flat Rate ($125/hr)</p>
-                  <p className="text-lg font-semibold text-green-800">{filteredCosts.flatRateHours.toFixed(1)} hours</p>
-                  <p className="text-lg font-semibold text-green-800">${filteredCosts.flatRateCost.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">Flat Rate ($125/hr)</p>
+                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">{filteredCosts.flatRateHours.toFixed(1)} hours</p>
+                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">${filteredCosts.flatRateCost.toLocaleString()}</p>
                 </div>
-                <div className="flex justify-between items-center w-full pt-3 border-t border-green-200">
-                  <p className="text-lg font-bold text-green-700">Your Savings</p>
-                  <p className="text-lg font-bold text-green-700">
+                <div className="flex justify-between items-center w-full pt-3 border-t border-green-200 dark:border-green-800">
+                  <p className="text-lg font-bold text-green-700 dark:text-green-300">Your Savings</p>
+                  <p className="text-lg font-bold text-green-700 dark:text-green-300">
                     ${filteredCosts.savings.toLocaleString()} ({filteredCosts.savingsPercentage.toFixed(1)}%)
                   </p>
                 </div>
@@ -1594,7 +1550,7 @@ export function Dashboard() {
       {/* Request Table */}
       <Card>
         {/* Sticky Header for Billable Requests */}
-        <CardHeader className="sticky top-16 z-30 bg-white border-b border-gray-200">
+        <CardHeader className="sticky top-16 z-30 bg-card border-b border-border rounded-t-lg">
           <div className="space-y-3">
             {/* Title Row */}
             <div className="flex justify-between items-start">
@@ -1604,21 +1560,68 @@ export function Dashboard() {
               </div>
               <div className="flex items-center space-x-4">
                 {/* Toggle for Non-Billable Items */}
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={hideNonBillable}
-                    onChange={(e) => setHideNonBillable(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className="relative">
-                    <div className={`block w-10 h-6 rounded-full transition-colors ${hideNonBillable ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                    <div className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-transform ${hideNonBillable ? 'transform translate-x-4' : ''}`}></div>
-                  </div>
-                  <span className="ml-3 text-sm font-medium text-gray-700">
-                    Hide Non-Billable
-                  </span>
-                </label>
+                <div className="flex flex-col space-y-1">
+                  <label className="flex items-center cursor-pointer group">
+                    {/* OFF indicator */}
+                    <span className={`text-xs font-medium mr-2 transition-opacity ${hideNonBillable ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                      OFF
+                    </span>
+
+                    {/* Toggle Switch */}
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={hideNonBillable}
+                        onChange={(e) => setHideNonBillable(e.target.checked)}
+                        aria-checked={hideNonBillable}
+                        aria-label={`Show only billable items. Currently ${hideNonBillable ? 'showing only billable' : 'showing all'} items`}
+                        className="sr-only"
+                        id="billable-toggle"
+                      />
+                      <div className={`block w-12 h-7 rounded-full transition-all duration-300 ${
+                        hideNonBillable
+                          ? 'bg-blue-600 dark:bg-blue-500'
+                          : 'bg-gray-300 dark:bg-gray-600'
+                      }`}>
+                        <div className={`absolute left-0.5 top-0.5 bg-white dark:bg-gray-200 w-6 h-6 rounded-full transition-transform duration-300 flex items-center justify-center ${
+                          hideNonBillable ? 'transform translate-x-5' : ''
+                        }`}>
+                          {/* Eye icon that changes based on state */}
+                          {hideNonBillable ? (
+                            <Eye className="w-3 h-3 text-blue-600 dark:text-blue-500" />
+                          ) : (
+                            <EyeOff className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ON indicator */}
+                    <span className={`text-xs font-medium ml-2 mr-3 transition-opacity ${hideNonBillable ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-muted-foreground/50'}`}>
+                      ON
+                    </span>
+
+                    {/* Label with count */}
+                    <span className="text-sm font-medium text-foreground">
+                      Show only billable
+                      {nonBillableRequests.length > 0 && (
+                        <span className="text-muted-foreground ml-1">
+                          ({hideNonBillable ? billableFilteredRequests.length : filteredAndSortedRequests.length} of {requests.filter(r => r.Status === 'active').length})
+                        </span>
+                      )}
+                    </span>
+                  </label>
+
+                  {/* Helper text */}
+                  {nonBillableRequests.length > 0 && (
+                    <p className="text-xs text-muted-foreground pl-16">
+                      {hideNonBillable
+                        ? `Hiding ${nonBillableRequests.length} non-billable and migration items`
+                        : 'Showing all items including non-billable'}
+                    </p>
+                  )}
+                </div>
                 {hasUnsavedChanges && dataSource === 'csv' && (
                   <button
                     onClick={handleSaveChanges}
@@ -1642,11 +1645,11 @@ export function Dashboard() {
 
                 {/* Bulk Category Change */}
                 <div className="flex items-center space-x-1">
-                  <span className="text-xs text-gray-600">Category:</span>
+                  <span className="text-xs text-muted-foreground">Category:</span>
                   <select
                     value={stagedBulkCategory}
                     onChange={(e) => setStagedBulkCategory(e.target.value)}
-                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[100px]"
+                    className="text-xs text-foreground border border-border rounded px-2 py-1 bg-background min-w-[100px]"
                   >
                     <option value="">Change to...</option>
                     {categoryOptions.map(category => (
@@ -1657,11 +1660,11 @@ export function Dashboard() {
 
                 {/* Bulk Urgency Change */}
                 <div className="flex items-center space-x-1">
-                  <span className="text-xs text-gray-600">Urgency:</span>
+                  <span className="text-xs text-muted-foreground">Urgency:</span>
                   <select
                     value={stagedBulkUrgency}
                     onChange={(e) => setStagedBulkUrgency(e.target.value)}
-                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white min-w-[90px]"
+                    className="text-xs text-foreground border border-border rounded px-2 py-1 bg-background min-w-[90px]"
                   >
                     <option value="">Change to...</option>
                     {urgencyOptions.map(urgency => (
@@ -1681,7 +1684,7 @@ export function Dashboard() {
                     </button>
                     <button
                       onClick={clearStagedChanges}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                      className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent transition-colors"
                     >
                       Cancel
                     </button>
@@ -1693,7 +1696,7 @@ export function Dashboard() {
                       setSelectAll(false);
                       clearStagedChanges();
                     }}
-                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent transition-colors"
                   >
                     Clear Selection
                   </button>
@@ -1717,7 +1720,7 @@ export function Dashboard() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1); // Reset to first page when searching
                   }}
-                  className="w-full pl-9 pr-8 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
                 {searchQuery && (
                   <button
@@ -1725,7 +1728,7 @@ export function Dashboard() {
                       setSearchQuery('');
                       setCurrentPage(1);
                     }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -1756,7 +1759,7 @@ export function Dashboard() {
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 focus:ring-blue-500"
+                    className="rounded border-border focus:ring-blue-500"
                     title="Select all visible requests on this page"
                   />
                 </TableHead>
@@ -1769,7 +1772,7 @@ export function Dashboard() {
                         title="Toggle date filter"
                       >
                         <Filter className={`w-3 h-3 transition-colors ${
-                          showFilters.date ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                          showFilters.date ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'
                         }`} />
                       </button>
                     </div>
@@ -1792,7 +1795,7 @@ export function Dashboard() {
                           setSelectedRequestIds(new Set());
                           setSelectAll(false);
                         }}
-                        className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 bg-white"
+                        className="w-full text-xs text-foreground border border-border rounded px-1 py-0.5 bg-background"
                       >
                         <option value="all">All Dates</option>
                         {getUniqueDates().map(date => (
@@ -1811,7 +1814,7 @@ export function Dashboard() {
                         title="Toggle day filter"
                       >
                         <Filter className={`w-3 h-3 transition-colors ${
-                          showFilters.day ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                          showFilters.day ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'
                         }`} />
                       </button>
                     </div>
@@ -1825,9 +1828,9 @@ export function Dashboard() {
                       </button>
                     </div>
                     {showFilters.day && (
-                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white">
+                      <div className="w-full text-xs border border-border rounded p-2 bg-card">
                         {getUniqueDays().map(day => (
-                          <label key={day} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                          <label key={day} className="flex items-center space-x-1 hover:bg-accent p-1 rounded cursor-pointer">
                             <input
                               type="checkbox"
                               checked={dayFilter.includes(day)}
@@ -1841,7 +1844,7 @@ export function Dashboard() {
                                 setSelectedRequestIds(new Set());
                                 setSelectAll(false);
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                              className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500 focus:ring-2"
                             />
                             <span>{day}</span>
                           </label>
@@ -1885,7 +1888,7 @@ export function Dashboard() {
                         title="Toggle category filter"
                       >
                         <Filter className={`w-3 h-3 transition-colors ${
-                          showFilters.category ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                          showFilters.category ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'
                         }`} />
                       </button>
                     </div>
@@ -1900,7 +1903,7 @@ export function Dashboard() {
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
                     {showFilters.category && (
-                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white max-h-40 overflow-y-auto">
+                      <div className="w-full text-xs border border-border rounded p-2 bg-card max-h-40 overflow-y-auto">
                         {categoryOptions.map(category => {
                           // Count how many items have this category in the current view
                           const count = requests.filter(request => {
@@ -1914,7 +1917,7 @@ export function Dashboard() {
                           }).length;
 
                           return (
-                            <label key={category} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                            <label key={category} className="flex items-center space-x-1 hover:bg-accent p-1 rounded cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={categoryFilter.includes(category)}
@@ -1928,11 +1931,11 @@ export function Dashboard() {
                                 setSelectedRequestIds(new Set());
                                 setSelectAll(false);
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                              className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500 focus:ring-2"
                             />
                             <span className="truncate">{category}</span>
                             {count > 0 && (
-                              <span className="text-gray-500 ml-auto">({count})</span>
+                              <span className="text-muted-foreground ml-auto">({count})</span>
                             )}
                           </label>
                           );
@@ -1950,7 +1953,7 @@ export function Dashboard() {
                         title="Toggle urgency filter"
                       >
                         <Filter className={`w-3 h-3 transition-colors ${
-                          showFilters.urgency ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+                          showFilters.urgency ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'
                         }`} />
                       </button>
                     </div>
@@ -1965,9 +1968,9 @@ export function Dashboard() {
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </div>
                     {showFilters.urgency && (
-                      <div className="w-full text-xs border border-gray-300 rounded p-2 bg-white">
+                      <div className="w-full text-xs border border-border rounded p-2 bg-card">
                         {getUniqueUrgencies().map(urgency => (
-                          <label key={urgency} className="flex items-center space-x-1 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                          <label key={urgency} className="flex items-center space-x-1 hover:bg-accent p-1 rounded cursor-pointer">
                             <input
                               type="checkbox"
                               checked={urgencyFilter.includes(urgency)}
@@ -1981,7 +1984,7 @@ export function Dashboard() {
                                 setSelectedRequestIds(new Set());
                                 setSelectAll(false);
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                              className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500 focus:ring-2"
                             />
                             <span>{formatUrgencyDisplay(urgency)}</span>
                           </label>
@@ -2009,7 +2012,7 @@ export function Dashboard() {
                     className={`cursor-pointer transition-colors ${
                       isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${
-                      selectedRequestIds.has(actualIndex) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+                      selectedRequestIds.has(actualIndex) ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                     }`}
                     onClick={(e) => handleRowClick(actualIndex, e)}
                   >
@@ -2018,11 +2021,11 @@ export function Dashboard() {
                         type="checkbox"
                         checked={selectedRequestIds.has(actualIndex)}
                         onChange={(e) => handleSelectRequest(actualIndex, e as any)}
-                        className="rounded border-gray-300 focus:ring-blue-500"
+                        className="rounded border-border focus:ring-blue-500"
                       />
                     </TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
-                    <TableCell className={`text-sm ${isNonBillable ? 'text-gray-400' : 'text-gray-600'}`}>{getDayOfWeek(request.Date)}</TableCell>
+                    <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="min-w-[300px] max-w-2xl">
                       <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
@@ -2106,12 +2109,12 @@ export function Dashboard() {
             >
               <div className="flex items-center space-x-2">
                 <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
-                <Archive className="w-4 h-4 text-gray-500" />
-                <h3 className="font-semibold text-gray-700">
+                <Archive className="w-4 h-4 text-muted-foreground" />
+                <h3 className="font-semibold text-muted-foreground">
                   Archived Requests ({archivedRequests.length})
                 </h3>
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Click to {showArchived ? 'hide' : 'show'}
               </span>
             </div>
@@ -2120,7 +2123,7 @@ export function Dashboard() {
               <div className="mt-4 overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
+                    <TableRow className="bg-muted/50">
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
                       <TableHead>Category</TableHead>
@@ -2144,7 +2147,7 @@ export function Dashboard() {
                             </span>
                           </TableCell>
                           <TableCell className="max-w-md">
-                            <div className="text-sm text-gray-700 whitespace-normal break-words">
+                            <div className="text-sm text-muted-foreground whitespace-normal break-words">
                               {request.Request_Summary}
                             </div>
                           </TableCell>

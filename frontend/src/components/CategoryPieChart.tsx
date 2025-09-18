@@ -1,27 +1,37 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { useMemo } from 'react';
 import type { CategoryCount } from '../types/request';
 
 interface CategoryPieChartProps {
   data: CategoryCount[];
 }
 
-// Define consistent colors for each category
-const CATEGORY_COLORS: { [key: string]: string } = {
-  'Support': '#8884d8',
-  'Hosting': '#82ca9d',
-  'Forms': '#ffc658',
-  'Billing': '#ff7c7c',
-  'Email': '#8dd1e1',
-  'Migration': '#d084d0',
-  'Non-billable': '#ffb347',
-  'Advisory': '#87ceeb',
-  'General': '#98d8c8'
+// Helper function to get CSS variable value
+const getCSSVariableValue = (variableName: string) => {
+  if (typeof window === 'undefined') return '';
+  return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
 };
+
+// Get colors from CSS variables (theme-aware)
+const getCategoryColors = () => ({
+  'Support': getCSSVariableValue('--chart-color-support') || '#8884d8',
+  'Hosting': getCSSVariableValue('--chart-color-hosting') || '#82ca9d',
+  'Forms': getCSSVariableValue('--chart-color-forms') || '#ffc658',
+  'Billing': getCSSVariableValue('--chart-color-billing') || '#ff7c7c',
+  'Email': getCSSVariableValue('--chart-color-email') || '#8dd1e1',
+  'Migration': getCSSVariableValue('--chart-color-migration') || '#d084d0',
+  'Non-billable': getCSSVariableValue('--chart-color-non-billable') || '#ffb347',
+  'Advisory': getCSSVariableValue('--chart-color-advisory') || '#87ceeb',
+  'General': getCSSVariableValue('--chart-color-general') || '#98d8c8'
+});
 
 // All possible categories in order
 const ALL_CATEGORIES = ['Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration', 'Non-billable', 'Advisory', 'General'];
 
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
+  // Get theme-aware colors
+  const CATEGORY_COLORS = useMemo(() => getCategoryColors(), []);
+
   // Ensure data includes all categories with proper colors
   const completeData = ALL_CATEGORIES.map(category => {
     const existingData = data.find(d => d.name === category);

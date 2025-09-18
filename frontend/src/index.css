@@ -4,13 +4,14 @@
 
 @layer base {
   :root {
+    /* Core color variables */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -24,16 +25,43 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+
+    /* Chart colors - Light mode */
+    --chart-color-support: #8884d8;
+    --chart-color-hosting: #82ca9d;
+    --chart-color-forms: #ffc658;
+    --chart-color-billing: #ff7c7c;
+    --chart-color-email: #8dd1e1;
+    --chart-color-migration: #d084d0;
+    --chart-color-non-billable: #ffb347;
+    --chart-color-advisory: #87ceeb;
+    --chart-color-general: #98d8c8;
+
+    /* Typography scales */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+
+    /* Component-specific tokens */
+    --scorecard-padding: 1.5rem;
+    --scorecard-value-size: var(--font-size-2xl);
+    --scorecard-label-size: var(--font-size-sm);
   }
 
   .dark {
+    /* Core color variables - Dark mode */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 32.6% 10%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -46,6 +74,17 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Chart colors - Dark mode (slightly brighter) */
+    --chart-color-support: #9994e8;
+    --chart-color-hosting: #92da9d;
+    --chart-color-forms: #ffd668;
+    --chart-color-billing: #ff8c8c;
+    --chart-color-email: #9de1f1;
+    --chart-color-migration: #e094e0;
+    --chart-color-non-billable: #ffc357;
+    --chart-color-advisory: #97deeb;
+    --chart-color-general: #a8e8d8;
   }
 }
 

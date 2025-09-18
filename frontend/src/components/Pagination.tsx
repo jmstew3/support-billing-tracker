@@ -79,7 +79,7 @@ export function Pagination({
               const value = e.target.value === 'all' ? 'all' : Number(e.target.value);
               onPageSizeChange(value);
             }}
-            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+            className="border border-border rounded px-2 py-1 text-sm bg-background text-foreground"
           >
             {PAGE_SIZE_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -98,7 +98,7 @@ export function Pagination({
           <button
             onClick={handlePrevious}
             disabled={currentPage === 1}
-            className="flex items-center justify-center w-8 h-8 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="flex items-center justify-center w-8 h-8 border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -114,7 +114,7 @@ export function Pagination({
                     ? 'bg-blue-600 text-white'
                     : page === '...'
                     ? 'cursor-default'
-                    : 'border border-gray-300 hover:bg-gray-50'
+                    : 'border border-border hover:bg-accent'
                 }`}
               >
                 {page}
@@ -125,7 +125,7 @@ export function Pagination({
           <button
             onClick={handleNext}
             disabled={currentPage === totalPages}
-            className="flex items-center justify-center w-8 h-8 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="flex items-center justify-center w-8 h-8 border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

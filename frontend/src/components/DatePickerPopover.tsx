@@ -173,20 +173,20 @@ export function DatePickerPopover({
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
           "flex items-center space-x-2 px-3 py-1.5 text-sm",
-          "border border-gray-300 rounded-md bg-white",
-          "hover:bg-gray-50 transition-colors",
+          "border border-border rounded-md bg-background",
+          "hover:bg-accent transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         )}
       >
-        <CalendarIcon className="h-4 w-4 text-gray-500" />
+        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
         <span>{displayText}</span>
       </button>
 
       {/* Popover Content */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+        <div className="absolute top-full mt-2 right-0 z-50 bg-card rounded-lg shadow-lg border border-border overflow-hidden">
           {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-border">
             <button
               type="button"
               onClick={() => setViewMode('calendar')}
