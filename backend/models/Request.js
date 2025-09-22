@@ -11,6 +11,15 @@ class Request {
     this.effort = data.effort || 'Medium';
     this.status = data.status || 'active';
 
+    // Handle estimated_hours - can be provided or default based on effort
+    if (data.estimated_hours !== undefined) {
+      this.estimated_hours = parseFloat(data.estimated_hours);
+    } else {
+      // Default based on effort
+      this.estimated_hours = this.effort === 'Small' ? 0.25 :
+                            this.effort === 'Large' ? 1.00 : 0.50;
+    }
+
     // Validate urgency
     if (!['LOW', 'MEDIUM', 'HIGH', 'PROMOTION'].includes(this.urgency)) {
       this.urgency = 'MEDIUM';
@@ -25,13 +34,18 @@ class Request {
     if (!['active', 'deleted', 'ignored'].includes(this.status)) {
       this.status = 'active';
     }
+
+    // Validate estimated_hours
+    if (isNaN(this.estimated_hours) || this.estimated_hours < 0.01 || this.estimated_hours > 99.99) {
+      this.estimated_hours = 0.50;
+    }
   }
 
   async save() {
     try {
       const query = `
-        INSERT INTO requests (date, time, request_type, category, description, urgency, effort, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO requests (date, time, request_type, category, description, urgency, effort, status, estimated_hours)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const values = [
@@ -42,7 +56,8 @@ class Request {
         this.description,
         this.urgency,
         this.effort,
-        this.status
+        this.status,
+        this.estimated_hours
       ];
 
       const [result] = await pool.execute(query, values);
@@ -96,14 +111,23 @@ class Request {
 
   static async updateById(id, updates) {
     try {
-      const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type'];
+      const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours'];
       const updateFields = [];
       const updateValues = [];
 
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
           updateFields.push(`${field} = ?`);
-          const value = field === 'urgency' ? updates[field].toUpperCase() : updates[field];
+          let value = updates[field];
+          if (field === 'urgency') {
+            value = updates[field].toUpperCase();
+          } else if (field === 'estimated_hours') {
+            value = parseFloat(updates[field]);
+            // Validate hours range
+            if (isNaN(value) || value < 0.01 || value > 99.99) {
+              throw new Error('Estimated hours must be between 0.01 and 99.99');
+            }
+          }
           updateValues.push(value);
         }
       }

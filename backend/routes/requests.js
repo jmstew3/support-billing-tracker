@@ -143,14 +143,24 @@ router.put('/requests/:id', async (req, res) => {
     const updates = req.body;
 
     // Build dynamic update query
-    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type'];
+    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours'];
     const updateFields = [];
     const updateValues = [];
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
         updateFields.push(`${field} = ?`);
-        updateValues.push(field === 'urgency' ? updates[field].toUpperCase() : updates[field]);
+        let value = updates[field];
+        if (field === 'urgency') {
+          value = updates[field].toUpperCase();
+        } else if (field === 'estimated_hours') {
+          value = parseFloat(value);
+          // Validate hours range
+          if (isNaN(value) || value < 0.01 || value > 99.99) {
+            return res.status(400).json({ error: 'Estimated hours must be between 0.01 and 99.99' });
+          }
+        }
+        updateValues.push(value);
       }
     }
 
