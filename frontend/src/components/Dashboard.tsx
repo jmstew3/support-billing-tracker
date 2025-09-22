@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Scorecard } from './ui/Scorecard';
 import { ThemeToggle } from './ui/ThemeToggle';
@@ -9,70 +9,23 @@ import CategoryRadarChart from './CategoryRadarChart';
 import { CategoryPieChart } from './CategoryPieChart';
 import { Pagination } from './Pagination';
 import { EditableCell } from './EditableCell';
+import { EditableNumberCell } from './EditableNumberCell';
 import { ConfirmDialog } from './ConfirmDialog';
 import { DatePickerPopover } from './DatePickerPopover';
 import type { ChatRequest } from '../types/request';
-import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest, loadRequestData } from '../utils/dataProcessing';
+import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
-import { saveToDataDirectory } from '../utils/csvExport';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
 
-const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
 
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isWorkingVersion, setIsWorkingVersion] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState<string>('original');
-  console.log(currentVersion); // Used for tracking
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [apiAvailable, setApiAvailable] = useState(false);
-  const [dataSource, setDataSource] = useState<'api' | 'csv'>('csv');
   
-  // Auto-save debounce timer
-  const autoSaveTimeoutRef = useRef<number | null>(null);
-  
-  // Simplified auto-save function with debouncing
-  const triggerAutoSave = useCallback(async (requestsToSave: ChatRequest[]) => {
-    // Clear any existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-    
-    // Set up debounced auto-save (wait 2 seconds after last change)
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      try {
-        setHasUnsavedChanges(true);
-        // Pass all requests - the save function handles everything internally
-        const result = await saveToDataDirectory(requestsToSave, []);
-        
-        if (result.success) {
-          console.log('Auto-saved successfully');
-          setIsWorkingVersion(true);
-          setCurrentVersion('working');
-          setHasUnsavedChanges(false);
-        }
-      } catch (error) {
-        console.warn('Auto-save failed:', error);
-        setHasUnsavedChanges(false);
-      }
-    }, 2000); // 2 second debounce
-  }, []);
-  
-  // Cleanup auto-save timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
   
   // Deleted requests functionality removed
   
@@ -87,7 +40,7 @@ export function Dashboard() {
   const [selectedDay, setSelectedDay] = useState<string | 'all'>('all');
   
   // Time view mode for the chart
-  const [timeViewMode, setTimeViewMode] = useState<'all' | 'month' | 'day'>('month');
+  const [timeViewMode, setTimeViewMode] = useState<'all' | 'month' | 'day'>('all');
   
   // Sorting state
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -324,8 +277,7 @@ export function Dashboard() {
     if (requests.length === 0) return { day: 'N/A', count: 0 };
 
     const dayCount: Record<string, number> = {};
-    const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
+  
     requests.forEach(request => {
       const dayName = getDayOfWeek(request.Date);
       dayCount[dayName] = (dayCount[dayName] || 0) + 1;
@@ -505,7 +457,7 @@ export function Dashboard() {
   const loadData = async () => {
     console.log('Dashboard loadData starting...');
     try {
-      // First, check if API is available
+      // Check if API is available
       const apiHealthy = await checkAPIHealth();
       console.log('API health check result:', apiHealthy);
       console.log('API URL being used:', import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
@@ -513,7 +465,6 @@ export function Dashboard() {
       if (apiHealthy) {
         // Use API to load data
         console.log('Loading data from API...');
-        setDataSource('api');
         setApiAvailable(true);
 
         // Fetch all requests regardless of status
@@ -522,51 +473,23 @@ export function Dashboard() {
 
         // Keep ALL requests (including deleted) for archive functionality
         setRequests(apiRequests);
-        setIsWorkingVersion(false);
-        setCurrentVersion('database');
       } else {
-        // Fall back to CSV loading
-        console.log('API not available, loading from CSV...');
-        setDataSource('csv');
-        setApiAvailable(false);
-
-        const result = await loadRequestData();
-        console.log('Received result:', { dataLength: result.data.length, version: result.version, isWorking: result.isWorking });
-
-        setIsWorkingVersion(result.isWorking);
-        setCurrentVersion(result.version);
-
-        // Convert to ChatRequest format for compatibility
-        const requestData: ChatRequest[] = result.data.map(item => ({
-          Date: item.date,
-          Time: item.time,
-          Request_Summary: item.description,
-          Category: item.category,
-          Urgency: item.urgency,
-          EstimatedHours: item.effort === 'Small' ? 0.25 : item.effort === 'Large' ? 1.0 : 0.5
-        }));
-
-        console.log('Converted to ChatRequest format:', { count: requestData.length, sample: requestData[0] });
-
-        // Save original data as backup (only if not already saved and not working version)
-        if (!localStorage.getItem('originalRequestsBackup') && !result.isWorking) {
-          localStorage.setItem('originalRequestsBackup', JSON.stringify(requestData));
-        }
-
-        setRequests(requestData);
+        throw new Error('API is not available');
       }
 
       setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
+      setApiAvailable(false);
       // Use sample data for development
       const sampleData: ChatRequest[] = [
         {
           Date: '2025-05-15',
           Time: '07:14 AM',
-          Request_Summary: 'Up to 36 websites now and still counting that I\'ll need help migrating',
+          Request_Summary: 'Sample request - API connection failed',
           Urgency: 'HIGH',
-          Category: 'Migration'
+          Category: 'Support',
+          EstimatedHours: 0.5
         }
       ];
       setRequests(sampleData);
@@ -873,34 +796,45 @@ export function Dashboard() {
     setLastSelectedIndex(null); // Clear selection anchor when changing page size
   };
 
-  const updateRequest = async (index: number, field: keyof ChatRequest, value: string) => {
+  const updateRequest = async (index: number, field: keyof ChatRequest, value: string | number) => {
     console.log(`Dashboard updateRequest called: index=${index}, field=${field}, value=${value}`);
     preserveScrollPosition();
     const newRequests = [...requests];
     // Convert display values back to stored values for Urgency
-    let actualValue = value;
-    if (field === 'Urgency') {
+    let actualValue: string | number = value;
+    if (field === 'Urgency' && typeof value === 'string') {
       actualValue = value.toUpperCase();
+    } else if (field === 'EstimatedHours' && typeof value === 'number') {
+      actualValue = value;
     }
 
     console.log(`Before update - current value: ${newRequests[index][field]}, new value: ${actualValue}`);
-    newRequests[index] = { ...newRequests[index], [field]: actualValue };
+    newRequests[index] = { ...newRequests[index], [field]: actualValue as any };
     setRequests(newRequests);
 
-    // If API is available, update in database
+    // Update in database via API
     if (apiAvailable && newRequests[index].id) {
       try {
-        await updateRequestAPI(newRequests[index].id, { [field]: actualValue });
+        // Create the update object with the correct field name
+        const updateData: Partial<ChatRequest> = {};
+        if (field === 'EstimatedHours') {
+          updateData.EstimatedHours = actualValue as number;
+        } else if (field === 'Category') {
+          updateData.Category = actualValue as string;
+        } else if (field === 'Urgency') {
+          updateData.Urgency = actualValue as string;
+        } else {
+          updateData[field as keyof ChatRequest] = actualValue as any;
+        }
+
+        await updateRequestAPI(newRequests[index].id, updateData);
         console.log(`Updated request ${index} in database: ${field} = ${actualValue}`);
-        setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Failed to update in database:', error);
-        setHasUnsavedChanges(true);
+        // Revert the change on error
+        const revertedRequests = [...requests];
+        setRequests(revertedRequests);
       }
-    } else {
-      // CSV mode - mark as having unsaved changes
-      setHasUnsavedChanges(true);
-      console.log(`Updated request ${index} locally: ${field} = ${actualValue}`);
     }
   };
 
@@ -938,7 +872,7 @@ export function Dashboard() {
       const newRequests = [...requests];
       newRequests.splice(deleteConfirmation.requestIndex, 1);
       setRequests(newRequests);
-      triggerAutoSave(newRequests);
+      // Auto-save removed - API only
     }
 
     setDeleteConfirmation({
@@ -987,17 +921,12 @@ export function Dashboard() {
       if (apiAvailable) {
         // API mode - changes are already saved in real-time
         console.log('Changes already saved to database');
-        setHasUnsavedChanges(false);
       } else {
-        // CSV mode - save to file
-        await saveToDataDirectory(requests, []);
-        console.log('Successfully saved working version');
-        setHasUnsavedChanges(false);
-        setIsWorkingVersion(true);
+        // CSV mode removed - API only
+        console.log('Save functionality removed - using API only');
       }
     } catch (error) {
       console.warn('Save failed:', error);
-      setHasUnsavedChanges(false);
     }
   };
 
@@ -1131,16 +1060,13 @@ export function Dashboard() {
       try {
         await bulkUpdateRequests(idsToUpdate, updatePayload);
         console.log(`Updated ${idsToUpdate.length} requests in database`);
-        setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Failed to bulk update in database:', error);
-        setHasUnsavedChanges(true);
       }
     } else {
       // CSV mode or no IDs - mark as having unsaved changes
-      setHasUnsavedChanges(true);
       console.log(`Updated ${selectedRequestIds.size} requests locally`);
-      triggerAutoSave(newRequests);
+      // Auto-save removed - API only
     }
 
     // Clear selections and staged changes after applying
@@ -1489,7 +1415,7 @@ export function Dashboard() {
             {/* Left side - Title and Database Status */}
             <div className="flex items-center space-x-3">
               <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
-              {dataSource === 'api' && (
+              {apiAvailable && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
                   <span>Connected to Database</span>
@@ -1612,13 +1538,13 @@ export function Dashboard() {
           )}
         </p>
         <div className="flex items-center space-x-3">
-          {isWorkingVersion ? (
+          {false ? (
             <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-md text-xs">
               <Info className="w-3 h-3" />
               <span>Working Version (CSV)</span>
             </div>
           ) : null}
-          {hasUnsavedChanges && (
+          {false && (
             <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-md text-xs">
               <Clock className="w-3 h-3" />
               <span>Unsaved changes - click Save button</span>
@@ -1646,7 +1572,7 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Hours"
-          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(1) : 0}
+          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2) : 0}
           description="At 0.5 hours per request"
           icon={<Clock className="h-4 w-4 text-muted-foreground" />}
         />
@@ -1860,31 +1786,31 @@ export function Dashboard() {
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours}</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours.toFixed(2)}</td>
                         <td className="text-right py-3 px-4 font-semibold">${filteredCosts.regularCost.toLocaleString()}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours}</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours.toFixed(2)}</td>
                         <td className="text-right py-3 px-4 font-semibold">${filteredCosts.sameDayCost.toLocaleString()}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours}</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours.toFixed(2)}</td>
                         <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">Promotional Rate</td>
                         <td className="text-center py-3 px-4">$125/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.promotionalHours.toFixed(1)}</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.promotionalHours.toFixed(2)}</td>
                         <td className="text-right py-3 px-4 font-semibold">${filteredCosts.promotionalCost.toLocaleString()}</td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">-</td>
-                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(1)}</td>
+                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
                         <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
                       </tr>
                     </tbody>
@@ -1971,7 +1897,7 @@ export function Dashboard() {
                     </p>
                   )}
                 </div>
-                {hasUnsavedChanges && dataSource === 'csv' && (
+                {false && (
                   <button
                     onClick={handleSaveChanges}
                     className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
@@ -2342,6 +2268,15 @@ export function Dashboard() {
                     )}
                   </div>
                 </TableHead>
+                <TableHead>
+                  <button
+                    onClick={() => handleSort('EstimatedHours')}
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                  >
+                    <span>Hours</span>
+                    {getSortIcon('EstimatedHours')}
+                  </button>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -2415,6 +2350,26 @@ export function Dashboard() {
                             }
                           }}
                           formatDisplayValue={formatUrgencyDisplay}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isNonBillable ? (
+                        <span className="px-2 py-1 text-xs text-gray-400 bg-gray-100 rounded-full">
+                          N/A
+                        </span>
+                      ) : (
+                        <EditableNumberCell
+                          value={request.EstimatedHours || 0.50}
+                          urgency={request.Urgency}
+                          onSave={(newValue) => {
+                            console.log('Hours EditableNumberCell onSave called with:', newValue);
+                            if (actualIndex !== -1) {
+                              updateRequest(actualIndex, 'EstimatedHours', newValue);
+                            } else {
+                              console.error('Could not find request in original array');
+                            }
+                          }}
                         />
                       )}
                     </TableCell>

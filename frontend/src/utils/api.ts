@@ -54,24 +54,33 @@ export async function fetchRequests(filters?: {
 // Update a single request
 export async function updateRequest(id: number, updates: Partial<ChatRequest>): Promise<void> {
   try {
+    const payload = {
+      category: updates.Category,
+      urgency: updates.Urgency,
+      effort: updates.Effort,
+      status: updates.Status,
+      description: updates.Request_Summary,
+      request_type: updates.Request_Type,
+      estimated_hours: updates.EstimatedHours
+    };
+
+    console.log(`API updateRequest - Sending update for ID ${id}:`, payload);
+
     const response = await fetch(`${API_BASE_URL}/requests/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        category: updates.Category,
-        urgency: updates.Urgency,
-        effort: updates.Effort,
-        status: updates.Status,
-        description: updates.Request_Summary,
-        request_type: updates.Request_Type
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API updateRequest - Server error: ${response.status} ${response.statusText}`, errorText);
       throw new Error(`Failed to update request: ${response.statusText}`);
     }
+
+    console.log(`API updateRequest - Successfully updated request ${id}`);
   } catch (error) {
     console.error('Error updating request:', error);
     throw error;
