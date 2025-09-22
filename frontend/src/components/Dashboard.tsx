@@ -27,6 +27,14 @@ function parseLocalDate(dateString: string): Date {
   return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
 }
 
+// Format currency with exactly 2 decimal places
+function formatCurrency(value: number): string {
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -1586,7 +1594,7 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Cost"
-          value={`$${filteredCosts?.totalCost.toLocaleString() || 0}`}
+          value={`$${formatCurrency(filteredCosts?.totalCost || 0)}`}
           description="Tiered pricing"
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
@@ -1749,29 +1757,29 @@ export function Dashboard() {
                       {monthlyCosts.map((monthData, index) => (
                         <tr key={`${monthData.year}-${monthData.month}`} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                           <td className="py-3 px-4 font-medium">{monthData.month}</td>
-                          <td className="text-center py-3 px-4">${monthData.costs.regularCost.toLocaleString()}</td>
-                          <td className="text-center py-3 px-4">${monthData.costs.sameDayCost.toLocaleString()}</td>
-                          <td className="text-center py-3 px-4">${monthData.costs.emergencyCost.toLocaleString()}</td>
-                          <td className="text-center py-3 px-4">${monthData.costs.promotionalCost.toLocaleString()}</td>
-                          <td className="text-right py-3 px-4 font-semibold">${monthData.costs.totalCost.toLocaleString()}</td>
+                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.regularCost)}</td>
+                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.sameDayCost)}</td>
+                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.emergencyCost)}</td>
+                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.promotionalCost)}</td>
+                          <td className="text-right py-3 px-4 font-semibold">${formatCurrency(monthData.costs.totalCost)}</td>
                         </tr>
                       ))}
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">
-                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0).toLocaleString()}
+                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0))}
                         </td>
                         <td className="text-center py-3 px-4">
-                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0).toLocaleString()}
+                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0))}
                         </td>
                         <td className="text-center py-3 px-4">
-                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0).toLocaleString()}
+                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0))}
                         </td>
                         <td className="text-center py-3 px-4">
-                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0).toLocaleString()}
+                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0))}
                         </td>
                         <td className="text-right py-3 px-4">
-                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0).toLocaleString()}
+                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}
                         </td>
                       </tr>
                     </tbody>
@@ -1794,31 +1802,31 @@ export function Dashboard() {
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.regularCost.toLocaleString()}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.regularCost)}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.sameDayCost.toLocaleString()}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.sameDayCost)}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.emergencyCost)}</td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">Promotional Rate</td>
                         <td className="text-center py-3 px-4">$125/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.promotionalHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.promotionalCost.toLocaleString()}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.promotionalCost)}</td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">-</td>
                         <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
+                        <td className="text-right py-3 px-4">${formatCurrency(filteredCosts.totalCost)}</td>
                       </tr>
                     </tbody>
                   </table>
