@@ -248,6 +248,49 @@ thad-chat/
 
 ### Recent Major Updates
 
+#### Pricing Model Simplification (September 18, 2025) 💰
+- **Removed Flat Rate Comparison**:
+  - Eliminated all flat rate pricing logic ($125/hr)
+  - Removed savings calculations and displays
+  - Simplified cost scorecard to show only tiered pricing
+  - Cleaned up Cost Calculation table to focus on service tiers
+  - Files Modified: `types/request.ts`, `config/pricing.ts`, `utils/dataProcessing.ts`, `Dashboard.tsx`
+
+- **Centralized Pricing Configuration**:
+  - Created single source of truth: `frontend/src/config/pricing.ts`
+  - All pricing rates now managed in one location
+  - Current rates: Regular $150/hr, Same Day $175/hr, Emergency $250/hr
+  - Easy to update rates by modifying PRICING_CONFIG object
+
+- **Monthly Cost Breakdown**:
+  - When Period is set to "All", shows monthly cost breakdown
+  - Displays Regular, Same Day, and Emergency costs per month
+  - Includes total row summing all months
+  - Dynamic description changes based on view mode
+
+#### UI/UX Improvements (September 18, 2025) 🎨
+- **Month Navigation Arrows**:
+  - Added left/right arrow buttons for easy month navigation
+  - Single-click month switching without opening date picker
+  - Smart navigation that skips months without data
+  - Tooltips show target month (e.g., "Go to August 2025")
+  - Automatic year boundary handling
+  - Files Modified: `Dashboard.tsx`
+
+- **Simplified Request Count Display**:
+  - Replaced verbose multi-count display with clear, concise format
+  - When billable filter ON: "Showing **189** billable requests *(241 non-billable hidden)*"
+  - When billable filter OFF: "Showing **430** total requests *(189 billable, 241 non-billable)*"
+  - Emphasizes currently displayed count with context in parentheses
+
+- **Reduced Scorecard Padding**:
+  - Tightened whitespace in all scorecards
+  - Reduced padding from 24px to 16px for cleaner appearance
+  - Better visual density without sacrificing readability
+  - Files Modified: `Scorecard.tsx`, `scorecard.ts`
+
+### Recent Major Updates
+
 #### Header & Navigation Improvements (September 16, 2025) 🎨
 - **Sticky Header Implementation**:
   - Created sticky navigation bar with Period and View controls

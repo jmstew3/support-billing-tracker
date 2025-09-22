@@ -29,22 +29,25 @@ npm run preview
 
 ### Analytics & Visualization
 - **Interactive Charts**: Request counts by priority level with Recharts
-- **Category Distribution**: Pie chart showing request type breakdown
+- **Category Distribution**: Modern pie chart with animated transitions and callout lines
+- **Category Radar Chart**: Multi-dimensional visualization showing volume, urgency, and effort metrics per category
 - **Time-Based Filtering**: Filter by year, month, or day with automatic view switching
-- **Dual Pricing Display**:
-  - Tiered pricing ($200/$250/$300 per hour based on urgency)
-  - Flat rate pricing ($125/hour) with automatic savings calculation
-  - Prominent savings display showing both dollar amount and percentage
+- **Tiered Pricing Display**:
+  - Regular Support: $150/hour (Low urgency)
+  - Same Day: $175/hour (Medium urgency)
+  - Emergency: $250/hour (High urgency)
+- **Monthly Cost Breakdown**: When viewing all periods, displays costs aggregated by month
 - **Real-Time KPIs**: Summary cards with total requests, hours, costs, and high-priority counts
-- **Enhanced Total Cost Card**: Shows flat rate as primary with strikethrough tiered pricing
 
 ### Navigation & Filtering
 - **Multi-Level Filtering**: Year → Month → Day selection with smart defaults
+- **Month Navigation Arrows**: Quick previous/next month switching that skips empty months
 - **View Mode Toggle**: All/Month/Day buttons control chart granularity
 - **Table Sorting**: Click column headers to sort by any field
 - **Pagination**: Configurable page sizes (20, 50, 100, All)
 - **Search Functionality**: Real-time text search across request summaries
 - **Advanced Filtering**: Category, urgency, and date filters with reset option
+- **Simplified Request Count Display**: Clean, concise display of billable vs non-billable counts
 
 ## 🗂️ Data Flow Architecture
 
@@ -72,9 +75,11 @@ Raw iMessage CSV → Data Preprocessor → Request Extractor → Frontend Dashbo
 ### Key Components
 - `Dashboard.tsx` - Main dashboard with all features
 - `RequestBarChart.tsx` - Time-series chart with priority levels
-- `CategoryPieChart.tsx` - Distribution visualization
+- `CategoryPieChart.tsx` - Modern pie chart with callout lines and animations
+- `CategoryRadarChart.tsx` - Multi-dimensional category analysis
 - `EditableCell.tsx` - In-line editing component
 - `Pagination.tsx` - Table navigation controls
+- `Scorecard.tsx` - Compact KPI display cards with optimized padding
 
 ### Data Types
 ```typescript
@@ -97,16 +102,22 @@ frontend/
 │   ├── components/
 │   │   ├── Dashboard.tsx          # Main dashboard component
 │   │   ├── RequestBarChart.tsx    # Time-series visualization
-│   │   ├── CategoryPieChart.tsx   # Category distribution
+│   │   ├── CategoryPieChart.tsx   # Modern pie chart with animations
+│   │   ├── CategoryRadarChart.tsx # Multi-dimensional category metrics
 │   │   ├── EditableCell.tsx       # In-line editing
 │   │   ├── Pagination.tsx         # Table navigation
 │   │   └── ui/                    # Reusable UI components
+│   ├── config/
+│   │   └── pricing.ts             # Centralized pricing configuration
 │   ├── utils/
 │   │   ├── dataProcessing.ts      # Data transformation logic
 │   │   ├── csvExport.ts           # Save/export functionality
 │   │   └── timeUtils.ts           # Date/time utilities
 │   ├── types/
 │   │   └── request.ts             # TypeScript interfaces
+│   ├── styles/
+│   │   └── variants/              # Component variant styles
+│   │       └── scorecard.ts       # Scorecard styling with CVA
 │   └── assets/                    # Static assets
 ├── public/
 │   └── thad_requests_table.csv    # Primary data source
@@ -164,9 +175,11 @@ date,time,month,request_type,category,description,urgency,effort,status
 
 ### Customization Options
 - **Page Sizes**: Modify pagination options in `Dashboard.tsx`
-- **Cost Rates**: Update pricing tiers in `dataProcessing.ts`:
-  - Tiered: $200 (Regular), $250 (Same Day), $300 (Emergency)
-  - Flat Rate: $125/hour for all requests
+- **Pricing Configuration**: Update centralized rates in `config/pricing.ts`:
+  - Regular Support: $150/hour (Low urgency)
+  - Same Day: $175/hour (Medium urgency)
+  - Emergency: $250/hour (High urgency)
+  - Default hours per request: 0.5
 - **Categories**: Add new request categories in component state
 - **Urgency Levels**: Extend urgency options as needed
 
@@ -184,19 +197,21 @@ date,time,month,request_type,category,description,urgency,effort,status
 - Pagination prevents UI lag with large datasets
 - Bulk operations process in batches
 
-## 🎉 Recent Updates (December 2024)
+## 🎉 Recent Updates
 
-### Flat Rate Pricing Comparison
-- Added flat rate calculation at $125/hour for all requests
-- Shows savings compared to tiered pricing (both amount and percentage)
-- Enhanced Total Cost card with strikethrough on tiered pricing
-- Green-highlighted savings display in cost breakdown section
+### January 2025 - Pricing and UI Improvements
+- **Centralized Pricing Configuration**: Single source of truth in `config/pricing.ts`
+- **Updated Pricing Tiers**: $150 (Regular), $175 (Same Day), $250 (Emergency)
+- **Monthly Cost Breakdown**: Displays costs aggregated by month when viewing all periods
+- **Month Navigation Arrows**: Quick previous/next navigation that skips empty months
+- **Simplified Request Display**: Cleaner, more concise billable/non-billable count display
+- **Optimized Scorecards**: Reduced padding for better visual density
+- **Enhanced Visualizations**: Modern pie chart with callout lines and radar chart for multi-dimensional analysis
 
-### Search Functionality
-- Added real-time search filter for request summaries
-- Search bar with clear button in table header
-- Integrates with existing filters and pagination
-- Case-insensitive text matching across all requests
+### December 2024 - Search and Data Management
+- **Search Functionality**: Real-time filter for request summaries with clear button
+- **Status-Based Management**: Soft delete system with recovery capabilities
+- **Bulk Operations**: Select and modify multiple requests at once
 
 ## 📈 Future Enhancements
 
