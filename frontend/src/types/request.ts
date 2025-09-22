@@ -3,7 +3,7 @@ export interface ChatRequest {
   Date: string;
   Time: string;
   Request_Summary: string;
-  Urgency: 'HIGH' | 'MEDIUM' | 'LOW';
+  Urgency: 'HIGH' | 'MEDIUM' | 'LOW' | 'PROMOTION';
   Category?: string;
   EstimatedHours?: number;
   Status?: 'active' | 'deleted' | 'ignored';
@@ -30,8 +30,10 @@ export interface CostCalculation {
   regularHours: number;
   sameDayHours: number;
   emergencyHours: number;
+  promotionalHours: number;
   regularCost: number;
   sameDayCost: number;
   emergencyCost: number;
+  promotionalCost: number;
   totalCost: number;
 }

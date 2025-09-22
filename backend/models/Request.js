@@ -12,7 +12,7 @@ class Request {
     this.status = data.status || 'active';
 
     // Validate urgency
-    if (!['LOW', 'MEDIUM', 'HIGH'].includes(this.urgency)) {
+    if (!['LOW', 'MEDIUM', 'HIGH', 'PROMOTION'].includes(this.urgency)) {
       this.urgency = 'MEDIUM';
     }
 

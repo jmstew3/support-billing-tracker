@@ -13,7 +13,7 @@ const getCSSVariableValue = (variableName: string) => {
 };
 
 // Get colors from CSS variables (theme-aware)
-const getCategoryColors = () => ({
+const getCategoryColors = (): Record<string, string> => ({
   'Support': getCSSVariableValue('--chart-color-support') || '#8884d8',
   'Hosting': getCSSVariableValue('--chart-color-hosting') || '#82ca9d',
   'Forms': getCSSVariableValue('--chart-color-forms') || '#ffc658',

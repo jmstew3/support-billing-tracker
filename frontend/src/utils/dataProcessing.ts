@@ -4,9 +4,9 @@ import { RATES, DEFAULT_HOURS } from '../config/pricing';
 // Request data interface for processed data
 export interface RequestData {
   date: string;
-  time: string; 
+  time: string;
   category: string;
-  urgency: 'HIGH' | 'MEDIUM' | 'LOW';
+  urgency: 'HIGH' | 'MEDIUM' | 'LOW' | 'PROMOTION';
   effort: 'Small' | 'Medium' | 'Large';
   description: string;
 }
@@ -31,10 +31,10 @@ export function categorizeRequest(summary: string): string {
 // Process requests for daily counts
 export function processDailyRequests(requests: ChatRequest[]): DailyRequestCount[] {
   const dailyCounts = new Map<string, DailyRequestCount>();
-  
+
   requests.forEach(request => {
     const date = request.Date;
-    
+
     if (!dailyCounts.has(date)) {
       dailyCounts.set(date, {
         date,
@@ -44,10 +44,10 @@ export function processDailyRequests(requests: ChatRequest[]): DailyRequestCount
         high: 0
       });
     }
-    
+
     const dayData = dailyCounts.get(date)!;
     dayData.count++;
-    
+
     switch (request.Urgency) {
       case 'LOW':
         dayData.low++;
@@ -57,6 +57,9 @@ export function processDailyRequests(requests: ChatRequest[]): DailyRequestCount
         break;
       case 'HIGH':
         dayData.high++;
+        break;
+      case 'PROMOTION':
+        dayData.low++; // Count promotional as low priority for charting
         break;
       default:
         console.warn('Unknown urgency value:', request.Urgency);
@@ -99,6 +102,7 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
   let regularHours = 0;
   let sameDayHours = 0;
   let emergencyHours = 0;
+  let promotionalHours = 0;
 
   requests.forEach(request => {
     const hours = request.EstimatedHours || DEFAULT_HOURS;
@@ -113,20 +117,27 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
       case 'HIGH':
         emergencyHours += hours;
         break;
+      case 'PROMOTION':
+        promotionalHours += hours;
+        break;
     }
   });
 
+  const promotionalCost = promotionalHours * 125;
   const totalCost = (regularHours * RATES.regular) +
                     (sameDayHours * RATES.sameDay) +
-                    (emergencyHours * RATES.emergency);
+                    (emergencyHours * RATES.emergency) +
+                    promotionalCost;
 
   return {
     regularHours,
     sameDayHours,
     emergencyHours,
+    promotionalHours,
     regularCost: regularHours * RATES.regular,
     sameDayCost: sameDayHours * RATES.sameDay,
     emergencyCost: emergencyHours * RATES.emergency,
+    promotionalCost,
     totalCost
   };
 }
@@ -183,10 +194,11 @@ export const loadRequestData = async (): Promise<{
       const values = parseCSVLine(line);
       if (values.length >= 8 && values[0]) {
         // Normalize urgency to uppercase
-        const normalizeUrgency = (urgency: string): 'HIGH' | 'MEDIUM' | 'LOW' => {
+        const normalizeUrgency = (urgency: string): 'HIGH' | 'MEDIUM' | 'LOW' | 'PROMOTION' => {
           const upper = urgency.toUpperCase();
           if (upper === 'HIGH') return 'HIGH';
           if (upper === 'LOW') return 'LOW';
+          if (upper === 'PROMOTION' || upper === 'PROMOTIONAL') return 'PROMOTION';
           return 'MEDIUM';
         };
 

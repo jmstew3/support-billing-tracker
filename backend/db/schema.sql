@@ -14,7 +14,7 @@ CREATE TABLE requests (
   request_type VARCHAR(50) DEFAULT 'General Request',
   category VARCHAR(50) NOT NULL DEFAULT 'Support',
   description TEXT,
-  urgency ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
+  urgency ENUM('LOW', 'MEDIUM', 'HIGH', 'PROMOTION') DEFAULT 'MEDIUM',
   effort ENUM('Small', 'Medium', 'Large') DEFAULT 'Medium',
   status ENUM('active', 'deleted', 'ignored') DEFAULT 'active',
   estimated_hours DECIMAL(3, 2) GENERATED ALWAYS AS (
