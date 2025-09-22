@@ -20,6 +20,13 @@ import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, Che
 import { PRICING_CONFIG } from '../config/pricing';
 
 
+// Safe date parsing function that avoids timezone conversion issues
+// Parses YYYY-MM-DD strings in local timezone (EDT) without UTC conversion
+function parseLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
+}
+
 export function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
@@ -389,8 +396,8 @@ export function Dashboard() {
     .filter(request => request.Status === 'deleted')
     .sort((a, b) => {
       // Sort by date first
-      const dateA = new Date(a.Date);
-      const dateB = new Date(b.Date);
+      const dateA = parseLocalDate(a.Date);
+      const dateB = parseLocalDate(b.Date);
       if (dateA < dateB) return -1;
       if (dateA > dateB) return 1;
 
@@ -402,20 +409,20 @@ export function Dashboard() {
 
   // Calculate available years and months from all data (billable and non-billable)
   const availableYears = Array.from(new Set(
-    requests.map(request => new Date(request.Date).getFullYear())
+    requests.map(request => parseLocalDate(request.Date).getFullYear())
   )).sort((a, b) => b - a); // Sort descending (newest first)
 
   const availableMonthsForYear = Array.from(new Set(
     requests
-      .filter(request => new Date(request.Date).getFullYear() === selectedYear)
-      .map(request => new Date(request.Date).getMonth() + 1)
+      .filter(request => parseLocalDate(request.Date).getFullYear() === selectedYear)
+      .map(request => parseLocalDate(request.Date).getMonth() + 1)
   )).sort((a, b) => a - b); // Sort ascending (Jan to Dec)
 
   // Get available dates from filtered requests (by year/month)
   const availableDates = Array.from(new Set(
     requests
       .filter(request => {
-        const requestDate = new Date(request.Date);
+        const requestDate = parseLocalDate(request.Date);
         const requestYear = requestDate.getFullYear();
         const requestMonth = requestDate.getMonth() + 1;
         
@@ -505,7 +512,7 @@ export function Dashboard() {
       // Exclude deleted items from main table (only show active items)
       if (request.Status === 'deleted') return false;
 
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       const requestYear = requestDate.getFullYear();
       const requestMonth = requestDate.getMonth() + 1; // JavaScript months are 0-indexed
       const requestDayOfWeek = getDayOfWeek(request.Date);
@@ -545,8 +552,8 @@ export function Dashboard() {
 
       switch (sortColumn) {
         case 'Date':
-          aValue = new Date(a.Date);
-          bValue = new Date(b.Date);
+          aValue = parseLocalDate(a.Date);
+          bValue = parseLocalDate(b.Date);
           break;
         case 'DayOfWeek':
           aValue = getDayOfWeek(a.Date);
@@ -580,8 +587,8 @@ export function Dashboard() {
 
       // If primary values are equal, maintain chronological order
       // Secondary sort by date (always ascending for consistency)
-      const dateA = new Date(a.Date);
-      const dateB = new Date(b.Date);
+      const dateA = parseLocalDate(a.Date);
+      const dateB = parseLocalDate(b.Date);
       if (dateA < dateB) return -1;
       if (dateA > dateB) return 1;
 
@@ -597,7 +604,7 @@ export function Dashboard() {
 
   // Recalculate derived data based on billable requests only
   const billableFilteredRequests = billableRequests.filter(request => {
-    const requestDate = new Date(request.Date);
+    const requestDate = parseLocalDate(request.Date);
     const requestYear = requestDate.getFullYear();
     const requestMonth = requestDate.getMonth() + 1;
     
@@ -697,7 +704,7 @@ export function Dashboard() {
   // Create category data for charts that ALWAYS includes ALL categories (unaffected by hideNonBillable toggle)
   // This filters by date/time but NOT by non-billable status
   const allRequestsForCharts = requests.filter(request => {
-    const requestDate = new Date(request.Date);
+    const requestDate = parseLocalDate(request.Date);
     const requestYear = requestDate.getFullYear();
     const requestMonth = requestDate.getMonth() + 1;
 
@@ -720,7 +727,7 @@ export function Dashboard() {
     const requestsByMonth = new Map<string, ChatRequest[]>();
 
     billableRequests.forEach(request => {
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
 
@@ -1167,7 +1174,7 @@ export function Dashboard() {
 
     // Check if the target month has data
     const targetMonthHasData = requests.some(request => {
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       return requestDate.getFullYear() === newYear &&
              requestDate.getMonth() + 1 === newMonth;
     });
@@ -1177,7 +1184,7 @@ export function Dashboard() {
       for (let y = newYear; y >= Math.min(...availableYears); y--) {
         for (let m = (y === newYear ? newMonth : 12); m >= 1; m--) {
           const hasData = requests.some(request => {
-            const requestDate = new Date(request.Date);
+            const requestDate = parseLocalDate(request.Date);
             return requestDate.getFullYear() === y &&
                    requestDate.getMonth() + 1 === m;
           });
@@ -1231,7 +1238,7 @@ export function Dashboard() {
 
     // Check if the target month has data
     const targetMonthHasData = requests.some(request => {
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       return requestDate.getFullYear() === newYear &&
              requestDate.getMonth() + 1 === newMonth;
     });
@@ -1241,7 +1248,7 @@ export function Dashboard() {
       for (let y = newYear; y <= Math.max(...availableYears); y++) {
         for (let m = (y === newYear ? newMonth : 1); m <= 12; m++) {
           const hasData = requests.some(request => {
-            const requestDate = new Date(request.Date);
+            const requestDate = parseLocalDate(request.Date);
             return requestDate.getFullYear() === y &&
                    requestDate.getMonth() + 1 === m;
           });
@@ -1277,7 +1284,7 @@ export function Dashboard() {
 
     // Check if there's any data before current month
     return requests.some(request => {
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       const requestYear = requestDate.getFullYear();
       const requestMonth = requestDate.getMonth() + 1;
 
@@ -1295,7 +1302,7 @@ export function Dashboard() {
 
     // Check if there's any data after current month
     return requests.some(request => {
-      const requestDate = new Date(request.Date);
+      const requestDate = parseLocalDate(request.Date);
       const requestYear = requestDate.getFullYear();
       const requestMonth = requestDate.getMonth() + 1;
 
@@ -1385,7 +1392,7 @@ export function Dashboard() {
     const dates = Array.from(new Set(
       requests
         .filter(request => {
-          const requestDate = new Date(request.Date);
+          const requestDate = parseLocalDate(request.Date);
           const requestYear = requestDate.getFullYear();
           const requestMonth = requestDate.getMonth() + 1;
           if (requestYear !== selectedYear) return false;
@@ -1642,7 +1649,7 @@ export function Dashboard() {
             {timeViewMode === 'day' && selectedDay !== 'all'
               ? (() => {
                   try {
-                    return `Requests by Hour - ${new Date(selectedDay).toLocaleDateString('en-US', {
+                    return `Requests by Hour - ${parseLocalDate(selectedDay).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric'
@@ -2182,7 +2189,7 @@ export function Dashboard() {
                         {categoryOptions.map(category => {
                           // Count how many items have this category in the current view
                           const count = requests.filter(request => {
-                            const requestDate = new Date(request.Date);
+                            const requestDate = parseLocalDate(request.Date);
                             const requestYear = requestDate.getFullYear();
                             const requestMonth = requestDate.getMonth() + 1;
                             if (requestYear !== selectedYear) return false;
@@ -2442,7 +2449,7 @@ export function Dashboard() {
                       return (
                         <TableRow key={originalIndex} className="opacity-60">
                           <TableCell className="text-sm">
-                            {new Date(request.Date).toLocaleDateString()}
+                            {parseLocalDate(request.Date).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-sm">{request.Time}</TableCell>
                           <TableCell>
