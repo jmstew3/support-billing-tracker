@@ -1757,29 +1757,69 @@ export function Dashboard() {
                       {monthlyCosts.map((monthData, index) => (
                         <tr key={`${monthData.year}-${monthData.month}`} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                           <td className="py-3 px-4 font-medium">{monthData.month}</td>
-                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.regularCost)}</td>
-                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.sameDayCost)}</td>
-                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.emergencyCost)}</td>
-                          <td className="text-center py-3 px-4">${formatCurrency(monthData.costs.promotionalCost)}</td>
-                          <td className="text-right py-3 px-4 font-semibold">${formatCurrency(monthData.costs.totalCost)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.regularCost)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.promotionalCost)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-semibold">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.totalCost)}</span>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
-                        <td className="text-center py-3 px-4">
-                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0))}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0))}</span>
+                          </div>
                         </td>
-                        <td className="text-center py-3 px-4">
-                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0))}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0))}</span>
+                          </div>
                         </td>
-                        <td className="text-center py-3 px-4">
-                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0))}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0))}</span>
+                          </div>
                         </td>
-                        <td className="text-center py-3 px-4">
-                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0))}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0))}</span>
+                          </div>
                         </td>
-                        <td className="text-right py-3 px-4">
-                          ${formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
+                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -1802,31 +1842,56 @@ export function Dashboard() {
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.regularCost)}</td>
+                        <td className="py-3 px-4 font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(filteredCosts.regularCost)}</span>
+                          </div>
+                        </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.sameDayCost)}</td>
+                        <td className="py-3 px-4 font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(filteredCosts.sameDayCost)}</span>
+                          </div>
+                        </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.emergencyCost)}</td>
+                        <td className="py-3 px-4 font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(filteredCosts.emergencyCost)}</span>
+                          </div>
+                        </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
                         <td className="py-3 px-4">Promotional Rate</td>
                         <td className="text-center py-3 px-4">$125/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.promotionalHours.toFixed(2)}</td>
-                        <td className="text-right py-3 px-4 font-semibold">${formatCurrency(filteredCosts.promotionalCost)}</td>
+                        <td className="py-3 px-4 font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(filteredCosts.promotionalCost)}</span>
+                          </div>
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">-</td>
                         <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="text-right py-3 px-4">${formatCurrency(filteredCosts.totalCost)}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex justify-between items-center">
+                            <span>$</span>
+                            <span>{formatCurrency(filteredCosts.totalCost)}</span>
+                          </div>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
