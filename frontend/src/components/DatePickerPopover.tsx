@@ -172,7 +172,7 @@ export function DatePickerPopover({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          "flex items-center space-x-2 px-3 py-1.5 text-sm",
+          "flex items-center space-x-2 px-3 py-1.5 text-sm min-w-[180px]",
           "border border-border rounded-md bg-background",
           "hover:bg-accent transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"

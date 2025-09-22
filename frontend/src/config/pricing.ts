@@ -18,19 +18,19 @@ export interface PricingConfig {
 export const PRICING_CONFIG: PricingConfig = {
   tiers: [
     {
-      name: 'Regular Support',
+      name: 'Low',
       rate: 150,
       urgency: 'LOW',
       description: 'Standard turnaround time'
     },
     {
-      name: 'Same Day',
+      name: 'Medium',
       rate: 175,
       urgency: 'MEDIUM',
       description: 'Same day service'
     },
     {
-      name: 'Emergency',
+      name: 'High',
       rate: 250,
       urgency: 'HIGH',
       description: 'Immediate attention required'

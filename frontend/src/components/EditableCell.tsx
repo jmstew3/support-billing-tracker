@@ -105,7 +105,7 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   };
 
   return (
-    <div className="relative isolate" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
         ref={buttonRef}
         onClick={handleToggleOpen}
@@ -120,16 +120,15 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
       </button>
 
       {isOpen && createPortal(
-        <div 
+        <div
           ref={dropdownRef}
-          className="bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl max-h-60 overflow-y-auto"
           style={{
             position: 'absolute',
             top: dropdownPosition.top + 4,
             left: dropdownPosition.left,
             width: dropdownPosition.width,
             zIndex: 999999,
-            backgroundColor: 'var(--card)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}
         >
@@ -137,8 +136,8 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
             <button
               key={option}
               onClick={() => handleOptionClick(option)}
-              className={`w-full px-3 py-2 text-left hover:bg-accent transition-colors ${
-                option === value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium' : 'text-foreground'
+              className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+                option === value ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-400 font-medium' : 'text-gray-900 dark:text-gray-100'
               }`}
               role="option"
               aria-selected={option === value}

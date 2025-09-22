@@ -149,7 +149,7 @@ export function Dashboard() {
   const shouldPreserveScrollRef = useRef<boolean>(false);
 
   // Dropdown options
-  const urgencyOptions = ['Low', 'Medium', 'High'];
+  const urgencyOptions = ['Low', 'Medium', 'High', 'Promotion'];
   const categoryOptions = ['Advisory', 'Email', 'Forms', 'General', 'Hosting', 'Migration', 'Non-billable', 'Support'];
   
   // Toggle individual column filter visibility
@@ -421,8 +421,16 @@ export function Dashboard() {
   };
 
   // Get billable and non-billable requests (based on Category instead of Status)
-  const billableRequests = requests.filter(request => request.Category !== 'Non-billable' && request.Category !== 'Migration');
-  const nonBillableRequests = requests.filter(request => request.Category === 'Non-billable' || request.Category === 'Migration');
+  // IMPORTANT: Only include 'active' status requests in calculations
+  const billableRequests = requests.filter(request =>
+    request.Status === 'active' &&
+    request.Category !== 'Non-billable' &&
+    request.Category !== 'Migration'
+  );
+  const nonBillableRequests = requests.filter(request =>
+    request.Status === 'active' &&
+    (request.Category === 'Non-billable' || request.Category === 'Migration')
+  );
 
   // Get archived requests - sorted chronologically
   const archivedRequests = requests
@@ -1638,7 +1646,7 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Hours"
-          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1) : 0}
+          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(1) : 0}
           description="At 0.5 hours per request"
           icon={<Clock className="h-4 w-4 text-muted-foreground" />}
         />
@@ -1800,6 +1808,7 @@ export function Dashboard() {
                         <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Regular</th>
                         <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Same Day</th>
                         <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Emergency</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Promotion</th>
                         <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Total</th>
                       </tr>
                     </thead>
@@ -1810,6 +1819,7 @@ export function Dashboard() {
                           <td className="text-center py-3 px-4">${monthData.costs.regularCost.toLocaleString()}</td>
                           <td className="text-center py-3 px-4">${monthData.costs.sameDayCost.toLocaleString()}</td>
                           <td className="text-center py-3 px-4">${monthData.costs.emergencyCost.toLocaleString()}</td>
+                          <td className="text-center py-3 px-4">${monthData.costs.promotionalCost.toLocaleString()}</td>
                           <td className="text-right py-3 px-4 font-semibold">${monthData.costs.totalCost.toLocaleString()}</td>
                         </tr>
                       ))}
@@ -1823,6 +1833,9 @@ export function Dashboard() {
                         </td>
                         <td className="text-center py-3 px-4">
                           ${monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0).toLocaleString()}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0).toLocaleString()}
                         </td>
                         <td className="text-right py-3 px-4">
                           ${monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0).toLocaleString()}
@@ -1862,10 +1875,16 @@ export function Dashboard() {
                         <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours}</td>
                         <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
                       </tr>
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4">Promotional Rate</td>
+                        <td className="text-center py-3 px-4">$125/hr</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.promotionalHours.toFixed(1)}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.promotionalCost.toLocaleString()}</td>
+                      </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">-</td>
-                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)}</td>
+                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(1)}</td>
                         <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
                       </tr>
                     </tbody>
@@ -2487,6 +2506,8 @@ export function Dashboard() {
                                 ? 'bg-red-100 text-red-800'
                                 : request.Urgency === 'MEDIUM'
                                 ? 'bg-yellow-100 text-yellow-800'
+                                : request.Urgency === 'PROMOTION'
+                                ? 'bg-purple-100 text-purple-800'
                                 : 'bg-green-100 text-green-800'
                             }`}>
                               {request.Urgency}
