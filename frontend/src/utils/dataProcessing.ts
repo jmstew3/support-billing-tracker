@@ -1,5 +1,5 @@
 import type { ChatRequest, DailyRequestCount, CategoryCount, CostCalculation } from '../types/request';
-import { RATES, FLAT_RATE, DEFAULT_HOURS } from '../config/pricing';
+import { RATES, DEFAULT_HOURS } from '../config/pricing';
 
 // Request data interface for processed data
 export interface RequestData {
@@ -116,13 +116,9 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
     }
   });
 
-  const totalHours = regularHours + sameDayHours + emergencyHours;
-  const tieredTotalCost = (regularHours * RATES.regular) +
-                          (sameDayHours * RATES.sameDay) +
-                          (emergencyHours * RATES.emergency);
-  const flatRateCost = totalHours * FLAT_RATE;
-  const savings = tieredTotalCost - flatRateCost;
-  const savingsPercentage = tieredTotalCost > 0 ? (savings / tieredTotalCost) * 100 : 0;
+  const totalCost = (regularHours * RATES.regular) +
+                    (sameDayHours * RATES.sameDay) +
+                    (emergencyHours * RATES.emergency);
 
   return {
     regularHours,
@@ -131,11 +127,7 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
     regularCost: regularHours * RATES.regular,
     sameDayCost: sameDayHours * RATES.sameDay,
     emergencyCost: emergencyHours * RATES.emergency,
-    totalCost: tieredTotalCost,
-    flatRateHours: totalHours,
-    flatRateCost: flatRateCost,
-    savings: savings,
-    savingsPercentage: savingsPercentage
+    totalCost
   };
 }
 

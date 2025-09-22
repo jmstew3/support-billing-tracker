@@ -34,8 +34,4 @@ export interface CostCalculation {
   sameDayCost: number;
   emergencyCost: number;
   totalCost: number;
-  flatRateHours: number;
-  flatRateCost: number;
-  savings: number;
-  savingsPercentage: number;
 }

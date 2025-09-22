@@ -12,7 +12,6 @@ export interface PricingTier {
 
 export interface PricingConfig {
   tiers: PricingTier[];
-  flatRate: number;
   defaultHoursPerRequest: number;
 }
 
@@ -37,7 +36,6 @@ export const PRICING_CONFIG: PricingConfig = {
       description: 'Immediate attention required'
     }
   ],
-  flatRate: 125,
   defaultHoursPerRequest: 0.5
 };
 
@@ -60,5 +58,4 @@ export const RATES = {
   emergency: PRICING_CONFIG.tiers.find(t => t.urgency === 'HIGH')?.rate || 250
 };
 
-export const FLAT_RATE = PRICING_CONFIG.flatRate;
 export const DEFAULT_HOURS = PRICING_CONFIG.defaultHoursPerRequest;

@@ -13,9 +13,9 @@ export const scorecardVariants = cva(
         error: 'bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100 border-red-200 dark:border-red-800',
       },
       size: {
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-8',
+        sm: '',
+        md: '',
+        lg: '',
       },
       hover: {
         true: 'hover:shadow-md',

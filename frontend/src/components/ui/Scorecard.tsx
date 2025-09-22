@@ -47,18 +47,18 @@ export const Scorecard = React.forwardRef<HTMLDivElement, ScorecardProps>(
 
     return (
       <Card ref={ref} className={cn(scorecardVariants({ variant, size, hover }), className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
           <CardTitle className={cn(scorecardTitleVariants({ size }), titleClassName)}>
             {title}
           </CardTitle>
           {icon && <div className="text-muted-foreground">{icon}</div>}
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0">
           <div className={cn(scorecardValueVariants({ size: valueSizeMap[size] }), valueClassName)}>
             {value}
           </div>
           {description && (
-            <p className={cn(scorecardDescriptionVariants({ size }), 'text-muted-foreground', descriptionClassName)}>
+            <p className={cn(scorecardDescriptionVariants({ size }), 'text-muted-foreground mt-1', descriptionClassName)}>
               {description}
             </p>
           )}

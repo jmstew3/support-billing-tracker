@@ -779,6 +779,50 @@ export function Dashboard() {
   const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
   const filteredCosts = calculateCosts(billableFilteredRequests);
 
+  // Calculate monthly costs when viewing all months
+  const calculateMonthlyCosts = () => {
+    if (selectedMonth !== 'all') return null;
+
+    const monthlyCosts: { month: string; year: number; costs: any }[] = [];
+
+    // Group requests by month
+    const requestsByMonth = new Map<string, ChatRequest[]>();
+
+    billableRequests.forEach(request => {
+      const requestDate = new Date(request.Date);
+      const year = requestDate.getFullYear();
+      const month = requestDate.getMonth() + 1;
+
+      // Only include months from the selected year
+      if (year === selectedYear) {
+        const key = `${year}-${String(month).padStart(2, '0')}`;
+        if (!requestsByMonth.has(key)) {
+          requestsByMonth.set(key, []);
+        }
+        requestsByMonth.get(key)!.push(request);
+      }
+    });
+
+    // Sort months and calculate costs for each
+    Array.from(requestsByMonth.keys())
+      .sort()
+      .forEach(key => {
+        const [year, month] = key.split('-').map(Number);
+        const monthRequests = requestsByMonth.get(key)!;
+        const costs = calculateCosts(monthRequests);
+
+        monthlyCosts.push({
+          month: monthNames[month - 1],
+          year,
+          costs
+        });
+      });
+
+    return monthlyCosts;
+  };
+
+  const monthlyCosts = calculateMonthlyCosts();
+
   // Calculate activity metrics based on filtered billable requests
   const mostActiveDay = getMostActiveDay(billableFilteredRequests);
   const mostActiveTimeRange = getMostActiveTimeRange(billableFilteredRequests);
@@ -1020,10 +1064,17 @@ export function Dashboard() {
       setSelectedRequestIds(new Set());
       setSelectAll(false);
     } else {
-      // Select only visible/paginated requests (current page)
+      // Select all visible requests using their actual indices from the original array
       const allIds = new Set<number>();
-      paginatedRequests.forEach((_, paginatedIndex) => {
-        allIds.add(startIndex + paginatedIndex);
+      paginatedRequests.forEach((request) => {
+        const actualIndex = requests.findIndex(
+          r => r.Date === request.Date &&
+              r.Time === request.Time &&
+              r.Request_Summary === request.Request_Summary
+        );
+        if (actualIndex !== -1) {
+          allIds.add(actualIndex);
+        }
       });
       setSelectedRequestIds(allIds);
       setSelectAll(true);
@@ -1534,12 +1585,22 @@ export function Dashboard() {
         {/* Info section - Not sticky */}
         <div className="space-y-2">
         <p className="text-muted-foreground">
-          Analysis of support requests from Thad Norman ({billableFilteredRequests.length} billable filtered, {billableRequests.length} total billable, {requests.length} total requests)
-          {nonBillableRequests.length > 0 && (
-            <span className="text-muted-foreground"> • {nonBillableRequests.length} non-billable</span>
-          )}
-          {hideNonBillable && nonBillableRequests.length > 0 && (
-            <span className="text-orange-600 dark:text-orange-400 font-medium"> • Hiding {nonBillableRequests.length} non-billable items</span>
+          {hideNonBillable ? (
+            <>
+              Showing <span className="font-medium">{billableFilteredRequests.length}</span> billable requests
+              <span className="text-orange-600 dark:text-orange-400 ml-2">
+                ({nonBillableRequests.length} non-billable hidden)
+              </span>
+            </>
+          ) : (
+            <>
+              Showing <span className="font-medium">{billableFilteredRequests.length + nonBillableRequests.length}</span> total requests
+              {nonBillableRequests.length > 0 && (
+                <span className="text-muted-foreground ml-2">
+                  ({billableRequests.length} billable, {nonBillableRequests.length} non-billable)
+                </span>
+              )}
+            </>
           )}
         </p>
         <div className="flex items-center space-x-3">
@@ -1584,22 +1645,9 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Cost"
-          value={
-            <div className="space-y-0.5">
-              <div className="text-2xl font-bold">
-                ${filteredCosts?.flatRateCost.toLocaleString() || 0}
-              </div>
-              <div className="text-sm text-muted-foreground line-through">
-                ${filteredCosts?.totalCost.toLocaleString() || 0}
-              </div>
-              <div className="text-sm font-semibold text-green-600 dark:text-green-400">
-                Save ${filteredCosts?.savings.toLocaleString() || 0}
-              </div>
-            </div>
-          }
-          description="Flat rate ($125/hr)"
+          value={`$${filteredCosts?.totalCost.toLocaleString() || 0}`}
+          description="Tiered pricing"
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          valueClassName="!p-0"
         />
 
         <Scorecard
@@ -1735,68 +1783,95 @@ export function Dashboard() {
           <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle>Cost Calculation</CardTitle>
-              <CardDescription>Tiered pricing vs flat rate comparison (0.5 hour increments)</CardDescription>
+              <CardDescription>
+                {selectedMonth === 'all'
+                  ? `Monthly breakdown for ${selectedYear}`
+                  : 'Cost breakdown by service tier (0.5 hour increments)'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              {/* Tiered Pricing Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
-                      <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
-                      <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
-                      <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
-                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours}</td>
-                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.regularCost.toLocaleString()}</td>
-                    </tr>
-                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
-                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours}</td>
-                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.sameDayCost.toLocaleString()}</td>
-                    </tr>
-                    <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
-                      <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                      <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours}</td>
-                      <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
-                    </tr>
-                    <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                      <td className="py-3 px-4">Total (Tiered)</td>
-                      <td className="text-center py-3 px-4">-</td>
-                      <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)}</td>
-                      <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Flat Rate Comparison */}
-              <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <table className="w-full">
-                  <tbody>
-                    <tr className="border-b border-green-200 dark:border-green-800">
-                      <td className="py-3 px-4 text-green-800 dark:text-green-200 font-semibold">Flat Rate</td>
-                      <td className="text-center py-3 px-4 text-green-800 dark:text-green-200">${PRICING_CONFIG.flatRate}/hr</td>
-                      <td className="text-center py-3 px-4 text-green-800 dark:text-green-200 font-semibold">{filteredCosts.flatRateHours.toFixed(1)}</td>
-                      <td className="text-right py-3 px-4 text-green-800 dark:text-green-200 font-semibold">${filteredCosts.flatRateCost.toLocaleString()}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan={3} className="py-3 px-4 text-green-700 dark:text-green-300 font-bold">Your Savings</td>
-                      <td className="text-right py-3 px-4 text-green-700 dark:text-green-300 font-bold">
-                        ${filteredCosts.savings.toLocaleString()} ({filteredCosts.savingsPercentage.toFixed(1)}%)
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
+                // Monthly breakdown view
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Month</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Regular</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Same Day</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Emergency</th>
+                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlyCosts.map((monthData, index) => (
+                        <tr key={`${monthData.year}-${monthData.month}`} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                          <td className="py-3 px-4 font-medium">{monthData.month}</td>
+                          <td className="text-center py-3 px-4">${monthData.costs.regularCost.toLocaleString()}</td>
+                          <td className="text-center py-3 px-4">${monthData.costs.sameDayCost.toLocaleString()}</td>
+                          <td className="text-center py-3 px-4">${monthData.costs.emergencyCost.toLocaleString()}</td>
+                          <td className="text-right py-3 px-4 font-semibold">${monthData.costs.totalCost.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
+                        <td className="py-3 px-4">Total</td>
+                        <td className="text-center py-3 px-4">
+                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0).toLocaleString()}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0).toLocaleString()}
+                        </td>
+                        <td className="text-center py-3 px-4">
+                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0).toLocaleString()}
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          ${monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                // Regular tier breakdown view
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
+                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
+                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4">{PRICING_CONFIG.tiers[0].name}</td>
+                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.regularHours}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.regularCost.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4">{PRICING_CONFIG.tiers[1].name}</td>
+                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.sameDayHours}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.sameDayCost.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4">{PRICING_CONFIG.tiers[2].name}</td>
+                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
+                        <td className="text-center py-3 px-4 font-semibold">{filteredCosts.emergencyHours}</td>
+                        <td className="text-right py-3 px-4 font-semibold">${filteredCosts.emergencyCost.toLocaleString()}</td>
+                      </tr>
+                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
+                        <td className="py-3 px-4">Total</td>
+                        <td className="text-center py-3 px-4">-</td>
+                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours).toFixed(1)}</td>
+                        <td className="text-right py-3 px-4">${filteredCosts.totalCost.toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
