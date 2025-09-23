@@ -16,9 +16,10 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -65,6 +66,7 @@ export function Dashboard() {
   // Column filter state - changed to arrays for multiple selections
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [urgencyFilter, setUrgencyFilter] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<string>('all'); // Keep as dropdown
   const [dayFilter, setDayFilter] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState<{
@@ -72,11 +74,13 @@ export function Dashboard() {
     day: boolean;
     category: boolean;
     urgency: boolean;
+    source: boolean;
   }>({
     date: false,
     day: false,
     category: false,
-    urgency: false
+    urgency: false,
+    source: false
   });
 
   // Bulk selection state
@@ -93,6 +97,12 @@ export function Dashboard() {
   // Chart type toggle
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
   const [costViewType, setCostViewType] = useState<'table' | 'chart'>('table');
+  const [visibleUrgencies, setVisibleUrgencies] = useState<Record<string, boolean>>({
+    Promotion: true,
+    Low: true,
+    Medium: true,
+    High: true
+  });
 
   // Non-billable items visibility toggle
   const [hideNonBillable, setHideNonBillable] = useState<boolean>(() => {
@@ -123,7 +133,7 @@ export function Dashboard() {
   const categoryOptions = ['Advisory', 'Email', 'Forms', 'General', 'Hosting', 'Migration', 'Non-billable', 'Support'];
   
   // Toggle individual column filter visibility
-  const toggleColumnFilter = (column: 'date' | 'day' | 'category' | 'urgency') => {
+  const toggleColumnFilter = (column: 'date' | 'day' | 'category' | 'urgency' | 'source') => {
     setShowFilters(prev => ({
       ...prev,
       [column]: !prev[column]
@@ -488,8 +498,14 @@ export function Dashboard() {
         const apiRequests = await fetchRequests({ status: 'all' });
         console.log('Received from API:', { count: apiRequests.length, sample: apiRequests[0] });
 
+        // Default existing data to 'sms' source if not specified
+        const requestsWithSource = apiRequests.map(req => ({
+          ...req,
+          source: req.source || 'sms'
+        }));
+
         // Keep ALL requests (including deleted) for archive functionality
-        setRequests(apiRequests);
+        setRequests(requestsWithSource);
       } else {
         throw new Error('API is not available');
       }
@@ -541,6 +557,7 @@ export function Dashboard() {
       // Column filters - updated for checkbox arrays
       if (categoryFilter.length > 0 && !categoryFilter.includes(request.Category || 'Support')) return false;
       if (urgencyFilter.length > 0 && !urgencyFilter.includes(request.Urgency)) return false;
+      if (sourceFilter.length > 0 && !sourceFilter.includes(request.source || 'sms')) return false;
       if (dateFilter !== 'all' && request.Date !== dateFilter) return false;
       if (dayFilter.length > 0 && !dayFilter.includes(requestDayOfWeek)) return false;
 
@@ -1580,10 +1597,22 @@ export function Dashboard() {
         <Scorecard
           title="Total Requests"
           value={billableFilteredRequests.length}
-          description={timeViewMode === 'day' && selectedDay !== 'all'
-            ? `Across ${chartData.length} hours`
-            : `Across ${chartData.length} days`
-          }
+          description={(() => {
+            const smsCount = billableFilteredRequests.filter(r => (r.source || 'sms') === 'sms').length;
+            const ticketCount = billableFilteredRequests.filter(r => r.source === 'ticket').length;
+            const otherCount = billableFilteredRequests.filter(r => r.source && r.source !== 'sms' && r.source !== 'ticket').length;
+
+            const parts = [];
+            if (smsCount > 0) parts.push(`${smsCount} Text`);
+            if (ticketCount > 0) parts.push(`${ticketCount} Ticket`);
+            if (otherCount > 0) parts.push(`${otherCount} Other`);
+
+            return parts.length > 0 ? parts.join(', ') : (
+              timeViewMode === 'day' && selectedDay !== 'all'
+                ? `Across ${chartData.length} hours`
+                : `Across ${chartData.length} days`
+            );
+          })()}
           icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
         />
 
@@ -1746,7 +1775,7 @@ export function Dashboard() {
                     </thead>
                     <tbody>
                       {/* Promotion Row */}
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4 font-medium">Promotion</td>
                         {monthlyCosts.map((monthData) => (
                           <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
@@ -1775,7 +1804,7 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* Low Row */}
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4 font-medium">Low</td>
                         {monthlyCosts.map((monthData) => (
                           <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
@@ -1804,7 +1833,7 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* Medium Row */}
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4 font-medium">Medium</td>
                         {monthlyCosts.map((monthData) => (
                           <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
@@ -1833,7 +1862,7 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* High Row */}
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4 font-medium">High</td>
                         {monthlyCosts.map((monthData) => (
                           <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
@@ -1895,7 +1924,7 @@ export function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Promotion</td>
                         <td className="text-center py-3 px-4">$125/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">
@@ -1912,7 +1941,7 @@ export function Dashboard() {
                           )}
                         </td>
                       </tr>
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Low</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">
@@ -1929,7 +1958,7 @@ export function Dashboard() {
                           )}
                         </td>
                       </tr>
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Medium</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">
@@ -1946,7 +1975,7 @@ export function Dashboard() {
                           )}
                         </td>
                       </tr>
-                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">High</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
                         <td className="text-center py-3 px-4 font-semibold">
@@ -2015,7 +2044,7 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-300"
                           />
                           <Tooltip
-                            formatter={(value: number) => [`$${formatCurrency(value)}`, '']}
+                            formatter={(value: number) => `$${formatCurrency(value)}`}
                             contentStyle={{
                               backgroundColor: 'rgba(255, 255, 255, 0.95)',
                               border: '1px solid #E5E7EB',
@@ -2033,47 +2062,134 @@ export function Dashboard() {
                                 payload?.find(item => item.value === key)
                               ).filter(Boolean);
 
+                              const toggleUrgency = (urgency: string) => {
+                                setVisibleUrgencies(prev => ({
+                                  ...prev,
+                                  [urgency]: !prev[urgency]
+                                }));
+                              };
+
+                              const resetFilters = () => {
+                                setVisibleUrgencies({
+                                  Promotion: true,
+                                  Low: true,
+                                  Medium: true,
+                                  High: true
+                                });
+                              };
+
+                              // Check if filters have been modified from default (all true)
+                              const isModified = Object.values(visibleUrgencies).some(value => !value);
+
                               return (
-                                <ul style={{
-                                  listStyle: 'none',
-                                  margin: 0,
-                                  padding: 0,
-                                  display: 'flex',
-                                  justifyContent: 'center',
-                                  gap: '20px'
-                                }}>
-                                  {orderedPayload.map((entry, index) => (
-                                    <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <span style={{
-                                        display: 'inline-block',
-                                        width: '14px',
-                                        height: '14px',
-                                        backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
-                                        backgroundImage: entry.value === 'Promotion'
-                                          ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
-                                          : 'none'
-                                      }} />
-                                      <span style={{ color: '#374151' }}>{entry.value}</span>
-                                    </li>
-                                  ))}
-                                </ul>
+                                <div>
+                                  {/* Interactive legend items */}
+                                  <ul style={{
+                                    listStyle: 'none',
+                                    margin: 0,
+                                    padding: 0,
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    gap: '20px'
+                                  }}>
+                                    {orderedPayload.map((entry, index) => entry ? (
+                                      <li
+                                        key={`item-${index}`}
+                                        onClick={() => toggleUrgency(entry.value)}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '8px',
+                                          cursor: 'pointer',
+                                          opacity: visibleUrgencies[entry.value] ? 1 : 0.35,
+                                          transition: 'all 0.2s ease',
+                                          userSelect: 'none'
+                                        }}
+                                      >
+                                        <span style={{
+                                          display: 'inline-block',
+                                          width: '14px',
+                                          height: '14px',
+                                          backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
+                                          backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value]
+                                            ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
+                                            : entry.value === 'Promotion'
+                                            ? 'repeating-linear-gradient(45deg, #D1D5DB, #D1D5DB 2px, #9CA3AF 2px, #9CA3AF 4px)'
+                                            : 'none',
+                                          opacity: visibleUrgencies[entry.value] ? 1 : 0.5
+                                        }} />
+                                        <span style={{ color: visibleUrgencies[entry.value] ? '#374151' : '#9CA3AF' }}>
+                                          {entry.value}
+                                        </span>
+                                      </li>
+                                    ) : null)}
+
+                                    {/* Reset button - only shows when filters are modified */}
+                                    {isModified && (
+                                      <>
+                                        <li style={{
+                                          width: '1px',
+                                          height: '20px',
+                                          backgroundColor: '#E5E7EB',
+                                          margin: '0 10px'
+                                        }} />
+                                        <li
+                                          onClick={resetFilters}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            cursor: 'pointer',
+                                            padding: '2px 10px',
+                                            borderRadius: '4px',
+                                            fontSize: '13px',
+                                            color: '#6B7280',
+                                            backgroundColor: 'transparent',
+                                            transition: 'all 0.2s ease',
+                                            userSelect: 'none',
+                                            border: '1px solid transparent'
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.color = '#3B82F6';
+                                            e.currentTarget.style.backgroundColor = '#EFF6FF';
+                                            e.currentTarget.style.borderColor = '#BFDBFE';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = '#6B7280';
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                            e.currentTarget.style.borderColor = 'transparent';
+                                          }}
+                                        >
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                                            <path d="M21 3v5h-5" />
+                                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                                            <path d="M8 21H3v-5" />
+                                          </svg>
+                                          Reset
+                                        </li>
+                                      </>
+                                    )}
+                                  </ul>
+                                </div>
                               );
                             }}
                           />
-                          <Bar dataKey="High" stackId="a" fill="#1E40AF" />
-                          <Bar dataKey="Medium" stackId="a" fill="#3B82F6" />
-                          <Bar dataKey="Low" stackId="a" fill="#93C5FD" />
-                          <Bar dataKey="Promotion" stackId="a" fill="url(#diagonalStripesMonthly)" />
+                          <Bar dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
+                          <Bar dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
+                          <Bar dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
+                          <Bar dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"} />
                         </BarChart>
                       </ResponsiveContainer>
                     );
                   } else if (filteredCosts) {
                     // Transform data for service tier view
                     const chartData = [
-                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: 'url(#diagonalStripesTier)' },
-                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: '#93C5FD' },
-                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: '#3B82F6' },
-                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: '#1E40AF' },
+                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: visibleUrgencies.Promotion ? 'url(#diagonalStripesTier)' : '#D1D5DB' },
+                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#93C5FD' : '#D1D5DB' },
+                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#3B82F6' : '#D1D5DB' },
+                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#1E40AF' : '#D1D5DB' },
                     ];
 
                     return (
@@ -2378,7 +2494,49 @@ export function Dashboard() {
                     title="Select all visible requests on this page"
                   />
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-16">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => toggleColumnFilter('source')}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        title="Toggle source filter"
+                      >
+                        <Filter className={`w-3 h-3 transition-colors ${
+                          showFilters.source ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground'
+                        }`} />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <span className="text-xs">Source</span>
+                    </div>
+                    {showFilters.source && (
+                      <div className="w-full text-xs border border-border rounded p-2 bg-card">
+                        {['sms', 'ticket', 'email', 'phone'].map(source => (
+                          <label key={source} className="flex items-center space-x-1 mb-1 cursor-pointer hover:bg-muted/50 rounded px-1">
+                            <input
+                              type="checkbox"
+                              checked={sourceFilter.includes(source)}
+                              onChange={(e) => {
+                                preserveScrollPosition();
+                                const newFilter = e.target.checked
+                                  ? [...sourceFilter, source]
+                                  : sourceFilter.filter(s => s !== source);
+                                setSourceFilter(newFilter);
+                                setCurrentPage(1);
+                                setSelectedRequestIds(new Set());
+                                setSelectAll(false);
+                              }}
+                              className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500 focus:ring-2"
+                            />
+                            <span className="capitalize">{source === 'sms' ? 'Text' : source === 'email' ? 'Email' : source === 'phone' ? 'Phone' : 'Ticket'}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="min-w-[110px]">
                   <div className="space-y-1">
                     <div className="flex items-center justify-center">
                       <button
@@ -2420,7 +2578,7 @@ export function Dashboard() {
                     )}
                   </div>
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-20">
                   <div className="space-y-1">
                     <div className="flex items-center justify-center">
                       <button
@@ -2617,7 +2775,7 @@ export function Dashboard() {
                     {getSortIcon('EstimatedHours')}
                   </button>
                 </TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -2636,7 +2794,7 @@ export function Dashboard() {
                     className={`cursor-pointer transition-colors ${
                       isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${
-                      selectedRequestIds.has(actualIndex) ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      selectedRequestIds.has(actualIndex) ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
                     }`}
                     onClick={(e) => handleRowClick(actualIndex, e)}
                   >
@@ -2648,10 +2806,32 @@ export function Dashboard() {
                         className="rounded border-border focus:ring-blue-500"
                       />
                     </TableCell>
+                    <TableCell className="text-center">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-flex items-center justify-center">
+                              {request.source === 'ticket' ? (
+                                <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                              ) : request.source === 'email' ? (
+                                <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                              ) : request.source === 'phone' ? (
+                                <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                              ) : (
+                                <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Via {request.source === 'sms' ? 'Text' : request.source === 'ticket' ? 'Ticket System' : request.source === 'email' ? 'Email' : request.source === 'phone' ? 'Phone' : 'Text'}</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
                     <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
-                    <TableCell className="min-w-[300px] max-w-2xl">
+                    <TableCell className="min-w-[200px] max-w-md">
                       <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
                         {request.Request_Summary}
                       </div>
@@ -2768,12 +2948,13 @@ export function Dashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
+                      <TableHead>Source</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Time</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Summary</TableHead>
                       <TableHead>Urgency</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="w-20">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2781,6 +2962,28 @@ export function Dashboard() {
                       const originalIndex = requests.findIndex(r => r === request);
                       return (
                         <TableRow key={originalIndex} className="opacity-60">
+                          <TableCell className="text-center">
+                            <TooltipProvider>
+                              <UITooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="inline-flex items-center justify-center">
+                                    {request.source === 'ticket' ? (
+                                      <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                                    ) : request.source === 'email' ? (
+                                      <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                                    ) : request.source === 'phone' ? (
+                                      <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                                    ) : (
+                                      <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Via {request.source === 'sms' ? 'Text' : request.source === 'ticket' ? 'Ticket System' : request.source === 'email' ? 'Email' : request.source === 'phone' ? 'Phone' : 'Text'}</p>
+                                </TooltipContent>
+                              </UITooltip>
+                            </TooltipProvider>
+                          </TableCell>
                           <TableCell className="text-sm">
                             {parseLocalDate(request.Date).toLocaleDateString()}
                           </TableCell>

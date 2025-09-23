@@ -17,24 +17,22 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   max = 99.99,
   placeholder = '0.50'
 }) => {
-  // Determine step based on urgency
-  const getStep = () => {
-    switch (urgency) {
-      case 'HIGH':
-        return 1.0;  // 1 hour increments for high urgency
-      case 'MEDIUM':
-        return 0.5;  // 30 minute increments for medium urgency
-      case 'LOW':
-      case 'PROMOTION':
-        return 0.25; // 15 minute increments for low/promotion urgency
-      default:
-        return 0.25; // Default to 15 minute increments
-    }
+  // Always use 0.25 increments (15 minute intervals)
+  const step = 0.25;
+
+  // Function to round to nearest 0.25 increment
+  const roundToQuarterHour = (val: number): number => {
+    // Round to nearest 0.25
+    const rounded = Math.round(val / 0.25) * 0.25;
+    // Ensure we stay within min/max bounds
+    return Math.max(min, Math.min(max, rounded));
   };
 
-  const step = getStep();
+  // Ensure the initial value is also rounded to 0.25 increments
+  const roundedInitialValue = roundToQuarterHour(value);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toFixed(2));
+  const [editValue, setEditValue] = useState(roundedInitialValue.toFixed(2));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,7 +44,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
 
   const handleEdit = () => {
     setIsEditing(true);
-    setEditValue(value.toFixed(2));
+    setEditValue(roundedInitialValue.toFixed(2));
   };
 
   const handleSave = () => {
@@ -55,8 +53,11 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
 
     // Validate the value
     if (!isNaN(numValue) && numValue >= min && numValue <= max) {
-      console.log(`EditableNumberCell - Valid value, calling onSave with: ${numValue}`);
-      onSave(numValue);
+      // Round to nearest 0.25 increment
+      const roundedValue = roundToQuarterHour(numValue);
+      console.log(`EditableNumberCell - Rounding ${numValue} to ${roundedValue} (nearest 0.25 increment)`);
+      console.log(`EditableNumberCell - Valid value, calling onSave with: ${roundedValue}`);
+      onSave(roundedValue);
       setIsEditing(false);
     } else {
       console.warn(`EditableNumberCell - Invalid value: ${numValue} (min: ${min}, max: ${max})`);
@@ -67,7 +68,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   };
 
   const handleCancel = () => {
-    setEditValue(value.toFixed(2));
+    setEditValue(roundedInitialValue.toFixed(2));
     setIsEditing(false);
   };
 
@@ -112,7 +113,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
       className="w-20 px-2 py-1 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
       title="Click to edit hours"
     >
-      {value.toFixed(2)}
+      {roundedInitialValue.toFixed(2)}
     </button>
   );
 };
