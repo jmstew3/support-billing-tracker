@@ -13,6 +13,11 @@ cp .env.docker.example .env.docker
 
 # Edit .env.docker with your preferred passwords
 # (Default passwords are provided for local development)
+
+# For Twenty CRM integration, add:
+# VITE_TWENTY_API_URL=https://your-twenty.com/rest/supportTickets
+# VITE_TWENTY_API_TOKEN=your-bearer-token
+# VITE_TWENTY_USE_MOCK=false
 ```
 
 2. **Start all services with Docker**:
@@ -93,11 +98,13 @@ thad-chat/
 
 ### Data Processing Pipeline
 - **iMessage Export**: Extract messages from macOS Messages database
+- **Twenty CRM Integration**: Fetch support tickets from Twenty CRM REST API
 - **NSAttributedString Cleaning**: Removes `streamtyped @ NS*` artifacts
 - **Smart Cleaning**: Removes iMessage reactions, control characters, malformed prefixes
 - **Request Extraction**: Pattern-based identification of actionable requests
 - **Categorization**: Support (88.4%), Hosting (8.4%), Forms (2.3%), Billing (0.7%), Email (0.2%)
 - **Urgency Detection**: High (6.7%), Medium (90.7%), Low (2.6%)
+- **Multi-Source Support**: Unified view of SMS and ticket system requests
 
 ### Analysis & Reports
 - **CSV Export**: Detailed request data with timestamps
@@ -118,6 +125,7 @@ thad-chat/
 - 📈 Time-based filtering (All/Month/Day views)
 - 📅 Modern calendar date picker with month selection capability
 - 📱 Source indicators to distinguish Text vs Ticket System requests
+- 🎫 Twenty CRM integration for live ticket data
 
 ### Database Persistence & CRUD Operations
 
@@ -202,10 +210,12 @@ The frontend automatically loads data from `/public/thad_requests_table.csv`
 
 ## 📈 Current Statistics
 
-Processing 6,156 messages yields:
-- **Total Requests**: 430 business requests extracted
-- **Date Range**: May 2025 - September 2025
-- **Monthly Distribution**:
+Combined data sources provide:
+- **Total Requests**: 490+ (430 SMS + 60 Twenty CRM tickets)
+- **SMS Messages**: 430 business requests extracted from 6,156 messages
+- **Twenty CRM Tickets**: 60 support tickets from live API
+- **Date Range**: May 2025 - January 2025
+- **Monthly Distribution** (SMS):
   - May: 88 (20.5%)
   - June: 142 (33.0%)
   - July: 106 (24.7%)
@@ -213,6 +223,7 @@ Processing 6,156 messages yields:
   - September: 12 (2.8%)
 - **Categories**: Support, Hosting, Forms, Billing, Email, Migration
 - **Effort Estimates**: Small (0.25h), Medium (0.5h), Large (1.0h)
+- **Source Distribution**: ~88% SMS, ~12% Tickets
 
 ## 🔍 Request Detection
 
@@ -299,6 +310,28 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 - **Workflow Management**: Bulk operations for efficient request processing
 
 ## 📝 Recent Updates
+
+### January 23, 2025 - Twenty CRM Integration
+- **Twenty CRM API Integration**: Connected to live Twenty CRM instance for real-time ticket data
+  - Configured REST API endpoint with Bearer token authentication
+  - Successfully fetching 60+ support tickets from production system
+  - Created `twentyApi.ts` service for API communication
+  - Built `ticketTransform.ts` utility for data transformation
+  - Handles GraphQL-style nested response structure
+- **Unified Request View**: Seamlessly merge SMS and ticket system requests
+  - Tickets appear with 🎫 icon in source column
+  - SMS requests show with 💬 icon
+  - Source filtering allows viewing by channel
+  - All requests use consistent data format
+- **Docker Configuration**: Added Twenty API environment variables to docker-compose.yml
+  - `VITE_TWENTY_API_URL`: API endpoint configuration
+  - `VITE_TWENTY_API_TOKEN`: Secure token storage
+  - `VITE_TWENTY_USE_MOCK`: Toggle for testing without API
+- **Data Transformation**: Intelligent mapping of Twenty ticket fields
+  - Priority mapping: CRITICAL→HIGH, MEDIUM→MEDIUM, NORMAL→LOW
+  - Category mapping: BRAND_WEBSITE_TICKET→Support, LANDING_PAGE_TICKET→Forms
+  - Request summary concatenates subject and description
+  - Default time set to 8:00 AM for all tickets
 
 ### September 23, 2025 - Source Indicators & UI Improvements
 - **Source Identification System**: Added visual indicators to distinguish between SMS/Text and Ticket System requests
