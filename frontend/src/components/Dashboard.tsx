@@ -18,7 +18,7 @@ import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest, getTwentySyncStatus, triggerTwentySync, type TwentySyncResponse } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart, LabelList, Cell } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 
@@ -2098,6 +2098,7 @@ export function Dashboard() {
                       Low: month.costs.regularCost,
                       Medium: month.costs.sameDayCost,
                       High: month.costs.emergencyCost,
+                      totalCost: month.costs.promotionalCost + month.costs.regularCost + month.costs.sameDayCost + month.costs.emergencyCost,
                       totalHours: month.costs.promotionalHours + month.costs.regularHours + month.costs.sameDayHours + month.costs.emergencyHours,
                     }));
 
@@ -2132,18 +2133,52 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-400"
                           />
                           <Tooltip
-                            formatter={(value: number, name: string) => {
-                              if (name === 'totalHours') {
-                                return [`${value.toFixed(1)}h`, 'Total Hours'];
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const totalCost = data.totalCost || 0;
+
+                                // Define the correct order
+                                const orderMap: Record<string, number> = {
+                                  'Promotion': 1,
+                                  'Low': 2,
+                                  'Medium': 3,
+                                  'High': 4
+                                };
+
+                                // Sort payload according to the defined order
+                                const sortedPayload = payload
+                                  .filter((entry: any) => entry.dataKey !== 'totalHours' && entry.dataKey !== 'totalCost')
+                                  .sort((a: any, b: any) => {
+                                    return (orderMap[a.name] || 999) - (orderMap[b.name] || 999);
+                                  });
+
+                                return (
+                                  <div style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                    border: '1px solid #E5E7EB',
+                                    borderRadius: '6px',
+                                    padding: '10px'
+                                  }}>
+                                    <p style={{ color: '#111827', fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
+                                    {sortedPayload.map((entry: any, index: number) => (
+                                      <p key={`item-${index}`} style={{ color: entry.color, margin: '4px 0' }}>
+                                        {entry.name}: ${formatCurrency(entry.value)}
+                                      </p>
+                                    ))}
+                                    <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
+                                      <p style={{ color: '#111827', fontWeight: 'bold' }}>
+                                        Total Cost: ${formatCurrency(totalCost)}
+                                      </p>
+                                      <p style={{ color: '#DC2626', marginTop: '4px' }}>
+                                        Total Hours: {data.totalHours.toFixed(1)}h
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
                               }
-                              return [`$${formatCurrency(value)}`, name];
+                              return null;
                             }}
-                            contentStyle={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                              border: '1px solid #E5E7EB',
-                              borderRadius: '6px'
-                            }}
-                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
                           />
                           <Legend
                             wrapperStyle={{ paddingTop: '20px' }}
@@ -2273,7 +2308,14 @@ export function Dashboard() {
                           <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"}>
+                            <LabelList
+                              dataKey="totalCost"
+                              position="top"
+                              formatter={(value: number) => value > 0 ? `$${formatCurrency(value)}` : ''}
+                              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+                            />
+                          </Bar>
                           <Line yAxisId="hours" dataKey="totalHours" stroke="#DC2626" strokeWidth={3} dot={{ fill: '#DC2626', r: 5 }} />
                         </ComposedChart>
                       </ResponsiveContainer>
@@ -2310,21 +2352,49 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-300"
                           />
                           <Tooltip
-                            formatter={(value: number, name: string) => [
-                              name === 'cost' ? `$${formatCurrency(value)}` : `${value.toFixed(2)} hours`,
-                              name === 'cost' ? 'Cost' : 'Hours'
-                            ]}
-                            contentStyle={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                              border: '1px solid #E5E7EB',
-                              borderRadius: '6px'
+                            content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const allData = chartData;
+                                const totalCost = allData.reduce((sum, item) => sum + item.cost, 0);
+                                const totalHours = allData.reduce((sum, item) => sum + item.hours, 0);
+
+                                return (
+                                  <div style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                    border: '1px solid #E5E7EB',
+                                    borderRadius: '6px',
+                                    padding: '10px'
+                                  }}>
+                                    <p style={{ color: '#111827', fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
+                                    <p style={{ color: '#374151', margin: '4px 0' }}>
+                                      Cost: ${formatCurrency(data.cost)}
+                                    </p>
+                                    <p style={{ color: '#374151', margin: '4px 0' }}>
+                                      Hours: {data.hours.toFixed(2)}
+                                    </p>
+                                    <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
+                                      <p style={{ color: '#111827', fontSize: '12px' }}>
+                                        Total: ${formatCurrency(totalCost)} ({totalHours.toFixed(2)}h)
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
                             }}
-                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
                           />
                           <Bar dataKey="cost" name="Cost" shape={(props: any) => {
                             const { fill, x, y, width, height } = props;
                             return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
-                          }} />
+                          }}>
+                            <LabelList
+                              dataKey="cost"
+                              position="top"
+                              formatter={(value: number) => `$${formatCurrency(value)}`}
+                              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+                            />
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     );
