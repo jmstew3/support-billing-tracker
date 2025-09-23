@@ -64,6 +64,9 @@ services:
     environment:
       VITE_API_URL: http://localhost:3001/api
       NODE_ENV: ${NODE_ENV:-development}
+      VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
+      VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
+      VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
     ports:
       - "5173:5173"
     volumes:
@@ -73,6 +76,30 @@ services:
     networks:
       - thad-network
     command: npm run dev:docker
+
+  n8n:
+    image: n8nio/n8n
+    container_name: thad-chat-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=mysql
+      - DB_MYSQLDB_HOST=mysql
+      - DB_MYSQLDB_PORT=3306
+      - DB_MYSQLDB_DATABASE=thad_chat
+      - DB_MYSQLDB_USER=${MYSQL_USER:-***REMOVED***}
+      - DB_MYSQLDB_PASSWORD=${MYSQL_PASSWORD:-***REMOVED***}
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+    volumes:
+      - ./n8n:/home/node/.n8n
+    networks:
+      - thad-network
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 networks:
   thad-network:
