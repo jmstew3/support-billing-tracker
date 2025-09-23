@@ -16,6 +16,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
+import { fetchAndTransformTickets, getMockTickets } from '../services/twentyApi';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -504,8 +505,43 @@ export function Dashboard() {
           source: req.source || 'sms'
         }));
 
+        // Fetch support tickets from Twenty API
+        let ticketRequests: ChatRequest[] = [];
+        try {
+          // Use VITE_TWENTY_USE_MOCK env var to control mock vs real API
+          const useMockData = import.meta.env.VITE_TWENTY_USE_MOCK === 'true';
+
+          console.log('Environment check:', {
+            VITE_TWENTY_USE_MOCK: import.meta.env.VITE_TWENTY_USE_MOCK,
+            VITE_TWENTY_API_URL: import.meta.env.VITE_TWENTY_API_URL,
+            useMockData: useMockData
+          });
+
+          if (useMockData) {
+            console.log('⚠️ Using mock Twenty API data...');
+            ticketRequests = getMockTickets();
+            console.log('Mock tickets:', ticketRequests);
+          } else {
+            console.log('🌐 Fetching tickets from REAL Twenty API...');
+            ticketRequests = await fetchAndTransformTickets();
+          }
+
+          console.log(`✅ Fetched ${ticketRequests.length} tickets from Twenty API`);
+          if (ticketRequests.length > 0) {
+            console.log('Sample ticket request:', JSON.stringify(ticketRequests[0], null, 2));
+            console.log('First 5 tickets:', ticketRequests.slice(0, 5));
+          }
+        } catch (error) {
+          console.error('Failed to fetch tickets from Twenty API:', error);
+          // Continue without ticket data if Twenty API fails
+        }
+
+        // Merge SMS requests and ticket requests
+        const allRequests = [...requestsWithSource, ...ticketRequests];
+        console.log(`Total requests: ${allRequests.length} (${requestsWithSource.length} SMS, ${ticketRequests.length} tickets)`);
+
         // Keep ALL requests (including deleted) for archive functionality
-        setRequests(requestsWithSource);
+        setRequests(allRequests);
       } else {
         throw new Error('API is not available');
       }
@@ -2060,7 +2096,7 @@ export function Dashboard() {
                               const customOrder = ['Promotion', 'Low', 'Medium', 'High'];
                               const orderedPayload = customOrder.map(key =>
                                 payload?.find(item => item.value === key)
-                              ).filter(Boolean);
+                              ).filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined);
 
                               const toggleUrgency = (urgency: string) => {
                                 setVisibleUrgencies(prev => ({
@@ -2096,13 +2132,13 @@ export function Dashboard() {
                                     {orderedPayload.map((entry, index) => entry ? (
                                       <li
                                         key={`item-${index}`}
-                                        onClick={() => toggleUrgency(entry.value)}
+                                        onClick={() => toggleUrgency(entry.value || '')}
                                         style={{
                                           display: 'flex',
                                           alignItems: 'center',
                                           gap: '8px',
                                           cursor: 'pointer',
-                                          opacity: visibleUrgencies[entry.value] ? 1 : 0.35,
+                                          opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.35,
                                           transition: 'all 0.2s ease',
                                           userSelect: 'none'
                                         }}
@@ -2113,14 +2149,14 @@ export function Dashboard() {
                                           height: '14px',
                                           borderRadius: '4px',
                                           backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
-                                          backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value]
+                                          backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value || '']
                                             ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
                                             : entry.value === 'Promotion'
                                             ? 'repeating-linear-gradient(45deg, #D1D5DB, #D1D5DB 2px, #9CA3AF 2px, #9CA3AF 4px)'
                                             : 'none',
-                                          opacity: visibleUrgencies[entry.value] ? 1 : 0.5
+                                          opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.5
                                         }} />
-                                        <span style={{ color: visibleUrgencies[entry.value] ? '#374151' : '#9CA3AF' }}>
+                                        <span style={{ color: visibleUrgencies[entry.value || ''] ? '#374151' : '#9CA3AF' }}>
                                           {entry.value}
                                         </span>
                                       </li>

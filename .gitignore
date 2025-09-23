@@ -34,3 +34,9 @@ frontend/.vite/
 Thumbs.db
 .vscode/
 .idea/
+# Prevent confusion - we only use .env.docker
+frontend/.env
+.env
+
+# MCP configuration (contains API keys)
+.mcp.json

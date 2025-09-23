@@ -15,7 +15,8 @@ function transformDbRow(row: any): ChatRequest {
     Urgency: row.Urgency,
     Effort: row.Effort,
     EstimatedHours: row.EstimatedHours,
-    Status: row.Status
+    Status: row.Status,
+    source: row.source || 'sms' // Default to 'sms' for backwards compatibility
   };
 }
 
