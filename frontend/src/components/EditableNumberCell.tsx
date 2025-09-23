@@ -53,8 +53,15 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
 
     // Validate the value
     if (!isNaN(numValue) && numValue >= min && numValue <= max) {
-      // Round to nearest 0.25 increment
-      const roundedValue = roundToQuarterHour(numValue);
+      // Special handling for 0 and values already on quarter-hour boundaries
+      let roundedValue;
+      if (numValue === 0 || numValue % 0.25 === 0) {
+        // If it's exactly 0 or already a quarter-hour value, use it as-is
+        roundedValue = numValue;
+      } else {
+        // Otherwise round to nearest 0.25 increment
+        roundedValue = roundToQuarterHour(numValue);
+      }
       console.log(`EditableNumberCell - Rounding ${numValue} to ${roundedValue} (nearest 0.25 increment)`);
       console.log(`EditableNumberCell - Valid value, calling onSave with: ${roundedValue}`);
       onSave(roundedValue);
