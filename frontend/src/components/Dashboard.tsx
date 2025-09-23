@@ -1998,7 +1998,7 @@ export function Dashboard() {
                       <tr className="border-b">
                         <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
                         <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
+                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
                         <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
                       </tr>
                     </thead>
@@ -2006,7 +2006,7 @@ export function Dashboard() {
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Promotion</td>
                         <td className="text-center py-3 px-4">$125/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">
+                        <td className="text-right py-3 px-4 font-semibold">
                           {filteredCosts.promotionalHours === 0 ? '-' : filteredCosts.promotionalHours.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 font-semibold">
@@ -2023,7 +2023,7 @@ export function Dashboard() {
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Low</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">
+                        <td className="text-right py-3 px-4 font-semibold">
                           {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 font-semibold">
@@ -2040,7 +2040,7 @@ export function Dashboard() {
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">Medium</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">
+                        <td className="text-right py-3 px-4 font-semibold">
                           {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 font-semibold">
@@ -2057,7 +2057,7 @@ export function Dashboard() {
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-3 px-4">High</td>
                         <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                        <td className="text-center py-3 px-4 font-semibold">
+                        <td className="text-right py-3 px-4 font-semibold">
                           {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 font-semibold">
@@ -2074,7 +2074,7 @@ export function Dashboard() {
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-3 px-4">Total</td>
                         <td className="text-center py-3 px-4">-</td>
-                        <td className="text-center py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
+                        <td className="text-right py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
                         <td className="py-3 px-4">
                           <div className="flex justify-between items-center">
                             <span>$</span>
