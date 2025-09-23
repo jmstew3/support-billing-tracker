@@ -1697,8 +1697,8 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Hours"
-          value={filteredCosts ? (filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2) : 0}
-          description="At 0.5 hours per request"
+          value={billableFilteredRequests.reduce((sum, request) => sum + (request.EstimatedHours || 0), 0).toFixed(2)}
+          description="Actual hours recorded"
           icon={<Clock className="h-4 w-4 text-muted-foreground" />}
         />
 
