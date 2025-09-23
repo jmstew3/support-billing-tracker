@@ -22,11 +22,11 @@ const getCategoryColors = (): Record<string, string> => ({
   'Migration': getCSSVariableValue('--chart-color-migration') || '#d084d0',
   'Non-billable': getCSSVariableValue('--chart-color-non-billable') || '#ffb347',
   'Advisory': getCSSVariableValue('--chart-color-advisory') || '#87ceeb',
-  'General': getCSSVariableValue('--chart-color-general') || '#98d8c8'
+  'Website': getCSSVariableValue('--chart-color-website') || '#a78bfa'
 });
 
 // All possible categories in order
-const ALL_CATEGORIES = ['Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration', 'Non-billable', 'Advisory', 'General'];
+const ALL_CATEGORIES = ['Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration', 'Non-billable', 'Advisory', 'Website'];
 
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
   // Get theme-aware colors

@@ -335,7 +335,9 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
 
                           {/* Tooltip */}
                           {hoveredDay === day.date && (
-                            <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 pointer-events-none">
+                            <div className={`absolute z-50 left-1/2 transform -translate-x-1/2 pointer-events-none ${
+                              weekIndex === 0 ? 'top-full mt-2' : 'bottom-full mb-2'
+                            }`}>
                               <div className="bg-gray-900 text-white text-xs rounded px-3 py-2 whitespace-nowrap">
                                 <div className="font-semibold">
                                   {format(parseISO(day.date), 'EEE, MMM d, yyyy')}
@@ -357,9 +359,18 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
                                 ) : (
                                   <div className="text-gray-400">No requests</div>
                                 )}
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                                  <div className="border-4 border-transparent border-t-gray-900" />
-                                </div>
+                                {/* Arrow - positioned based on tooltip direction */}
+                                {weekIndex === 0 ? (
+                                  // Arrow pointing up (tooltip below)
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -mb-1">
+                                    <div className="border-4 border-transparent border-b-gray-900" />
+                                  </div>
+                                ) : (
+                                  // Arrow pointing down (tooltip above)
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                    <div className="border-4 border-transparent border-t-gray-900" />
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
