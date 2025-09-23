@@ -18,6 +18,7 @@ import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -91,6 +92,7 @@ export function Dashboard() {
 
   // Chart type toggle
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
+  const [costViewType, setCostViewType] = useState<'table' | 'chart'>('table');
 
   // Non-billable items visibility toggle
   const [hideNonBillable, setHideNonBillable] = useState<boolean>(() => {
@@ -837,7 +839,7 @@ export function Dashboard() {
         } else if (field === 'Category') {
           updateData.Category = actualValue as string;
         } else if (field === 'Urgency') {
-          updateData.Urgency = actualValue as string;
+          updateData.Urgency = actualValue as ('HIGH' | 'MEDIUM' | 'LOW' | 'PROMOTION' | undefined);
         } else {
           updateData[field as keyof ChatRequest] = actualValue as any;
         }
@@ -1691,45 +1693,9 @@ export function Dashboard() {
       </Card>
 
       {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Request Categories</CardTitle>
-            <CardDescription>Distribution of request types</CardDescription>
-            <div className="flex gap-1 mt-2">
-              <button
-                className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
-                  chartType === 'pie'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('pie')}
-              >
-                Pie
-              </button>
-              <button
-                className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
-                  chartType === 'radar'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('radar')}
-              >
-                Radar
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {chartType === 'radar' ? (
-              <CategoryRadarChart data={allCategoryDataForCharts} />
-            ) : (
-              <CategoryPieChart data={allCategoryDataForCharts} />
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-8 md:grid-cols-5">
         {filteredCosts && (
-          <Card className="flex flex-col h-full">
+          <Card className="flex flex-col h-full md:col-span-3">
             <CardHeader>
               <CardTitle>Cost Calculation</CardTitle>
               <CardDescription>
@@ -1737,27 +1703,53 @@ export function Dashboard() {
                   ? `Monthly breakdown for ${selectedYear}`
                   : 'Cost breakdown by service tier (0.5 hour increments)'}
               </CardDescription>
+              <div className="flex gap-1 mt-2">
+                <button
+                  className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
+                    costViewType === 'table'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  onClick={() => setCostViewType('table')}
+                >
+                  Table
+                </button>
+                <button
+                  className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
+                    costViewType === 'chart'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                  onClick={() => setCostViewType('chart')}
+                >
+                  Chart
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              {selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
-                // Monthly breakdown view
-                <div className="overflow-x-auto">
+              {costViewType === 'table' ? (
+                // Table view
+                selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
+                  // Monthly breakdown view - Urgency by Month
+                  <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Month</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Promotion</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Low</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Medium</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">High</th>
+                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Urgency</th>
+                        {monthlyCosts.map((monthData) => (
+                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">
+                            {monthData.month.substring(0, 3)}
+                          </th>
+                        ))}
                         <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {monthlyCosts.map((monthData, index) => (
-                        <tr key={`${monthData.year}-${monthData.month}`} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="py-3 px-4 font-medium">{monthData.month}</td>
-                          <td className="py-3 px-4">
+                      {/* Promotion Row */}
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4 font-medium">Promotion</td>
+                        {monthlyCosts.map((monthData) => (
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             {monthData.costs.promotionalCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
@@ -1767,47 +1759,8 @@ export function Dashboard() {
                               </div>
                             )}
                           </td>
-                          <td className="py-3 px-4">
-                            {monthData.costs.regularCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.regularCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            {monthData.costs.sameDayCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            {monthData.costs.emergencyCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 font-semibold">
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(monthData.costs.totalCost)}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-3 px-4">Total</td>
-                        <td className="py-3 px-4">
+                        ))}
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
@@ -1820,7 +1773,23 @@ export function Dashboard() {
                             );
                           })()}
                         </td>
-                        <td className="py-3 px-4">
+                      </tr>
+                      {/* Low Row */}
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4 font-medium">Low</td>
+                        {monthlyCosts.map((monthData) => (
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                            {monthData.costs.regularCost === 0 ? (
+                              <div className="text-center">-</div>
+                            ) : (
+                              <div className="flex justify-between items-center">
+                                <span>$</span>
+                                <span>{formatCurrency(monthData.costs.regularCost)}</span>
+                              </div>
+                            )}
+                          </td>
+                        ))}
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
@@ -1833,7 +1802,23 @@ export function Dashboard() {
                             );
                           })()}
                         </td>
-                        <td className="py-3 px-4">
+                      </tr>
+                      {/* Medium Row */}
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4 font-medium">Medium</td>
+                        {monthlyCosts.map((monthData) => (
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                            {monthData.costs.sameDayCost === 0 ? (
+                              <div className="text-center">-</div>
+                            ) : (
+                              <div className="flex justify-between items-center">
+                                <span>$</span>
+                                <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
+                              </div>
+                            )}
+                          </td>
+                        ))}
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
@@ -1846,7 +1831,23 @@ export function Dashboard() {
                             );
                           })()}
                         </td>
-                        <td className="py-3 px-4">
+                      </tr>
+                      {/* High Row */}
+                      <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-4 font-medium">High</td>
+                        {monthlyCosts.map((monthData) => (
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                            {monthData.costs.emergencyCost === 0 ? (
+                              <div className="text-center">-</div>
+                            ) : (
+                              <div className="flex justify-between items-center">
+                                <span>$</span>
+                                <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
+                              </div>
+                            )}
+                          </td>
+                        ))}
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
@@ -1859,6 +1860,18 @@ export function Dashboard() {
                             );
                           })()}
                         </td>
+                      </tr>
+                      {/* Total Row */}
+                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
+                        <td className="py-3 px-4">Total</td>
+                        {monthlyCosts.map((monthData) => (
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                            <div className="flex justify-between items-center">
+                              <span>$</span>
+                              <span>{formatCurrency(monthData.costs.totalCost)}</span>
+                            </div>
+                          </td>
+                        ))}
                         <td className="py-3 px-4">
                           <div className="flex justify-between items-center">
                             <span>$</span>
@@ -1964,10 +1977,189 @@ export function Dashboard() {
                     </tbody>
                   </table>
                 </div>
+                )
+              ) : (
+                // Chart view
+                (() => {
+                  // Prepare data for stacked bar chart
+                  if (selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0) {
+                    // Transform data for monthly view
+                    const chartData = monthlyCosts.map(month => ({
+                      month: month.month.substring(0, 3),
+                      Promotion: month.costs.promotionalCost,
+                      Low: month.costs.regularCost,
+                      Medium: month.costs.sameDayCost,
+                      High: month.costs.emergencyCost,
+                    }));
+
+                    return (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={chartData}>
+                          <defs>
+                            <pattern id="diagonalStripesMonthly" patternUnits="userSpaceOnUse" width="8" height="8">
+                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
+                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                            </pattern>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+                          <XAxis
+                            dataKey="month"
+                            tick={{ fill: '#374151' }}
+                            className="dark:[&_text]:fill-gray-300"
+                          />
+                          <YAxis
+                            tickFormatter={(value) => `$${(value).toLocaleString()}`}
+                            tick={{ fill: '#374151' }}
+                            className="dark:[&_text]:fill-gray-300"
+                          />
+                          <Tooltip
+                            formatter={(value: number) => [`$${formatCurrency(value)}`, '']}
+                            contentStyle={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              border: '1px solid #E5E7EB',
+                              borderRadius: '6px'
+                            }}
+                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                          />
+                          <Legend
+                            wrapperStyle={{ paddingTop: '20px' }}
+                            iconType="rect"
+                            content={(props) => {
+                              const { payload } = props;
+                              const customOrder = ['Promotion', 'Low', 'Medium', 'High'];
+                              const orderedPayload = customOrder.map(key =>
+                                payload?.find(item => item.value === key)
+                              ).filter(Boolean);
+
+                              return (
+                                <ul style={{
+                                  listStyle: 'none',
+                                  margin: 0,
+                                  padding: 0,
+                                  display: 'flex',
+                                  justifyContent: 'center',
+                                  gap: '20px'
+                                }}>
+                                  {orderedPayload.map((entry, index) => (
+                                    <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{
+                                        display: 'inline-block',
+                                        width: '14px',
+                                        height: '14px',
+                                        backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
+                                        backgroundImage: entry.value === 'Promotion'
+                                          ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
+                                          : 'none'
+                                      }} />
+                                      <span style={{ color: '#374151' }}>{entry.value}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="High" stackId="a" fill="#1E40AF" />
+                          <Bar dataKey="Medium" stackId="a" fill="#3B82F6" />
+                          <Bar dataKey="Low" stackId="a" fill="#93C5FD" />
+                          <Bar dataKey="Promotion" stackId="a" fill="url(#diagonalStripesMonthly)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    );
+                  } else if (filteredCosts) {
+                    // Transform data for service tier view
+                    const chartData = [
+                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: 'url(#diagonalStripesTier)' },
+                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: '#93C5FD' },
+                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: '#3B82F6' },
+                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: '#1E40AF' },
+                    ];
+
+                    return (
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={chartData}>
+                          <defs>
+                            <pattern id="diagonalStripesTier" patternUnits="userSpaceOnUse" width="8" height="8">
+                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
+                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                            </pattern>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fill: '#374151' }}
+                            className="dark:[&_text]:fill-gray-300"
+                          />
+                          <YAxis
+                            tickFormatter={(value) => `$${(value).toLocaleString()}`}
+                            tick={{ fill: '#374151' }}
+                            className="dark:[&_text]:fill-gray-300"
+                          />
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              name === 'cost' ? `$${formatCurrency(value)}` : `${value.toFixed(2)} hours`,
+                              name === 'cost' ? 'Cost' : 'Hours'
+                            ]}
+                            contentStyle={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              border: '1px solid #E5E7EB',
+                              borderRadius: '6px'
+                            }}
+                            labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                          />
+                          <Bar dataKey="cost" name="Cost" shape={(props: any) => {
+                            const { fill, x, y, width, height } = props;
+                            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
+                          }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    );
+                  }
+                  return null;
+                })()
               )}
             </CardContent>
           </Card>
         )}
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Request Categories</CardTitle>
+            <CardDescription>Distribution of request types</CardDescription>
+            <div className="flex gap-1 mt-2">
+              <button
+                className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
+                  chartType === 'pie'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                onClick={() => setChartType('pie')}
+              >
+                Pie
+              </button>
+              <button
+                className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
+                  chartType === 'radar'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                onClick={() => setChartType('radar')}
+              >
+                Radar
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {chartType === 'radar' ? (
+              <CategoryRadarChart data={allCategoryDataForCharts} />
+            ) : (
+              <CategoryPieChart data={allCategoryDataForCharts} />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Request Table */}
