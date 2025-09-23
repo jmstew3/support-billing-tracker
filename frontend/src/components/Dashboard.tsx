@@ -135,7 +135,7 @@ export function Dashboard() {
 
   // Dropdown options
   const urgencyOptions = ['Low', 'Medium', 'High', 'Promotion'];
-  const categoryOptions = ['Advisory', 'Email', 'Forms', 'General', 'Hosting', 'Migration', 'Non-billable', 'Support'];
+  const categoryOptions = ['Advisory', 'Email', 'Forms', 'Hosting', 'Migration', 'Non-billable', 'Support', 'Website'];
   
   // Toggle individual column filter visibility
   const toggleColumnFilter = (column: 'date' | 'day' | 'category' | 'urgency' | 'source') => {
@@ -2976,12 +2976,11 @@ export function Dashboard() {
                   r.Request_Summary === request.Request_Summary
                 );
                 const isNonBillable = request.Category === 'Non-billable';
-                const isMigration = request.Category === 'Migration';
                 return (
                   <TableRow 
                     key={filteredIndex} 
                     className={`cursor-pointer transition-colors ${
-                      isNonBillable ? 'opacity-50 bg-gray-50' : isMigration ? 'bg-gray-50/30' : ''
+                      isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${
                       selectedRequestIds.has(actualIndex) ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
                     }`}
@@ -3017,11 +3016,11 @@ export function Dashboard() {
                         </UITooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}>{request.Date}</TableCell>
-                    <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : isMigration ? 'text-muted-foreground opacity-75' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}>{formatTime(request.Time)}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
+                    <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="min-w-[200px] max-w-md">
-                      <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}`}>
+                      <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
                         {request.Request_Summary}
                       </div>
                     </TableCell>
