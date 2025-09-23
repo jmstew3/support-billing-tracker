@@ -109,13 +109,15 @@ thad-chat/
 - 📊 Request volume trends (daily/hourly views)
 - 🥧 Enhanced category distribution with modern pie chart
 - 🎯 Category performance radar chart visualization
-- 💰 Tiered vs flat rate cost comparison
+- 💰 Tiered cost calculation with interactive urgency filtering
 - 📋 Real-time searchable request table
 - ✅ Status-based management (active/deleted/ignored)
 - 🔄 Bulk selection and editing
+- ⏱️ Hours tracking with enforced 0.25 increments
 - 💾 Real-time database persistence
 - 📈 Time-based filtering (All/Month/Day views)
 - 📅 Modern calendar date picker with month selection capability
+- 📱 Source indicators to distinguish Text vs Ticket System requests
 
 ### Database Persistence & CRUD Operations
 
@@ -297,6 +299,28 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 - **Workflow Management**: Bulk operations for efficient request processing
 
 ## 📝 Recent Updates
+
+### September 23, 2025 - Source Indicators & UI Improvements
+- **Source Identification System**: Added visual indicators to distinguish between SMS/Text and Ticket System requests
+  - New dedicated "Source" column with intuitive icons (💬 Text, 🎫 Ticket, 📧 Email, 📞 Phone)
+  - Interactive tooltips showing data source ("Via Text", "Via Ticket System", etc.)
+  - Source filtering with checkbox dropdown for multiple selections
+  - Total Requests scorecard shows source breakdown (e.g., "189 Text, 52 Ticket")
+  - Ready for future integration with ticket system and other communication channels
+- **Column Width Optimizations**: Improved table layout for better Date column visibility
+  - Request Summary narrowed to 200px min width
+  - Actions column fixed to 80px
+  - Date column given 110px minimum width
+  - Day column reduced to 80px
+- **Hours Column Validation**: Enforced 0.25 hour (15-minute) increments
+  - Automatic rounding to nearest quarter hour (0.26→0.25, 0.38→0.50)
+  - Arrow controls increment by exactly 0.25
+  - All hour estimates align to standard billing increments
+- **Interactive Cost Calculation Filtering**: Added clickable legend for urgency-based filtering
+  - Click any urgency level (Promotion, Low, Medium, High) to toggle visibility
+  - Deselected items fade to grey but remain visible for easy re-enabling
+  - Reset button appears when filters are modified from default
+  - Chart maintains visual continuity with grayed out bars instead of removing them
 
 ### September 17, 2025 - Modern Calendar Date Picker
 - **Calendar Dropdown**: Replaced three separate select boxes (Year/Month/Day) with a modern calendar popover

@@ -248,6 +248,40 @@ thad-chat/
 
 ### Recent Major Updates
 
+#### Hours Column Validation (September 23, 2025) ⏱️
+- **Quarter-Hour Increment Enforcement**:
+  - Hours column now strictly accepts only 0.25 increments (15-minute intervals)
+  - Automatic rounding to nearest quarter hour for manual entries
+  - Number input arrows increment/decrement by exactly 0.25
+  - Examples: 0.26→0.25, 0.38→0.50, 0.63→0.75, 0.88→1.00
+  - Files Modified: `frontend/src/components/EditableNumberCell.tsx`
+
+- **Implementation Details**:
+  - Removed variable step logic that depended on urgency levels
+  - Added `roundToQuarterHour` function for consistent rounding
+  - Applied rounding to initial display, edit values, and saved values
+  - Ensures time tracking consistency across all requests
+
+#### Interactive Cost Calculation Filtering (September 23, 2025) 📊
+- **Interactive Legend Filtering**:
+  - Click on any urgency level (Promotion, Low, Medium, High) to toggle visibility
+  - Deselected items fade to grey but remain visible for easy re-enabling
+  - Visual feedback with reduced opacity for inactive legend items
+  - Reset button appears when filters are modified from default state
+  - Files Modified: `Dashboard.tsx` (lines 100-105, 2065-2175)
+
+- **Enhanced Chart Interactivity**:
+  - Stacked bar chart maintains visual continuity with grayed out bars
+  - Service tier view also supports dynamic filtering
+  - Smooth transitions when toggling visibility states
+  - All bars remain visible but change color to #D1D5DB when deselected
+
+- **User Experience Improvements**:
+  - No jarring layout shifts when filtering data
+  - Clear visual indication of active vs inactive urgency levels
+  - One-click reset to restore all urgency levels to visible
+  - Consistent behavior across both table and chart views
+
 #### Pricing Model Simplification (September 18, 2025) 💰
 - **Removed Flat Rate Comparison**:
   - Eliminated all flat rate pricing logic ($125/hr)
@@ -290,6 +324,27 @@ thad-chat/
   - Files Modified: `Scorecard.tsx`, `scorecard.ts`
 
 ### Recent Major Updates
+
+#### Source Indicators Implementation (September 23, 2025) 📱
+- **SMS vs Ticket System Identification**:
+  - Added `source` field to ChatRequest interface supporting 'sms', 'ticket', 'email', 'phone'
+  - New dedicated "Source" column in table with intuitive icons:
+    - 💬 Text (formerly SMS): Blue message circle icon
+    - 🎫 Ticket: Green ticket icon
+    - 📧 Email: Purple mail icon (future)
+    - 📞 Phone: Orange phone icon (future)
+  - Interactive tooltips showing "Via Text", "Via Ticket System", etc.
+  - Source filtering with checkbox dropdown for multiple selections
+  - Total Requests scorecard now shows source breakdown (e.g., "189 Text, 52 Ticket")
+  - Files Modified: `Dashboard.tsx`, `request.ts`, `ui/tooltip.tsx`
+
+- **Column Width Optimizations**:
+  - Request Summary column: Narrowed from 300px to 200px minimum width
+  - Actions column: Fixed to 80px width (w-20)
+  - Date column: Added minimum width of 110px for better visibility
+  - Day column: Reduced to 80px width (w-20)
+  - Result: Better balanced table layout with improved Date column readability
+  - Files Modified: `Dashboard.tsx`
 
 #### Header & Navigation Improvements (September 16, 2025) 🎨
 - **Sticky Header Implementation**:

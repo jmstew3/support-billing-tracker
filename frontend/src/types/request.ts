@@ -10,6 +10,7 @@ export interface ChatRequest {
   Request_Type?: string;
   Month?: string;
   Effort?: string;
+  source?: 'sms' | 'ticket' | 'email' | 'phone'; // Data source - defaults to 'sms' for existing data
 }
 
 export interface DailyRequestCount {
