@@ -36,7 +36,6 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data }) => {
 
   return (
     <div className="w-full h-full">
-      <h3 className="text-lg font-semibold mb-2">Request Categories Distribution</h3>
       <ResponsiveContainer width="100%" height={320}>
         <RadarChart data={radarData}>
           <PolarGrid
