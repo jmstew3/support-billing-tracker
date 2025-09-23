@@ -235,9 +235,12 @@ thad-chat/
     │   │   ├── CategoryPieChart.tsx   # Modern pie chart with animations
     │   │   ├── CategoryRadarChart.tsx # Radar chart for category metrics
     │   │   └── EditableCell.tsx       # In-line editing
+    │   ├── services/
+    │   │   └── twentyApi.ts           # Twenty CRM API integration
     │   ├── utils/
     │   │   ├── dataProcessing.ts      # Data transformation
-    │   │   └── csvExport.ts           # Save functionality
+    │   │   ├── csvExport.ts           # Save functionality
+    │   │   └── ticketTransform.ts     # Twenty ticket to request conversion
     │   └── types/
     │       └── request.ts             # TypeScript interfaces
     └── public/
@@ -324,6 +327,37 @@ thad-chat/
   - Files Modified: `Scorecard.tsx`, `scorecard.ts`
 
 ### Recent Major Updates
+
+#### Twenty CRM Integration (January 23, 2025) 🎫
+- **Feature**: Integration with Twenty CRM API to fetch and display support tickets alongside SMS requests
+- **API Connection**:
+  - REST API endpoint: `https://twenny.peakonedigital.com/rest/supportTickets`
+  - Bearer token authentication stored in `.env.docker`
+  - Fetches 60+ support tickets from live Twenty CRM instance
+  - GraphQL-style nested response structure handling
+- **Data Transformation**:
+  - Created `ticketTransform.ts` utility to convert Twenty ticket format to dashboard format
+  - Maps ticket priority (CRITICAL→HIGH, MEDIUM→MEDIUM, NORMAL→LOW)
+  - Maps ticket categories to dashboard categories (BRAND_WEBSITE_TICKET→Support, LANDING_PAGE_TICKET→Forms)
+  - Concatenates subject and description for request summary
+  - Default time set to 8:00 AM EDT for all tickets
+- **Services Created**:
+  - `frontend/src/services/twentyApi.ts` - Main API service with authentication and error handling
+  - Includes mock data fallback for testing without API connection
+  - Automatic retry logic with exponential backoff
+- **Configuration**:
+  - Environment variables: `VITE_TWENTY_API_URL`, `VITE_TWENTY_API_TOKEN`, `VITE_TWENTY_USE_MOCK`
+  - Docker Compose integration with `.env.docker` for secure token storage
+  - Added `.mcp.json` to `.gitignore` to prevent API key exposure
+- **Dashboard Integration**:
+  - Tickets appear with 🎫 icon in source column
+  - Seamlessly merged with SMS requests in unified view
+  - Real-time fetching on dashboard load
+  - Source filtering allows viewing SMS-only, tickets-only, or both
+- **Files Modified**:
+  - Created: `twentyApi.ts`, `ticketTransform.ts`
+  - Modified: `Dashboard.tsx`, `docker-compose.yml`, `.env.docker`, `.gitignore`
+- **Benefits**: Unified view of all support requests regardless of source channel
 
 #### Source Indicators Implementation (September 23, 2025) 📱
 - **SMS vs Ticket System Identification**:
@@ -472,10 +506,12 @@ thad-chat/
 - **Files**: `data_preprocessor.py`, `request_extractor.py`
 
 ### Current Data Statistics
-- **Total Requests**: 430 (extracted from 6,156 messages)
+- **Total Requests**: 490+ (430 SMS + 60 Twenty CRM tickets)
+- **SMS Requests**: 430 (extracted from 6,156 messages)
+- **Twenty CRM Tickets**: 60 (fetched from live API)
 - **Active Requests**: Dynamic based on user management
-- **Date Range**: May 2025 - September 2025
-- **Monthly Distribution**:
+- **Date Range**: May 2025 - January 2025
+- **Monthly Distribution** (SMS only):
   - May: 88 requests (20.5%)
   - June: 142 requests (33.0%)
   - July: 106 requests (24.7%)
@@ -483,6 +519,7 @@ thad-chat/
   - September: 12 requests (2.8%)
 - **Categories**: Support (88.4%), Hosting (8.4%), Forms (2.3%), Billing (0.7%), Email (0.2%)
 - **Urgency**: Medium (90.7%), High (6.7%), Low (2.6%)
+- **Source Distribution**: ~88% SMS, ~12% Tickets
 - **Status Distribution**: Tracked in real-time via dashboard
 
 ## Troubleshooting & Maintenance
@@ -533,11 +570,18 @@ thad-chat/
    ```bash
    cd thad-request-extractor && python3 main.py
    ```
-4. Add status column and deploy to frontend:
+4. Configure Twenty CRM API (if using):
    ```bash
-   python3 -c "import csv; [add status column script]"
+   # Edit .env.docker and add:
+   VITE_TWENTY_API_URL=https://your-twenty-instance.com/rest/supportTickets
+   VITE_TWENTY_API_TOKEN=your-bearer-token-here
+   VITE_TWENTY_USE_MOCK=false
    ```
-5. Start frontend: `cd frontend && npm run dev`
+5. Start with Docker Compose:
+   ```bash
+   docker-compose --env-file .env.docker up -d
+   ```
+   Or without Docker: `cd frontend && npm run dev`
 
 ### For Dashboard Development:
 1. Modify React components in `frontend/src/components/`
