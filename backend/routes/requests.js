@@ -75,6 +75,7 @@ router.get('/requests', async (req, res) => {
       Effort: row.effort,
       EstimatedHours: parseFloat(row.estimated_hours),
       Status: row.status,
+      source: row.source || 'sms', // Include source field with default
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
     }));

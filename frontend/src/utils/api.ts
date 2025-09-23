@@ -243,3 +243,69 @@ export async function checkAPIHealth(): Promise<boolean> {
     return false;
   }
 }
+
+// Twenty CRM sync functions
+export interface TwentySyncStatus {
+  id: number;
+  last_sync_at: string | null;
+  last_sync_status: 'success' | 'failed' | 'in_progress' | null;
+  tickets_fetched: number;
+  tickets_added: number;
+  tickets_updated: number;
+  error_message: string | null;
+  sync_duration_ms: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TwentySyncResponse {
+  syncStatus: TwentySyncStatus | null;
+  totalTickets: number;
+}
+
+export interface TwentySyncResult {
+  success: boolean;
+  ticketsFetched?: number;
+  ticketsAdded?: number;
+  ticketsUpdated?: number;
+  syncDuration?: number;
+  error?: string;
+}
+
+// Get Twenty sync status
+export async function getTwentySyncStatus(): Promise<TwentySyncResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/twenty/status`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sync status: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching Twenty sync status:', error);
+    throw error;
+  }
+}
+
+// Trigger Twenty sync
+export async function triggerTwentySync(): Promise<TwentySyncResult> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/twenty/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Sync failed: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error triggering Twenty sync:', error);
+    throw error;
+  }
+}

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import pool, { testConnection, initializeDatabase } from './db/config.js';
 import requestRoutes from './routes/requests.js';
+import twentySyncRoutes from './routes/twenty-sync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +41,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api', requestRoutes);
+app.use('/api/twenty', twentySyncRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

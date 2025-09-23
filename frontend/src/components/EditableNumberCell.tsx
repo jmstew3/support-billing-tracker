@@ -13,7 +13,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   value,
   onSave,
   urgency,
-  min = 0.01,
+  min = 0,
   max = 99.99,
   placeholder = '0.50'
 }) => {

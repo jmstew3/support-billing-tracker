@@ -42,6 +42,9 @@ services:
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-development}
       FRONTEND_URL: http://localhost:5173
+      VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
+      VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
+      VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
     ports:
       - "3001:3001"
     volumes:
