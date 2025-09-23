@@ -15,11 +15,10 @@ import { DatePickerPopover } from './DatePickerPopover';
 import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
-import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { fetchAndTransformTickets, getMockTickets } from '../services/twentyApi';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest, getTwentySyncStatus, triggerTwentySync, type TwentySyncResponse } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 
@@ -91,6 +90,7 @@ export function Dashboard() {
   // Staged bulk changes
   const [stagedBulkCategory, setStagedBulkCategory] = useState<string>('');
   const [stagedBulkUrgency, setStagedBulkUrgency] = useState<string>('');
+  const [stagedBulkHours, setStagedBulkHours] = useState<number | null>(null);
 
   // Search functionality
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -122,6 +122,10 @@ export function Dashboard() {
 
   // Archive section visibility
   const [showArchived, setShowArchived] = useState(false);
+
+  // Twenty sync status
+  const [syncStatus, setSyncStatus] = useState<TwentySyncResponse | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Row expansion removed - request summaries now always wrap
 
@@ -404,12 +408,11 @@ export function Dashboard() {
   // IMPORTANT: Only include 'active' status requests in calculations
   const billableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    request.Category !== 'Non-billable' &&
-    request.Category !== 'Migration'
+    request.Category !== 'Non-billable'
   );
   const nonBillableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    (request.Category === 'Non-billable' || request.Category === 'Migration')
+    request.Category === 'Non-billable'
   );
 
   // Get archived requests - sorted chronologically
@@ -456,8 +459,9 @@ export function Dashboard() {
   )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()); // Sort chronologically (oldest first)
 
   useEffect(() => {
-    // Load data from CSV
+    // Load data and sync status
     loadData();
+    loadSyncStatus();
   }, []);
 
   // Save hideNonBillable preference to localStorage
@@ -505,43 +509,11 @@ export function Dashboard() {
           source: req.source || 'sms'
         }));
 
-        // Fetch support tickets from Twenty API
-        let ticketRequests: ChatRequest[] = [];
-        try {
-          // Use VITE_TWENTY_USE_MOCK env var to control mock vs real API
-          const useMockData = import.meta.env.VITE_TWENTY_USE_MOCK === 'true';
-
-          console.log('Environment check:', {
-            VITE_TWENTY_USE_MOCK: import.meta.env.VITE_TWENTY_USE_MOCK,
-            VITE_TWENTY_API_URL: import.meta.env.VITE_TWENTY_API_URL,
-            useMockData: useMockData
-          });
-
-          if (useMockData) {
-            console.log('⚠️ Using mock Twenty API data...');
-            ticketRequests = getMockTickets();
-            console.log('Mock tickets:', ticketRequests);
-          } else {
-            console.log('🌐 Fetching tickets from REAL Twenty API...');
-            ticketRequests = await fetchAndTransformTickets();
-          }
-
-          console.log(`✅ Fetched ${ticketRequests.length} tickets from Twenty API`);
-          if (ticketRequests.length > 0) {
-            console.log('Sample ticket request:', JSON.stringify(ticketRequests[0], null, 2));
-            console.log('First 5 tickets:', ticketRequests.slice(0, 5));
-          }
-        } catch (error) {
-          console.error('Failed to fetch tickets from Twenty API:', error);
-          // Continue without ticket data if Twenty API fails
-        }
-
-        // Merge SMS requests and ticket requests
-        const allRequests = [...requestsWithSource, ...ticketRequests];
-        console.log(`Total requests: ${allRequests.length} (${requestsWithSource.length} SMS, ${ticketRequests.length} tickets)`);
+        // Tickets are now fetched from database alongside SMS requests
+        console.log(`Total requests: ${requestsWithSource.length} (includes both SMS and tickets from database)`);
 
         // Keep ALL requests (including deleted) for archive functionality
-        setRequests(allRequests);
+        setRequests(requestsWithSource);
       } else {
         throw new Error('API is not available');
       }
@@ -566,6 +538,36 @@ export function Dashboard() {
     }
   };
 
+  // Load Twenty sync status
+  const loadSyncStatus = async () => {
+    try {
+      const status = await getTwentySyncStatus();
+      setSyncStatus(status);
+    } catch (error) {
+      console.error('Failed to load sync status:', error);
+    }
+  };
+
+  // Handle Twenty sync
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await triggerTwentySync();
+      console.log('Sync completed:', result);
+
+      // Reload sync status and data after successful sync
+      await loadSyncStatus();
+      await loadData();
+
+      // Show success message (you could add a toast notification here)
+      console.log(`✅ Sync successful: ${result.ticketsAdded} added, ${result.ticketsUpdated} updated`);
+    } catch (error) {
+      console.error('Sync failed:', error);
+      // Show error message (you could add a toast notification here)
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Filter and sort requests by selected year, month, day, column filters, and search query
   const filteredAndSortedRequests = (() => {
@@ -581,7 +583,7 @@ export function Dashboard() {
 
       // Apply non-billable filter if toggle is on
       if (hideNonBillable) {
-        const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
+        const isNonBillable = request.Category === 'Non-billable';
         if (isNonBillable) return false;
       }
 
@@ -1093,7 +1095,7 @@ export function Dashboard() {
   // Apply staged bulk changes
   const applyBulkChanges = async () => {
     if (selectedRequestIds.size === 0) return;
-    if (!stagedBulkCategory && !stagedBulkUrgency) return;
+    if (!stagedBulkCategory && !stagedBulkUrgency && stagedBulkHours === null) return;
 
     preserveScrollPosition();
     const newRequests = [...requests];
@@ -1111,6 +1113,10 @@ export function Dashboard() {
         updatedRequest.Urgency = stagedBulkUrgency.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW';
       }
 
+      if (stagedBulkHours !== null) {
+        updatedRequest.EstimatedHours = stagedBulkHours;
+      }
+
       newRequests[index] = updatedRequest;
 
       if (updatedRequest.id) {
@@ -1124,6 +1130,7 @@ export function Dashboard() {
     const updatePayload: any = {};
     if (stagedBulkCategory) updatePayload.Category = stagedBulkCategory;
     if (stagedBulkUrgency) updatePayload.Urgency = stagedBulkUrgency.toUpperCase();
+    if (stagedBulkHours !== null) updatePayload.EstimatedHours = stagedBulkHours;
 
     // If API is available, update in database
     if (apiAvailable && idsToUpdate.length > 0 && Object.keys(updatePayload).length > 0) {
@@ -1144,12 +1151,14 @@ export function Dashboard() {
     setSelectAll(false);
     setStagedBulkCategory('');
     setStagedBulkUrgency('');
+    setStagedBulkHours(null);
   };
 
   // Clear staged changes
   const clearStagedChanges = () => {
     setStagedBulkCategory('');
     setStagedBulkUrgency('');
+    setStagedBulkHours(null);
   };
 
   const handleYearChange = (year: number) => {
@@ -1491,6 +1500,24 @@ export function Dashboard() {
                   <span>Connected to Database</span>
                 </div>
               )}
+              {/* Twenty Sync Status */}
+              {syncStatus?.syncStatus && (
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs ${
+                  syncStatus.syncStatus.last_sync_status === 'success'
+                    ? 'bg-blue-100 text-blue-800'
+                    : syncStatus.syncStatus.last_sync_status === 'failed'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  <Ticket className="w-3 h-3" />
+                  <span>
+                    {syncStatus.totalTickets} tickets
+                    {syncStatus.syncStatus.last_sync_at && (
+                      ` (${new Date(syncStatus.syncStatus.last_sync_at).toLocaleDateString()})`
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Right side - Controls */}
@@ -1576,6 +1603,22 @@ export function Dashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Twenty Sync Button */}
+            {apiAvailable && (
+              <button
+                onClick={handleSync}
+                disabled={isSyncing}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isSyncing
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                }`}
+              >
+                <Ticket className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync Tickets'}</span>
+              </button>
+            )}
 
             {/* Theme Toggle */}
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -2055,11 +2098,12 @@ export function Dashboard() {
                       Low: month.costs.regularCost,
                       Medium: month.costs.sameDayCost,
                       High: month.costs.emergencyCost,
+                      totalHours: month.costs.promotionalHours + month.costs.regularHours + month.costs.sameDayHours + month.costs.emergencyHours,
                     }));
 
                     return (
                       <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={chartData}>
+                        <ComposedChart data={chartData}>
                           <defs>
                             <pattern id="diagonalStripesMonthly" patternUnits="userSpaceOnUse" width="8" height="8">
                               <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
@@ -2075,12 +2119,25 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-300"
                           />
                           <YAxis
+                            yAxisId="cost"
                             tickFormatter={(value) => `$${(value).toLocaleString()}`}
                             tick={{ fill: '#374151' }}
                             className="dark:[&_text]:fill-gray-300"
                           />
+                          <YAxis
+                            yAxisId="hours"
+                            orientation="right"
+                            tickFormatter={(value) => `${value}h`}
+                            tick={{ fill: '#6B7280' }}
+                            className="dark:[&_text]:fill-gray-400"
+                          />
                           <Tooltip
-                            formatter={(value: number) => `$${formatCurrency(value)}`}
+                            formatter={(value: number, name: string) => {
+                              if (name === 'totalHours') {
+                                return [`${value.toFixed(1)}h`, 'Total Hours'];
+                              }
+                              return [`$${formatCurrency(value)}`, name];
+                            }}
                             contentStyle={{
                               backgroundColor: 'rgba(255, 255, 255, 0.95)',
                               border: '1px solid #E5E7EB',
@@ -2213,11 +2270,12 @@ export function Dashboard() {
                               );
                             }}
                           />
-                          <Bar dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
-                          <Bar dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
-                          <Bar dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
-                          <Bar dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"} />
-                        </BarChart>
+                          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"} />
+                          <Line yAxisId="hours" dataKey="totalHours" stroke="#DC2626" strokeWidth={3} dot={{ fill: '#DC2626', r: 5 }} />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     );
                   } else if (filteredCosts) {
@@ -2441,8 +2499,31 @@ export function Dashboard() {
                   </select>
                 </div>
 
+                {/* Bulk Hours Change */}
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-muted-foreground">Hours:</span>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    max="20"
+                    value={stagedBulkHours !== null ? stagedBulkHours : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setStagedBulkHours(null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        setStagedBulkHours(isNaN(numValue) ? null : numValue);
+                      }
+                    }}
+                    placeholder="Set hours..."
+                    className="text-xs text-foreground border border-border rounded px-2 py-1 bg-background min-w-[90px]"
+                  />
+                </div>
+
                 {/* Action Buttons */}
-                {(stagedBulkCategory || stagedBulkUrgency) ? (
+                {(stagedBulkCategory || stagedBulkUrgency || stagedBulkHours !== null) ? (
                   <>
                     <button
                       onClick={applyBulkChanges}
@@ -2824,12 +2905,13 @@ export function Dashboard() {
                   r.Time === request.Time && 
                   r.Request_Summary === request.Request_Summary
                 );
-                const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
+                const isNonBillable = request.Category === 'Non-billable';
+                const isMigration = request.Category === 'Migration';
                 return (
                   <TableRow 
                     key={filteredIndex} 
                     className={`cursor-pointer transition-colors ${
-                      isNonBillable ? 'opacity-50 bg-gray-50' : ''
+                      isNonBillable ? 'opacity-50 bg-gray-50' : isMigration ? 'bg-gray-50/30' : ''
                     } ${
                       selectedRequestIds.has(actualIndex) ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
                     }`}
@@ -2865,11 +2947,11 @@ export function Dashboard() {
                         </UITooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
-                    <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}>{request.Date}</TableCell>
+                    <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : isMigration ? 'text-muted-foreground opacity-75' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="min-w-[200px] max-w-md">
-                      <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
+                      <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : isMigration ? 'text-gray-500' : ''}`}>
                         {request.Request_Summary}
                       </div>
                     </TableCell>
@@ -2917,7 +2999,7 @@ export function Dashboard() {
                         </span>
                       ) : (
                         <EditableNumberCell
-                          value={request.EstimatedHours || 0.50}
+                          value={request.EstimatedHours != null ? request.EstimatedHours : 0.50}
                           urgency={request.Urgency}
                           onSave={(newValue) => {
                             console.log('Hours EditableNumberCell onSave called with:', newValue);

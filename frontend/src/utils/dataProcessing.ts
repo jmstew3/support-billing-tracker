@@ -105,7 +105,7 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
   let promotionalHours = 0;
 
   requests.forEach(request => {
-    const hours = request.EstimatedHours || DEFAULT_HOURS;
+    const hours = request.EstimatedHours != null ? request.EstimatedHours : DEFAULT_HOURS;
 
     switch (request.Urgency) {
       case 'LOW':
