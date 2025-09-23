@@ -2111,6 +2111,7 @@ export function Dashboard() {
                                           display: 'inline-block',
                                           width: '14px',
                                           height: '14px',
+                                          borderRadius: '4px',
                                           backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
                                           backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value]
                                             ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
