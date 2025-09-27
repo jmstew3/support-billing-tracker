@@ -1457,7 +1457,7 @@ export function Dashboard() {
 
 
   const getUniqueUrgencies = () => {
-    return ['HIGH', 'MEDIUM', 'LOW'];
+    return ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION'];
   };
 
   const getUniqueDates = () => {
@@ -2560,7 +2560,7 @@ export function Dashboard() {
                   <select
                     value={stagedBulkUrgency}
                     onChange={(e) => setStagedBulkUrgency(e.target.value)}
-                    className="text-xs text-foreground border border-border rounded px-2 py-1 bg-background min-w-[90px]"
+                    className="text-xs text-foreground border border-border rounded px-2 py-1 bg-background min-w-[120px]"
                   >
                     <option value="">Change to...</option>
                     {urgencyOptions.map(urgency => (

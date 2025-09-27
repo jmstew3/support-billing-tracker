@@ -11,9 +11,9 @@ services:
       MYSQL_USER: ${MYSQL_USER:-***REMOVED***}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-***REMOVED***}
     ports:
-      - "3307:3306"
+      - "${MYSQL_PORT:-3307}:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ${MYSQL_DATA_PATH:-./mysql_data}:/var/lib/mysql
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - thad-network
@@ -34,19 +34,20 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${MYSQL_USER:-***REMOVED***}
       DB_PASSWORD: ${MYSQL_PASSWORD:-***REMOVED***}
-      DB_NAME: thad_chat
-      PORT: 3001
+      DB_NAME: ${DB_NAME:-thad_chat}
+      PORT: ${BACKEND_PORT:-3001}
       NODE_ENV: ${NODE_ENV:-development}
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      DATA_PATH: ${DATA_PATH:-./data}
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -65,13 +66,13 @@ services:
     depends_on:
       - backend
     environment:
-      VITE_API_URL: http://localhost:3001/api
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
       NODE_ENV: ${NODE_ENV:-development}
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -85,7 +86,7 @@ services:
     container_name: thad-chat-n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "${N8N_PORT:-5678}:5678"
     environment:
       - DB_TYPE=mysql
       - DB_MYSQLDB_HOST=mysql
@@ -104,10 +105,38 @@ services:
       mysql:
         condition: service_healthy
 
+app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.dev
+    container_name: velocity-billing-dev
+    ports:
+      - "${PORT:-3001}:3000"  # Different external port
+    volumes:
+      - ./src:/app/src:delegated
+      - ./index.html:/app/index.html:delegated
+      - ./public:/app/public:delegated
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - PUBLIC_URL=/billing-dashboard
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.velocity-billing.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-dashboard`)"
+      - "traefik.http.routers.velocity-billing.entrypoints=web"
+      - "traefik.http.routers.velocity-billing.service=velocity-billing"
+      - "traefik.http.services.velocity-billing.loadbalancer.server.port=3000"
+      - "traefik.docker.network=traefik-general"
+
 networks:
-  thad-network:
+  velocity-apps:
     driver: bridge
 
-volumes:
-  mysql_data:
-    driver: local
+# Note: Using bind mount for MySQL data instead of named volume
+# This makes it easier to backup and migrate on NAS systems
+# The mysql_data directory will be created in your project root
+# To use a named volume instead, uncomment the following:
+# volumes:
+#   mysql_data:
+#     driver: local
