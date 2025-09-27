@@ -22,11 +22,11 @@ COPY . .
 RUN mkdir -p /data
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3011
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
+  CMD node -e "require('http').get('http://localhost:3011/health', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)})"
 
 # Start server after waiting for MySQL
 CMD ["wait-for-it", "mysql:3306", "--timeout=60", "--", "npm", "start"]

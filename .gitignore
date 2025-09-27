@@ -1,4 +1,14 @@
 data/
+# MySQL Database Files - NEVER commit these!
+mysql_data/
+*.ibd
+*.frm
+*.MYD
+*.MYI
+binlog.*
+ib_logfile*
+ibdata*
+
 # Python
 __pycache__/
 *.py[cod]

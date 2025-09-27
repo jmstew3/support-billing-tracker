@@ -1,6 +1,16 @@
 import type { ChatRequest } from '../types/request';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use the public API URL when accessing from the domain, otherwise use local
+const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
+  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+
+console.log('API Configuration:', {
+  hostname: window.location.hostname,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_BASE_URL,
+  env: import.meta.env
+});
 
 // Transform database row to ChatRequest format
 function transformDbRow(row: any): ChatRequest {
@@ -38,6 +48,7 @@ export async function fetchRequests(filters?: {
     if (filters?.endDate) params.append('endDate', filters.endDate);
 
     const url = `${API_BASE_URL}/requests?${params.toString()}`;
+    console.log('Fetching requests from:', url);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -45,9 +56,11 @@ export async function fetchRequests(filters?: {
     }
 
     const data = await response.json();
+    console.log('Fetched', data.length, 'requests from API');
     return data.map(transformDbRow);
   } catch (error) {
     console.error('Error fetching requests:', error);
+    console.error('URL was:', `${API_BASE_URL}/requests`);
     throw error;
   }
 }
@@ -234,13 +247,16 @@ export async function importCSV(csvData: any[]): Promise<{
 // Check if API is available
 export async function checkAPIHealth(): Promise<boolean> {
   try {
+    console.log('Checking API health at:', `${API_BASE_URL}/health`);
     const response = await fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       mode: 'cors',
     });
+    console.log('API health response:', response.status, response.ok);
     return response.ok;
   } catch (error) {
     console.error('API health check failed:', error);
+    console.error('API_BASE_URL was:', API_BASE_URL);
     return false;
   }
 }

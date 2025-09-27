@@ -16,7 +16,7 @@ services:
       - ${MYSQL_DATA_PATH:-./mysql_data}:/var/lib/mysql
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
-      - thad-network
+      - velocity-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
       interval: 10s
@@ -39,7 +39,7 @@ services:
       DB_USER: ${MYSQL_USER:-***REMOVED***}
       DB_PASSWORD: ${MYSQL_PASSWORD:-***REMOVED***}
       DB_NAME: ${DB_NAME:-thad_chat}
-      PORT: ${BACKEND_PORT:-3001}
+      PORT: 3011
       NODE_ENV: ${NODE_ENV:-development}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       DATA_PATH: ${DATA_PATH:-./data}
@@ -47,13 +47,22 @@ services:
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
     ports:
-      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+      - "${BACKEND_PORT:-3011}:3011"
     volumes:
       - ./backend:/app
       - /app/node_modules
       - ./data:/data:ro
     networks:
-      - thad-network
+      - velocity-network
+      - traefik-general
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.billing-overview-api.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview-api`)"
+      - "traefik.http.routers.billing-overview-api.entrypoints=web"
+      - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"
+      - "traefik.docker.network=traefik-general"
+      - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
+      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
     command: npm start
 
   frontend:
@@ -71,67 +80,33 @@ services:
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
+      VITE_PORT: ${VITE_PORT:-5173}
+      VITE_HMR_PORT: ${VITE_HMR_PORT:-5173}
+      VITE_HMR_HOST: ${VITE_HMR_HOST:-localhost}
+      VITE_PUBLIC_API_URL: ${VITE_PUBLIC_API_URL:-}
+      VITE_BASE_PATH: ${VITE_BASE_PATH:-/billing-overview}
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "${FRONTEND_PORT:-5173}:${VITE_PORT:-5173}"
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - ./frontend/public:/app/public
     networks:
-      - thad-network
-    command: npm run dev:docker
-
-  n8n:
-    image: n8nio/n8n
-    container_name: thad-chat-n8n
-    restart: unless-stopped
-    ports:
-      - "${N8N_PORT:-5678}:5678"
-    environment:
-      - DB_TYPE=mysql
-      - DB_MYSQLDB_HOST=mysql
-      - DB_MYSQLDB_PORT=3306
-      - DB_MYSQLDB_DATABASE=thad_chat
-      - DB_MYSQLDB_USER=${MYSQL_USER:-***REMOVED***}
-      - DB_MYSQLDB_PASSWORD=${MYSQL_PASSWORD:-***REMOVED***}
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
-    volumes:
-      - ./n8n:/home/node/.n8n
-    networks:
-      - thad-network
-    depends_on:
-      mysql:
-        condition: service_healthy
-
-app:
-    build:
-      context: .
-      dockerfile: .docker/Dockerfile.dev
-    container_name: velocity-billing-dev
-    ports:
-      - "${PORT:-3001}:3000"  # Different external port
-    volumes:
-      - ./src:/app/src:delegated
-      - ./index.html:/app/index.html:delegated
-      - ./public:/app/public:delegated
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-      - PUBLIC_URL=/billing-dashboard
+      - velocity-network
+      - traefik-general
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.velocity-billing.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-dashboard`)"
-      - "traefik.http.routers.velocity-billing.entrypoints=web"
-      - "traefik.http.routers.velocity-billing.service=velocity-billing"
-      - "traefik.http.services.velocity-billing.loadbalancer.server.port=3000"
+      - "traefik.http.routers.billing-overview.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview`)"
+      - "traefik.http.routers.billing-overview.entrypoints=web"
+      - "traefik.http.services.billing-overview.loadbalancer.server.port=${VITE_PORT:-5173}"
       - "traefik.docker.network=traefik-general"
+    command: npm run dev:docker
 
 networks:
-  velocity-apps:
+  velocity-network:
     driver: bridge
+  traefik-general:
+    external: true
 
 # Note: Using bind mount for MySQL data instead of named volume
 # This makes it easier to backup and migrate on NAS systems
