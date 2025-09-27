@@ -541,6 +541,51 @@ thad-chat/
 2. Check TypeScript errors with `npm run build`
 3. Verify all imports and file paths are correct
 
+#### API 404 Error When Accessing from Production Domain (January 2025)
+**Issue**: Frontend shows 404 error for API requests when accessed from `velocity.peakonedigital.com`
+
+**Cause**: The frontend's `api.ts` file was using an incorrect API path for production. When accessed from the production domain, it was trying to reach `/billing-overview-api/requests` but the backend expects `/api/requests` after Traefik strips the path prefix.
+
+**Solution**:
+1. Edit `frontend/src/utils/api.ts`
+2. Change the production API URL from:
+   ```javascript
+   const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
+     ? 'https://velocity.peakonedigital.com/billing-overview-api'
+     : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+   ```
+   To:
+   ```javascript
+   const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
+     ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
+     : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+   ```
+3. Restart the frontend container: `docker-compose restart frontend`
+
+**Prevention**: Always ensure API paths align with backend routing structure and Traefik path stripping configuration
+
+#### MySQL Data Directory - Security Warning (January 2025)
+**CRITICAL**: Never commit `mysql_data/` directory to Git!
+
+**Why This is Dangerous**:
+1. **Security Risk**: Contains actual database content including potentially sensitive data
+2. **Repository Bloat**: Binary files (binlog, InnoDB files) will massively increase repo size
+3. **Merge Conflicts**: Binary database files cannot be merged
+4. **Platform Incompatibility**: Database files are platform-specific
+5. **Constant Changes**: Files like binlog change with every database operation
+
+**Proper Database Management**:
+- ✅ **DO commit**: Schema files (`backend/db/schema.sql`), migration scripts
+- ❌ **NEVER commit**: `mysql_data/`, `*.ibd`, `binlog.*`, `ibdata*` files
+- **Backups**: Use `mysqldump` for SQL backups, not raw database files
+- **Local Development**: Use Docker volumes or bind mounts (already configured)
+- **Production**: Use proper database backup solutions (automated dumps, replication)
+
+**If you see mysql_data in git status**:
+1. Ensure `.gitignore` includes `mysql_data/`
+2. Run `git status` to verify it's ignored
+3. Never use `git add .` without checking what's being added
+
 ### Performance Notes
 - Dashboard handles up to ~1000 requests efficiently
 - Large datasets may require pagination adjustments

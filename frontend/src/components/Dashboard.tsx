@@ -38,6 +38,7 @@ function formatCurrency(value: number): string {
 }
 
 export function Dashboard() {
+  console.log('Dashboard component mounting...');
   const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [loading, setLoading] = useState(true);

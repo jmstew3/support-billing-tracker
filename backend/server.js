@@ -23,7 +23,9 @@ app.use(cors({
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
+      'https://velocity.peakonedigital.com',
+      'http://velocity.peakonedigital.com'
     ];
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
