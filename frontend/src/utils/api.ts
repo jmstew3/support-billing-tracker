@@ -101,7 +101,8 @@ export async function bulkUpdateRequests(ids: number[], updates: Partial<ChatReq
         updates: {
           category: updates.Category,
           urgency: updates.Urgency,
-          status: updates.Status
+          status: updates.Status,
+          estimated_hours: updates.EstimatedHours
         }
       })
     });

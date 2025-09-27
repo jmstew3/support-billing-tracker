@@ -1,5 +1,7 @@
 import csv
 import re
+import os
+from pathlib import Path
 
 def clean_message_text(text):
     """
@@ -180,7 +182,21 @@ def process_csv(input_file, output_file):
         print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-    # Process the new export from export_imessages.py
-    input_csv_path = "/Users/justinstewart/thad-chat/data/01_raw/thad_messages_export.csv"
-    output_csv_path = "/Users/justinstewart/thad-chat/data/02_processed/thad_messages_cleaned.csv"
+    # Get data path from environment variable or use default
+    data_path = os.getenv('DATA_PATH', './data')
+
+    # Build paths relative to the data directory
+    # If data_path is absolute, it will be used as-is
+    # If relative, it will be relative to the current working directory
+    input_csv_path = os.path.join(data_path, "01_raw", "thad_messages_export.csv")
+    output_csv_path = os.path.join(data_path, "02_processed", "thad_messages_cleaned.csv")
+
+    # Convert to absolute paths for clarity in output
+    input_csv_path = os.path.abspath(input_csv_path)
+    output_csv_path = os.path.abspath(output_csv_path)
+
+    print(f"Using data path: {os.path.abspath(data_path)}")
+    print(f"Input file: {input_csv_path}")
+    print(f"Output file: {output_csv_path}")
+
     process_csv(input_csv_path, output_csv_path)

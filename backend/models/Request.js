@@ -35,8 +35,8 @@ class Request {
       this.status = 'active';
     }
 
-    // Validate estimated_hours
-    if (isNaN(this.estimated_hours) || this.estimated_hours < 0.01 || this.estimated_hours > 99.99) {
+    // Validate estimated_hours - allow 0 but not negative values
+    if (isNaN(this.estimated_hours) || this.estimated_hours < 0 || this.estimated_hours > 99.99) {
       this.estimated_hours = 0.50;
     }
   }
@@ -123,9 +123,9 @@ class Request {
             value = updates[field].toUpperCase();
           } else if (field === 'estimated_hours') {
             value = parseFloat(updates[field]);
-            // Validate hours range
-            if (isNaN(value) || value < 0.01 || value > 99.99) {
-              throw new Error('Estimated hours must be between 0.01 and 99.99');
+            // Validate hours range - allow 0 but not negative values
+            if (isNaN(value) || value < 0 || value > 99.99) {
+              throw new Error('Estimated hours must be between 0 and 99.99');
             }
           }
           updateValues.push(value);
@@ -169,14 +169,25 @@ class Request {
         throw new Error('No IDs provided');
       }
 
-      const allowedFields = ['category', 'urgency', 'status'];
+      const allowedFields = ['category', 'urgency', 'status', 'estimated_hours'];
       const updateFields = [];
       const updateValues = [];
 
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
           updateFields.push(`${field} = ?`);
-          const value = field === 'urgency' ? updates[field].toUpperCase() : updates[field];
+          let value = updates[field];
+
+          if (field === 'urgency') {
+            value = updates[field].toUpperCase();
+          } else if (field === 'estimated_hours') {
+            value = parseFloat(updates[field]);
+            // Validate hours range - allow 0 but not negative values
+            if (isNaN(value) || value < 0 || value > 99.99) {
+              throw new Error('Estimated hours must be between 0 and 99.99');
+            }
+          }
+
           updateValues.push(value);
         }
       }

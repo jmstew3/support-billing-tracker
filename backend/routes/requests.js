@@ -156,9 +156,9 @@ router.put('/requests/:id', async (req, res) => {
           value = updates[field].toUpperCase();
         } else if (field === 'estimated_hours') {
           value = parseFloat(value);
-          // Validate hours range
-          if (isNaN(value) || value < 0.01 || value > 99.99) {
-            return res.status(400).json({ error: 'Estimated hours must be between 0.01 and 99.99' });
+          // Validate hours range - allow 0 but not negative values
+          if (isNaN(value) || value < 0 || value > 99.99) {
+            return res.status(400).json({ error: 'Estimated hours must be between 0 and 99.99' });
           }
         }
         updateValues.push(value);
@@ -228,14 +228,26 @@ router.post('/requests/bulk-update', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request IDs' });
     }
 
-    const allowedFields = ['category', 'urgency', 'status'];
+    const allowedFields = ['category', 'urgency', 'status', 'estimated_hours'];
     const updateFields = [];
     const updateValues = [];
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
         updateFields.push(`${field} = ?`);
-        updateValues.push(field === 'urgency' ? updates[field].toUpperCase() : updates[field]);
+        let value = updates[field];
+
+        if (field === 'urgency') {
+          value = updates[field].toUpperCase();
+        } else if (field === 'estimated_hours') {
+          value = parseFloat(updates[field]);
+          // Validate hours range - allow 0 but not negative values
+          if (isNaN(value) || value < 0 || value > 99.99) {
+            return res.status(400).json({ error: 'Estimated hours must be between 0 and 99.99' });
+          }
+        }
+
+        updateValues.push(value);
       }
     }
 

@@ -57,9 +57,17 @@ def main():
     '''Main application function.'''
     print("Thad Norman Request Extraction Tool")
     print("===================================\n")
-    
-    # Check if CSV file exists - using absolute path to processed data
-    csv_path = '/Users/justinstewart/thad-chat/data/02_processed/thad_messages_cleaned.csv'
+
+    # Get data path from environment variable or use default
+    data_path = os.getenv('DATA_PATH', './data')
+
+    # Build path to processed CSV file
+    csv_path = os.path.join(data_path, '02_processed', 'thad_messages_cleaned.csv')
+    csv_path = os.path.abspath(csv_path)
+
+    print(f"Using data path: {os.path.abspath(data_path)}")
+    print(f"Looking for CSV at: {csv_path}\n")
+
     if not os.path.exists(csv_path):
         print(f"Error: CSV file not found at {csv_path}")
         print("Please ensure the data preprocessor has been run first")
