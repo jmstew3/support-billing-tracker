@@ -250,8 +250,8 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'})
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                              {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
                             </span>
                             {monthData.freeCredits > 0 && (
                               <span className="text-xs text-muted-foreground">
@@ -402,7 +402,12 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                         {/* Month Subtotal Row */}
                         <tr className="bg-muted/30 border-b font-semibold">
                           <td colSpan={5} className="py-3 px-6 text-right text-sm">
-                            {formatMonthLabel(monthData.month)} Subtotal
+                            <div className="flex items-center justify-end gap-2">
+                              <span>{formatMonthLabel(monthData.month)} Subtotal</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-right">{formatCurrency(monthData.grossMrr)}</td>
                           <td className="py-3 px-4 text-center text-xs">

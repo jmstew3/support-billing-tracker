@@ -193,9 +193,10 @@ function calculateGrossAmount(daysActive: number, daysInMonth: number): number {
 
 /**
  * Calculate free credits available
+ * 1 free credit per 20 sites hosted
  */
 function calculateFreeCredits(activeSites: number): number {
-  return Math.floor(activeSites / 21);
+  return Math.floor(activeSites / 20);
 }
 
 /**
@@ -270,8 +271,8 @@ export function calculateMonthlyHosting(
  */
 export function calculateCreditProgress(activeSites: number): CreditProgress {
   const freeCredits = calculateFreeCredits(activeSites);
-  const sitesUntilNextCredit = 21 - (activeSites % 21);
-  const progressPercentage = Math.round(((activeSites % 21) / 21) * 100);
+  const sitesUntilNextCredit = 20 - (activeSites % 20);
+  const progressPercentage = Math.round(((activeSites % 20) / 20) * 100);
 
   return {
     activeSites,

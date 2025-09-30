@@ -159,7 +159,7 @@ export function BillingOverview() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
           <div className="flex items-center gap-4">
             <label htmlFor="month-select" className="text-sm font-medium">
               Month:
@@ -218,7 +218,7 @@ export function BillingOverview() {
 
           {/* Monthly Revenue Chart */}
           <div className="border bg-card p-6">
-            <h3 className="text-lg font-semibold mb-4">Monthly Revenue by Category</h3>
+            <h3 className="text-xl font-semibold mb-4">Monthly Revenue by Category</h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart
                 data={billingSummary.monthlyBreakdown.map((month) => ({
@@ -442,7 +442,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Ticket className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold text-sm">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                 {monthData.ticketsCount} {monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}
               </span>
               {hasFreeHours && (
@@ -533,7 +533,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold text-sm">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                 {monthData.projectsCount} {monthData.projectsCount === 1 ? 'Project' : 'Projects'}
               </span>
             </div>
@@ -579,7 +579,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Server className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold text-sm">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                 {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
               </span>
             </div>
