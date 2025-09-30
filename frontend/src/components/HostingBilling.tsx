@@ -32,11 +32,6 @@ export function HostingBilling() {
 
       const breakdown = generateMonthlyBreakdown(fetchedProperties);
       setMonthlyBreakdown(breakdown);
-
-      // Default to latest month
-      if (breakdown.length > 0) {
-        setSelectedMonth(breakdown[breakdown.length - 1].month);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load hosting data');
       console.error('Error loading hosting data:', err);

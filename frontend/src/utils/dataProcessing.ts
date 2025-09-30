@@ -123,7 +123,7 @@ export function calculateCosts(requests: ChatRequest[]): CostCalculation {
     }
   });
 
-  const promotionalCost = promotionalHours * 125;
+  const promotionalCost = promotionalHours * RATES.promotion;
   const totalCost = (regularHours * RATES.regular) +
                     (sameDayHours * RATES.sameDay) +
                     (emergencyHours * RATES.emergency) +

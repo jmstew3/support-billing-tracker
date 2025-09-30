@@ -6,7 +6,7 @@ import { HostingBilling } from './components/HostingBilling';
 import { BillingOverview } from './components/BillingOverview';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
 
   return (
     <div className="flex h-screen overflow-hidden">

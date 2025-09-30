@@ -133,9 +133,12 @@ function transformRequestsToTickets(requests: ChatRequest[]): BillableTicket[] {
   return requests
     .filter((req) => req.Category !== 'Non-billable' && (req.EstimatedHours || 0) > 0)
     .map((req) => {
+      // Migration items are billed at $0.00
+      const isMigration = req.Category === 'Migration';
+
       // Determine rate based on urgency using helper function
       const tier = PRICING_CONFIG.tiers.find(t => t.urgency === req.Urgency);
-      const rate = tier?.rate || PRICING_CONFIG.tiers[0].rate;
+      const rate = isMigration ? 0 : (tier?.rate || PRICING_CONFIG.tiers.find(t => t.urgency === 'LOW')?.rate || 150);
       const hours = req.EstimatedHours || 0;
 
       return {

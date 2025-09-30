@@ -408,13 +408,15 @@ export function Dashboard() {
 
   // Get billable and non-billable requests (based on Category instead of Status)
   // IMPORTANT: Only include 'active' status requests in calculations
+  // Migration items are billed at $0.00, so they're excluded from billable calculations
   const billableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    request.Category !== 'Non-billable'
+    request.Category !== 'Non-billable' &&
+    request.Category !== 'Migration'
   );
   const nonBillableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    request.Category === 'Non-billable'
+    (request.Category === 'Non-billable' || request.Category === 'Migration')
   );
 
   // Get archived requests - sorted chronologically
@@ -583,9 +585,9 @@ export function Dashboard() {
       const requestMonth = requestDate.getMonth() + 1; // JavaScript months are 0-indexed
       const requestDayOfWeek = getDayOfWeek(request.Date);
 
-      // Apply non-billable filter if toggle is on
+      // Apply non-billable filter if toggle is on (includes Migration which is billed at $0)
       if (hideNonBillable) {
-        const isNonBillable = request.Category === 'Non-billable';
+        const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
         if (isNonBillable) return false;
       }
 
@@ -1495,7 +1497,7 @@ export function Dashboard() {
           <div className="flex items-start justify-between">
             {/* Left side - Title and Database Status */}
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Request Analysis Dashboard</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Support</h1>
               {apiAvailable && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
@@ -1675,7 +1677,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Scorecard
           title="Total Requests"
           value={billableFilteredRequests.length}
@@ -1696,13 +1698,6 @@ export function Dashboard() {
             );
           })()}
           icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
-        />
-
-        <Scorecard
-          title="Total Hours"
-          value={billableFilteredRequests.reduce((sum, request) => sum + (request.EstimatedHours || 0), 0).toFixed(2)}
-          description="Actual hours recorded"
-          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
         />
 
         <Scorecard
@@ -2176,9 +2171,6 @@ export function Dashboard() {
                                     <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
                                       <p style={{ color: '#111827', fontWeight: 'bold' }}>
                                         Total Cost: ${formatCurrency(totalCost)}
-                                      </p>
-                                      <p style={{ color: '#DC2626', marginTop: '4px' }}>
-                                        Total Hours: {data.totalHours.toFixed(1)}h
                                       </p>
                                     </div>
                                   </div>
@@ -2982,10 +2974,10 @@ export function Dashboard() {
                   r.Time === request.Time && 
                   r.Request_Summary === request.Request_Summary
                 );
-                const isNonBillable = request.Category === 'Non-billable';
+                const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
                 return (
-                  <TableRow 
-                    key={filteredIndex} 
+                  <TableRow
+                    key={filteredIndex}
                     className={`cursor-pointer transition-colors ${
                       isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${

@@ -6,7 +6,7 @@
 export interface PricingTier {
   name: string;
   rate: number; // Rate per hour in dollars
-  urgency: 'LOW' | 'MEDIUM' | 'HIGH';
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'PROMOTION';
   description: string;
 }
 
@@ -17,6 +17,12 @@ export interface PricingConfig {
 
 export const PRICING_CONFIG: PricingConfig = {
   tiers: [
+    {
+      name: 'Promotion',
+      rate: 125,
+      urgency: 'PROMOTION',
+      description: 'Promotional pricing'
+    },
     {
       name: 'Low',
       rate: 150,
@@ -40,19 +46,20 @@ export const PRICING_CONFIG: PricingConfig = {
 };
 
 // Helper function to get rate by urgency
-export function getRateByUrgency(urgency: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+export function getRateByUrgency(urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'PROMOTION'): number {
   const tier = PRICING_CONFIG.tiers.find(t => t.urgency === urgency);
-  return tier?.rate || PRICING_CONFIG.tiers[0].rate; // Default to regular rate
+  return tier?.rate || PRICING_CONFIG.tiers[1].rate; // Default to LOW (regular) rate
 }
 
 // Helper function to get tier name by urgency
-export function getTierNameByUrgency(urgency: 'LOW' | 'MEDIUM' | 'HIGH'): string {
+export function getTierNameByUrgency(urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'PROMOTION'): string {
   const tier = PRICING_CONFIG.tiers.find(t => t.urgency === urgency);
   return tier?.name || 'Regular Support';
 }
 
 // Export individual rates for backward compatibility
 export const RATES = {
+  promotion: PRICING_CONFIG.tiers.find(t => t.urgency === 'PROMOTION')?.rate || 125,
   regular: PRICING_CONFIG.tiers.find(t => t.urgency === 'LOW')?.rate || 150,
   sameDay: PRICING_CONFIG.tiers.find(t => t.urgency === 'MEDIUM')?.rate || 175,
   emergency: PRICING_CONFIG.tiers.find(t => t.urgency === 'HIGH')?.rate || 250
