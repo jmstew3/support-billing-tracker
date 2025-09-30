@@ -18,7 +18,7 @@ import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest, getTwentySyncStatus, triggerTwentySync, type TwentySyncResponse } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart, LabelList, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LabelList } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { LoadingState } from './ui/LoadingState';
 
@@ -2319,7 +2319,7 @@ export function Dashboard() {
                             <LabelList
                               dataKey="totalCost"
                               position="top"
-                              formatter={(value: number) => value > 0 ? `$${formatCurrency(value)}` : ''}
+                              formatter={(value: any) => value > 0 ? `$${formatCurrency(value)}` : ''}
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>
@@ -2398,7 +2398,7 @@ export function Dashboard() {
                             <LabelList
                               dataKey="cost"
                               position="top"
-                              formatter={(value: number) => `$${formatCurrency(value)}`}
+                              formatter={(value: any) => `$${formatCurrency(value)}`}
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>

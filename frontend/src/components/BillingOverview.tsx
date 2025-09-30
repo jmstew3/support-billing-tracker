@@ -66,12 +66,13 @@ export function BillingOverview() {
       if (!newMap.has(month)) {
         newMap.set(month, new Set());
       }
-      const monthSections = newMap.get(month)!;
+      const monthSections = new Set(newMap.get(month)!); // Create new Set to avoid mutation
       if (monthSections.has(section)) {
         monthSections.delete(section);
       } else {
         monthSections.add(section);
       }
+      newMap.set(month, monthSections);
       return newMap;
     });
   };
@@ -168,40 +169,41 @@ export function BillingOverview() {
             <Scorecard
               title="Total Revenue"
               value={formatCurrency(displayTotals?.totalRevenue || 0)}
-              icon={DollarSign}
+              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
               description="Combined revenue from all sources"
             />
             <Scorecard
               title="Support Tickets"
               value={formatCurrency(displayTotals?.totalTicketsRevenue || 0)}
-              icon={Ticket}
+              icon={<Ticket className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
               description="Billable hours from tickets"
-              iconClassName="text-blue-600 dark:text-blue-400"
             />
             <Scorecard
               title="Project Revenue"
               value={formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
-              icon={FolderKanban}
+              icon={<FolderKanban className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
               description="Ready to invoice projects"
-              iconClassName="text-yellow-600 dark:text-yellow-400"
             />
             <Scorecard
               title="Hosting MRR"
               value={formatCurrency(displayTotals?.totalHostingRevenue || 0)}
-              icon={Server}
+              icon={<Server className="h-4 w-4 text-green-600 dark:text-green-400" />}
               description="Net hosting revenue"
-              iconClassName="text-green-600 dark:text-green-400"
             />
           </div>
 
           {/* Monthly Breakdown Table */}
           <div className="border bg-card">
             <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead
-                  className="[&_tr]:border-b"
-                  style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
-                >
+              <table className="w-full caption-bottom text-sm table-fixed">
+                <colgroup>
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '18.75%' }} />
+                  <col style={{ width: '18.75%' }} />
+                  <col style={{ width: '18.75%' }} />
+                  <col style={{ width: '18.75%' }} />
+                </colgroup>
+                <thead className="[&_tr]:border-b">
                   <tr className="border-b">
                     <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                       Month
@@ -283,8 +285,7 @@ function MonthRow({
     <>
       {/* Month Header Row */}
       <tr
-        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b"
-        style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
+        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
         onClick={() => onToggleMonth(monthData.month)}
       >
         <td className="py-3 px-4">
@@ -354,7 +355,10 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
     <>
       <tr
         className="bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 cursor-pointer border-b"
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
       >
         <td colSpan={5} className="py-2 px-8">
           <div className="flex items-center justify-between">
@@ -397,7 +401,10 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
     <>
       <tr
         className="bg-yellow-50 dark:bg-yellow-950/30 hover:bg-yellow-100 dark:hover:bg-yellow-950/50 cursor-pointer border-b"
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
       >
         <td colSpan={5} className="py-2 px-8">
           <div className="flex items-center justify-between">
@@ -440,7 +447,10 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
     <>
       <tr
         className="bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/50 cursor-pointer border-b"
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
       >
         <td colSpan={5} className="py-2 px-8">
           <div className="flex items-center justify-between">

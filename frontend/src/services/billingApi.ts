@@ -10,7 +10,6 @@ import type {
 } from '../types/billing';
 import type { ChatRequest } from '../types/request';
 import type { Project } from '../types/project';
-import type { MonthlyHostingSummary } from '../types/websiteProperty';
 
 /**
  * Generates a comprehensive billing summary combining tickets, projects, and hosting
@@ -120,26 +119,23 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
  */
 function transformRequestsToTickets(requests: ChatRequest[]): BillableTicket[] {
   return requests
-    .filter((req) => req.category !== 'Non-billable' && req.hours > 0)
+    .filter((req) => req.Category !== 'Non-billable' && (req.EstimatedHours || 0) > 0)
     .map((req) => {
-      // Determine rate based on urgency
-      let rate = PRICING_CONFIG.REGULAR_RATE;
-      if (req.urgency === 'HIGH') {
-        rate = PRICING_CONFIG.EMERGENCY_RATE;
-      } else if (req.urgency === 'MEDIUM') {
-        rate = PRICING_CONFIG.SAME_DAY_RATE;
-      }
+      // Determine rate based on urgency using helper function
+      const tier = PRICING_CONFIG.tiers.find(t => t.urgency === req.Urgency);
+      const rate = tier?.rate || PRICING_CONFIG.tiers[0].rate;
+      const hours = req.EstimatedHours || 0;
 
       return {
-        id: req.id || `${req.date}-${req.time}`,
-        date: req.date,
-        time: req.time,
-        description: req.requestSummary,
-        category: req.category,
-        urgency: req.urgency,
-        hours: req.hours,
+        id: String(req.id || `${req.Date}-${req.Time}`),
+        date: req.Date,
+        time: req.Time,
+        description: req.Request_Summary,
+        category: req.Category || 'Unknown',
+        urgency: req.Urgency,
+        hours,
         rate,
-        amount: req.hours * rate,
+        amount: hours * rate,
         source: req.source || 'sms',
       };
     });

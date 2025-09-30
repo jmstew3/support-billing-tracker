@@ -23,7 +23,7 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
   );
 
   // Memoize data transformation
-  const { radarData, maxValue, total, domainMax, ticks } = useMemo(() => {
+  const { radarData, total, domainMax, ticks } = useMemo(() => {
     const max = Math.max(...data.map(d => d.value), 1);
     const totalRequests = data.reduce((acc, item) => acc + item.value, 0);
 
@@ -63,7 +63,6 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
 
     return {
       radarData: transformed,
-      maxValue: max,
       total: totalRequests,
       domainMax: calculatedDomainMax,
       ticks: tickValues
@@ -182,7 +181,7 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
             angle={90}
             domain={[0, domainMax]}
             tick={{ fontSize: 10 }}
-            ticks={ticks}
+            ticks={ticks as any}
             axisLine={false}
           />
           <Radar
