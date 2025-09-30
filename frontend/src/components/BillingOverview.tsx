@@ -7,6 +7,7 @@ import {
   formatCurrency,
 } from '../services/billingApi';
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 
 export function BillingOverview() {
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
@@ -190,6 +191,57 @@ export function BillingOverview() {
               icon={<Server className="h-4 w-4 text-green-600 dark:text-green-400" />}
               description="Net hosting revenue"
             />
+          </div>
+
+          {/* Monthly Revenue Chart */}
+          <div className="border bg-card p-6">
+            <h3 className="text-lg font-semibold mb-4">Monthly Revenue by Category</h3>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart
+                data={billingSummary.monthlyBreakdown.map((month) => ({
+                  month: formatMonthLabel(month.month),
+                  Tickets: month.ticketsRevenue,
+                  Projects: month.projectsRevenue,
+                  Hosting: month.hostingRevenue,
+                }))}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                  }}
+                />
+                <Legend
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="rect"
+                />
+                <Bar dataKey="Tickets" stackId="a" fill="#3b82f6" name="Support Tickets" />
+                <Bar dataKey="Projects" stackId="a" fill="#f59e0b" name="Projects" />
+                <Bar dataKey="Hosting" stackId="a" fill="#10b981" name="Hosting">
+                  <LabelList
+                    dataKey={(entry: any) => entry.Tickets + entry.Projects + entry.Hosting}
+                    position="top"
+                    formatter={(value: number) => formatCurrency(value)}
+                    style={{ fontSize: '11px', fontWeight: 'bold', fill: '#374151' }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Monthly Breakdown Table */}
