@@ -106,10 +106,11 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       (sum, m) => sum + m.projectsRevenue,
       0
     );
-    const totalHostingRevenue = monthlyBreakdown.reduce(
-      (sum, m) => sum + m.hostingRevenue,
-      0
-    );
+    // MRR (Monthly Recurring Revenue) represents current state, not cumulative sum
+    // Use the latest month's hosting revenue as the current MRR
+    const totalHostingRevenue = monthlyBreakdown.length > 0
+      ? monthlyBreakdown[monthlyBreakdown.length - 1].hostingRevenue
+      : 0;
     const totalRevenue = totalTicketsRevenue + totalProjectsRevenue + totalHostingRevenue;
 
     return {
@@ -166,6 +167,7 @@ function transformProjectsToBillable(projects: Project[]): BillableProject[] {
     .map((proj) => ({
       id: proj.id,
       name: proj.name,
+      websiteUrl: proj.websiteUrl,
       completionDate: proj.projectCompletionDate || '',
       category: proj.projectCategory || 'Unknown',
       hostingStatus: proj.hostingStatus || 'INACTIVE',

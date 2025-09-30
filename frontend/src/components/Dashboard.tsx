@@ -15,12 +15,13 @@ import { DatePickerPopover } from './DatePickerPopover';
 import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
-import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest, getTwentySyncStatus, triggerTwentySync, type TwentySyncResponse } from '../utils/api';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
 import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LabelList } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { LoadingState } from './ui/LoadingState';
+import { ToggleGroup } from './ui/toggle-group';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -30,7 +31,7 @@ function parseLocalDate(dateString: string): Date {
   return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
 }
 
-// Format currency with exactly 2 decimal places
+// Format currency with exactly 2 decimal places (accounting format)
 function formatCurrency(value: number): string {
   return value.toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -125,9 +126,6 @@ export function Dashboard() {
   // Archive section visibility
   const [showArchived, setShowArchived] = useState(false);
 
-  // Twenty sync status
-  const [syncStatus, setSyncStatus] = useState<TwentySyncResponse | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Row expansion removed - request summaries now always wrap
 
@@ -463,9 +461,7 @@ export function Dashboard() {
   )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()); // Sort chronologically (oldest first)
 
   useEffect(() => {
-    // Load data and sync status
     loadData();
-    loadSyncStatus();
   }, []);
 
   // Save hideNonBillable preference to localStorage
@@ -542,36 +538,6 @@ export function Dashboard() {
     }
   };
 
-  // Load Twenty sync status
-  const loadSyncStatus = async () => {
-    try {
-      const status = await getTwentySyncStatus();
-      setSyncStatus(status);
-    } catch (error) {
-      console.error('Failed to load sync status:', error);
-    }
-  };
-
-  // Handle Twenty sync
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await triggerTwentySync();
-      console.log('Sync completed:', result);
-
-      // Reload sync status and data after successful sync
-      await loadSyncStatus();
-      await loadData();
-
-      // Show success message (you could add a toast notification here)
-      console.log(`✅ Sync successful: ${result.ticketsAdded} added, ${result.ticketsUpdated} updated`);
-    } catch (error) {
-      console.error('Sync failed:', error);
-      // Show error message (you could add a toast notification here)
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   // Filter and sort requests by selected year, month, day, column filters, and search query
   const filteredAndSortedRequests = (() => {
@@ -1495,33 +1461,9 @@ export function Dashboard() {
       <div className="flex-shrink-0 bg-background border-b border-border">
         <div className="px-6 py-3">
           <div className="flex items-start justify-between">
-            {/* Left side - Title and Database Status */}
+            {/* Left side - Title */}
             <div className="flex items-center space-x-3">
               <h1 className="text-3xl font-semibold tracking-tight text-foreground">Support</h1>
-              {apiAvailable && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-                  <Info className="w-3 h-3" />
-                  <span>Connected to Database</span>
-                </div>
-              )}
-              {/* Twenty Sync Status */}
-              {syncStatus?.syncStatus && (
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs ${
-                  syncStatus.syncStatus.last_sync_status === 'success'
-                    ? 'bg-blue-100 text-blue-800'
-                    : syncStatus.syncStatus.last_sync_status === 'failed'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  <Ticket className="w-3 h-3" />
-                  <span>
-                    {syncStatus.totalTickets} tickets
-                    {syncStatus.syncStatus.last_sync_at && (
-                      ` (${new Date(syncStatus.syncStatus.last_sync_at).toLocaleDateString()})`
-                    )}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Right side - Controls */}
@@ -1579,50 +1521,17 @@ export function Dashboard() {
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-muted-foreground">View:</span>
-              <div className="inline-flex rounded-md" role="group">
-                {[
-                  { mode: 'all' as const, label: 'All' },
-                  { mode: 'month' as const, label: 'Month' },
-                  { mode: 'day' as const, label: 'Day' }
-                ].map((item, index, array) => (
-                  <button
-                    key={item.mode}
-                    onClick={() => handleTimeViewModeChange(item.mode)}
-                    className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                      timeViewMode === item.mode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
-                    } ${
-                      index === 0 ? 'rounded-l-md' :
-                      index === array.length - 1 ? 'rounded-r-md' : ''
-                    } border ${
-                      index > 0 ? 'border-l-0' : ''
-                    } ${
-                      timeViewMode === item.mode ? 'border-blue-600' : 'border-border'
-                    }`}
-                    title={`View by ${item.label.toLowerCase()}`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <ToggleGroup
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'month', label: 'Month' },
+                  { value: 'day', label: 'Day' }
+                ]}
+                value={timeViewMode}
+                onValueChange={(value) => handleTimeViewModeChange(value as 'all' | 'month' | 'day')}
+                size="sm"
+              />
             </div>
-
-            {/* Twenty Sync Button */}
-            {apiAvailable && (
-              <button
-                onClick={handleSync}
-                disabled={isSyncing}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isSyncing
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                }`}
-              >
-                <Ticket className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
-                <span>{isSyncing ? 'Syncing...' : 'Sync Tickets'}</span>
-              </button>
-            )}
 
             {/* Theme Toggle */}
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -1812,28 +1721,15 @@ export function Dashboard() {
                       : 'Cost breakdown by service tier (0.5 hour increments)'}
                   </CardDescription>
                 </div>
-                <div className="flex gap-0.5">
-                  <button
-                    className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
-                      costViewType === 'table'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                    onClick={() => setCostViewType('table')}
-                  >
-                    Table
-                  </button>
-                  <button
-                    className={`px-2.5 py-1 text-xs rounded-r-md transition-colors ${
-                      costViewType === 'chart'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                    onClick={() => setCostViewType('chart')}
-                  >
-                    Chart
-                  </button>
-                </div>
+                <ToggleGroup
+                  options={[
+                    { value: 'table', label: 'Table' },
+                    { value: 'chart', label: 'Chart' }
+                  ]}
+                  value={costViewType}
+                  onValueChange={(value) => setCostViewType(value as 'table' | 'chart')}
+                  size="sm"
+                />
               </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
@@ -1841,36 +1737,36 @@ export function Dashboard() {
                 // Table view
                 selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
                   // Monthly breakdown view - Urgency by Month
-                  <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto flex-1">
+                  <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border/60">
-                        <th className="text-left py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">Urgency</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-4 px-4 font-semibold text-sm">Urgency</th>
                         {monthlyCosts.map((monthData) => (
-                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">
+                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-4 px-4 font-semibold text-sm">
                             {monthData.month.substring(0, 3)}
                           </th>
                         ))}
-                        <th className="text-right py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">Total</th>
+                        <th className="text-right py-4 px-4 font-semibold text-sm">Total</th>
                       </tr>
                     </thead>
-                    <tbody className="text-xs">
+                    <tbody className="text-sm">
                       {/* Promotion Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-2 px-3 font-medium">Promotion</td>
+                        <td className="py-3 px-4">Promotion</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             {monthData.costs.promotionalCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(monthData.costs.promotionalCost)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.promotionalCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-2 px-3 font-semibold">
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
@@ -1878,7 +1774,7 @@ export function Dashboard() {
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(total)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
                               </div>
                             );
                           })()}
@@ -1886,28 +1782,28 @@ export function Dashboard() {
                       </tr>
                       {/* Low Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-2 px-3 font-medium">Low</td>
+                        <td className="py-3 px-4">Low</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             {monthData.costs.regularCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(monthData.costs.regularCost)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.regularCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-2 px-3 font-semibold">
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(total)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
                               </div>
                             );
                           })()}
@@ -1915,20 +1811,20 @@ export function Dashboard() {
                       </tr>
                       {/* Medium Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-2 px-3 font-medium">Medium</td>
+                        <td className="py-3 px-4">Medium</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             {monthData.costs.sameDayCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.sameDayCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-2 px-3 font-semibold">
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
@@ -1936,7 +1832,7 @@ export function Dashboard() {
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(total)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
                               </div>
                             );
                           })()}
@@ -1944,20 +1840,20 @@ export function Dashboard() {
                       </tr>
                       {/* High Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-2 px-3 font-medium">High</td>
+                        <td className="py-3 px-4">High</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             {monthData.costs.emergencyCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.emergencyCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-2 px-3 font-semibold">
+                        <td className="py-3 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
@@ -1965,7 +1861,7 @@ export function Dashboard() {
                             ) : (
                               <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
-                                <span>{formatCurrency(total)}</span>
+                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
                               </div>
                             );
                           })()}
@@ -1973,19 +1869,19 @@ export function Dashboard() {
                       </tr>
                       {/* Total Row */}
                       <tr className="bg-muted/50 font-semibold">
-                        <td className="py-2 px-3">Total</td>
+                        <td className="py-3 px-4">Total</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-3 px-4">
                             <div className="flex justify-between items-center gap-1">
                               <span>$</span>
-                              <span>{formatCurrency(monthData.costs.totalCost)}</span>
+                              <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.totalCost)}</span>
                             </div>
                           </td>
                         ))}
-                        <td className="py-2 px-3">
+                        <td className="py-3 px-4">
                           <div className="flex justify-between items-center gap-1">
                             <span>$</span>
-                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
+                            <span className="tabular-nums text-right flex-1">{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
                           </div>
                         </td>
                       </tr>
@@ -2015,9 +1911,9 @@ export function Dashboard() {
                           {filteredCosts.promotionalCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-1">
                               <span>$</span>
-                              <span>{formatCurrency(filteredCosts.promotionalCost)}</span>
+                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.promotionalCost)}</span>
                             </div>
                           )}
                         </td>
@@ -2032,9 +1928,9 @@ export function Dashboard() {
                           {filteredCosts.regularCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-1">
                               <span>$</span>
-                              <span>{formatCurrency(filteredCosts.regularCost)}</span>
+                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.regularCost)}</span>
                             </div>
                           )}
                         </td>
@@ -2049,9 +1945,9 @@ export function Dashboard() {
                           {filteredCosts.sameDayCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-1">
                               <span>$</span>
-                              <span>{formatCurrency(filteredCosts.sameDayCost)}</span>
+                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.sameDayCost)}</span>
                             </div>
                           )}
                         </td>
@@ -2066,9 +1962,9 @@ export function Dashboard() {
                           {filteredCosts.emergencyCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-1">
                               <span>$</span>
-                              <span>{formatCurrency(filteredCosts.emergencyCost)}</span>
+                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.emergencyCost)}</span>
                             </div>
                           )}
                         </td>
@@ -2078,9 +1974,9 @@ export function Dashboard() {
                         <td className="text-center py-3 px-4">-</td>
                         <td className="text-right py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
                         <td className="py-3 px-4">
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center gap-1">
                             <span>$</span>
-                            <span>{formatCurrency(filteredCosts.totalCost)}</span>
+                            <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.totalCost)}</span>
                           </div>
                         </td>
                       </tr>
@@ -2109,10 +2005,10 @@ export function Dashboard() {
                         <ComposedChart data={chartData}>
                           <defs>
                             <pattern id="diagonalStripesMonthly" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <rect width="8" height="8" fill="#9CA3AF" className="dark:fill-slate-300" />
+                              <path d="M0,8 L8,0" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M-2,2 L2,-2" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M6,10 L10,6" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
                             </pattern>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
@@ -2135,6 +2031,7 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-400"
                           />
                           <Tooltip
+                            cursor={false}
                             content={({ active, payload, label }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
@@ -2304,9 +2201,9 @@ export function Dashboard() {
                               );
                             }}
                           />
-                          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#000000" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#374151" : "#D1D5DB"} />
+                          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#6B7280" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"}>
                             <LabelList
                               dataKey="totalCost"
@@ -2322,9 +2219,9 @@ export function Dashboard() {
                     // Transform data for service tier view
                     const chartData = [
                       { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: visibleUrgencies.Promotion ? 'url(#diagonalStripesTier)' : '#D1D5DB' },
-                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#93C5FD' : '#D1D5DB' },
-                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#3B82F6' : '#D1D5DB' },
-                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#1E40AF' : '#D1D5DB' },
+                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB' },
+                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB' },
+                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB' },
                     ];
 
                     return (
@@ -2332,10 +2229,10 @@ export function Dashboard() {
                         <BarChart data={chartData}>
                           <defs>
                             <pattern id="diagonalStripesTier" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <rect width="8" height="8" fill="#9CA3AF" className="dark:fill-slate-300" />
+                              <path d="M0,8 L8,0" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M-2,2 L2,-2" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
+                              <path d="M6,10 L10,6" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
                             </pattern>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
@@ -2350,6 +2247,7 @@ export function Dashboard() {
                             className="dark:[&_text]:fill-gray-300"
                           />
                           <Tooltip
+                            cursor={false}
                             content={({ active, payload, label }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
@@ -2408,27 +2306,16 @@ export function Dashboard() {
           <CardHeader>
             <CardTitle>Request Categories</CardTitle>
             <CardDescription>Distribution of request types</CardDescription>
-            <div className="flex gap-1 mt-2">
-              <button
-                className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
-                  chartType === 'pie'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('pie')}
-              >
-                Pie
-              </button>
-              <button
-                className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
-                  chartType === 'radar'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('radar')}
-              >
-                Radar
-              </button>
+            <div className="mt-2">
+              <ToggleGroup
+                options={[
+                  { value: 'pie', label: 'Pie' },
+                  { value: 'radar', label: 'Radar' }
+                ]}
+                value={chartType}
+                onValueChange={(value) => setChartType(value as 'pie' | 'radar')}
+                size="sm"
+              />
             </div>
           </CardHeader>
           <CardContent>
@@ -3014,7 +2901,9 @@ export function Dashboard() {
                         </UITooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>
+                      {request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}
+                    </TableCell>
                     <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="min-w-[200px] max-w-md">

@@ -7,6 +7,7 @@
 export interface WebsiteProperty {
   id: string;
   name: string;
+  websiteUrl: string | null; // Full URL (e.g., "https://example.com")
   hostingStart: string | null; // ISO date string (YYYY-MM-DD) or null
   hostingEnd: string | null; // ISO date string or null if still active
   hostingMrrAmount: number | null; // Dollar amount (e.g., 99)
@@ -24,6 +25,7 @@ export type BillingType = 'FULL' | 'PRORATED_START' | 'PRORATED_END' | 'INACTIVE
 export interface HostingCharge {
   websitePropertyId: string;
   siteName: string;
+  websiteUrl: string | null;
   hostingStart: string | null;
   hostingEnd: string | null;
   billingType: BillingType;

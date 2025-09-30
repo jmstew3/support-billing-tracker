@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency } from '../services/hostingApi';
+import { SiteFavicon } from './ui/SiteFavicon';
 import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
 
 interface MonthlyHostingCalculatorProps {
@@ -76,7 +77,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
   const getBillingTypeBadge = (billingType: BillingType) => {
     switch (billingType) {
       case 'FULL':
-        return 'bg-green-100 text-green-800 ring-green-200 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-800';
+        return 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700';
       case 'PRORATED_START':
         return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800';
       case 'PRORATED_END':
@@ -250,16 +251,16 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                               {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
                             </span>
                             {monthData.freeCredits > 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                • {monthData.freeCredits} free credit{monthData.freeCredits !== 1 ? 's' : ''}
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                {monthData.freeCredits} free credit{monthData.freeCredits !== 1 ? 's' : ''}
                               </span>
                             )}
                           </div>
-                          <div className="font-bold text-base">{formatCurrency(monthData.netMrr)}</div>
+                          <div className="font-bold text-base tabular-nums">{formatCurrency(monthData.netMrr)}</div>
                         </div>
                       </td>
                     </tr>
@@ -338,6 +339,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               {/* Website Name - with left indent */}
                               <td className="py-3 pl-12 pr-4 align-middle">
                                 <div className="flex items-center gap-2">
+                                  <SiteFavicon websiteUrl={charge.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{charge.siteName}</div>
                                   {charge.creditApplied && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-1 ring-inset ring-green-200 dark:ring-green-800 whitespace-nowrap">
@@ -374,7 +376,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               </td>
 
                               {/* Gross Amount */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
                                 {formatCurrency(charge.grossAmount)}
                               </td>
 
@@ -388,7 +390,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               </td>
 
                               {/* Net Amount */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
                                 {charge.creditApplied ? (
                                   <span className="text-green-600 dark:text-green-400">{formatCurrency(0)}</span>
                                 ) : (
@@ -404,16 +406,16 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                           <td colSpan={5} className="py-3 px-6 text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
                               <span>{formatMonthLabel(monthData.month)} Subtotal</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                                 {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
                               </span>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-right">{formatCurrency(monthData.grossMrr)}</td>
+                          <td className="py-3 px-4 text-right tabular-nums">{formatCurrency(monthData.grossMrr)}</td>
                           <td className="py-3 px-4 text-center text-xs">
                             {monthData.creditsApplied > 0 && `${monthData.creditsApplied}×`}
                           </td>
-                          <td className="py-3 px-4 text-right">{formatCurrency(monthData.netMrr)}</td>
+                          <td className="py-3 px-4 text-right tabular-nums">{formatCurrency(monthData.netMrr)}</td>
                         </tr>
                       </>
                     )}
@@ -427,11 +429,11 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                   <td colSpan={5} className="py-4 px-6 text-right text-base">
                     GRAND TOTAL
                   </td>
-                  <td className="py-4 px-4 text-right text-lg">{formatCurrency(grandTotalGross)}</td>
-                  <td className="py-4 px-4 text-center text-sm">
+                  <td className="py-4 px-4 text-right text-lg tabular-nums">{formatCurrency(grandTotalGross)}</td>
+                  <td className="py-4 px-4 text-center text-sm tabular-nums">
                     {grandTotalCredits > 0 && `-${formatCurrency(grandTotalCredits)}`}
                   </td>
-                  <td className="py-4 px-4 text-right text-lg">{formatCurrency(grandTotalNet)}</td>
+                  <td className="py-4 px-4 text-right text-lg tabular-nums">{formatCurrency(grandTotalNet)}</td>
                 </tr>
               )}
             </tbody>

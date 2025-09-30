@@ -2,6 +2,7 @@
 export interface Project {
   id: string;
   name: string;
+  websiteUrl: string | null; // URL from linked websiteProperty
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

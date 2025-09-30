@@ -24,6 +24,7 @@ export interface BillableTicket {
 export interface BillableProject {
   id: string;
   name: string;
+  websiteUrl: string | null;
   completionDate: string; // YYYY-MM-DD format
   category: string;
   hostingStatus: string;
@@ -66,6 +67,6 @@ export interface BillingSummary {
   totalRevenue: number;
   totalTicketsRevenue: number;
   totalProjectsRevenue: number;
-  totalHostingRevenue: number;
+  totalHostingRevenue: number; // Current MRR (latest month's net hosting revenue)
   monthlyBreakdown: MonthlyBillingSummary[];
 }
