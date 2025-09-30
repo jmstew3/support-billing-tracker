@@ -1497,7 +1497,7 @@ export function Dashboard() {
           <div className="flex items-start justify-between">
             {/* Left side - Title and Database Status */}
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Support</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Support</h1>
               {apiAvailable && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
@@ -1633,7 +1633,7 @@ export function Dashboard() {
 
       {/* Main Content Container */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
+        <div className="p-8 space-y-8">
         {/* Info section - Not sticky */}
         <div className="space-y-2">
         <p className="text-muted-foreground">
@@ -1799,9 +1799,9 @@ export function Dashboard() {
       </Card>
 
       {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-8 lg:grid-cols-5">
+      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-5">
         {filteredCosts && (
-          <Card className="flex flex-col h-full lg:col-span-3">
+          <Card className="flex flex-col h-full lg:col-span-2 xl:col-span-3">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -2315,7 +2315,6 @@ export function Dashboard() {
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>
-                          <Line yAxisId="hours" dataKey="totalHours" stroke="#DC2626" strokeWidth={3} dot={{ fill: '#DC2626', r: 5 }} />
                         </ComposedChart>
                       </ResponsiveContainer>
                     );
@@ -2405,7 +2404,7 @@ export function Dashboard() {
           </Card>
         )}
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-1 xl:col-span-2">
           <CardHeader>
             <CardTitle>Request Categories</CardTitle>
             <CardDescription>Distribution of request types</CardDescription>

@@ -255,9 +255,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   // Determine box size based on whether single month is selected
-  const boxSize = isSingleMonth ? 'w-16 h-16' : 'w-6 h-6';
-  const textSize = isSingleMonth ? 'text-sm' : 'text-[10px]';
-  const headerHeight = isSingleMonth ? 'h-6' : 'h-4';
+  // Make single month view responsive
+  const boxSize = isSingleMonth ? 'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20' : 'w-6 h-6 sm:w-8 sm:h-8';
+  const textSize = isSingleMonth ? 'text-xs sm:text-sm md:text-base' : 'text-[10px] sm:text-xs';
+  const headerHeight = isSingleMonth ? 'h-6 sm:h-7 md:h-8' : 'h-4 sm:h-5';
 
   // Filter to show only the selected month when isSingleMonth is true
   const displayData = isSingleMonth && monthlyData.length > 0
@@ -274,13 +275,13 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     <div className="space-y-6">
       {/* Container - no horizontal scroll when single month */}
       <div className={isSingleMonth ? '' : 'overflow-x-auto pb-4'}>
-        <div className={isSingleMonth ? 'flex justify-center' : 'flex gap-4 min-w-fit'}>
+        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-4 min-w-fit justify-center'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
               <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">{monthData.monthName}</h3>
               <div className="inline-block">
                 {/* Weekday headers */}
-                <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-2' : 'gap-1'} mb-2`}>
+                <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-1 sm:gap-1.5'} mb-2`}>
                   {weekDays.map((day, index) => (
                     <div
                       key={index}
@@ -292,9 +293,9 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
                 </div>
 
                 {/* Calendar grid */}
-                <div className={isSingleMonth ? 'space-y-2' : 'space-y-1'}>
+                <div className={isSingleMonth ? 'space-y-1.5 sm:space-y-2 md:space-y-3' : 'space-y-1 sm:space-y-1.5'}>
                   {monthData.weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className={`grid grid-cols-7 ${isSingleMonth ? 'gap-2' : 'gap-1'}`}>
+                    <div key={weekIndex} className={`grid grid-cols-7 ${isSingleMonth ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-1 sm:gap-1.5'}`}>
                     {week.map((day, dayIndex) => {
                       if (!day.date) {
                         return <div key={dayIndex} className={boxSize} />;

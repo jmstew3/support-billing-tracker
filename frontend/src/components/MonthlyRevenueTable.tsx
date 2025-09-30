@@ -137,8 +137,8 @@ export function MonthlyRevenueTable({
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({monthData.projectCount} {monthData.projectCount === 1 ? 'project' : 'projects'})
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                              {monthData.projectCount} {monthData.projectCount === 1 ? 'project' : 'projects'}
                             </span>
                           </div>
                           <div className="font-bold text-base">
