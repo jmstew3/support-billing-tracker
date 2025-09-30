@@ -1,0 +1,199 @@
+import { useState, useEffect } from 'react';
+import { Scorecard } from './ui/Scorecard';
+import { LoadingState } from './ui/LoadingState';
+import { Server, DollarSign, Gift } from 'lucide-react';
+import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
+import {
+  fetchWebsiteProperties,
+  generateMonthlyBreakdown,
+  formatCurrency,
+  calculateCreditProgress,
+} from '../services/hostingApi';
+import type { WebsiteProperty, MonthlyHostingSummary } from '../types/websiteProperty';
+
+export function HostingBilling() {
+  const [properties, setProperties] = useState<WebsiteProperty[]>([]);
+  const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyHostingSummary[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load website properties on mount
+  useEffect(() => {
+    loadHostingData();
+  }, []);
+
+  async function loadHostingData() {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedProperties = await fetchWebsiteProperties();
+      setProperties(fetchedProperties);
+
+      const breakdown = generateMonthlyBreakdown(fetchedProperties);
+      setMonthlyBreakdown(breakdown);
+
+      // Default to latest month
+      if (breakdown.length > 0) {
+        setSelectedMonth(breakdown[breakdown.length - 1].month);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load hosting data');
+      console.error('Error loading hosting data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Calculate metrics for selected month or all months
+  const currentSummary = selectedMonth === 'all'
+    ? {
+        activeSites: monthlyBreakdown.reduce((sum, m) => Math.max(sum, m.activeSites), 0),
+        grossMrr: monthlyBreakdown.reduce((sum, m) => sum + m.grossMrr, 0),
+        netMrr: monthlyBreakdown.reduce((sum, m) => sum + m.netMrr, 0),
+        freeCredits: monthlyBreakdown.reduce((sum, m) => Math.max(sum, m.freeCredits), 0),
+      }
+    : monthlyBreakdown.find((m) => m.month === selectedMonth) || {
+        activeSites: 0,
+        grossMrr: 0,
+        netMrr: 0,
+        freeCredits: 0,
+      };
+
+  const creditProgress = calculateCreditProgress(currentSummary.activeSites);
+
+  // Available months for filter
+  const availableMonths = monthlyBreakdown.map((m) => m.month);
+
+  // Format month for display
+  function formatMonthLabel(monthStr: string) {
+    if (monthStr === 'all') return 'All Months';
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  if (loading) {
+    return <LoadingState variant="hosting" />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-destructive font-semibold mb-2">Error Loading Data</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <button
+              onClick={loadHostingData}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header - Fixed height, compact */}
+      <header className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="px-8 py-4 flex items-center justify-between h-16">
+          <h1 className="text-2xl font-bold">Hosting & Billing</h1>
+          <div className="flex items-center gap-4">
+            {/* Month Filter */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="month-select" className="text-sm font-medium">
+                Period:
+              </label>
+              <select
+                id="month-select"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-3 py-1.5 border border-input bg-background text-sm"
+              >
+                <option value="all">All Months</option>
+                {availableMonths.map((month) => (
+                  <option key={month} value={month}>
+                    {formatMonthLabel(month)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-auto">
+        <div className="p-8 space-y-8">
+          {/* Scorecards */}
+          <div className="grid grid-cols-3 gap-6">
+            <Scorecard
+              title="Active Sites"
+              value={currentSummary.activeSites}
+              description={
+                selectedMonth === 'all'
+                  ? 'Peak active sites across all months'
+                  : `Sites with active hosting in ${formatMonthLabel(selectedMonth)}`
+              }
+              icon={<Server className="h-4 w-4" />}
+            />
+            <Scorecard
+              title="Gross MRR"
+              value={formatCurrency(currentSummary.grossMrr)}
+              description={
+                selectedMonth === 'all'
+                  ? 'Total gross revenue all months'
+                  : 'Before free credits applied'
+              }
+              icon={<DollarSign className="h-4 w-4" />}
+            />
+            <Scorecard
+              title="Net MRR"
+              value={formatCurrency(currentSummary.netMrr)}
+              description={
+                selectedMonth === 'all'
+                  ? 'Total net revenue all months'
+                  : `${currentSummary.freeCredits} free credit${currentSummary.freeCredits !== 1 ? 's' : ''} applied`
+              }
+              icon={<Gift className="h-4 w-4" />}
+            />
+          </div>
+
+          {/* Credit Progress - Only show for single month view */}
+          {selectedMonth !== 'all' && currentSummary.freeCredits > 0 && (
+            <div className="border bg-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-sm font-semibold">Free Credit Progress</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {creditProgress.activeSites % 21}/21 sites toward next free credit
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold">{currentSummary.freeCredits}</p>
+                  <p className="text-xs text-muted-foreground">Credits Available</p>
+                </div>
+              </div>
+              {/* Progress Bar */}
+              <div className="w-full bg-muted h-2">
+                <div
+                  className="bg-foreground h-2 transition-all duration-300"
+                  style={{ width: `${creditProgress.progressPercentage}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Monthly Breakdown Table */}
+          <MonthlyHostingCalculator
+            monthlyBreakdown={selectedMonth === 'all' ? monthlyBreakdown : monthlyBreakdown.filter((m) => m.month === selectedMonth)}
+          />
+        </div>
+      </main>
+    </div>
+  );
+}

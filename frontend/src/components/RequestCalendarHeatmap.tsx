@@ -255,8 +255,8 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   // Determine box size based on whether single month is selected
-  const boxSize = isSingleMonth ? 'w-16 h-16' : 'w-8 h-8';
-  const textSize = isSingleMonth ? 'text-sm' : 'text-xs';
+  const boxSize = isSingleMonth ? 'w-16 h-16' : 'w-6 h-6';
+  const textSize = isSingleMonth ? 'text-sm' : 'text-[10px]';
   const headerHeight = isSingleMonth ? 'h-6' : 'h-4';
 
   // Filter to show only the selected month when isSingleMonth is true
@@ -274,10 +274,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     <div className="space-y-6">
       {/* Container - no horizontal scroll when single month */}
       <div className={isSingleMonth ? '' : 'overflow-x-auto pb-4'}>
-        <div className={isSingleMonth ? 'flex justify-center' : 'flex gap-6 min-w-fit'}>
+        <div className={isSingleMonth ? 'flex justify-center' : 'flex gap-4 min-w-fit'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-700 mb-2 text-center">{monthData.monthName}</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">{monthData.monthName}</h3>
               <div className="inline-block">
                 {/* Weekday headers */}
                 <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-2' : 'gap-1'} mb-2`}>

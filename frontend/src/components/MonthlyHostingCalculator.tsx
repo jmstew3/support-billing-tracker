@@ -1,0 +1,441 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { formatCurrency } from '../services/hostingApi';
+import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
+
+interface MonthlyHostingCalculatorProps {
+  monthlyBreakdown: MonthlyHostingSummary[];
+}
+
+type SortColumn =
+  | 'name'           // Website Name
+  | 'hostingStart'   // Hosting Start
+  | 'hostingEnd'     // Hosting End
+  | 'billingType'    // Billing Type
+  | 'days'           // Days Active
+  | 'gross'          // Gross Amount
+  | 'credit'         // Credit Applied
+  | 'net';           // Net Amount
+
+export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCalculatorProps) {
+  // Track which months are expanded (all expanded by default)
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
+    new Set(monthlyBreakdown.map((m) => m.month))
+  );
+
+  // Filter state
+  const [billingTypeFilter, setBillingTypeFilter] = useState<BillingType | 'ALL'>('ALL');
+
+  // Sort state - expanded to support all 8 columns
+  const [sortBy, setSortBy] = useState<SortColumn>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Toggle month expansion
+  const toggleMonth = (month: string) => {
+    setExpandedMonths((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(month)) {
+        newSet.delete(month);
+      } else {
+        newSet.add(month);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle header click for sorting
+  const handleHeaderClick = (column: SortColumn) => {
+    if (sortBy === column) {
+      // Same column: toggle direction
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column: set column and default to ascending
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Calculate grand totals
+  const grandTotalGross = monthlyBreakdown.reduce((sum, month) => sum + month.grossMrr, 0);
+  const grandTotalNet = monthlyBreakdown.reduce((sum, month) => sum + month.netMrr, 0);
+  const grandTotalCredits = monthlyBreakdown.reduce((sum, month) => sum + (month.grossMrr - month.netMrr), 0);
+
+  // Format month for display (e.g., "September 2025")
+  function formatMonthLabel(monthStr: string) {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  // Format date for display
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Active';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get billing type badge style (vibrant muted colors)
+  const getBillingTypeBadge = (billingType: BillingType) => {
+    switch (billingType) {
+      case 'FULL':
+        return 'bg-green-100 text-green-800 ring-green-200 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-800';
+      case 'PRORATED_START':
+        return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800';
+      case 'PRORATED_END':
+        return 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800';
+      case 'INACTIVE':
+        return 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:ring-slate-800';
+      default:
+        return 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-800';
+    }
+  };
+
+  // Format billing type for display
+  const formatBillingType = (billingType: BillingType) => {
+    switch (billingType) {
+      case 'FULL':
+        return 'Full Month';
+      case 'PRORATED_START':
+        return 'Prorated Start';
+      case 'PRORATED_END':
+        return 'Prorated End';
+      case 'INACTIVE':
+        return 'Inactive';
+      default:
+        return billingType;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Filter Controls */}
+      <div className="flex items-center gap-4 p-4 border bg-card">
+        <div className="flex items-center gap-2">
+          <label htmlFor="billing-type-filter" className="text-sm font-medium">
+            Billing Type:
+          </label>
+          <select
+            id="billing-type-filter"
+            value={billingTypeFilter}
+            onChange={(e) => setBillingTypeFilter(e.target.value as BillingType | 'ALL')}
+            className="px-3 py-1.5 border border-input bg-background text-sm"
+          >
+            <option value="ALL">All Types</option>
+            <option value="FULL">Full Month</option>
+            <option value="PRORATED_START">Prorated Start</option>
+            <option value="PRORATED_END">Prorated End</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          Click column headers to sort
+        </div>
+      </div>
+
+      {/* Unified Hosting Table with Nested Months */}
+      <div className="border bg-card text-card-foreground">
+        <div className="relative w-full overflow-auto">
+          <table className="w-full caption-bottom text-sm">
+            {/* Main Table Header */}
+            <thead className="[&_tr]:border-b" style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+              <tr className="border-b">
+                <th
+                  onClick={() => handleHeaderClick('name')}
+                  className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[250px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Website Name
+                    {sortBy === 'name' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('hostingStart')}
+                  className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[110px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Hosting Start
+                    {sortBy === 'hostingStart' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('hostingEnd')}
+                  className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[110px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Hosting End
+                    {sortBy === 'hostingEnd' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('billingType')}
+                  className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[140px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Billing Type
+                    {sortBy === 'billingType' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('days')}
+                  className="h-10 px-4 text-center align-middle font-medium text-muted-foreground min-w-[80px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Days
+                    {sortBy === 'days' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('gross')}
+                  className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[100px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Gross Amount
+                    {sortBy === 'gross' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('credit')}
+                  className="h-10 px-4 text-center align-middle font-medium text-muted-foreground min-w-[80px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Credit
+                    {sortBy === 'credit' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleHeaderClick('net')}
+                  className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[100px] cursor-pointer hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Net Amount
+                    {sortBy === 'net' && (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    )}
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Iterate through each month */}
+              {monthlyBreakdown.map((monthData) => {
+                const isExpanded = expandedMonths.has(monthData.month);
+
+                return (
+                  <>
+                    {/* Month Header Row */}
+                    <tr
+                      key={`month-${monthData.month}`}
+                      className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b border-border"
+                      style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
+                      onClick={() => toggleMonth(monthData.month)}
+                    >
+                      <td colSpan={8} className="py-3 px-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                            <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'})
+                            </span>
+                            {monthData.freeCredits > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                • {monthData.freeCredits} free credit{monthData.freeCredits !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-bold text-base">{formatCurrency(monthData.netMrr)}</div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Site Rows (only if expanded) */}
+                    {isExpanded && (
+                      <>
+                        {monthData.charges
+                          // Filter by billing type
+                          .filter((charge) => billingTypeFilter === 'ALL' || charge.billingType === billingTypeFilter)
+                          // Sort by selected criteria
+                          .sort((a, b) => {
+                            let comparison = 0;
+
+                            switch (sortBy) {
+                              case 'name':
+                                comparison = a.siteName.localeCompare(b.siteName);
+                                break;
+
+                              case 'hostingStart':
+                                // Handle null dates (push to end)
+                                if (!a.hostingStart && !b.hostingStart) return 0;
+                                if (!a.hostingStart) return 1;
+                                if (!b.hostingStart) return -1;
+                                comparison = a.hostingStart.localeCompare(b.hostingStart);
+                                break;
+
+                              case 'hostingEnd':
+                                // Handle null dates (active sites first when ascending)
+                                if (!a.hostingEnd && !b.hostingEnd) return 0;
+                                if (!a.hostingEnd) return -1; // Active sites first
+                                if (!b.hostingEnd) return 1;
+                                comparison = a.hostingEnd.localeCompare(b.hostingEnd);
+                                break;
+
+                              case 'billingType':
+                                // Sort order: FULL, PRORATED_START, PRORATED_END, INACTIVE
+                                const typeOrder: Record<string, number> = {
+                                  FULL: 1,
+                                  PRORATED_START: 2,
+                                  PRORATED_END: 3,
+                                  INACTIVE: 4,
+                                };
+                                comparison = typeOrder[a.billingType] - typeOrder[b.billingType];
+                                break;
+
+                              case 'days':
+                                comparison = a.daysActive - b.daysActive;
+                                break;
+
+                              case 'gross':
+                                comparison = a.grossAmount - b.grossAmount;
+                                break;
+
+                              case 'credit':
+                                // Sort by credit applied (true first when ascending)
+                                comparison = (b.creditApplied ? 1 : 0) - (a.creditApplied ? 1 : 0);
+                                break;
+
+                              case 'net':
+                                comparison = a.netAmount - b.netAmount;
+                                break;
+
+                              default:
+                                comparison = 0;
+                            }
+
+                            return sortDirection === 'asc' ? comparison : -comparison;
+                          })
+                          .map((charge) => {
+                          return (
+                            <tr
+                              key={charge.websitePropertyId}
+                              className="border-b transition-colors hover:bg-muted/50"
+                            >
+                              {/* Website Name - with left indent */}
+                              <td className="py-3 pl-12 pr-4 align-middle">
+                                <div className="flex items-center gap-2">
+                                  <div className="line-clamp-2 font-medium">{charge.siteName}</div>
+                                  {charge.creditApplied && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-1 ring-inset ring-green-200 dark:ring-green-800 whitespace-nowrap">
+                                      FREE
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Hosting Start */}
+                              <td className="py-3 px-4 align-middle text-muted-foreground text-xs">
+                                {formatDate(charge.hostingStart)}
+                              </td>
+
+                              {/* Hosting End */}
+                              <td className="py-3 px-4 align-middle text-muted-foreground text-xs">
+                                {formatDate(charge.hostingEnd)}
+                              </td>
+
+                              {/* Billing Type */}
+                              <td className="py-3 px-4 align-middle">
+                                <span
+                                  className={`inline-flex items-center px-2 py-1 text-xs font-medium ring-1 ring-inset ${getBillingTypeBadge(
+                                    charge.billingType
+                                  )}`}
+                                >
+                                  {formatBillingType(charge.billingType)}
+                                </span>
+                              </td>
+
+                              {/* Days Active */}
+                              <td className="py-3 px-4 align-middle text-center text-xs">
+                                {charge.daysActive}/{charge.daysInMonth}
+                              </td>
+
+                              {/* Gross Amount */}
+                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                                {formatCurrency(charge.grossAmount)}
+                              </td>
+
+                              {/* Credit Applied */}
+                              <td className="py-3 px-4 align-middle text-center">
+                                {charge.creditApplied && (
+                                  <span className="inline-flex items-center justify-center w-5 h-5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs font-bold">
+                                    ✓
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Net Amount */}
+                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                                {charge.creditApplied ? (
+                                  <span className="text-green-600 dark:text-green-400">{formatCurrency(0)}</span>
+                                ) : (
+                                  formatCurrency(charge.netAmount)
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {/* Month Subtotal Row */}
+                        <tr className="bg-muted/30 border-b font-semibold">
+                          <td colSpan={5} className="py-3 px-6 text-right text-sm">
+                            {formatMonthLabel(monthData.month)} Subtotal
+                          </td>
+                          <td className="py-3 px-4 text-right">{formatCurrency(monthData.grossMrr)}</td>
+                          <td className="py-3 px-4 text-center text-xs">
+                            {monthData.creditsApplied > 0 && `${monthData.creditsApplied}×`}
+                          </td>
+                          <td className="py-3 px-4 text-right">{formatCurrency(monthData.netMrr)}</td>
+                        </tr>
+                      </>
+                    )}
+                  </>
+                );
+              })}
+
+              {/* Grand Total Row */}
+              {monthlyBreakdown.length > 1 && (
+                <tr className="bg-muted/60 border-t-2 font-bold">
+                  <td colSpan={5} className="py-4 px-6 text-right text-base">
+                    GRAND TOTAL
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">{formatCurrency(grandTotalGross)}</td>
+                  <td className="py-4 px-4 text-center text-sm">
+                    {grandTotalCredits > 0 && `-${formatCurrency(grandTotalCredits)}`}
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">{formatCurrency(grandTotalNet)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
