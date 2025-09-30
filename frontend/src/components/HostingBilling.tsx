@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
+import { CumulativeBillingChart } from './CumulativeBillingChart';
 import { Server, DollarSign, Gift } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
 import {
@@ -181,6 +182,16 @@ export function HostingBilling() {
                 />
               </div>
             </div>
+          )}
+
+          {/* Cumulative Billing Chart - Show when viewing all months */}
+          {selectedMonth === 'all' && monthlyBreakdown.length > 0 && (
+            <CumulativeBillingChart
+              data={monthlyBreakdown.map((m) => ({
+                month: m.month,
+                revenue: m.netMrr,
+              }))}
+            />
           )}
 
           {/* Monthly Breakdown Table */}

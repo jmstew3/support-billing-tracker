@@ -124,27 +124,27 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
             <Radar
               name="Volume"
               dataKey="volume"
-              stroke="#3b82f6"
+              stroke="#000000"
               strokeWidth={2}
-              fill="#3b82f6"
+              fill="#000000"
               fillOpacity={0.2}
               animationDuration={800}
             />
             <Radar
               name="Urgency"
               dataKey="urgencyScore"
-              stroke="#ef4444"
+              stroke="#374151"
               strokeWidth={2}
-              fill="#ef4444"
+              fill="#374151"
               fillOpacity={0.2}
               animationDuration={800}
             />
             <Radar
               name="Complexity"
               dataKey="complexity"
-              stroke="#10b981"
+              stroke="#6B7280"
               strokeWidth={2}
-              fill="#10b981"
+              fill="#6B7280"
               fillOpacity={0.2}
               animationDuration={800}
             />
@@ -187,9 +187,9 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
           <Radar
             name="Requests"
             dataKey="value"
-            stroke="#3b82f6"
+            stroke="#374151"
             strokeWidth={2}
-            fill="#3b82f6"
+            fill="#374151"
             fillOpacity={0.35}
             animationDuration={800}
             animationEasing="ease-in-out"

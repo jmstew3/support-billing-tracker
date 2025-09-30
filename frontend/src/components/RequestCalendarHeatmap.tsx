@@ -102,17 +102,17 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     if (count === 0) return 'bg-gray-100 hover:bg-gray-200';
     const intensity = Math.min(count / maxCount, 1);
 
-    if (intensity <= 0.25) return 'bg-blue-200 hover:bg-blue-300';
-    if (intensity <= 0.5) return 'bg-blue-400 hover:bg-blue-500';
-    if (intensity <= 0.75) return 'bg-blue-600 hover:bg-blue-700';
-    return 'bg-blue-800 hover:bg-blue-900';
+    if (intensity <= 0.25) return 'bg-gray-400 hover:bg-gray-500';
+    if (intensity <= 0.5) return 'bg-gray-600 hover:bg-gray-700';
+    if (intensity <= 0.75) return 'bg-gray-800 hover:bg-gray-900';
+    return 'bg-black hover:bg-black';
   };
 
   // Get text color for better contrast
   const getTextColor = (count: number) => {
     if (count === 0) return 'text-gray-600';
     const intensity = Math.min(count / maxCount, 1);
-    return intensity > 0.5 ? 'text-white' : 'text-gray-700';
+    return intensity > 0.2 ? 'text-white' : 'text-gray-900';
   };
 
   if (isHourlyView) {
@@ -122,10 +122,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     // Function to get bar color based on urgency
     const getBarColor = (item: DailyRequestCount) => {
       if (item.count === 0) return 'bg-gray-300'; // Gray for no data
-      if (item.high > 0) return 'bg-red-500';
-      if (item.medium > 0) return 'bg-yellow-500';
-      if (item.low > 0) return 'bg-green-500';
-      return 'bg-blue-500'; // Default color
+      if (item.high > 0) return 'bg-black';
+      if (item.medium > 0) return 'bg-gray-700';
+      if (item.low > 0) return 'bg-gray-500';
+      return 'bg-gray-600'; // Default color
     };
 
     return (
@@ -235,15 +235,15 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded" />
+              <div className="w-3 h-3 bg-black rounded" />
               <span className="text-xs text-gray-600">High Priority</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded" />
+              <div className="w-3 h-3 bg-gray-700 rounded" />
               <span className="text-xs text-gray-600">Medium Priority</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded" />
+              <div className="w-3 h-3 bg-gray-500 rounded" />
               <span className="text-xs text-gray-600">Low Priority</span>
             </div>
           </div>
@@ -320,8 +320,8 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
                               transition-all cursor-pointer hover:scale-110
                               ${getColorIntensity(count)}
                               ${getTextColor(count)}
-                              ${isCurrentDay ? 'ring-2 ring-orange-400' : ''}
-                              ${isSelected ? 'ring-2 ring-blue-600 ring-offset-1' : ''}
+                              ${isCurrentDay ? 'ring-2 ring-gray-900' : ''}
+                              ${isSelected ? 'ring-2 ring-black ring-offset-1' : ''}
                             `}
                           >
                             {isSingleMonth ? (
@@ -392,10 +392,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         <span className="text-xs text-gray-500">Less</span>
         <div className="flex space-x-1">
           <div className="w-4 h-4 bg-gray-100 rounded" title="No requests" />
-          <div className="w-4 h-4 bg-blue-200 rounded" title="Low activity" />
-          <div className="w-4 h-4 bg-blue-400 rounded" title="Moderate activity" />
-          <div className="w-4 h-4 bg-blue-600 rounded" title="High activity" />
-          <div className="w-4 h-4 bg-blue-800 rounded" title="Very high activity" />
+          <div className="w-4 h-4 bg-gray-400 rounded" title="Low activity" />
+          <div className="w-4 h-4 bg-gray-600 rounded" title="Moderate activity" />
+          <div className="w-4 h-4 bg-gray-800 rounded" title="High activity" />
+          <div className="w-4 h-4 bg-black rounded" title="Very high activity" />
         </div>
         <span className="text-xs text-gray-500">More</span>
       </div>

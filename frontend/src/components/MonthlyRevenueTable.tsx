@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
 import { formatCurrency, convertMicrosToDollars } from '../services/projectsApi';
+import { SiteFavicon } from './ui/SiteFavicon';
 import type { Project } from '../types/project';
 
 interface MonthlyBreakdown {
@@ -137,11 +138,11 @@ export function MonthlyRevenueTable({
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                               {monthData.projectCount} {monthData.projectCount === 1 ? 'project' : 'projects'}
                             </span>
                           </div>
-                          <div className="font-bold text-base">
+                          <div className="font-bold text-base tabular-nums">
                             {formatCurrency(monthData.revenue)}
                           </div>
                         </div>
@@ -160,7 +161,10 @@ export function MonthlyRevenueTable({
                             >
                               {/* Name - with left indent */}
                               <td className="py-3 pl-12 pr-4 align-middle">
-                                <div className="line-clamp-2 font-medium">{project.name}</div>
+                                <div className="flex items-center gap-2">
+                                  <SiteFavicon websiteUrl={project.websiteUrl} size={16} />
+                                  <div className="line-clamp-2 font-medium">{project.name}</div>
+                                </div>
                               </td>
 
                               {/* Category */}
@@ -196,7 +200,7 @@ export function MonthlyRevenueTable({
                               </td>
 
                               {/* Revenue */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
                                 {formatCurrency(revenue)}
                               </td>
 
@@ -213,7 +217,7 @@ export function MonthlyRevenueTable({
                           <td colSpan={5} className="py-3 px-6 text-right text-sm">
                             {formatMonthLabel(monthData.month)} Subtotal
                           </td>
-                          <td className="py-3 px-4 text-right">
+                          <td className="py-3 px-4 text-right tabular-nums">
                             {formatCurrency(monthData.revenue)}
                           </td>
                           <td className="py-3 px-4"></td>
@@ -229,7 +233,7 @@ export function MonthlyRevenueTable({
                 <td colSpan={5} className="py-4 px-6 text-right text-base">
                   GRAND TOTAL
                 </td>
-                <td className="py-4 px-4 text-right text-lg">
+                <td className="py-4 px-4 text-right text-lg tabular-nums">
                   {formatCurrency(grandTotal)}
                 </td>
                 <td className="py-4 px-4"></td>

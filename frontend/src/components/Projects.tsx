@@ -66,8 +66,7 @@ export function Projects() {
   // Calculate billing summary from ready projects only
   const billingSummary = useMemo(() => {
     let totalReadyRevenue = 0;
-    let projectsWithoutCompletionDate = 0;
-    let revenueWithoutCompletionDate = 0;
+    let totalCompletedProjects = 0;
 
     const monthlyMap = new Map<string, { revenue: number; projects: Project[] }>();
 
@@ -76,6 +75,8 @@ export function Projects() {
       totalReadyRevenue += revenue;
 
       if (project.projectCompletionDate) {
+        totalCompletedProjects++;
+
         const date = new Date(project.projectCompletionDate);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -86,9 +87,6 @@ export function Projects() {
         const monthData = monthlyMap.get(monthKey)!;
         monthData.revenue += revenue;
         monthData.projects.push(project);
-      } else {
-        projectsWithoutCompletionDate++;
-        revenueWithoutCompletionDate += revenue;
       }
     });
 
@@ -105,8 +103,7 @@ export function Projects() {
     return {
       totalReadyRevenue,
       readyProjectCount: readyProjects.length,
-      projectsWithoutCompletionDate,
-      revenueWithoutCompletionDate,
+      totalCompletedProjects,
       monthlyBreakdown,
     };
   }, [readyProjects]);
@@ -144,7 +141,7 @@ export function Projects() {
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-2">
             <FolderKanban className="h-5 w-5" />
-            <h1 className="text-xl font-semibold">Billing Reconciliation</h1>
+            <h1 className="text-xl font-semibold">Projects</h1>
           </div>
         </div>
       </div>
@@ -176,10 +173,10 @@ export function Projects() {
             variant="default"
           />
           <Scorecard
-            title="Missing Completion Date"
-            value={billingSummary.projectsWithoutCompletionDate.toString()}
-            description={formatCurrency(billingSummary.revenueWithoutCompletionDate)}
-            variant="error"
+            title="Total Completed"
+            value={billingSummary.totalCompletedProjects.toString()}
+            description="Projects with completion date"
+            variant="default"
           />
         </div>
 

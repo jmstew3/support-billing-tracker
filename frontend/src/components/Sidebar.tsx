@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Home, FolderKanban, DollarSign, BarChart3, Server, ChevronLeft, ChevronRight } from 'lucide-react';
+import velocityLogo from '../assets/velocity-logo.png';
 
 interface SidebarProps {
   currentView?: 'home' | 'projects' | 'overview' | 'billing';
@@ -33,7 +34,13 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
         {!isCollapsed && (
-          <h1 className="text-base font-semibold text-foreground tracking-tight">Dashboard</h1>
+          <div className="bg-black px-2.5 py-1 rounded">
+            <img
+              src={velocityLogo}
+              alt="Velocity Dashboard"
+              className="h-5 w-auto object-contain"
+            />
+          </div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -86,9 +93,19 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
       </nav>
 
       {/* Footer - Optional user section or collapse hint */}
-      <div className="h-12 border-t border-border/50 flex items-center justify-center bg-background/30">
+      <div className="border-t border-border/50 flex items-center justify-center bg-background/30 py-3">
         {!isCollapsed && (
-          <p className="text-xs text-muted-foreground/70 px-4 font-mono">v1.0.0</p>
+          <div className="text-center px-4">
+            <p className="text-xs text-muted-foreground/70 font-mono mb-1">v1.0.0</p>
+            <a
+              href="https://peakonedigital.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              Powered by PeakOne Digital
+            </a>
+          </div>
         )}
       </div>
     </div>

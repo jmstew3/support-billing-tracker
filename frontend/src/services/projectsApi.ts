@@ -151,26 +151,37 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
     });
 
     // Handle the nested response structure from Twenty API
-    let projects: Project[] = [];
+    let rawProjects: any[] = [];
 
     if (data && typeof data === 'object') {
       if (data.data && data.data.projects) {
         // GraphQL-style response: { data: { projects: [...] } }
-        projects = data.data.projects;
-        console.log(`✓ Loaded ${projects.length} projects from Twenty CRM`);
+        rawProjects = data.data.projects;
+        console.log(`✓ Loaded ${rawProjects.length} projects from Twenty CRM`);
       } else if (data.items) {
         // Paginated response: { items: [...] }
-        projects = data.items;
-        console.log(`✓ Loaded ${projects.length} projects (paginated)`);
+        rawProjects = data.items;
+        console.log(`✓ Loaded ${rawProjects.length} projects (paginated)`);
       } else if (Array.isArray(data)) {
         // Direct array response
-        projects = data;
-        console.log(`✓ Loaded ${projects.length} projects (direct array)`);
+        rawProjects = data;
+        console.log(`✓ Loaded ${rawProjects.length} projects (direct array)`);
       } else {
         console.warn('Unexpected response structure:', Object.keys(data));
-        projects = [];
+        rawProjects = [];
       }
     }
+
+    // Map to proper Project type and extract websiteUrl from websitePropertyLink
+    const projects: Project[] = rawProjects.map((proj: any) => {
+      // Extract websiteUrl from the linked websiteProperty if available
+      const websiteUrl = proj.websitePropertyLink?.websiteUrl || null;
+
+      return {
+        ...proj,
+        websiteUrl,
+      } as Project;
+    });
 
     return projects;
   } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
+import { SiteFavicon } from './ui/SiteFavicon';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   generateComprehensiveBilling,
@@ -9,22 +10,22 @@ import {
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 
-// Category color scheme - using blue shades for consistency
+// Category color scheme - using black shades for consistency
 const CATEGORY_COLORS = {
   tickets: {
-    primary: '#3b82f6',      // blue-500 (dark)
-    light: 'text-blue-600',
-    dark: 'dark:text-blue-400',
+    primary: '#000000',      // black (darkest)
+    light: 'text-black',
+    dark: 'dark:text-gray-400',
   },
   projects: {
-    primary: '#60a5fa',      // blue-400 (medium)
-    light: 'text-blue-500',
-    dark: 'dark:text-blue-300',
+    primary: '#374151',      // gray-700 (medium dark)
+    light: 'text-gray-700',
+    dark: 'dark:text-gray-300',
   },
   hosting: {
-    primary: '#93c5fd',      // blue-300 (light)
-    light: 'text-blue-400',
-    dark: 'dark:text-blue-200',
+    primary: '#6B7280',      // gray-500 (lighter)
+    light: 'text-gray-600',
+    dark: 'dark:text-gray-200',
   },
 } as const;
 
@@ -209,10 +210,14 @@ export function BillingOverview() {
               description="Ready to invoice projects"
             />
             <Scorecard
-              title="Hosting MRR"
+              title={selectedMonth === 'all' ? 'Current Hosting MRR' : 'Hosting MRR'}
               value={formatCurrency(displayTotals?.totalHostingRevenue || 0)}
               icon={<Server className="h-4 w-4 text-muted-foreground" />}
-              description="Net hosting revenue"
+              description={
+                selectedMonth === 'all' && billingSummary?.monthlyBreakdown.length
+                  ? `As of ${formatMonthLabel(billingSummary.monthlyBreakdown[billingSummary.monthlyBreakdown.length - 1].month)}`
+                  : 'Net hosting revenue'
+              }
             />
           </div>
 
@@ -242,6 +247,7 @@ export function BillingOverview() {
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
+                  cursor={false}
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
@@ -314,16 +320,16 @@ export function BillingOverview() {
                   {filteredData.length > 1 && (
                     <tr className="bg-muted/60 border-t-2 font-bold">
                       <td className="py-4 px-4 text-left text-base">GRAND TOTAL</td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg tabular-nums">
                         {formatCurrency(displayTotals?.totalTicketsRevenue || 0)}
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg tabular-nums">
                         {formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg tabular-nums">
                         {formatCurrency(displayTotals?.totalHostingRevenue || 0)}
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg tabular-nums">
                         {formatCurrency(displayTotals?.totalRevenue || 0)}
                       </td>
                     </tr>
@@ -369,16 +375,16 @@ function MonthRow({
             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
           </div>
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
+        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
           {formatCurrency(monthData.ticketsRevenue)}
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
+        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
           {formatCurrency(monthData.projectsRevenue)}
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
+        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
           {formatCurrency(monthData.hostingRevenue)}
         </td>
-        <td className="py-3 px-4 text-right font-bold text-base">
+        <td className="py-3 px-4 text-right font-bold text-base tabular-nums">
           {formatCurrency(monthData.totalRevenue)}
         </td>
       </tr>
@@ -442,7 +448,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Ticket className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                 {monthData.ticketsCount} {monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}
               </span>
               {hasFreeHours && (
@@ -475,7 +481,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <td className="py-2 px-4 text-xs text-right text-muted-foreground">
                 {ticket.hours}h × {formatCurrency(ticket.rate)}/hr
               </td>
-              <td className="py-2 px-4 text-right text-sm">
+              <td className="py-2 px-4 text-right text-sm tabular-nums">
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
                   <div className="flex flex-col items-end">
                     <span className="text-muted-foreground line-through text-xs">
@@ -533,7 +539,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                 {monthData.projectsCount} {monthData.projectsCount === 1 ? 'Project' : 'Projects'}
               </span>
             </div>
@@ -549,12 +555,15 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           <tr key={project.id} className="border-b hover:bg-muted/30">
             <td className="py-2 px-12 text-xs text-muted-foreground">{project.completionDate}</td>
             <td colSpan={2} className="py-2 px-4 text-xs">
-              {project.name}
+              <div className="flex items-center gap-2">
+                <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
+                <span>{project.name}</span>
+              </div>
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
               {project.category}
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold">
+            <td className="py-2 px-4 text-right text-sm font-semibold tabular-nums">
               {formatCurrency(project.amount)}
             </td>
           </tr>
@@ -579,7 +588,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Server className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                 {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
               </span>
             </div>
@@ -593,7 +602,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded &&
         monthData.hostingDetails.map((hosting) => (
           <tr key={hosting.websitePropertyId} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-12 text-xs">{hosting.siteName}</td>
+            <td className="py-2 px-12 text-xs">
+              <div className="flex items-center gap-2">
+                <SiteFavicon websiteUrl={hosting.websiteUrl} size={14} />
+                <span>{hosting.siteName}</span>
+              </div>
+            </td>
             <td className="py-2 px-4 text-xs text-muted-foreground">
               {hosting.billingType === 'FULL'
                 ? 'Full Month'
@@ -611,7 +625,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
               )}
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold">
+            <td className="py-2 px-4 text-right text-sm font-semibold tabular-nums">
               {hosting.creditApplied ? (
                 <span className="text-green-600 dark:text-green-400">{formatCurrency(0)}</span>
               ) : (

@@ -47,6 +47,7 @@ export async function fetchWebsiteProperties(): Promise<WebsiteProperty[]> {
       .map((prop: any) => ({
         id: prop.id,
         name: prop.name,
+        websiteUrl: prop.websiteUrl || null,
         hostingStart: prop.hostingStart || null,
         hostingEnd: prop.hostingEnd || null,
         hostingMrrAmount: prop.hostingMrrAmount || null,
@@ -219,6 +220,7 @@ export function calculateMonthlyHosting(
       return {
         websitePropertyId: property.id,
         siteName: property.name,
+        websiteUrl: property.websiteUrl,
         hostingStart: property.hostingStart,
         hostingEnd: property.hostingEnd,
         billingType,
