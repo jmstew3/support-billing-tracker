@@ -21,10 +21,8 @@ export function MonthlyRevenueTable({
   projectsWithoutCompletionDate,
   revenueWithoutCompletionDate,
 }: MonthlyRevenueTableProps) {
-  // Track which months are expanded (all expanded by default)
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
-    new Set(monthlyBreakdown.map(m => m.month))
-  );
+  // Track which months are expanded (start collapsed)
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
 
   // Toggle month expansion
   const toggleMonth = (month: string) => {
@@ -127,8 +125,7 @@ export function MonthlyRevenueTable({
                     {/* Month Header Row */}
                     <tr
                       key={`month-${monthData.month}`}
-                      className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b border-border"
-                      style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
+                      className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
                       onClick={() => toggleMonth(monthData.month)}
                     >
                       <td colSpan={7} className="py-3 px-6">

@@ -9,6 +9,25 @@ import {
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 
+// Category color scheme - using blue shades for consistency
+const CATEGORY_COLORS = {
+  tickets: {
+    primary: '#3b82f6',      // blue-500 (dark)
+    light: 'text-blue-600',
+    dark: 'dark:text-blue-400',
+  },
+  projects: {
+    primary: '#60a5fa',      // blue-400 (medium)
+    light: 'text-blue-500',
+    dark: 'dark:text-blue-300',
+  },
+  hosting: {
+    primary: '#93c5fd',      // blue-300 (light)
+    light: 'text-blue-400',
+    dark: 'dark:text-blue-200',
+  },
+} as const;
+
 export function BillingOverview() {
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,14 +50,8 @@ export function BillingOverview() {
       const data = await generateComprehensiveBilling();
       setBillingSummary(data);
 
-      // Expand all months by default
-      const allMonths = new Set(data.monthlyBreakdown.map((m) => m.month));
-      setExpandedMonths(allMonths);
-
-      // Default to latest month
-      if (data.monthlyBreakdown.length > 0) {
-        setSelectedMonth(data.monthlyBreakdown[data.monthlyBreakdown.length - 1].month);
-      }
+      // Start with all months collapsed
+      setExpandedMonths(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load billing data');
       console.error('Error loading billing data:', err);
@@ -146,7 +159,7 @@ export function BillingOverview() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Comprehensive Billing Overview</h1>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-4">
             <label htmlFor="month-select" className="text-sm font-medium">
               Month:
@@ -240,9 +253,9 @@ export function BillingOverview() {
                   wrapperStyle={{ paddingTop: '20px' }}
                   iconType="rect"
                 />
-                <Bar dataKey="Tickets" stackId="a" fill="#3b82f6" name="Support Tickets" />
-                <Bar dataKey="Projects" stackId="a" fill="#f59e0b" name="Projects" />
-                <Bar dataKey="Hosting" stackId="a" fill="#10b981" name="Hosting">
+                <Bar dataKey="Tickets" stackId="a" fill={CATEGORY_COLORS.tickets.primary} name="Support Tickets" />
+                <Bar dataKey="Projects" stackId="a" fill={CATEGORY_COLORS.projects.primary} name="Projects" />
+                <Bar dataKey="Hosting" stackId="a" fill={CATEGORY_COLORS.hosting.primary} name="Hosting">
                   <LabelList
                     dataKey={(entry: any) => entry.Tickets + entry.Projects + entry.Hosting}
                     position="top"
@@ -356,13 +369,13 @@ function MonthRow({
             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
           </div>
         </td>
-        <td className="py-3 px-4 text-right font-semibold text-blue-600 dark:text-blue-400">
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
           {formatCurrency(monthData.ticketsRevenue)}
         </td>
-        <td className="py-3 px-4 text-right font-semibold text-yellow-600 dark:text-yellow-400">
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
           {formatCurrency(monthData.projectsRevenue)}
         </td>
-        <td className="py-3 px-4 text-right font-semibold text-green-600 dark:text-green-400">
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
           {formatCurrency(monthData.hostingRevenue)}
         </td>
         <td className="py-3 px-4 text-right font-bold text-base">
@@ -418,7 +431,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
   return (
     <>
       <tr
-        className="bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 cursor-pointer border-b"
+        className="bg-muted/40 hover:bg-muted/60 cursor-pointer border-b"
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
@@ -428,17 +441,17 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              <Ticket className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Ticket className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-sm">
-                Support Tickets ({monthData.ticketsCount})
+                {monthData.ticketsCount} {monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}
               </span>
               {hasFreeHours && (
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                  ({monthData.ticketsFreeHoursApplied}h free applied)
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  {monthData.ticketsFreeHoursApplied}h free
                 </span>
               )}
             </div>
-            <span className="font-semibold text-blue-600 dark:text-blue-400">
+            <span className="font-semibold">
               {formatCurrency(monthData.ticketsRevenue)}
             </span>
           </div>
@@ -447,26 +460,6 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
       {isExpanded && (
         <>
-          {/* Free Hours Summary Row (if applicable) */}
-          {hasFreeHours && (
-            <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
-                Free Support Hours Benefit
-              </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-                Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
-              </td>
-              <td className="py-2 px-4 text-right text-xs">
-                <div className="text-green-600 dark:text-green-400 font-semibold">
-                  -{formatCurrency(monthData.ticketsFreeHoursSavings)}
-                </div>
-                <div className="text-muted-foreground text-[10px]">
-                  ({monthData.ticketsFreeHoursApplied} free hrs)
-                </div>
-              </td>
-            </tr>
-          )}
-
           {/* Individual Ticket Rows */}
           {monthData.ticketDetails.map((ticket) => (
             <tr key={ticket.id} className="border-b hover:bg-muted/30">
@@ -474,8 +467,8 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <td colSpan={2} className="py-2 px-4 text-xs">
                 {ticket.description}
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
-                  <span className="ml-2 text-[10px] text-green-600 dark:text-green-400 font-medium">
-                    ({ticket.freeHoursApplied}h free)
+                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                    {ticket.freeHoursApplied}h free
                   </span>
                 )}
               </td>
@@ -498,6 +491,26 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               </td>
             </tr>
           ))}
+
+          {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
+          {hasFreeHours && (
+            <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
+                Free Support Hours Benefit
+              </td>
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+                Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
+              </td>
+              <td className="py-2 px-4 text-right text-xs">
+                <div className="text-green-600 dark:text-green-400 font-semibold">
+                  -{formatCurrency(monthData.ticketsFreeHoursSavings)}
+                </div>
+                <div className="text-muted-foreground text-[10px]">
+                  {monthData.ticketsFreeHoursApplied}h free
+                </div>
+              </td>
+            </tr>
+          )}
         </>
       )}
     </>
@@ -509,7 +522,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
   return (
     <>
       <tr
-        className="bg-yellow-50 dark:bg-yellow-950/30 hover:bg-yellow-100 dark:hover:bg-yellow-950/50 cursor-pointer border-b"
+        className="bg-muted/40 hover:bg-muted/60 cursor-pointer border-b"
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
@@ -519,12 +532,12 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              <FolderKanban className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-sm">
-                Projects ({monthData.projectsCount})
+                {monthData.projectsCount} {monthData.projectsCount === 1 ? 'Project' : 'Projects'}
               </span>
             </div>
-            <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+            <span className="font-semibold">
               {formatCurrency(monthData.projectsRevenue)}
             </span>
           </div>
@@ -555,7 +568,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
   return (
     <>
       <tr
-        className="bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/50 cursor-pointer border-b"
+        className="bg-muted/40 hover:bg-muted/60 cursor-pointer border-b"
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
@@ -565,12 +578,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              <Server className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Server className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-sm">
-                Hosting ({monthData.hostingSitesCount} sites)
+                {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
               </span>
             </div>
-            <span className="font-semibold text-green-600 dark:text-green-400">
+            <span className="font-semibold">
               {formatCurrency(monthData.hostingRevenue)}
             </span>
           </div>

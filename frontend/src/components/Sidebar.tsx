@@ -10,9 +10,9 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { id: 'home' as const, label: 'Home', icon: Home },
+    { id: 'overview' as const, label: 'Dashboard', icon: BarChart3 },
+    { id: 'home' as const, label: 'Support', icon: Home },
     { id: 'projects' as const, label: 'Projects', icon: FolderKanban },
-    { id: 'overview' as const, label: 'Billing Overview', icon: BarChart3 },
     { id: 'billing' as const, label: 'Hosting & Billing', icon: Server },
   ];
 
