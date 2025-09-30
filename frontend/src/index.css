@@ -4,38 +4,38 @@
 
 @layer base {
   :root {
-    /* Core color variables */
+    /* Core color variables - Monochrome theme */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
+    --radius: 0rem;
 
-    /* Chart colors - Light mode */
-    --chart-color-support: #8884d8;
-    --chart-color-hosting: #82ca9d;
-    --chart-color-forms: #ffc658;
-    --chart-color-billing: #ff7c7c;
-    --chart-color-email: #8dd1e1;
-    --chart-color-migration: #d084d0;
-    --chart-color-non-billable: #ffb347;
-    --chart-color-advisory: #87ceeb;
-    --chart-color-general: #98d8c8;
+    /* Chart colors - Light mode (Plane-inspired softer palette) */
+    --chart-color-support: #6366f1;
+    --chart-color-hosting: #10b981;
+    --chart-color-forms: #f59e0b;
+    --chart-color-billing: #ef4444;
+    --chart-color-email: #06b6d4;
+    --chart-color-migration: #8b5cf6;
+    --chart-color-non-billable: #f97316;
+    --chart-color-advisory: #14b8a6;
+    --chart-color-general: #6b7280;
 
     /* Typography scales */
     --font-size-xs: 0.75rem;
@@ -51,52 +51,79 @@
     --scorecard-padding: 1.5rem;
     --scorecard-value-size: var(--font-size-2xl);
     --scorecard-label-size: var(--font-size-sm);
+
+    /* Shadow system - Disabled for sharp design */
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+
+    /* Spacing scale (4px base) */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
   }
 
   .dark {
-    /* Core color variables - Dark mode */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 217.2 32.6% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Core color variables - Dark mode monochrome */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
 
-    /* Chart colors - Dark mode (slightly brighter) */
-    --chart-color-support: #9994e8;
-    --chart-color-hosting: #92da9d;
-    --chart-color-forms: #ffd668;
-    --chart-color-billing: #ff8c8c;
-    --chart-color-email: #9de1f1;
-    --chart-color-migration: #e094e0;
-    --chart-color-non-billable: #ffc357;
-    --chart-color-advisory: #97deeb;
-    --chart-color-general: #a8e8d8;
+    /* Chart colors - Dark mode (Plane-inspired) */
+    --chart-color-support: #818cf8;
+    --chart-color-hosting: #34d399;
+    --chart-color-forms: #fbbf24;
+    --chart-color-billing: #f87171;
+    --chart-color-email: #22d3ee;
+    --chart-color-migration: #a78bfa;
+    --chart-color-non-billable: #fb923c;
+    --chart-color-advisory: #2dd4bf;
+    --chart-color-general: #9ca3af;
   }
 }
 
 @layer base {
   * {
-    border-width: 0;
+    @apply border-border;
   }
-  
+
+  html,
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
   }
 }
 

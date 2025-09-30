@@ -1,7 +1,24 @@
-import { Dashboard } from './components/Dashboard'
+import { useState } from 'react';
+import { Dashboard } from './components/Dashboard';
+import { Sidebar } from './components/Sidebar';
+import { Projects } from './components/Projects';
+import { HostingBilling } from './components/HostingBilling';
+import { BillingOverview } from './components/BillingOverview';
 
 function App() {
-  return <Dashboard />
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('home');
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar currentView={currentView} onNavigate={setCurrentView} />
+      <main className="flex-1 overflow-auto">
+        {currentView === 'home' && <Dashboard />}
+        {currentView === 'projects' && <Projects />}
+        {currentView === 'overview' && <BillingOverview />}
+        {currentView === 'billing' && <HostingBilling />}
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

@@ -79,6 +79,119 @@ python3 main.py
 - **Charts**: Recharts library
 - **UI Components**: Custom shadcn/ui components
 
+#### Design System & UI/UX Guidelines
+
+##### Visual Design Principles
+- **Monochrome Theme**: Pure grayscale base (0% saturation) with sharp edges
+- **Border Radius**: 0rem (sharp, flat design) for all components
+- **Shadows**: Minimal usage - only subtle header shadows (`0 1px 2px 0 rgba(0, 0, 0, 0.05)`)
+- **Typography**: System font stack with clear hierarchy
+- **Layout**: Consistent spacing using Tailwind's gap utilities (gap-4, gap-6, gap-8)
+
+##### Color Scheme
+- **Badge Colors**: Vibrant muted colors for category and status badges
+  - **Green**: Full billing cycles, credits applied, paid status, "FREE" indicators
+  - **Blue**: Standard billing types, ready to invoice status, support tickets
+  - **Orange**: Prorated billing (start/end), invoiced status
+  - **Purple**: Special categories (reserved for future use)
+  - **Slate**: Inactive/disabled states
+  - **Gray**: Not ready status, neutral states
+
+##### Component Patterns
+
+**Scorecards**
+- Compact padding (16px / p-4)
+- Clear metrics display with large numbers
+- Icon in header for visual identification
+- Muted foreground for labels
+- Card component with minimal styling
+
+**Tables**
+- Nested collapsible sections for hierarchical data (ChevronUp/ChevronDown icons)
+- Clickable column headers for sorting with arrow indicators (ArrowUp/ArrowDown)
+- Hover states on interactive elements (`hover:bg-muted/30` or `hover:bg-muted/50`)
+- Whole number Y-axis for count displays (`allowDecimals={false}`)
+- Alternating row backgrounds for readability
+- Full-width tables with responsive overflow (`overflow-auto`)
+
+**Badges**
+- Small text size (text-xs)
+- Ring borders for subtle emphasis (`ring-1 ring-inset`)
+- Contextual colors per badge type:
+  - **"FREE" Badge**: Green with ring border (`bg-green-100 text-green-800 ring-green-200`)
+  - **Billing Type Badges**: Green (Full), Blue (Prorated Start), Orange (Prorated End), Slate (Inactive)
+  - **Status Badges**: Gray (Not Ready), Blue (Ready), Yellow (Invoiced), Green (Paid)
+- Whitespace control (`whitespace-nowrap`) to prevent text wrapping
+
+**Loading States**
+- Unified skeleton animations with shimmer effects
+- Page-specific variants (dashboard, projects, hosting, overview)
+- Staggered animation delays for natural appearance
+- Matching dimensions to actual components to prevent layout shift
+- Pulse and shimmer keyframe animations
+
+**Buttons & Interactive Elements**
+- Consistent hover transitions (`transition-colors`)
+- Icon-only buttons for compact actions
+- Clear visual feedback on interaction states
+- Disabled states with reduced opacity
+
+##### Layout Standards
+- **Sticky Headers**: Navigation controls remain visible while scrolling (`sticky top-0 z-10`)
+- **Full-Width Borders**: Edge-to-edge separator lines extending to browser edges
+- **Responsive Spacing**: Consistent padding (p-4, p-6, p-8) and gaps
+- **Filter Controls**: Top-right positioning with clear labels and dropdowns
+- **Sidebar Navigation**: Fixed left sidebar with icon + label navigation items
+- **Main Content Area**: Flex-1 with overflow-auto for independent scrolling
+
+##### Interaction Patterns
+
+**Sorting**
+- Click column headers to toggle ascending/descending
+- Arrow indicators show current sort direction and column
+- Initial state: ascending on first click
+- Toggle direction on subsequent clicks of same column
+
+**Filtering**
+- Dropdown selects with "All" options as default
+- Multiple filter types can be combined
+- Clear visual indication of active filters
+- Month/date selectors for temporal filtering
+
+**Collapsible Sections**
+- Chevron icons (ChevronUp/ChevronDown) indicate expand/collapse state
+- Click entire header row to toggle
+- Smooth transitions for expand/collapse animations
+- Nested levels for hierarchical data (e.g., month > revenue source > line items)
+
+**Month Navigation**
+- Arrow buttons for quick month traversal (ChevronLeft/ChevronRight)
+- Skip months without data automatically
+- Tooltips show target month on hover
+- Month selector dropdown for direct access
+
+**Search & Text Input**
+- Real-time filtering as user types
+- Clear button (X icon) to reset search
+- Placeholder text for guidance
+- Case-insensitive matching
+
+##### Dark Mode Support
+- All components support dark mode with `dark:` prefixes
+- Badge colors maintain vibrant muted appearance in both themes
+- Background transparency adjustments for dark mode (e.g., `dark:bg-green-900/30 dark:text-green-300`)
+- Border colors adapt to theme (e.g., `dark:border-green-800`)
+- Text colors use semantic tokens (`text-foreground`, `text-muted-foreground`)
+- Chart colors remain consistent across themes for data continuity
+
+##### Accessibility Considerations
+- Semantic HTML structure
+- Proper heading hierarchy
+- Icon buttons include tooltips for screen readers
+- Sufficient color contrast ratios
+- Keyboard navigation support for interactive elements
+- ARIA labels where appropriate
+
 #### Key Features
 
 ##### Data Loading
@@ -175,6 +288,80 @@ Three buttons control chart granularity:
 - **One-Click Recovery**: Change status from deleted/ignored back to active
 - **Audit Trail**: Complete history of status changes preserved in backups
 
+#### Application Pages
+
+##### 1. Home (Dashboard)
+**Purpose**: Support ticket tracking and analysis from iMessage/Twenty CRM
+
+**Key Features**:
+- Support ticket list with real-time filtering and search
+- Interactive charts (bar chart, pie chart, radar chart, calendar heatmap)
+- Cost calculation based on tiered pricing (Regular/Same Day/Emergency)
+- Source tracking (SMS vs Ticket System)
+- Editable fields for category, urgency, and hours
+- Status-based management (active/deleted/ignored)
+
+**Data Source**: Twenty CRM support tickets + iMessage CSV exports
+
+##### 2. Projects
+**Purpose**: Project revenue tracking for QuickBooks reconciliation
+
+**Key Features**:
+- Displays ONLY "Ready" invoice status projects (ready to invoice)
+- Monthly revenue breakdown organized by `projectCompletionDate`
+- Cumulative billing chart showing revenue growth
+- Filter by hosting status and project category
+- Search functionality across project names
+- Color-coded status badges (Gray/Blue/Yellow/Green)
+
+**Data Source**: Twenty CRM projects API (`/rest/projects`)
+
+##### 3. Billing Overview (NEW)
+**Purpose**: Comprehensive billing rollup combining all revenue sources
+
+**Key Features**:
+- **Unified Revenue View**: Combines tickets, projects, and hosting in single dashboard
+- **Monthly Breakdown**: Nested collapsible table structure
+  - Month header row with total revenue
+  - Support Tickets subsection (billable hours from Dashboard)
+  - Projects subsection (ready to invoice from Projects page)
+  - Hosting subsection (monthly recurring from Hosting & Billing page)
+- **Summary Scorecards**:
+  - Total Revenue (combined)
+  - Support Tickets Revenue (blue)
+  - Project Revenue (yellow)
+  - Hosting MRR (green)
+- **Month Filtering**: View specific month or all months combined
+- **Drill-Down Capability**: Expand/collapse each revenue source for line-item details
+- **Export Ready**: Structured for QuickBooks reconciliation
+
+**Data Sources**:
+- Tickets: `fetchRequests()` from Twenty CRM + CSV (billable only)
+- Projects: `fetchProjects()` from Twenty CRM (READY status only)
+- Hosting: `fetchWebsiteProperties()` with proration logic
+
+**Navigation**: Accessible via Sidebar → "Billing Overview" (BarChart3 icon)
+
+##### 4. Hosting & Billing
+**Purpose**: Website hosting monthly recurring revenue (MRR) tracking
+
+**Key Features**:
+- Proration calculations for partial-month hosting
+- Free credit system (1 free site per 20 paid sites)
+- "FREE" badge for sites receiving credits
+- Month-by-month breakdown (June 2025 - present)
+- Nested collapsible table with site details
+- Billing type badges (Green=Full, Blue=Prorated Start, Orange=Prorated End)
+- Filter by billing type
+- Sortable columns (all 8 columns clickable)
+
+**Data Source**: Twenty CRM website properties API (`/rest/websiteProperties`)
+
+**Proration Rules**:
+- Start Date: `(daysInMonth - startDay + 1) / daysInMonth × $99`
+- End Date: `endDay / daysInMonth × $99`
+- Free Credits: `floor(activeSites / 21)`
+
 ## Data Flow Architecture
 
 ```
@@ -230,19 +417,32 @@ thad-chat/
 └── frontend/                          # Stage 3: React dashboard
     ├── src/
     │   ├── components/
-    │   │   ├── Dashboard.tsx          # Main dashboard component
+    │   │   ├── Dashboard.tsx          # Main dashboard component (support tickets)
+    │   │   ├── Projects.tsx           # Projects page (ready to invoice)
+    │   │   ├── HostingBilling.tsx     # Hosting & billing page
+    │   │   ├── BillingOverview.tsx    # Comprehensive billing rollup (NEW)
     │   │   ├── RequestBarChart.tsx    # Time-series chart
     │   │   ├── CategoryPieChart.tsx   # Modern pie chart with animations
     │   │   ├── CategoryRadarChart.tsx # Radar chart for category metrics
+    │   │   ├── MonthlyHostingCalculator.tsx # Hosting breakdown table
+    │   │   ├── MonthlyRevenueTable.tsx      # Projects monthly table
+    │   │   ├── Sidebar.tsx            # Navigation sidebar
     │   │   └── EditableCell.tsx       # In-line editing
     │   ├── services/
-    │   │   └── twentyApi.ts           # Twenty CRM API integration
+    │   │   ├── twentyApi.ts           # Twenty CRM API integration
+    │   │   ├── projectsApi.ts         # Projects API service
+    │   │   ├── hostingApi.ts          # Hosting API service
+    │   │   └── billingApi.ts          # Comprehensive billing aggregation (NEW)
     │   ├── utils/
     │   │   ├── dataProcessing.ts      # Data transformation
     │   │   ├── csvExport.ts           # Save functionality
-    │   │   └── ticketTransform.ts     # Twenty ticket to request conversion
+    │   │   ├── ticketTransform.ts     # Twenty ticket to request conversion
+    │   │   └── api.ts                 # API utilities
     │   └── types/
-    │       └── request.ts             # TypeScript interfaces
+    │       ├── request.ts             # TypeScript interfaces for requests
+    │       ├── project.ts             # TypeScript interfaces for projects
+    │       ├── websiteProperty.ts     # TypeScript interfaces for hosting
+    │       └── billing.ts             # TypeScript interfaces for billing (NEW)
     └── public/
         └── thad_requests_table.csv    # Data source for dashboard
 ```
@@ -250,6 +450,33 @@ thad-chat/
 ## Development History & Updates
 
 ### Recent Major Updates
+
+#### Invoice Status Enum Update (September 30, 2025) 💼
+- **Updated Invoice Status Values for Twenty CRM Projects**:
+  - Changed `UNPAID` → `NOT_READY` ("Not Ready")
+  - Changed `DRAFTED` → `READY` ("Ready")
+  - Changed `SENT` → `INVOICED` ("Invoiced")
+  - Kept `PAID` → `PAID` ("Paid") unchanged
+  - Files Modified: [types/project.ts](frontend/src/types/project.ts:24), [projectsApi.ts](frontend/src/services/projectsApi.ts:50), [Projects.tsx](frontend/src/components/Projects.tsx:64), [ProjectCard.tsx](frontend/src/components/ProjectCard.tsx:39)
+
+- **Created Migration Scripts**:
+  - `update-invoice-status-enum.py`: Updates field metadata in Twenty CRM via GraphQL API
+  - `migrate-invoice-status-data.py`: Migrates existing project data to new enum values
+  - Both scripts use Bearer token authentication from `.env.docker`
+
+- **Updated Frontend Components**:
+  - Filter dropdown now shows all 4 status options (Not Ready, Ready, Invoiced, Paid)
+  - ProjectCard displays color-coded status badges:
+    - Gray: Not Ready
+    - Blue: Ready (ready to invoice)
+    - Yellow: Invoiced
+    - Green: Paid
+  - Default view shows "READY" projects (previously showed "UNPAID")
+
+- **Semantic Changes**:
+  - `unpaidRevenue` now represents "ready to invoice" revenue
+  - `unpaidInvoices` count now represents "ready to invoice" projects
+  - Monthly breakdown's "unpaid" field semantically means "ready for billing"
 
 #### Hours Column Validation (September 23, 2025) ⏱️
 - **Quarter-Hour Increment Enforcement**:

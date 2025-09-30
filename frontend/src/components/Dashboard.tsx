@@ -20,6 +20,7 @@ import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, Che
 import { PRICING_CONFIG } from '../config/pricing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart, LabelList, Cell } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { LoadingState } from './ui/LoadingState';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -1483,18 +1484,18 @@ export function Dashboard() {
 
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <LoadingState variant="dashboard" />;
   }
 
   return (
-    <div>
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Sticky Header with Title and Controls - Full Width */}
-      <div className="sticky top-0 z-40 bg-background border-b border-border">
-        <div className="container mx-auto py-4">
+      <div className="flex-shrink-0 bg-background border-b border-border">
+        <div className="px-6 py-3">
           <div className="flex items-start justify-between">
             {/* Left side - Title and Database Status */}
             <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">Request Analysis Dashboard</h1>
               {apiAvailable && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
                   <Info className="w-3 h-3" />
@@ -1629,7 +1630,8 @@ export function Dashboard() {
       </div>
 
       {/* Main Content Container */}
-      <div className="container mx-auto py-8 space-y-6">
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
         {/* Info section - Not sticky */}
         <div className="space-y-2">
         <p className="text-muted-foreground">
@@ -1673,7 +1675,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Scorecard
           title="Total Requests"
           value={billableFilteredRequests.length}
@@ -1719,12 +1721,12 @@ export function Dashboard() {
       </div>
 
       {/* Activity Insights Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Scorecard
           title="Most Active Day"
           value={
             <div>
-              <div className="text-2xl font-bold">
+              <div>
                 {mostActiveDay.displayText}
               </div>
               {mostActiveDay.subtitle && (
@@ -1802,37 +1804,41 @@ export function Dashboard() {
       </Card>
 
       {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-8 md:grid-cols-5">
+      <div className="grid gap-8 lg:grid-cols-5">
         {filteredCosts && (
-          <Card className="flex flex-col h-full md:col-span-3">
-            <CardHeader>
-              <CardTitle>Cost Calculation</CardTitle>
-              <CardDescription>
-                {selectedMonth === 'all'
-                  ? `Monthly breakdown for ${selectedYear}`
-                  : 'Cost breakdown by service tier (0.5 hour increments)'}
-              </CardDescription>
-              <div className="flex gap-1 mt-2">
-                <button
-                  className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
-                    costViewType === 'table'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  onClick={() => setCostViewType('table')}
-                >
-                  Table
-                </button>
-                <button
-                  className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
-                    costViewType === 'chart'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  onClick={() => setCostViewType('chart')}
-                >
-                  Chart
-                </button>
+          <Card className="flex flex-col h-full lg:col-span-3">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Cost Calculation</CardTitle>
+                  <CardDescription className="text-xs mt-1">
+                    {selectedMonth === 'all'
+                      ? `Monthly breakdown for ${selectedYear}`
+                      : 'Cost breakdown by service tier (0.5 hour increments)'}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-0.5">
+                  <button
+                    className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
+                      costViewType === 'table'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                    onClick={() => setCostViewType('table')}
+                  >
+                    Table
+                  </button>
+                  <button
+                    className={`px-2.5 py-1 text-xs rounded-r-md transition-colors ${
+                      costViewType === 'chart'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                    onClick={() => setCostViewType('chart')}
+                  >
+                    Chart
+                  </button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
@@ -1841,41 +1847,41 @@ export function Dashboard() {
                 selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
                   // Monthly breakdown view - Urgency by Month
                   <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Urgency</th>
+                      <tr className="border-b border-border/60">
+                        <th className="text-left py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">Urgency</th>
                         {monthlyCosts.map((monthData) => (
-                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">
+                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">
                             {monthData.month.substring(0, 3)}
                           </th>
                         ))}
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Total</th>
+                        <th className="text-right py-2 px-3 font-normal text-xs uppercase tracking-wider text-muted-foreground">Total</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="text-xs">
                       {/* Promotion Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Promotion</td>
+                      <tr className="border-b border-border/40 hover:bg-muted/30">
+                        <td className="py-2 px-3 font-medium">Promotion</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-2 px-3">
                             {monthData.costs.promotionalCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(monthData.costs.promotionalCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-2 px-3 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(total)}</span>
                               </div>
@@ -1884,21 +1890,21 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* Low Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Low</td>
+                      <tr className="border-b border-border/40 hover:bg-muted/30">
+                        <td className="py-2 px-3 font-medium">Low</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-2 px-3">
                             {monthData.costs.regularCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(monthData.costs.regularCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-2 px-3 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
@@ -1913,27 +1919,27 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* Medium Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Medium</td>
+                      <tr className="border-b border-border/40 hover:bg-muted/30">
+                        <td className="py-2 px-3 font-medium">Medium</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-2 px-3">
                             {monthData.costs.sameDayCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-2 px-3 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(total)}</span>
                               </div>
@@ -1942,27 +1948,27 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* High Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">High</td>
+                      <tr className="border-b border-border/40 hover:bg-muted/30">
+                        <td className="py-2 px-3 font-medium">High</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-2 px-3">
                             {monthData.costs.emergencyCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
                               </div>
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-2 px-3 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center gap-1">
                                 <span>$</span>
                                 <span>{formatCurrency(total)}</span>
                               </div>
@@ -1971,18 +1977,18 @@ export function Dashboard() {
                         </td>
                       </tr>
                       {/* Total Row */}
-                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-3 px-4">Total</td>
+                      <tr className="bg-muted/50 font-semibold">
+                        <td className="py-2 px-3">Total</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            <div className="flex justify-between items-center">
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-2 px-3">
+                            <div className="flex justify-between items-center gap-1">
                               <span>$</span>
                               <span>{formatCurrency(monthData.costs.totalCost)}</span>
                             </div>
                           </td>
                         ))}
-                        <td className="py-3 px-4">
-                          <div className="flex justify-between items-center">
+                        <td className="py-2 px-3">
+                          <div className="flex justify-between items-center gap-1">
                             <span>$</span>
                             <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
                           </div>
@@ -2407,7 +2413,7 @@ export function Dashboard() {
           </Card>
         )}
 
-        <Card className="md:col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Request Categories</CardTitle>
             <CardDescription>Distribution of request types</CardDescription>
@@ -3123,7 +3129,7 @@ export function Dashboard() {
               <div className="flex items-center space-x-2">
                 <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
                 <Archive className="w-4 h-4 text-muted-foreground" />
-                <h3 className="font-semibold text-muted-foreground">
+                <h3 className="text-sm font-semibold text-muted-foreground">
                   Archived Requests ({archivedRequests.length})
                 </h3>
               </div>
@@ -3239,6 +3245,7 @@ The request will be completely removed and cannot be recovered.`}
         onCancel={cancelDelete}
         isDestructive={!apiAvailable}
       />
+        </div>
       </div>
     </div>
   );
