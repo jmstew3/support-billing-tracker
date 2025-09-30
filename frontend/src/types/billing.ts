@@ -12,7 +12,9 @@ export interface BillableTicket {
   urgency: string;
   hours: number;
   rate: number; // Dollars per hour based on urgency
-  amount: number; // hours × rate
+  amount: number; // hours × rate (gross amount)
+  freeHoursApplied?: number; // Free hours credited to this ticket
+  netAmount?: number; // amount - (freeHoursApplied × rate)
   source: 'sms' | 'ticket' | 'email' | 'phone';
 }
 
@@ -35,7 +37,10 @@ export interface MonthlyBillingSummary {
   month: string; // "YYYY-MM" format
 
   // Tickets data
-  ticketsRevenue: number;
+  ticketsRevenue: number; // Net revenue after free hours
+  ticketsGrossRevenue: number; // Revenue before free hours
+  ticketsFreeHoursApplied: number; // Free hours used (0-10)
+  ticketsFreeHoursSavings: number; // Dollar amount saved from free hours
   ticketsCount: number;
   ticketDetails: BillableTicket[];
 
@@ -51,7 +56,7 @@ export interface MonthlyBillingSummary {
   hostingDetails: HostingCharge[];
 
   // Combined totals
-  totalRevenue: number; // Sum of all three sources
+  totalRevenue: number; // Sum of all three sources (after free hours)
 }
 
 /**

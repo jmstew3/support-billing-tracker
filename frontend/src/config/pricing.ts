@@ -59,3 +59,7 @@ export const RATES = {
 };
 
 export const DEFAULT_HOURS = PRICING_CONFIG.defaultHoursPerRequest;
+
+// Free support hours policy (starting June 2025)
+export const FREE_HOURS_PER_MONTH = 10;
+export const FREE_HOURS_START_DATE = '2025-06'; // YYYY-MM format

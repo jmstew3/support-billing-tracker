@@ -108,6 +108,12 @@ export function BillingOverview() {
           totalHostingRevenue: filteredData.reduce((sum, m) => sum + m.hostingRevenue, 0),
         };
 
+  // Calculate free hours savings for display
+  const totalFreeHoursSavings =
+    selectedMonth === 'all'
+      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0) || 0
+      : filteredData.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0);
+
   if (loading) {
     return <LoadingState variant="overview" />;
   }
@@ -176,19 +182,23 @@ export function BillingOverview() {
             <Scorecard
               title="Support Tickets"
               value={formatCurrency(displayTotals?.totalTicketsRevenue || 0)}
-              icon={<Ticket className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-              description="Billable hours from tickets"
+              icon={<Ticket className="h-4 w-4 text-muted-foreground" />}
+              description={
+                totalFreeHoursSavings > 0
+                  ? `After ${formatCurrency(totalFreeHoursSavings)} free hours credit`
+                  : 'Billable hours from tickets'
+              }
             />
             <Scorecard
               title="Project Revenue"
               value={formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
-              icon={<FolderKanban className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
+              icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
               description="Ready to invoice projects"
             />
             <Scorecard
               title="Hosting MRR"
               value={formatCurrency(displayTotals?.totalHostingRevenue || 0)}
-              icon={<Server className="h-4 w-4 text-green-600 dark:text-green-400" />}
+              icon={<Server className="h-4 w-4 text-muted-foreground" />}
               description="Net hosting revenue"
             />
           </div>
@@ -403,6 +413,8 @@ interface SectionProps {
 }
 
 function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
+  const hasFreeHours = monthData.ticketsFreeHoursApplied > 0;
+
   return (
     <>
       <tr
@@ -420,6 +432,11 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <span className="font-semibold text-sm">
                 Support Tickets ({monthData.ticketsCount})
               </span>
+              {hasFreeHours && (
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  ({monthData.ticketsFreeHoursApplied}h free applied)
+                </span>
+              )}
             </div>
             <span className="font-semibold text-blue-600 dark:text-blue-400">
               {formatCurrency(monthData.ticketsRevenue)}
@@ -428,21 +445,61 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
         </td>
       </tr>
 
-      {isExpanded &&
-        monthData.ticketDetails.map((ticket) => (
-          <tr key={ticket.id} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-12 text-xs text-muted-foreground">{ticket.date}</td>
-            <td colSpan={2} className="py-2 px-4 text-xs">
-              {ticket.description}
-            </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-              {ticket.hours}h × {formatCurrency(ticket.rate)}/hr
-            </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold">
-              {formatCurrency(ticket.amount)}
-            </td>
-          </tr>
-        ))}
+      {isExpanded && (
+        <>
+          {/* Free Hours Summary Row (if applicable) */}
+          {hasFreeHours && (
+            <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
+                Free Support Hours Benefit
+              </td>
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+                Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
+              </td>
+              <td className="py-2 px-4 text-right text-xs">
+                <div className="text-green-600 dark:text-green-400 font-semibold">
+                  -{formatCurrency(monthData.ticketsFreeHoursSavings)}
+                </div>
+                <div className="text-muted-foreground text-[10px]">
+                  ({monthData.ticketsFreeHoursApplied} free hrs)
+                </div>
+              </td>
+            </tr>
+          )}
+
+          {/* Individual Ticket Rows */}
+          {monthData.ticketDetails.map((ticket) => (
+            <tr key={ticket.id} className="border-b hover:bg-muted/30">
+              <td className="py-2 px-12 text-xs text-muted-foreground">{ticket.date}</td>
+              <td colSpan={2} className="py-2 px-4 text-xs">
+                {ticket.description}
+                {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
+                  <span className="ml-2 text-[10px] text-green-600 dark:text-green-400 font-medium">
+                    ({ticket.freeHoursApplied}h free)
+                  </span>
+                )}
+              </td>
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+                {ticket.hours}h × {formatCurrency(ticket.rate)}/hr
+              </td>
+              <td className="py-2 px-4 text-right text-sm">
+                {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
+                  <div className="flex flex-col items-end">
+                    <span className="text-muted-foreground line-through text-xs">
+                      {formatCurrency(ticket.amount)}
+                    </span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">
+                      {formatCurrency(ticket.netAmount || ticket.amount)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="font-semibold">{formatCurrency(ticket.amount)}</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </>
+      )}
     </>
   );
 }
