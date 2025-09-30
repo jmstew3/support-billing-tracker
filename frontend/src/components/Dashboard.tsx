@@ -1716,7 +1716,7 @@ export function Dashboard() {
           title="High Priority"
           value={billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length}
           description={`${billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable`}
-          icon={<AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
         />
       </div>
 

@@ -1,7 +1,7 @@
 import { fetchRequests } from '../utils/api';
 import { fetchProjects, convertMicrosToDollars } from './projectsApi';
 import { fetchWebsiteProperties, generateMonthlyBreakdown } from './hostingApi';
-import { PRICING_CONFIG } from '../config/pricing';
+import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE } from '../config/pricing';
 import type {
   MonthlyBillingSummary,
   BillingSummary,
@@ -44,8 +44,20 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       }
       const monthData = monthlyMap.get(month)!;
       monthData.ticketDetails.push(ticket);
-      monthData.ticketsRevenue += ticket.amount;
+      monthData.ticketsGrossRevenue += ticket.amount; // Track gross before free hours
       monthData.ticketsCount++;
+    });
+
+    // Apply free hours to eligible months (June 2025 onwards)
+    monthlyMap.forEach((monthData, month) => {
+      if (month >= FREE_HOURS_START_DATE && monthData.ticketDetails.length > 0) {
+        applyFreeHours(monthData);
+      } else {
+        // For months before free hours policy, net = gross
+        monthData.ticketsRevenue = monthData.ticketsGrossRevenue;
+        monthData.ticketsFreeHoursApplied = 0;
+        monthData.ticketsFreeHoursSavings = 0;
+      }
     });
 
     // Process projects by month
@@ -159,12 +171,54 @@ function transformProjectsToBillable(projects: Project[]): BillableProject[] {
 }
 
 /**
+ * Apply free hours to tickets in a month
+ * Distributes up to 10 free hours across tickets, prioritizing lower rates to maximize savings
+ */
+function applyFreeHours(monthData: MonthlyBillingSummary): void {
+  // Sort tickets by rate (lowest first) to maximize savings
+  const sortedTickets = [...monthData.ticketDetails].sort((a, b) => a.rate - b.rate);
+
+  let remainingFreeHours = FREE_HOURS_PER_MONTH;
+  let totalSavings = 0;
+
+  // Apply free hours to each ticket
+  sortedTickets.forEach((ticket) => {
+    if (remainingFreeHours <= 0) {
+      // No more free hours available
+      ticket.freeHoursApplied = 0;
+      ticket.netAmount = ticket.amount;
+      return;
+    }
+
+    // Calculate how many free hours to apply to this ticket
+    const freeHoursForTicket = Math.min(ticket.hours, remainingFreeHours);
+    const savings = freeHoursForTicket * ticket.rate;
+
+    // Update ticket with free hours
+    ticket.freeHoursApplied = freeHoursForTicket;
+    ticket.netAmount = ticket.amount - savings;
+
+    // Update remaining free hours and total savings
+    remainingFreeHours -= freeHoursForTicket;
+    totalSavings += savings;
+  });
+
+  // Update month summary with free hours calculations
+  monthData.ticketsFreeHoursApplied = FREE_HOURS_PER_MONTH - remainingFreeHours;
+  monthData.ticketsFreeHoursSavings = totalSavings;
+  monthData.ticketsRevenue = monthData.ticketsGrossRevenue - totalSavings;
+}
+
+/**
  * Create empty month summary object
  */
 function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
   return {
     month,
     ticketsRevenue: 0,
+    ticketsGrossRevenue: 0,
+    ticketsFreeHoursApplied: 0,
+    ticketsFreeHoursSavings: 0,
     ticketsCount: 0,
     ticketDetails: [],
     projectsRevenue: 0,
