@@ -27,18 +27,40 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
     const max = Math.max(...data.map(d => d.value), 1);
     const totalRequests = data.reduce((acc, item) => acc + item.value, 0);
 
-    // Calculate domain max rounded up to nearest 50
-    const calculateDomainMax = (value: number) => {
-      if (value <= 0) return 50;
-      const remainder = value % 50;
-      return remainder === 0 ? value : value + (50 - remainder);
+    // Calculate domain max and tick increment based on data size
+    const calculateDomainAndTicks = (value: number) => {
+      if (value <= 0) return { domainMax: 50, tickIncrement: 10 };
+
+      // Determine appropriate increment based on max value
+      let tickIncrement: number;
+      let domainMax: number;
+
+      if (value <= 10) {
+        tickIncrement = 2;
+        domainMax = Math.ceil(value / 2) * 2;
+      } else if (value <= 25) {
+        tickIncrement = 5;
+        domainMax = Math.ceil(value / 5) * 5;
+      } else if (value <= 50) {
+        tickIncrement = 10;
+        domainMax = Math.ceil(value / 10) * 10;
+      } else if (value <= 100) {
+        tickIncrement = 20;
+        domainMax = Math.ceil(value / 20) * 20;
+      } else {
+        tickIncrement = 50;
+        const remainder = value % 50;
+        domainMax = remainder === 0 ? value : value + (50 - remainder);
+      }
+
+      return { domainMax, tickIncrement };
     };
 
-    const calculatedDomainMax = calculateDomainMax(max);
+    const { domainMax: calculatedDomainMax, tickIncrement } = calculateDomainAndTicks(max);
 
-    // Generate tick values (0, 50, 100, 150, etc.)
+    // Generate tick values with appropriate increment
     const tickValues = [];
-    for (let i = 0; i <= calculatedDomainMax; i += 50) {
+    for (let i = 0; i <= calculatedDomainMax; i += tickIncrement) {
       tickValues.push(i);
     }
 

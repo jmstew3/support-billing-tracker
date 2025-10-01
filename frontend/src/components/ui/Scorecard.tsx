@@ -47,13 +47,13 @@ export const Scorecard = React.forwardRef<HTMLDivElement, ScorecardProps>(
 
     return (
       <Card ref={ref} className={cn(scorecardVariants({ variant, size, hover }), "transition-all duration-200", className)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-5 pb-3">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-7 pb-4">
           <CardTitle className={cn(scorecardTitleVariants({ size }), "text-sm font-medium text-muted-foreground", titleClassName)}>
             {title}
           </CardTitle>
           {icon && <div className="text-muted-foreground opacity-70">{icon}</div>}
         </CardHeader>
-        <CardContent className="p-5 pt-0">
+        <CardContent className="p-6 pt-0 pb-8">
           <div className={cn(scorecardValueVariants({ size: valueSizeMap[size] }), "text-lg font-semibold text-foreground", valueClassName)}>
             {value}
           </div>
