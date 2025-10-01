@@ -1603,7 +1603,7 @@ export function Dashboard() {
               filteredCosts?.freeHoursSavings > 0 ? (
                 <div className="flex items-center gap-2">
                   <span>{formatCurrency(filteredCosts.netTotalCost)}</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                     <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                     {filteredCosts.freeHoursApplied}h
                   </span>
@@ -1718,9 +1718,10 @@ export function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <CardTitle>Cost Calculation</CardTitle>
+                    <CardTitle>Support Ticket Cost Tracker</CardTitle>
                     {filteredCosts.freeHoursSavings > 0 && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                        <Zap className="h-3 w-3 inline mr-1" />
                         {filteredCosts.freeHoursApplied}h free
                       </span>
                     )}
@@ -1755,11 +1756,11 @@ export function Dashboard() {
                       <tr className="border-b border-border">
                         <th className="text-left py-4 px-4 font-semibold text-sm">Urgency</th>
                         {monthlyCosts.map((monthData) => (
-                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-4 px-4 font-semibold text-sm border-l border-border/40">
+                          <th key={`${monthData.year}-${monthData.month}`} className="text-left py-4 px-4 font-semibold text-sm border-l border-border/40">
                             {monthData.month.substring(0, 3)}
                           </th>
                         ))}
-                        <th className="text-right py-4 px-4 font-semibold text-sm border-l border-border/40">Total</th>
+                        <th className="text-left py-4 px-4 font-semibold text-sm border-l border-border/40">Total</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -1767,9 +1768,9 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Promotion</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right border-l border-border/40">
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
                             {monthData.costs.promotionalCost === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(monthData.costs.promotionalCost).symbol}</span>
@@ -1778,11 +1779,11 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(total).symbol}</span>
@@ -1796,9 +1797,9 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Low</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right border-l border-border/40">
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
                             {monthData.costs.regularCost === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(monthData.costs.regularCost).symbol}</span>
@@ -1807,11 +1808,11 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(total).symbol}</span>
@@ -1825,9 +1826,9 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Medium</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right border-l border-border/40">
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
                             {monthData.costs.sameDayCost === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(monthData.costs.sameDayCost).symbol}</span>
@@ -1836,11 +1837,11 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(total).symbol}</span>
@@ -1854,9 +1855,9 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">High</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right border-l border-border/40">
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
                             {monthData.costs.emergencyCost === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(monthData.costs.emergencyCost).symbol}</span>
@@ -1865,11 +1866,11 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
-                              <div className="text-center">-</div>
+                              '-'
                             ) : (
                               <>
                                 <span>{formatCurrencyAccounting(total).symbol}</span>
@@ -1883,14 +1884,18 @@ export function Dashboard() {
                       <tr className="bg-muted/50 font-semibold">
                         <td className="py-5 px-4">Total</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right border-l border-border/40">
-                            <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
-                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+                              <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
+                            </span>
                           </td>
                         ))}
-                        <td className="py-5 px-4 text-right border-l border-border/40">
-                          <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
-                          <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
+                        <td className="py-5 px-4 text-left border-l border-border/40">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+                            <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
+                          </span>
                         </td>
                       </tr>
                     </tbody>
@@ -1903,21 +1908,21 @@ export function Dashboard() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-4 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
-                        <th className="text-center py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Rate</th>
-                        <th className="text-right py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Hours</th>
-                        <th className="text-right py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Cost</th>
+                        <th className="text-left py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Rate</th>
+                        <th className="text-left py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Hours</th>
+                        <th className="text-left py-4 px-4 font-medium text-sm text-muted-foreground border-l border-border/40">Cost</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">Promotion</td>
-                        <td className="text-center py-5 px-4 border-l border-border/40">$125/hr</td>
-                        <td className="text-right py-5 px-4 font-semibold border-l border-border/40">
+                        <td className="text-left py-5 px-4 border-l border-border/40">$125/hr</td>
+                        <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.promotionalHours === 0 ? '-' : filteredCosts.promotionalHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {filteredCosts.promotionalCost === 0 ? (
-                            <div className="text-center">-</div>
+                            '-'
                           ) : (
                             <>
                               <span>{formatCurrencyAccounting(filteredCosts.promotionalCost).symbol}</span>
@@ -1928,13 +1933,13 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">Low</td>
-                        <td className="text-center py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                        <td className="text-right py-5 px-4 font-semibold border-l border-border/40">
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[0].rate}/hr</td>
+                        <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {filteredCosts.regularCost === 0 ? (
-                            <div className="text-center">-</div>
+                            '-'
                           ) : (
                             <>
                               <span>{formatCurrencyAccounting(filteredCosts.regularCost).symbol}</span>
@@ -1945,13 +1950,13 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">Medium</td>
-                        <td className="text-center py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                        <td className="text-right py-5 px-4 font-semibold border-l border-border/40">
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[1].rate}/hr</td>
+                        <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {filteredCosts.sameDayCost === 0 ? (
-                            <div className="text-center">-</div>
+                            '-'
                           ) : (
                             <>
                               <span>{formatCurrencyAccounting(filteredCosts.sameDayCost).symbol}</span>
@@ -1962,13 +1967,13 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">High</td>
-                        <td className="text-center py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                        <td className="text-right py-5 px-4 font-semibold border-l border-border/40">
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[2].rate}/hr</td>
+                        <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold text-right border-l border-border/40">
+                        <td className="py-5 px-4 font-semibold text-left border-l border-border/40">
                           {filteredCosts.emergencyCost === 0 ? (
-                            <div className="text-center">-</div>
+                            '-'
                           ) : (
                             <>
                               <span>{formatCurrencyAccounting(filteredCosts.emergencyCost).symbol}</span>
@@ -1981,11 +1986,11 @@ export function Dashboard() {
                       {filteredCosts.freeHoursSavings > 0 && (
                         <tr className="bg-green-50 dark:bg-green-950/20 border-b">
                           <td className="py-3 px-4 text-sm font-medium">Free Support Hours Benefit</td>
-                          <td className="text-center py-3 px-4 text-sm text-muted-foreground border-l border-border/40">-</td>
-                          <td className="text-right py-3 px-4 text-sm text-muted-foreground border-l border-border/40">
+                          <td className="text-left py-3 px-4 text-sm text-muted-foreground border-l border-border/40">-</td>
+                          <td className="text-left py-3 px-4 text-sm text-muted-foreground border-l border-border/40">
                             {filteredCosts.freeHoursApplied}h free
                           </td>
-                          <td className="py-3 px-4 text-right border-l border-border/40">
+                          <td className="py-3 px-4 text-left border-l border-border/40">
                             <div className="text-green-600 dark:text-green-400 font-semibold text-sm">
                               -<span>{formatCurrencyAccounting(filteredCosts.freeHoursSavings).symbol}</span>
                               <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.freeHoursSavings).amount}</span>
@@ -1995,11 +2000,13 @@ export function Dashboard() {
                       )}
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
                         <td className="py-5 px-4">{filteredCosts.freeHoursSavings > 0 ? 'Net Total' : 'Total'}</td>
-                        <td className="text-center py-5 px-4 border-l border-border/40">-</td>
-                        <td className="text-right py-5 px-4 border-l border-border/40">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="py-5 px-4 text-right border-l border-border/40">
-                          <span>{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).symbol}</span>
-                          <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).amount}</span>
+                        <td className="text-left py-5 px-4 border-l border-border/40">-</td>
+                        <td className="text-left py-5 px-4 border-l border-border/40">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
+                        <td className="py-5 px-4 text-left border-l border-border/40">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+                            <span>{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).amount}</span>
+                          </span>
                         </td>
                       </tr>
                     </tbody>

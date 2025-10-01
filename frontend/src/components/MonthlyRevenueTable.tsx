@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Calendar, AlertTriangle, Zap } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
-import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
+import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../config/pricing';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { Project } from '../types/project';
 
@@ -73,6 +73,10 @@ export function MonthlyRevenueTable({
         return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800';
       case 'WEBSITE':
         return 'bg-cyan-100 text-cyan-800 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:ring-cyan-800';
+      case 'MULTI_FORM':
+        return 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800';
+      case 'BASIC_FORM':
+        return 'bg-teal-100 text-teal-800 ring-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:ring-teal-800';
       default:
         return 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-800';
     }
@@ -149,10 +153,42 @@ export function MonthlyRevenueTable({
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                               {monthData.projectCount} {monthData.projectCount === 1 ? 'project' : 'projects'}
                             </span>
+
+                            {/* Calculate and display credit badges for this month */}
+                            {(() => {
+                              if (monthData.month < FREE_LANDING_PAGE_START_DATE) return null;
+
+                              const landingPages = monthData.projects.filter(p => p.projectCategory === 'LANDING_PAGE');
+                              const multiForms = monthData.projects.filter(p => p.projectCategory === 'MULTI_FORM');
+                              const basicForms = monthData.projects.filter(p => p.projectCategory === 'BASIC_FORM');
+
+                              return (
+                                <>
+                                  {landingPages.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                      <Zap className="h-3 w-3 inline mr-1" />
+                                      1 Free Landing Page Credit
+                                    </span>
+                                  )}
+                                  {multiForms.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                      <Zap className="h-3 w-3 inline mr-1" />
+                                      1 Free Multi-Form
+                                    </span>
+                                  )}
+                                  {basicForms.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                      <Zap className="h-3 w-3 inline mr-1" />
+                                      {Math.min(basicForms.length, FREE_BASIC_FORMS_PER_MONTH)} Free Basic Form{Math.min(basicForms.length, FREE_BASIC_FORMS_PER_MONTH) > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
-                          <div className="font-bold text-base tabular-nums">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
                             {formatCurrency(monthData.revenue)}
-                          </div>
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -163,14 +199,35 @@ export function MonthlyRevenueTable({
                         {monthData.projects.map((project, index) => {
                           const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
 
-                          // Determine if this is the first landing page in an eligible month
+                          // Determine if this project receives a free credit
                           const isEligibleMonth = monthData.month >= FREE_LANDING_PAGE_START_DATE;
+
+                          // Check landing page credit (1st landing page)
                           const isLandingPage = project.projectCategory === 'LANDING_PAGE';
                           const landingPageIndex = monthData.projects
                             .slice(0, index + 1)
                             .filter(p => p.projectCategory === 'LANDING_PAGE')
                             .length;
-                          const isFreeCredit = isEligibleMonth && isLandingPage && landingPageIndex === 1;
+                          const isFreeLandingPage = isEligibleMonth && isLandingPage && landingPageIndex === 1;
+
+                          // Check multi-form credit (1st multi-form)
+                          const isMultiForm = project.projectCategory === 'MULTI_FORM';
+                          const multiFormIndex = monthData.projects
+                            .slice(0, index + 1)
+                            .filter(p => p.projectCategory === 'MULTI_FORM')
+                            .length;
+                          const isFreeMultiForm = isEligibleMonth && isMultiForm && multiFormIndex === 1;
+
+                          // Check basic form credit (first 5 basic forms)
+                          const isBasicForm = project.projectCategory === 'BASIC_FORM';
+                          const basicFormIndex = monthData.projects
+                            .slice(0, index + 1)
+                            .filter(p => p.projectCategory === 'BASIC_FORM')
+                            .length;
+                          const isFreeBasicForm = isEligibleMonth && isBasicForm && basicFormIndex <= 5;
+
+                          // Combine all checks
+                          const isFreeCredit = isFreeLandingPage || isFreeMultiForm || isFreeBasicForm;
 
                           return (
                             <tr
@@ -183,7 +240,7 @@ export function MonthlyRevenueTable({
                                   <SiteFavicon websiteUrl={project.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{project.name}</div>
                                   {isFreeCredit && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                                       <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                                       FREE
                                     </span>

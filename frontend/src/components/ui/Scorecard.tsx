@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card';
 interface ScorecardProps extends ScorecardVariants, ScorecardValueVariants {
   title: string;
   value: string | number | React.ReactNode;
-  description?: string;
+  description?: string | React.ReactNode;
   icon?: React.ReactNode;
   className?: string;
   valueClassName?: string;

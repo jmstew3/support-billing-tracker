@@ -1,7 +1,7 @@
 import { fetchRequests } from '../utils/api';
 import { fetchProjects, convertMicrosToDollars } from './projectsApi';
 import { fetchWebsiteProperties, generateMonthlyBreakdown } from './hostingApi';
-import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE, FREE_LANDING_PAGES_PER_MONTH, FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
+import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE, FREE_LANDING_PAGES_PER_MONTH, FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_MULTI_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE } from '../config/pricing';
 import type {
   MonthlyBillingSummary,
   BillingSummary,
@@ -78,11 +78,17 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
     monthlyMap.forEach((monthData, month) => {
       if (month >= FREE_LANDING_PAGE_START_DATE && monthData.projectDetails.length > 0) {
         applyFreeLandingPage(monthData);
+        applyFreeMultiForm(monthData);
+        applyFreeBasicForms(monthData);
       } else {
         // For months before free landing page policy, net = gross
         monthData.projectsRevenue = monthData.projectsGrossRevenue;
         monthData.projectsLandingPageCredit = 0;
         monthData.projectsLandingPageSavings = 0;
+        monthData.projectsMultiFormCredit = 0;
+        monthData.projectsMultiFormSavings = 0;
+        monthData.projectsBasicFormCredit = 0;
+        monthData.projectsBasicFormSavings = 0;
       }
     });
 
@@ -259,6 +265,77 @@ function applyFreeLandingPage(monthData: MonthlyBillingSummary): void {
 }
 
 /**
+ * Apply free multi-form credit to first MULTI_FORM project in a month
+ * Client gets 1 free multi-form per month starting June 2025
+ */
+function applyFreeMultiForm(monthData: MonthlyBillingSummary): void {
+  // Find first multi-form project (MULTI_FORM category)
+  const multiFormProjects = monthData.projectDetails.filter(
+    (proj) => proj.category === 'MULTI_FORM'
+  );
+
+  if (multiFormProjects.length > 0 && FREE_MULTI_FORMS_PER_MONTH > 0) {
+    // Apply free credit to first multi-form
+    const firstMultiForm = multiFormProjects[0];
+    const originalAmount = firstMultiForm.amount;
+
+    // Mark as free credit and store original amount
+    firstMultiForm.isFreeCredit = true;
+    firstMultiForm.originalAmount = originalAmount;
+    firstMultiForm.amount = 0;
+
+    // Update month summary
+    monthData.projectsMultiFormCredit = 1;
+    monthData.projectsMultiFormSavings = originalAmount;
+    // Update net revenue by subtracting this savings too
+    monthData.projectsRevenue -= originalAmount;
+  } else {
+    // No multi-forms or no credits available
+    monthData.projectsMultiFormCredit = 0;
+    monthData.projectsMultiFormSavings = 0;
+  }
+}
+
+/**
+ * Apply free basic form credits to first 5 BASIC_FORM projects in a month
+ * Client gets 5 free basic forms per month starting June 2025
+ */
+function applyFreeBasicForms(monthData: MonthlyBillingSummary): void {
+  // Find all basic form projects (BASIC_FORM category)
+  const basicFormProjects = monthData.projectDetails.filter(
+    (proj) => proj.category === 'BASIC_FORM'
+  );
+
+  if (basicFormProjects.length > 0 && FREE_BASIC_FORMS_PER_MONTH > 0) {
+    // Apply free credits to first N basic forms (up to 5)
+    const creditsToApply = Math.min(basicFormProjects.length, FREE_BASIC_FORMS_PER_MONTH);
+    let totalSavings = 0;
+
+    for (let i = 0; i < creditsToApply; i++) {
+      const basicForm = basicFormProjects[i];
+      const originalAmount = basicForm.amount;
+
+      // Mark as free credit and store original amount
+      basicForm.isFreeCredit = true;
+      basicForm.originalAmount = originalAmount;
+      basicForm.amount = 0;
+
+      totalSavings += originalAmount;
+    }
+
+    // Update month summary
+    monthData.projectsBasicFormCredit = creditsToApply;
+    monthData.projectsBasicFormSavings = totalSavings;
+    // Update net revenue by subtracting total savings
+    monthData.projectsRevenue -= totalSavings;
+  } else {
+    // No basic forms or no credits available
+    monthData.projectsBasicFormCredit = 0;
+    monthData.projectsBasicFormSavings = 0;
+  }
+}
+
+/**
  * Create empty month summary object
  */
 function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
@@ -274,6 +351,10 @@ function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
     projectsGrossRevenue: 0,
     projectsLandingPageCredit: 0,
     projectsLandingPageSavings: 0,
+    projectsMultiFormCredit: 0,
+    projectsMultiFormSavings: 0,
+    projectsBasicFormCredit: 0,
+    projectsBasicFormSavings: 0,
     projectsCount: 0,
     projectDetails: [],
     hostingRevenue: 0,

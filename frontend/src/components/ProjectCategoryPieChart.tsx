@@ -11,6 +11,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   'MIGRATION': '#1f2937', // gray-800 (darkest)
   'LANDING_PAGE': '#4b5563', // gray-600 (medium)
   'WEBSITE': '#9ca3af', // gray-400 (lightest)
+  'MULTI_FORM': '#f97316', // orange-500 (vibrant)
+  'BASIC_FORM': '#14b8a6', // teal-500 (vibrant)
 };
 
 export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartProps) {
@@ -20,6 +22,8 @@ export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartPro
       'MIGRATION': { count: 0, revenue: 0 },
       'LANDING_PAGE': { count: 0, revenue: 0 },
       'WEBSITE': { count: 0, revenue: 0 },
+      'MULTI_FORM': { count: 0, revenue: 0 },
+      'BASIC_FORM': { count: 0, revenue: 0 },
     };
 
     projects.forEach(project => {
@@ -53,6 +57,10 @@ export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartPro
         return 'Migrations';
       case 'WEBSITE':
         return 'Websites';
+      case 'MULTI_FORM':
+        return 'Multi-Forms';
+      case 'BASIC_FORM':
+        return 'Basic Forms';
       default:
         return category;
     }

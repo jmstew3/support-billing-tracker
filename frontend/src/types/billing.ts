@@ -52,6 +52,10 @@ export interface MonthlyBillingSummary {
   projectsGrossRevenue: number; // Revenue before free landing page credit
   projectsLandingPageCredit: number; // Number of free landing page credits applied (0-1)
   projectsLandingPageSavings: number; // Dollar amount saved from free landing page
+  projectsMultiFormCredit: number; // Number of free multi-form credits applied (0-1)
+  projectsMultiFormSavings: number; // Dollar amount saved from free multi-form
+  projectsBasicFormCredit: number; // Number of free basic form credits applied (0-5)
+  projectsBasicFormSavings: number; // Dollar amount saved from free basic forms
   projectsCount: number;
   projectDetails: BillableProject[];
 

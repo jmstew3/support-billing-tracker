@@ -23,7 +23,7 @@ export interface Project {
   // Status Fields
   hostingStatus: 'ACTIVE' | 'INACTIVE';
   invoiceStatus: 'NOT_READY' | 'READY' | 'INVOICED' | 'PAID';
-  projectCategory: 'MIGRATION' | 'LANDING_PAGE' | 'WEBSITE';
+  projectCategory: 'MIGRATION' | 'LANDING_PAGE' | 'WEBSITE' | 'MULTI_FORM' | 'BASIC_FORM';
 
   // Financial
   revenueAmount: {
@@ -82,6 +82,6 @@ export interface FinancialSummary {
 export interface ProjectFilters {
   hostingStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
   invoiceStatus: 'ALL' | 'NOT_READY' | 'READY' | 'INVOICED' | 'PAID';
-  projectCategory: 'ALL' | 'MIGRATION' | 'LANDING_PAGE' | 'WEBSITE';
+  projectCategory: 'ALL' | 'MIGRATION' | 'LANDING_PAGE' | 'WEBSITE' | 'MULTI_FORM' | 'BASIC_FORM';
   searchQuery: string;
 }

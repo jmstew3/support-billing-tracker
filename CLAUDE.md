@@ -410,6 +410,60 @@ Three buttons control chart granularity:
 - `frontend/src/services/billingApi.ts` - Credit application logic
 - `frontend/src/components/BillingOverview.tsx` - Visual display
 
+### Free Multi-Form Policy (Starting June 2025)
+
+**Policy**: Client receives 1 free multi-form project per month
+
+**Implementation Details**:
+- **Effective Date**: June 2025 (`FREE_MULTI_FORM_START_DATE = '2025-06'`)
+- **Credit Amount**: 1 multi-form per month (`FREE_MULTI_FORMS_PER_MONTH = 1`)
+- **Eligibility**: Only applies to projects with category `MULTI_FORM`
+- **Application Logic**: Credit is applied to the **first** multi-form project completed in each month
+- **Configuration Location**: `frontend/src/config/pricing.ts`
+
+**How It Works**:
+1. System identifies all multi-form projects per month in `billingApi.ts`
+2. The first multi-form in each eligible month (June 2025+) receives a free credit
+3. Original amount stored in `originalAmount` field; project `amount` set to $0.00
+4. `isFreeCredit` flag set to `true`
+5. Month summary tracks `projectsMultiFormCredit` (0-1) and `projectsMultiFormSavings`
+
+**Visual Indicators**:
+- Green "FREE" badge next to project name
+- Strikethrough original price with $0.00 net amount in green
+- Projects section header shows "1 free multi-form" badge
+- Orange badge for category identification
+
+### Free Basic Form Policy (Starting June 2025)
+
+**Policy**: Client receives 5 free basic form projects per month
+
+**Implementation Details**:
+- **Effective Date**: June 2025 (`FREE_BASIC_FORM_START_DATE = '2025-06'`)
+- **Credit Amount**: 5 basic forms per month (`FREE_BASIC_FORMS_PER_MONTH = 5`)
+- **Eligibility**: Only applies to projects with category `BASIC_FORM`
+- **Application Logic**: Credits are applied to the **first 5** basic form projects completed in each month
+- **Configuration Location**: `frontend/src/config/pricing.ts`
+
+**How It Works**:
+1. System identifies all basic form projects per month in `billingApi.ts`
+2. The first 5 basic forms in each eligible month (June 2025+) receive free credits
+3. Original amounts stored; project `amount` values set to $0.00
+4. `isFreeCredit` flag set to `true` for each credited project
+5. Month summary tracks `projectsBasicFormCredit` (0-5) and `projectsBasicFormSavings`
+
+**Visual Indicators**:
+- Green "FREE" badge next to project names
+- Strikethrough original prices with $0.00 net amounts in green
+- Projects section header shows "X free basic form(s)" badge
+- Teal badge for category identification
+
+**Revenue Calculation (All Project Credits)**:
+- `projectsGrossRevenue`: Total before all free credits
+- `projectsRevenue`: Net revenue after all credits (landing page + multi-form + basic forms)
+- Credits tracked separately: `projectsLandingPageCredit`, `projectsMultiFormCredit`, `projectsBasicFormCredit`
+- Savings tracked separately: `projectsLandingPageSavings`, `projectsMultiFormSavings`, `projectsBasicFormSavings`
+
 ### Free Support Hours Policy (Starting June 2025)
 
 **Policy**: Client receives 10 free support hours per month
