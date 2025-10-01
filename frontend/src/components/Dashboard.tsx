@@ -22,7 +22,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { LoadingState } from './ui/LoadingState';
 import { ToggleGroup } from './ui/toggle-group';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency, formatCurrencyAccounting } from '../utils/currency';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -743,7 +743,14 @@ export function Dashboard() {
     return true;
   });
   const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
-  const filteredCosts = calculateCosts(billableFilteredRequests);
+
+  // Calculate current month string for free hours policy (YYYY-MM format)
+  const getCurrentMonthString = () => {
+    if (selectedMonth === 'all') return undefined;
+    return `${selectedYear}-${selectedMonth}`;
+  };
+
+  const filteredCosts = calculateCosts(billableFilteredRequests, getCurrentMonthString());
 
   // Calculate monthly costs when viewing all months
   const calculateMonthlyCosts = () => {
@@ -769,13 +776,13 @@ export function Dashboard() {
       }
     });
 
-    // Sort months and calculate costs for each
+    // Sort months and calculate costs for each (with month string for free hours)
     Array.from(requestsByMonth.keys())
       .sort()
       .forEach(key => {
         const [year, month] = key.split('-').map(Number);
         const monthRequests = requestsByMonth.get(key)!;
-        const costs = calculateCosts(monthRequests);
+        const costs = calculateCosts(monthRequests, key); // Pass YYYY-MM format
 
         monthlyCosts.push({
           month: monthNames[month - 1],
@@ -1557,8 +1564,30 @@ export function Dashboard() {
         <div className="flex-1">
           <Scorecard
             title="Total Cost"
-            value={`${formatCurrency(filteredCosts?.totalCost || 0)}`}
-            description="Tiered pricing"
+            value={
+              filteredCosts?.freeHoursSavings > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="line-through text-muted-foreground text-sm">
+                      {formatCurrency(filteredCosts.grossTotalCost)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                      {filteredCosts.freeHoursApplied}h free
+                    </span>
+                  </div>
+                  <span className="text-green-600 dark:text-green-400">
+                    {formatCurrency(filteredCosts.netTotalCost)}
+                  </span>
+                </div>
+              ) : (
+                formatCurrency(filteredCosts?.totalCost || 0)
+              )
+            }
+            description={
+              filteredCosts?.freeHoursSavings > 0
+                ? `After ${formatCurrency(filteredCosts.freeHoursSavings)} free hours credit`
+                : "Tiered pricing"
+            }
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
           />
         </div>
@@ -1659,10 +1688,19 @@ export function Dashboard() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Cost Calculation</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Cost Calculation</CardTitle>
+                    {filteredCosts.freeHoursSavings > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                        {filteredCosts.freeHoursApplied}h free
+                      </span>
+                    )}
+                  </div>
                   <CardDescription className="text-xs mt-1">
                     {selectedMonth === 'all'
                       ? `Monthly breakdown for ${selectedYear}`
+                      : filteredCosts.freeHoursSavings > 0
+                      ? `After ${formatCurrency(filteredCosts.freeHoursSavings)} free hours credit`
                       : 'Cost breakdown by service tier (0.5 hour increments)'}
                   </CardDescription>
                 </div>
@@ -1700,27 +1738,27 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Promotion</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-5 px-4">
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right">
                             {monthData.costs.promotionalCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.promotionalCost)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(monthData.costs.promotionalCost).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.promotionalCost).amount}</span>
+                              </>
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(total).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                              </>
                             );
                           })()}
                         </td>
@@ -1729,27 +1767,27 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Low</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-5 px-4">
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right">
                             {monthData.costs.regularCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.regularCost)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(monthData.costs.regularCost).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.regularCost).amount}</span>
+                              </>
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(total).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                              </>
                             );
                           })()}
                         </td>
@@ -1758,27 +1796,27 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">Medium</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-5 px-4">
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right">
                             {monthData.costs.sameDayCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.sameDayCost)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(monthData.costs.sameDayCost).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.sameDayCost).amount}</span>
+                              </>
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(total).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                              </>
                             );
                           })()}
                         </td>
@@ -1787,27 +1825,27 @@ export function Dashboard() {
                       <tr className="border-b border-border/40 hover:bg-muted/30">
                         <td className="py-5 px-4">High</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-5 px-4">
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right">
                             {monthData.costs.emergencyCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.emergencyCost)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(monthData.costs.emergencyCost).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.emergencyCost).amount}</span>
+                              </>
                             )}
                           </td>
                         ))}
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
-                              <div className="flex justify-between items-center gap-1">
-                                <span>$</span>
-                                <span className="tabular-nums text-right flex-1">{formatCurrency(total)}</span>
-                              </div>
+                              <>
+                                <span>{formatCurrencyAccounting(total).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                              </>
                             );
                           })()}
                         </td>
@@ -1816,18 +1854,14 @@ export function Dashboard() {
                       <tr className="bg-muted/50 font-semibold">
                         <td className="py-5 px-4">Total</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4">
-                            <div className="flex justify-between items-center gap-1">
-                              <span>$</span>
-                              <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.totalCost)}</span>
-                            </div>
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-right">
+                            <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
                           </td>
                         ))}
-                        <td className="py-5 px-4">
-                          <div className="flex justify-between items-center gap-1">
-                            <span>$</span>
-                            <span className="tabular-nums text-right flex-1">{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
-                          </div>
+                        <td className="py-5 px-4 text-right">
+                          <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -1852,14 +1886,14 @@ export function Dashboard() {
                         <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.promotionalHours === 0 ? '-' : filteredCosts.promotionalHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {filteredCosts.promotionalCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center gap-1">
-                              <span>$</span>
-                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.promotionalCost)}</span>
-                            </div>
+                            <>
+                              <span>{formatCurrencyAccounting(filteredCosts.promotionalCost).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.promotionalCost).amount}</span>
+                            </>
                           )}
                         </td>
                       </tr>
@@ -1869,14 +1903,14 @@ export function Dashboard() {
                         <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {filteredCosts.regularCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center gap-1">
-                              <span>$</span>
-                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.regularCost)}</span>
-                            </div>
+                            <>
+                              <span>{formatCurrencyAccounting(filteredCosts.regularCost).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.regularCost).amount}</span>
+                            </>
                           )}
                         </td>
                       </tr>
@@ -1886,14 +1920,14 @@ export function Dashboard() {
                         <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {filteredCosts.sameDayCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center gap-1">
-                              <span>$</span>
-                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.sameDayCost)}</span>
-                            </div>
+                            <>
+                              <span>{formatCurrencyAccounting(filteredCosts.sameDayCost).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.sameDayCost).amount}</span>
+                            </>
                           )}
                         </td>
                       </tr>
@@ -1903,26 +1937,40 @@ export function Dashboard() {
                         <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
                         </td>
-                        <td className="py-5 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold text-right">
                           {filteredCosts.emergencyCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
-                            <div className="flex justify-between items-center gap-1">
-                              <span>$</span>
-                              <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.emergencyCost)}</span>
-                            </div>
+                            <>
+                              <span>{formatCurrencyAccounting(filteredCosts.emergencyCost).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.emergencyCost).amount}</span>
+                            </>
                           )}
                         </td>
                       </tr>
+                      {/* Free Hours Deduction Row (if applicable) */}
+                      {filteredCosts.freeHoursSavings > 0 && (
+                        <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+                          <td className="py-3 px-4 text-sm font-medium">Free Support Hours Benefit</td>
+                          <td className="text-center py-3 px-4 text-sm text-muted-foreground">-</td>
+                          <td className="text-right py-3 px-4 text-sm text-muted-foreground">
+                            {filteredCosts.freeHoursApplied}h free
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="text-green-600 dark:text-green-400 font-semibold text-sm">
+                              -<span>{formatCurrencyAccounting(filteredCosts.freeHoursSavings).symbol}</span>
+                              <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.freeHoursSavings).amount}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-5 px-4">Total</td>
+                        <td className="py-5 px-4">{filteredCosts.freeHoursSavings > 0 ? 'Net Total' : 'Total'}</td>
                         <td className="text-center py-5 px-4">-</td>
                         <td className="text-right py-5 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="py-5 px-4">
-                          <div className="flex justify-between items-center gap-1">
-                            <span>$</span>
-                            <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.totalCost)}</span>
-                          </div>
+                        <td className="py-5 px-4 text-right">
+                          <span>{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(filteredCosts.freeHoursSavings > 0 ? filteredCosts.netTotalCost : filteredCosts.totalCost).amount}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -1941,7 +1989,10 @@ export function Dashboard() {
                       Low: month.costs.regularCost,
                       Medium: month.costs.sameDayCost,
                       High: month.costs.emergencyCost,
-                      totalCost: month.costs.promotionalCost + month.costs.regularCost + month.costs.sameDayCost + month.costs.emergencyCost,
+                      totalCost: month.costs.grossTotalCost,
+                      netTotalCost: month.costs.netTotalCost,
+                      freeHoursApplied: month.costs.freeHoursApplied,
+                      freeHoursSavings: month.costs.freeHoursSavings,
                       totalHours: month.costs.promotionalHours + month.costs.regularHours + month.costs.sameDayHours + month.costs.emergencyHours,
                     }));
 
@@ -1977,7 +2028,7 @@ export function Dashboard() {
                             content={({ active, payload, label }) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload;
-                                const totalCost = data.totalCost || 0;
+                                const hasFreeHours = data.freeHoursSavings > 0;
 
                                 // Define the correct order
                                 const orderMap: Record<string, number> = {
@@ -1989,7 +2040,7 @@ export function Dashboard() {
 
                                 // Sort payload according to the defined order
                                 const sortedPayload = payload
-                                  .filter((entry: any) => entry.dataKey !== 'totalHours' && entry.dataKey !== 'totalCost')
+                                  .filter((entry: any) => entry.dataKey !== 'totalHours' && entry.dataKey !== 'totalCost' && entry.dataKey !== 'netTotalCost' && entry.dataKey !== 'freeHoursApplied' && entry.dataKey !== 'freeHoursSavings')
                                   .sort((a: any, b: any) => {
                                     return (orderMap[a.name] || 999) - (orderMap[b.name] || 999);
                                   });
@@ -2004,13 +2055,27 @@ export function Dashboard() {
                                     <p style={{ color: '#111827', fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
                                     {sortedPayload.map((entry: any, index: number) => (
                                       <p key={`item-${index}`} style={{ color: entry.color, margin: '4px 0' }}>
-                                        {entry.name}: ${formatCurrency(entry.value)}
+                                        {entry.name}: {formatCurrency(entry.value)}
                                       </p>
                                     ))}
                                     <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
-                                      <p style={{ color: '#111827', fontWeight: 'bold' }}>
-                                        Total Cost: ${formatCurrency(totalCost)}
-                                      </p>
+                                      {hasFreeHours ? (
+                                        <>
+                                          <p style={{ color: '#6B7280', fontSize: '12px', margin: '4px 0' }}>
+                                            Gross: {formatCurrency(data.totalCost)}
+                                          </p>
+                                          <p style={{ color: '#059669', fontSize: '12px', margin: '4px 0' }}>
+                                            Free Hours: -{formatCurrency(data.freeHoursSavings)} ({data.freeHoursApplied}h)
+                                          </p>
+                                          <p style={{ color: '#111827', fontWeight: 'bold', marginTop: '4px' }}>
+                                            Net Cost: {formatCurrency(data.netTotalCost)}
+                                          </p>
+                                        </>
+                                      ) : (
+                                        <p style={{ color: '#111827', fontWeight: 'bold' }}>
+                                          Total Cost: {formatCurrency(data.totalCost)}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -2144,9 +2209,13 @@ export function Dashboard() {
                           <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#6B7280" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "#FFFFFF" : "#D1D5DB"} stroke={visibleUrgencies.Promotion ? "#000000" : "#D1D5DB"} strokeWidth={2}>
                             <LabelList
-                              dataKey="totalCost"
+                              dataKey="netTotalCost"
                               position="top"
-                              formatter={(value: any) => value > 0 ? formatCurrency(value) : ''}
+                              formatter={(value: any, entry: any) => {
+                                if (value <= 0) return '';
+                                const hasFreeHours = entry.freeHoursSavings > 0;
+                                return hasFreeHours ? formatCurrency(value) : formatCurrency(entry.totalCost);
+                              }}
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>

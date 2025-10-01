@@ -278,7 +278,7 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-8 min-w-fit justify-center'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">{monthData.monthName}</h3>
+              <h3 className="text-sm font-bold text-muted-foreground mb-4 text-center">{monthData.monthName}</h3>
               <div className="inline-block">
                 {/* Weekday headers */}
                 <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-1 sm:gap-1.5'} mb-2`}>

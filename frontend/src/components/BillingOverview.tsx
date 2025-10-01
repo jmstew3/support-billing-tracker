@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { SiteFavicon } from './ui/SiteFavicon';
-import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import {
   generateComprehensiveBilling,
   formatCurrency,
@@ -210,7 +210,14 @@ export function BillingOverview() {
               icon={<Ticket className="h-4 w-4 text-muted-foreground" />}
               description={
                 totalFreeHoursSavings > 0
-                  ? `After ${formatCurrency(totalFreeHoursSavings)} free hours credit`
+                  ? (
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 inline" />
+                      After {formatCurrency(totalFreeHoursSavings)} free hours credit
+                    </span>
+                  )
+                  : selectedMonth !== 'all' && selectedMonth < '2025-06'
+                  ? 'Not eligible for free hours credit'
                   : 'Billable hours from tickets'
               }
             />
@@ -395,16 +402,34 @@ function MonthRow({
           </div>
         </td>
         <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
-          <span>{formatCurrencyAccounting(monthData.ticketsRevenue).symbol}</span>
-          <span className="tabular-nums">{formatCurrencyAccounting(monthData.ticketsRevenue).amount}</span>
+          {monthData.ticketsRevenue === 0 ? (
+            <span>-</span>
+          ) : (
+            <>
+              <span>{formatCurrencyAccounting(monthData.ticketsRevenue).symbol}</span>
+              <span className="tabular-nums">{formatCurrencyAccounting(monthData.ticketsRevenue).amount}</span>
+            </>
+          )}
         </td>
         <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
-          <span>{formatCurrencyAccounting(monthData.projectsRevenue).symbol}</span>
-          <span className="tabular-nums">{formatCurrencyAccounting(monthData.projectsRevenue).amount}</span>
+          {monthData.projectsRevenue === 0 ? (
+            <span>-</span>
+          ) : (
+            <>
+              <span>{formatCurrencyAccounting(monthData.projectsRevenue).symbol}</span>
+              <span className="tabular-nums">{formatCurrencyAccounting(monthData.projectsRevenue).amount}</span>
+            </>
+          )}
         </td>
         <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
-          <span>{formatCurrencyAccounting(monthData.hostingRevenue).symbol}</span>
-          <span className="tabular-nums">{formatCurrencyAccounting(monthData.hostingRevenue).amount}</span>
+          {monthData.hostingRevenue === 0 ? (
+            <span>-</span>
+          ) : (
+            <>
+              <span>{formatCurrencyAccounting(monthData.hostingRevenue).symbol}</span>
+              <span className="tabular-nums">{formatCurrencyAccounting(monthData.hostingRevenue).amount}</span>
+            </>
+          )}
         </td>
         <td className="py-3 px-4 text-right font-bold text-base">
           <span>{formatCurrencyAccounting(monthData.totalRevenue).symbol}</span>
@@ -476,12 +501,13 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               </span>
               {hasFreeHours && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-3 w-3 inline mr-1" />
                   {monthData.ticketsFreeHoursApplied}h free
                 </span>
               )}
             </div>
-            <span className="font-semibold">
-              {formatCurrency(monthData.ticketsRevenue)}
+            <span className="font-medium text-muted-foreground">
+              {monthData.ticketsRevenue === 0 ? '-' : formatCurrency(monthData.ticketsRevenue)}
             </span>
           </div>
         </td>
@@ -497,6 +523,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 {ticket.description}
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
                   <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                     {ticket.freeHoursApplied}h free
                   </span>
                 )}
@@ -530,6 +557,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {hasFreeHours && (
             <tr className="bg-green-50 dark:bg-green-950/20 border-b">
               <td colSpan={3} className="py-2 px-12 text-xs font-medium">
+                <Zap className="h-3 w-3 inline mr-1" />
                 Free Support Hours Benefit
               </td>
               <td className="py-2 px-4 text-xs text-right text-muted-foreground">
@@ -537,6 +565,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               </td>
               <td className="py-2 px-4 text-right text-xs">
                 <div className="text-green-600 dark:text-green-400 font-semibold">
+                  <Zap className="h-3 w-3 inline mr-0.5" />
                   -{formatCurrency(monthData.ticketsFreeHoursSavings)}
                 </div>
                 <div className="text-muted-foreground text-[10px]">
@@ -572,12 +601,13 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               </span>
               {monthData.projectsLandingPageCredit > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-3 w-3 inline mr-1" />
                   {monthData.projectsLandingPageCredit} free landing page credit
                 </span>
               )}
             </div>
-            <span className="font-semibold">
-              {formatCurrency(monthData.projectsRevenue)}
+            <span className="font-medium text-muted-foreground">
+              {monthData.projectsRevenue === 0 ? '-' : formatCurrency(monthData.projectsRevenue)}
             </span>
           </div>
         </td>
@@ -593,6 +623,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 <span>{project.name}</span>
                 {project.isFreeCredit && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                     FREE
                   </span>
                 )}
@@ -609,8 +640,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                     <span className="tabular-nums">{formatCurrencyAccounting(project.originalAmount || 0).amount}</span>
                   </span>
                   <span className="font-semibold text-green-600 dark:text-green-400">
-                    <span>{formatCurrencyAccounting(0).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                    -
                   </span>
                 </div>
               ) : (
@@ -646,8 +676,8 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
               </span>
             </div>
-            <span className="font-semibold">
-              {formatCurrency(monthData.hostingRevenue)}
+            <span className="font-medium text-muted-foreground">
+              {monthData.hostingRevenue === 0 ? '-' : formatCurrency(monthData.hostingRevenue)}
             </span>
           </div>
         </td>
@@ -682,8 +712,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <td className="py-2 px-4 text-right text-sm font-semibold">
               {hosting.creditApplied ? (
                 <span className="text-green-600 dark:text-green-400">
-                  <span>{formatCurrencyAccounting(0).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                  -
                 </span>
               ) : (
                 <>
