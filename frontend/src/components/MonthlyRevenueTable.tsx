@@ -78,11 +78,18 @@ export function MonthlyRevenueTable({
     }
   };
 
-  // Get hosting status badge style (vibrant muted colors)
+  // Get hosting status badge style
   const getHostingBadge = (status: string) => {
+    // ACTIVE: plain text, no badge styling
+    // INACTIVE: grey badge with ring
     return status === 'ACTIVE'
-      ? 'bg-yellow-100 text-yellow-800 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:ring-yellow-800'
+      ? ''
       : 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:ring-slate-800';
+  };
+
+  // Format hosting status for display
+  const formatHostingStatus = (status: string) => {
+    return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
   return (
@@ -197,13 +204,19 @@ export function MonthlyRevenueTable({
 
                               {/* Hosting Status */}
                               <td className="py-3 px-4 align-middle">
-                                <span
-                                  className={`inline-flex items-center px-2 py-1 text-xs font-medium ring-1 ring-inset ${getHostingBadge(
-                                    project.hostingStatus
-                                  )}`}
-                                >
-                                  {project.hostingStatus}
-                                </span>
+                                {project.hostingStatus === 'ACTIVE' ? (
+                                  <span className="text-xs font-medium">
+                                    {formatHostingStatus(project.hostingStatus)}
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`inline-flex items-center px-2 py-1 text-xs font-medium ring-1 ring-inset ${getHostingBadge(
+                                      project.hostingStatus
+                                    )}`}
+                                  >
+                                    {formatHostingStatus(project.hostingStatus)}
+                                  </span>
+                                )}
                               </td>
 
                               {/* Requested Date */}
