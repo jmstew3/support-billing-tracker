@@ -193,9 +193,9 @@ export function BillingOverview() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Summary Scorecards */}
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <Scorecard
               title="Total Revenue"
               value={formatCurrency(displayTotals?.totalRevenue || 0)}

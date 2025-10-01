@@ -77,36 +77,38 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   };
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <PieChart>
-        <Pie
-          data={completeData as any}
-          cx="50%"
-          cy="50%"
-          labelLine={{
-            stroke: '#94a3b8',
-            strokeWidth: 1,
-            strokeDasharray: '0',
-          }}
-          label={renderCustomizedLabel}
-          outerRadius={100}
-          fill="#8884d8"
-          dataKey="value"
-        >
-          {completeData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || '#cccccc'} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value: number, name: string) => [`${value} requests`, name]}
-          contentStyle={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            padding: '8px 12px'
-          }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="w-full min-h-[300px] h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={completeData as any}
+            cx="50%"
+            cy="50%"
+            labelLine={{
+              stroke: '#94a3b8',
+              strokeWidth: 1,
+              strokeDasharray: '0',
+            }}
+            label={renderCustomizedLabel}
+            outerRadius={100}
+            fill="#8884d8"
+            dataKey="value"
+          >
+            {completeData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || '#cccccc'} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value: number, name: string) => [`${value} requests`, name]}
+            contentStyle={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              padding: '8px 12px'
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
