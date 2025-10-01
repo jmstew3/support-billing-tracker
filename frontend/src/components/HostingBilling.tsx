@@ -89,11 +89,11 @@ export function HostingBilling() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header - Fixed height, compact */}
+      {/* Header - Responsive */}
       <header className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="px-8 py-4 flex items-center justify-between h-16">
-          <h1 className="text-2xl font-bold">Hosting</h1>
-          <div className="flex items-center gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <h1 className="text-xl sm:text-2xl font-bold">Hosting</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             {/* Month Filter */}
             <div className="flex items-center gap-2">
               <label htmlFor="month-select" className="text-sm font-medium">

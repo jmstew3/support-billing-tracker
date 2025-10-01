@@ -8,16 +8,22 @@ import { PeriodProvider } from './contexts/PeriodContext';
 
 function App() {
   const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <PeriodProvider>
       <div className="flex h-screen overflow-hidden">
-        <Sidebar currentView={currentView} onNavigate={setCurrentView} />
-        <main className="flex-1 overflow-auto pt-14 sm:pt-0">
-          {currentView === 'home' && <Dashboard />}
-          {currentView === 'projects' && <Projects />}
-          {currentView === 'overview' && <BillingOverview />}
-          {currentView === 'billing' && <HostingBilling />}
+        <Sidebar
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          isMobileOpen={isMobileMenuOpen}
+          setIsMobileOpen={setIsMobileMenuOpen}
+        />
+        <main className="flex-1 overflow-auto">
+          {currentView === 'home' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'projects' && <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'overview' && <BillingOverview onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'billing' && <HostingBilling onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
         </main>
       </div>
     </PeriodProvider>

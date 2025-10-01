@@ -1577,97 +1577,85 @@ export function Dashboard() {
 
       {/* Main Content Container */}
       <div className="flex-1 overflow-auto">
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
 
-      {/* All Scorecards in One Row */}
-      <div className="flex gap-4 w-full">
-        <div className="flex-1">
-          <Scorecard
-            title="Billable Requests"
-            value={billableFilteredRequests.length}
-            description={(() => {
-              const totalActive = requests.filter(r => r.Status === 'active').length;
-              const billablePercentage = totalActive > 0
-                ? Math.round((billableFilteredRequests.length / totalActive) * 100)
-                : 0;
-              return `${billablePercentage}% billable`;
-            })()}
-            icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+      {/* All Scorecards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <Scorecard
+          title="Billable Requests"
+          value={billableFilteredRequests.length}
+          description={(() => {
+            const totalActive = requests.filter(r => r.Status === 'active').length;
+            const billablePercentage = totalActive > 0
+              ? Math.round((billableFilteredRequests.length / totalActive) * 100)
+              : 0;
+            return `${billablePercentage}% billable`;
+          })()}
+          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <div className="flex-1">
-          <Scorecard
-            title="Total Cost"
-            value={
-              filteredCosts?.freeHoursSavings > 0 ? (
-                <div className="flex items-center gap-2">
-                  <span>{formatCurrency(filteredCosts.netTotalCost)}</span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                    {filteredCosts.freeHoursApplied}h
-                  </span>
-                </div>
-              ) : (
-                formatCurrency(filteredCosts?.totalCost || 0)
-              )
-            }
-            description={
-              filteredCosts?.freeHoursSavings > 0
-                ? `Saved ${formatCurrency(filteredCosts.freeHoursSavings)} in free hours`
-                : "Tiered pricing"
-            }
-            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
-
-        <div className="flex-1">
-          <Scorecard
-            title="Most Active Day"
-            value={
-              <div>
-                <div>
-                  {mostActiveDay.displayText}
-                </div>
-                {mostActiveDay.subtitle && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {mostActiveDay.subtitle}
-                  </p>
-                )}
+        <Scorecard
+          title="Total Cost"
+          value={
+            filteredCosts?.freeHoursSavings > 0 ? (
+              <div className="flex items-center gap-2">
+                <span>{formatCurrency(filteredCosts.netTotalCost)}</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />
+                  {filteredCosts.freeHoursApplied}h
+                </span>
               </div>
-            }
-            description={`${mostActiveDay.count} requests${mostActiveDay.dates.length > 1 ? ' each' : ''}`}
-            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-            valueClassName="!p-0"
-          />
-        </div>
+            ) : (
+              formatCurrency(filteredCosts?.totalCost || 0)
+            )
+          }
+          description={
+            filteredCosts?.freeHoursSavings > 0
+              ? `Saved ${formatCurrency(filteredCosts.freeHoursSavings)} in free hours`
+              : "Tiered pricing"
+          }
+          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <div className="flex-1">
-          <Scorecard
-            title="Peak Time"
-            value={mostActiveTimeRange.range.split(' (')[0]}
-            description={`${mostActiveTimeRange.count} requests`}
-            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+        <Scorecard
+          title="Most Active Day"
+          value={
+            <div>
+              <div>
+                {mostActiveDay.displayText}
+              </div>
+              {mostActiveDay.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {mostActiveDay.subtitle}
+                </p>
+              )}
+            </div>
+          }
+          description={`${mostActiveDay.count} requests${mostActiveDay.dates.length > 1 ? ' each' : ''}`}
+          icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+          valueClassName="!p-0"
+        />
 
-        <div className="flex-1">
-          <Scorecard
-            title="Busiest Day"
-            value={busiestDayOfWeek.day}
-            description={`${busiestDayOfWeek.count} requests on average`}
-            icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+        <Scorecard
+          title="Peak Time"
+          value={mostActiveTimeRange.range.split(' (')[0]}
+          description={`${mostActiveTimeRange.count} requests`}
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+        />
 
-        <div className="flex-1">
-          <Scorecard
-            title="Top Category"
-            value={topCategory.category}
-            description={`${topCategory.percentage}% of requests`}
-            icon={<Tag className="h-4 w-4 text-muted-foreground" />}
-          />
-        </div>
+        <Scorecard
+          title="Busiest Day"
+          value={busiestDayOfWeek.day}
+          description={`${busiestDayOfWeek.count} requests on average`}
+          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+        />
+
+        <Scorecard
+          title="Top Category"
+          value={topCategory.category}
+          description={`${topCategory.percentage}% of requests`}
+          icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+        />
       </div>
 
       {/* Requests Over Time - Full Width */}
@@ -2591,7 +2579,7 @@ export function Dashboard() {
             <div className="flex flex-wrap gap-2 mb-4">
               {/* Category Filters */}
               {categoryFilter.map(category => (
-                <div key={`category-${category}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                <div key={`category-${category}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
                   <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span className="text-muted-foreground">Category:</span>
                   <span className="font-medium text-blue-600 dark:text-blue-400">{category}</span>
@@ -2609,7 +2597,7 @@ export function Dashboard() {
 
               {/* Urgency Filters */}
               {urgencyFilter.map(urgency => (
-                <div key={`urgency-${urgency}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                <div key={`urgency-${urgency}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
                   <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span className="text-muted-foreground">Urgency:</span>
                   <span className="font-medium text-blue-600 dark:text-blue-400">{urgency}</span>
@@ -2627,7 +2615,7 @@ export function Dashboard() {
 
               {/* Source Filters */}
               {sourceFilter.map(source => (
-                <div key={`source-${source}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                <div key={`source-${source}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
                   <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span className="text-muted-foreground">Source:</span>
                   <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{source === 'sms' ? 'Text' : source}</span>
@@ -2645,7 +2633,7 @@ export function Dashboard() {
 
               {/* Day Filters */}
               {dayFilter.map(day => (
-                <div key={`day-${day}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                <div key={`day-${day}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
                   <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span className="text-muted-foreground">Day:</span>
                   <span className="font-medium text-blue-600 dark:text-blue-400">{day}</span>
@@ -2663,7 +2651,7 @@ export function Dashboard() {
 
               {/* Date Filter */}
               {dateFilter !== 'all' && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
                   <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span className="text-muted-foreground">Date:</span>
                   <span className="font-medium text-blue-600 dark:text-blue-400">{dateFilter}</span>
@@ -2681,8 +2669,9 @@ export function Dashboard() {
             </div>
           )}
 
-          <div className="overflow-visible" style={{position: 'static'}}>
-            <Table>
+          <div className="overflow-x-auto -mx-4 sm:-mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <Table>
               <TableHeader>
                 <TableRow>
                 <TableHead className="w-12">
@@ -3112,6 +3101,7 @@ export function Dashboard() {
               })}
               </TableBody>
             </Table>
+            </div>
           </div>
           
           <Pagination

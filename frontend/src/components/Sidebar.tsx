@@ -5,16 +5,17 @@ import velocityLogo from '../assets/velocity-logo.png';
 interface SidebarProps {
   currentView?: 'home' | 'projects' | 'overview' | 'billing';
   onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing') => void;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (open: boolean) => void;
 }
 
-export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
+export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Close mobile menu when view changes
   useEffect(() => {
     setIsMobileOpen(false);
-  }, [currentView]);
+  }, [currentView, setIsMobileOpen]);
 
   // Handle window resize
   useEffect(() => {
@@ -43,14 +44,7 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile hamburger button - only visible on screens < 640px */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="sm:hidden fixed top-3 left-3 z-50 p-3 rounded-md bg-background border border-border shadow-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-        aria-label="Toggle menu"
-      >
-        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+      {/* Mobile hamburger button - moved to PageHeader, exposed via props */}
 
       {/* Mobile overlay - only visible when menu is open on mobile */}
       {isMobileOpen && (
@@ -63,7 +57,7 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={`
-          h-screen bg-muted/30 border-r border-border/50 flex flex-col
+          h-screen bg-background border-r border-border/50 flex flex-col
           transition-all duration-300 ease-in-out
           ${isCollapsed ? 'w-16' : 'w-60'}
           sm:relative fixed z-40
