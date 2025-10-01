@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap } from 'lucide-react';
-import { formatCurrency, formatCurrencyAccounting } from '../services/hostingApi';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate, formatCount } from '../utils/formatting';
+import { BillingTypeBadge, CountBadge, CreditBadge, FreeBadge } from './ui/BillingBadge';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
 
@@ -59,51 +60,8 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
   const grandTotalNet = monthlyBreakdown.reduce((sum, month) => sum + month.netMrr, 0);
   const grandTotalCredits = monthlyBreakdown.reduce((sum, month) => sum + (month.grossMrr - month.netMrr), 0);
 
-  // Format month for display (e.g., "September 2025")
-  function formatMonthLabel(monthStr: string) {
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
-
-  // Format date for display
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Active';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  // Get billing type badge style (vibrant muted colors)
-  const getBillingTypeBadge = (billingType: BillingType) => {
-    switch (billingType) {
-      case 'FULL':
-        return 'bg-green-100 text-green-800 ring-green-200 dark:bg-green-950/30 dark:text-green-300 dark:ring-green-800';
-      case 'PRORATED_START':
-        return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:ring-blue-800';
-      case 'PRORATED_END':
-        return 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-800';
-      case 'INACTIVE':
-        return 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:ring-slate-800';
-      default:
-        return 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-800';
-    }
-  };
-
-  // Format billing type for display
-  const formatBillingType = (billingType: BillingType) => {
-    switch (billingType) {
-      case 'FULL':
-        return 'Full Month';
-      case 'PRORATED_START':
-        return 'Prorated Start';
-      case 'PRORATED_END':
-        return 'Prorated End';
-      case 'INACTIVE':
-        return 'Inactive';
-      default:
-        return billingType;
-    }
-  };
+  // Note: formatMonthLabel, formatDate now imported from utils/formatting
+  // Note: Badge formatting now handled by BillingBadge component
 
   return (
     <div className="space-y-4">
@@ -251,14 +209,12 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                              {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
-                            </span>
+                            <CountBadge text={formatCount(monthData.activeSites, 'site')} size="sm" />
                             {monthData.freeCredits > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                                <Zap className="h-3 w-3 inline mr-1" />
-                                {monthData.freeCredits} free credit{monthData.freeCredits !== 1 ? 's' : ''}
-                              </span>
+                              <CreditBadge
+                                text={formatCount(monthData.freeCredits, 'free credit')}
+                                size="sm"
+                              />
                             )}
                           </div>
                           <div className="font-bold text-base tabular-nums">{formatCurrency(monthData.netMrr)}</div>
@@ -342,12 +298,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                                 <div className="flex items-center gap-2">
                                   <SiteFavicon websiteUrl={charge.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{charge.siteName}</div>
-                                  {charge.creditApplied && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-1 ring-inset ring-green-200 dark:ring-green-800 whitespace-nowrap">
-                                      <Zap className="h-3 w-3 inline mr-0.5" />
-                                      FREE
-                                    </span>
-                                  )}
+                                  {charge.creditApplied && <FreeBadge size="xs" />}
                                 </div>
                               </td>
 
@@ -363,13 +314,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
 
                               {/* Billing Type */}
                               <td className="py-3 px-4 align-middle">
-                                <span
-                                  className={`inline-flex items-center px-2 py-1 text-xs font-medium ring-1 ring-inset ${getBillingTypeBadge(
-                                    charge.billingType
-                                  )}`}
-                                >
-                                  {formatBillingType(charge.billingType)}
-                                </span>
+                                <BillingTypeBadge billingType={charge.billingType} size="sm" />
                               </td>
 
                               {/* Days Active */}
@@ -413,9 +358,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                           <td colSpan={5} className="py-3 px-6 text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
                               <span>{formatMonthLabel(monthData.month)} Subtotal</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                                {monthData.activeSites} {monthData.activeSites === 1 ? 'site' : 'sites'}
-                              </span>
+                              <CountBadge text={formatCount(monthData.activeSites, 'site')} size="xs" />
                             </div>
                           </td>
                           <td className="py-3 px-4 text-right">
