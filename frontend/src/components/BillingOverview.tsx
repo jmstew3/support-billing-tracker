@@ -540,8 +540,8 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {/* Individual Ticket Rows */}
           {monthData.ticketDetails.map((ticket) => (
             <tr key={ticket.id} className="border-b hover:bg-muted/30">
-              <td className="py-2 px-12 text-xs text-muted-foreground">{ticket.date}</td>
-              <td colSpan={2} className="py-2 px-4 text-xs">
+              <td className="py-2 px-12 text-xs text-muted-foreground w-32">{ticket.date}</td>
+              <td className="py-2 px-4 text-xs">
                 {ticket.description}
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
                   <span className="ml-2">
@@ -549,10 +549,13 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                   </span>
                 )}
               </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-                {ticket.hours}h × {formatCurrency(ticket.rate)}/hr
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
+                {ticket.hours}h
               </td>
-              <td className="py-2 px-4 text-right text-sm">
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+                {formatCurrency(ticket.rate)}/hr
+              </td>
+              <td className="py-2 px-4 text-right text-sm w-32">
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
                   <div className="flex flex-col items-end">
                     <span className="text-muted-foreground line-through text-xs">
@@ -577,11 +580,11 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
           {hasFreeHours && (
             <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
+              <td colSpan={2} className="py-2 px-12 text-xs font-medium">
                 <Zap className="h-3 w-3 inline mr-1" />
                 Free Support Hours Benefit
               </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+              <td colSpan={2} className="py-2 px-4 text-xs text-right text-muted-foreground">
                 Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
               </td>
               <td className="py-2 px-4 text-right text-xs">
