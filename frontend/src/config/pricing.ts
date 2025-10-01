@@ -74,3 +74,11 @@ export const FREE_HOURS_START_DATE = '2025-06'; // YYYY-MM format
 // Free landing page policy (starting June 2025)
 export const FREE_LANDING_PAGES_PER_MONTH = 1;
 export const FREE_LANDING_PAGE_START_DATE = '2025-06'; // YYYY-MM format
+
+// Free multi-form policy (starting June 2025)
+export const FREE_MULTI_FORMS_PER_MONTH = 1;
+export const FREE_MULTI_FORM_START_DATE = '2025-06'; // YYYY-MM format
+
+// Free basic form policy (starting June 2025)
+export const FREE_BASIC_FORMS_PER_MONTH = 5;
+export const FREE_BASIC_FORM_START_DATE = '2025-06'; // YYYY-MM format

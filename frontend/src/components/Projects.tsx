@@ -6,7 +6,7 @@ import { ProjectCategoryPieChart } from './ProjectCategoryPieChart';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { fetchProjects, formatCurrency, convertMicrosToDollars } from '../services/projectsApi';
-import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
+import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../config/pricing';
 import type { Project, ProjectFilters } from '../types/project';
 
 export function Projects() {
@@ -109,6 +109,35 @@ export function Projects() {
       }
     });
 
+    // Apply free multi-form credit to eligible months (June 2025 onwards)
+    let totalMultiFormSavings = 0;
+    monthlyMap.forEach((monthData, monthKey) => {
+      if (monthKey >= FREE_MULTI_FORM_START_DATE) {
+        const multiForms = monthData.projects.filter(p => p.projectCategory === 'MULTI_FORM');
+        if (multiForms.length > 0 && FREE_MULTI_FORMS_PER_MONTH > 0) {
+          const firstMultiForm = multiForms[0];
+          const multiFormRevenue = convertMicrosToDollars(firstMultiForm.revenueAmount.amountMicros);
+          monthData.revenue -= multiFormRevenue;
+          totalMultiFormSavings += multiFormRevenue;
+        }
+      }
+    });
+
+    // Apply free basic form credits to eligible months (June 2025 onwards)
+    let totalBasicFormSavings = 0;
+    monthlyMap.forEach((monthData, monthKey) => {
+      if (monthKey >= FREE_BASIC_FORM_START_DATE) {
+        const basicForms = monthData.projects.filter(p => p.projectCategory === 'BASIC_FORM');
+        const creditsToApply = Math.min(basicForms.length, FREE_BASIC_FORMS_PER_MONTH);
+
+        for (let i = 0; i < creditsToApply; i++) {
+          const basicFormRevenue = convertMicrosToDollars(basicForms[i].revenueAmount.amountMicros);
+          monthData.revenue -= basicFormRevenue;
+          totalBasicFormSavings += basicFormRevenue;
+        }
+      }
+    });
+
     // Convert monthly map to sorted array (oldest first)
     const monthlyBreakdown = Array.from(monthlyMap.entries())
       .map(([month, data]) => ({
@@ -125,8 +154,8 @@ export function Projects() {
       .filter(p => !p.projectCompletionDate)
       .reduce((sum, p) => sum + convertMicrosToDollars(p.revenueAmount.amountMicros), 0);
 
-    // Adjust total revenue to account for free landing pages
-    const adjustedTotalRevenue = totalReadyRevenue - totalLandingPageSavings;
+    // Adjust total revenue to account for all free form credits
+    const adjustedTotalRevenue = totalReadyRevenue - totalLandingPageSavings - totalMultiFormSavings - totalBasicFormSavings;
 
     return {
       totalReadyRevenue: adjustedTotalRevenue,
@@ -270,6 +299,8 @@ export function Projects() {
             <option value="MIGRATION">Migration</option>
             <option value="LANDING_PAGE">Landing Page</option>
             <option value="WEBSITE">Website</option>
+            <option value="MULTI_FORM">Multi-Form</option>
+            <option value="BASIC_FORM">Basic Form</option>
           </select>
 
           {/* Clear Filters */}

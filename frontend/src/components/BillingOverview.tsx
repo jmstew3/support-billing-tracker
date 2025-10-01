@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { SiteFavicon } from './ui/SiteFavicon';
+import { PageHeader } from './PageHeader';
+import { usePeriod } from '../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import {
   generateComprehensiveBilling,
@@ -31,10 +33,10 @@ const CATEGORY_COLORS = {
 } as const;
 
 export function BillingOverview() {
+  const { selectedYear, selectedMonth, setAvailableData } = usePeriod();
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   // Track which sections are expanded
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
@@ -51,6 +53,14 @@ export function BillingOverview() {
       setError(null);
       const data = await generateComprehensiveBilling();
       setBillingSummary(data);
+
+      // Register available data with context
+      const months = data.monthlyBreakdown.map(m => {
+        const [, month] = m.month.split('-').map(Number);
+        return month;
+      });
+      const years = Array.from(new Set(data.monthlyBreakdown.map(m => parseInt(m.month.split('-')[0]))));
+      setAvailableData(years, months, []);
 
       // Start with all months expanded (Level 1 visible)
       const allMonths = new Set(data.monthlyBreakdown.map((m) => m.month));
@@ -110,15 +120,20 @@ export function BillingOverview() {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }
 
-  // Filter data based on selected month
+  // Filter data based on selected month from context
+  // Convert context values to month string format (YYYY-MM)
+  const currentMonthString = selectedMonth === 'all'
+    ? 'all'
+    : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+
   const filteredData =
-    billingSummary && selectedMonth !== 'all'
-      ? billingSummary.monthlyBreakdown.filter((m) => m.month === selectedMonth)
+    billingSummary && currentMonthString !== 'all'
+      ? billingSummary.monthlyBreakdown.filter((m) => m.month === currentMonthString)
       : billingSummary?.monthlyBreakdown || [];
 
   // Calculate totals for filtered data
   const displayTotals =
-    selectedMonth === 'all'
+    currentMonthString === 'all'
       ? billingSummary
       : {
           totalRevenue: filteredData.reduce((sum, m) => sum + m.totalRevenue, 0),
@@ -129,15 +144,30 @@ export function BillingOverview() {
 
   // Calculate free hours savings for display
   const totalFreeHoursSavings =
-    selectedMonth === 'all'
+    currentMonthString === 'all'
       ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0) || 0
       : filteredData.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0);
 
   // Calculate free landing page savings for display
   const totalLandingPageSavings =
-    selectedMonth === 'all'
+    currentMonthString === 'all'
       ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0) || 0
       : filteredData.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0);
+
+  // Calculate free multi-form savings for display
+  const totalMultiFormSavings =
+    currentMonthString === 'all'
+      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsMultiFormSavings, 0) || 0
+      : filteredData.reduce((sum, m) => sum + m.projectsMultiFormSavings, 0);
+
+  // Calculate free basic form savings for display
+  const totalBasicFormSavings =
+    currentMonthString === 'all'
+      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsBasicFormSavings, 0) || 0
+      : filteredData.reduce((sum, m) => sum + m.projectsBasicFormSavings, 0);
+
+  // Calculate total project credits
+  const totalProjectCredits = totalLandingPageSavings + totalMultiFormSavings + totalBasicFormSavings;
 
   if (loading) {
     return <LoadingState variant="overview" />;
@@ -169,29 +199,11 @@ export function BillingOverview() {
   return (
     <div className="flex flex-col h-full">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="px-8 py-4 flex items-center justify-between">
-          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <label htmlFor="month-select" className="text-sm font-medium">
-              Month:
-            </label>
-            <select
-              id="month-select"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-1.5 border border-input bg-background text-sm"
-            >
-              <option value="all">All Months</option>
-              {billingSummary.monthlyBreakdown.map((m) => (
-                <option key={m.month} value={m.month}>
-                  {formatMonthLabel(m.month)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Billing Overview"
+        periodSelectorType="full"
+        showViewToggle={false}
+      />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
@@ -216,7 +228,7 @@ export function BillingOverview() {
                       After {formatCurrency(totalFreeHoursSavings)} free hours credit
                     </span>
                   )
-                  : selectedMonth !== 'all' && selectedMonth < '2025-06'
+                  : currentMonthString !== 'all' && currentMonthString < '2025-06'
                   ? 'Not eligible for free hours credit'
                   : 'Billable hours from tickets'
               }
@@ -226,17 +238,30 @@ export function BillingOverview() {
               value={formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
               icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
               description={
-                totalLandingPageSavings > 0
-                  ? `After ${formatCurrency(totalLandingPageSavings)} landing page credit`
+                totalProjectCredits > 0
+                  ? (
+                    <span className="flex flex-col gap-0.5">
+                      <span>After {formatCurrency(totalProjectCredits)} in credits:</span>
+                      {totalLandingPageSavings > 0 && (
+                        <span className="text-xs">• Landing page: {formatCurrency(totalLandingPageSavings)}</span>
+                      )}
+                      {totalMultiFormSavings > 0 && (
+                        <span className="text-xs">• Multi-form: {formatCurrency(totalMultiFormSavings)}</span>
+                      )}
+                      {totalBasicFormSavings > 0 && (
+                        <span className="text-xs">• Basic forms: {formatCurrency(totalBasicFormSavings)}</span>
+                      )}
+                    </span>
+                  )
                   : 'Ready to invoice projects'
               }
             />
             <Scorecard
-              title={selectedMonth === 'all' ? 'Current Hosting MRR' : 'Hosting MRR'}
+              title={currentMonthString === 'all' ? 'Current Hosting MRR' : 'Hosting MRR'}
               value={formatCurrency(displayTotals?.totalHostingRevenue || 0)}
               icon={<Server className="h-4 w-4 text-muted-foreground" />}
               description={
-                selectedMonth === 'all' && billingSummary?.monthlyBreakdown.length
+                currentMonthString === 'all' && billingSummary?.monthlyBreakdown.length
                   ? `As of ${formatMonthLabel(billingSummary.monthlyBreakdown[billingSummary.monthlyBreakdown.length - 1].month)}`
                   : 'Net hosting revenue'
               }
@@ -287,8 +312,14 @@ export function BillingOverview() {
                   <LabelList
                     dataKey={(entry: any) => entry.Tickets + entry.Projects + entry.Hosting}
                     position="top"
-                    formatter={(value: number) => formatCurrency(value)}
-                    style={{ fontSize: '11px', fontWeight: 'bold', fill: '#374151' }}
+                    content={(props: any) => {
+                      const { x, y, value } = props;
+                      return (
+                        <text x={x} y={y} dx={20} dy={-4} fontSize="11" fontWeight="bold" fill="#374151" textAnchor="middle">
+                          {formatCurrency(value)}
+                        </text>
+                      );
+                    }}
                   />
                 </Bar>
               </BarChart>
@@ -522,7 +553,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <td colSpan={2} className="py-2 px-4 text-xs">
                 {ticket.description}
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
-                  <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                     <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                     {ticket.freeHoursApplied}h free
                   </span>
@@ -602,7 +633,19 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               {monthData.projectsLandingPageCredit > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                   <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.projectsLandingPageCredit} free landing page credit
+                  {monthData.projectsLandingPageCredit} Free Landing Page Credit
+                </span>
+              )}
+              {monthData.projectsMultiFormCredit > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-3 w-3 inline mr-1" />
+                  {monthData.projectsMultiFormCredit} Free Multi-Form
+                </span>
+              )}
+              {monthData.projectsBasicFormCredit > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-3 w-3 inline mr-1" />
+                  {monthData.projectsBasicFormCredit} Free Basic Form{monthData.projectsBasicFormCredit > 1 ? 's' : ''}
                 </span>
               )}
             </div>
@@ -622,7 +665,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
                 <span>{project.name}</span>
                 {project.isFreeCredit && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                     <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                     FREE
                   </span>
