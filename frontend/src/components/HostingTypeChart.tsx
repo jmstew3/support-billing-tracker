@@ -59,7 +59,7 @@ export function HostingTypeChart({ data }: HostingTypeChartProps) {
         </p>
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
           <XAxis
             dataKey="name"

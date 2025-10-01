@@ -2331,7 +2331,7 @@ export function Dashboard() {
       {/* Request Table */}
       <Card>
         {/* Sticky Header for Billable Requests */}
-        <CardHeader className="sticky top-16 z-30 bg-card border-b border-border rounded-t-lg">
+        <CardHeader className="sticky top-0 z-30 bg-card border-b border-border rounded-t-lg">
           <div className="space-y-3">
             {/* Title Row */}
             <div className="flex justify-between items-start">
