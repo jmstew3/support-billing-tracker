@@ -184,7 +184,7 @@ export function DatePickerPopover({
 
       {/* Popover Content */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 z-50 bg-card rounded-lg shadow-lg border border-border overflow-hidden">
+        <div className="absolute top-full mt-2 right-0 z-[100] bg-card rounded-lg shadow-lg border border-border overflow-hidden">
           {/* Tab Navigation */}
           <div className="flex border-b border-border">
             <button
