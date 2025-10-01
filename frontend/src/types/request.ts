@@ -37,4 +37,9 @@ export interface CostCalculation {
   emergencyCost: number;
   promotionalCost: number;
   totalCost: number;
+  // Free hours tracking (June 2025+)
+  grossTotalCost: number;        // Cost before free hours
+  freeHoursApplied: number;      // Hours credited (0-10)
+  freeHoursSavings: number;      // Dollar savings from free hours
+  netTotalCost: number;          // Cost after free hours (actual billable)
 }

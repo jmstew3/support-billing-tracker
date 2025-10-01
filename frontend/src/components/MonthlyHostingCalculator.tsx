@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting } from '../services/hostingApi';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
@@ -79,9 +79,9 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
       case 'FULL':
         return 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700';
       case 'PRORATED_START':
-        return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800';
+        return 'bg-white text-black ring-black dark:bg-white dark:text-black dark:ring-black';
       case 'PRORATED_END':
-        return 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:ring-orange-800';
+        return 'bg-white text-black ring-red-600 dark:bg-white dark:text-black dark:ring-red-600';
       case 'INACTIVE':
         return 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:ring-slate-800';
       default:
@@ -256,6 +256,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                             </span>
                             {monthData.freeCredits > 0 && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                                <Zap className="h-3 w-3 inline mr-1" />
                                 {monthData.freeCredits} free credit{monthData.freeCredits !== 1 ? 's' : ''}
                               </span>
                             )}
@@ -343,6 +344,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                                   <div className="line-clamp-2 font-medium">{charge.siteName}</div>
                                   {charge.creditApplied && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-1 ring-inset ring-green-200 dark:ring-green-800 whitespace-nowrap">
+                                      <Zap className="h-3 w-3 inline mr-0.5" />
                                       FREE
                                     </span>
                                   )}
@@ -384,9 +386,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               {/* Credit Applied */}
                               <td className="py-3 px-4 align-middle text-center">
                                 {charge.creditApplied && (
-                                  <span className="inline-flex items-center justify-center w-5 h-5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs font-bold">
-                                    ✓
-                                  </span>
+                                  <Zap className="h-4 w-4 inline text-green-600 dark:text-green-400" />
                                 )}
                               </td>
 

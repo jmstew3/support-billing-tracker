@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, AlertTriangle, Zap } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
 import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import { SiteFavicon } from './ui/SiteFavicon';
@@ -72,7 +72,7 @@ export function MonthlyRevenueTable({
       case 'LANDING_PAGE':
         return 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800';
       case 'WEBSITE':
-        return 'bg-green-100 text-green-800 ring-green-200 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-800';
+        return 'bg-cyan-100 text-cyan-800 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:ring-cyan-800';
       default:
         return 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-800';
     }
@@ -81,7 +81,7 @@ export function MonthlyRevenueTable({
   // Get hosting status badge style (vibrant muted colors)
   const getHostingBadge = (status: string) => {
     return status === 'ACTIVE'
-      ? 'bg-emerald-100 text-emerald-800 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800'
+      ? 'bg-yellow-100 text-yellow-800 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:ring-yellow-800'
       : 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-900/30 dark:text-slate-400 dark:ring-slate-800';
   };
 
@@ -177,6 +177,7 @@ export function MonthlyRevenueTable({
                                   <div className="line-clamp-2 font-medium">{project.name}</div>
                                   {isFreeCredit && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                                      <Zap className="h-2.5 w-2.5 inline mr-0.5" />
                                       FREE
                                     </span>
                                   )}

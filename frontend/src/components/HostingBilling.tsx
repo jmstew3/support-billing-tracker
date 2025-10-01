@@ -3,7 +3,7 @@ import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { CumulativeBillingChart } from './CumulativeBillingChart';
 import { HostingTypeChart } from './HostingTypeChart';
-import { Server, DollarSign, Gift } from 'lucide-react';
+import { Server, DollarSign, Gift, Zap } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
 import {
   fetchWebsiteProperties,
@@ -154,7 +154,12 @@ export function HostingBilling() {
               description={
                 selectedMonth === 'all'
                   ? 'Total net revenue all months'
-                  : `${currentSummary.freeCredits} free credit${currentSummary.freeCredits !== 1 ? 's' : ''} applied`
+                  : (
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 inline" />
+                      {currentSummary.freeCredits} free credit{currentSummary.freeCredits !== 1 ? 's' : ''} applied
+                    </span>
+                  )
               }
               icon={<Gift className="h-4 w-4" />}
             />
@@ -165,7 +170,10 @@ export function HostingBilling() {
             <div className="border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-sm font-semibold">Free Credit Progress</h3>
+                  <h3 className="text-sm font-semibold">
+                    <Zap className="h-4 w-4 inline mr-1" />
+                    Free Credit Progress
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     {creditProgress.activeSites % 21}/21 sites toward next free credit
                   </p>
