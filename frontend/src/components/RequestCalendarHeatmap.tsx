@@ -275,7 +275,7 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     <div className="space-y-6">
       {/* Container - no horizontal scroll when single month */}
       <div className={isSingleMonth ? '' : 'overflow-x-auto pb-4'}>
-        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-4 min-w-fit justify-center'}>
+        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-8 min-w-fit justify-center'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
               <h3 className="text-sm font-medium text-muted-foreground mb-2 text-center">{monthData.monthName}</h3>

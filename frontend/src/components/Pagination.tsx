@@ -111,10 +111,10 @@ export function Pagination({
                 disabled={page === '...'}
                 className={`w-8 h-8 text-sm rounded ${
                   page === currentPage
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-black dark:bg-white text-white dark:text-black'
                     : page === '...'
                     ? 'cursor-default'
-                    : 'border border-border hover:bg-accent'
+                    : 'border border-border hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 {page}
