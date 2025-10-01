@@ -10,12 +10,8 @@ import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../u
 import { CountBadge, CreditBadge, FreeBadge, BillingTypeBadge } from './ui/BillingBadge';
 import {
   CATEGORY_COLORS,
-  BADGE_BORDER_RADIUS,
-  TOTAL_REVENUE_BADGE_STYLE,
   TABLE_REVENUE_TEXT_SIZE,
   TABLE_REVENUE_FONT_WEIGHT,
-  GRAND_TOTAL_TEXT_SIZE,
-  GRAND_TOTAL_FONT_WEIGHT,
 } from '../config/uiConstants';
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
@@ -365,21 +361,21 @@ export function BillingOverview() {
 
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
-                    <tr className={`bg-muted/60 border-t-2 ${GRAND_TOTAL_FONT_WEIGHT}`}>
-                      <td className="py-4 px-4 text-left text-base">GRAND TOTAL</td>
-                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
+                    <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
+                      <td className="py-4 px-6 text-right text-base">GRAND TOTAL</td>
+                      <td className="py-4 px-4 text-right text-lg">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
+                      <td className="py-4 px-4 text-right text-lg">
                         <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
+                      <td className="py-4 px-4 text-right text-lg">
                         <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
+                      <td className="py-4 px-4 text-right text-lg">
                         <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
@@ -417,7 +413,7 @@ function MonthRow({
     <>
       {/* Month Header Row */}
       <tr
-        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
+        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors divide-x"
         onClick={() => onToggleMonth(monthData.month)}
       >
         <td className="py-3 px-4">
@@ -456,10 +452,9 @@ function MonthRow({
             </>
           )}
         </td>
-        <td className="py-3 px-4 text-right">
-          <span className={`inline-flex items-center px-3 py-1 text-sm font-medium ${BADGE_BORDER_RADIUS} ${TOTAL_REVENUE_BADGE_STYLE}`}>
-            {formatCurrency(monthData.totalRevenue)}
-          </span>
+        <td className={`py-3 px-4 text-right ${TABLE_REVENUE_TEXT_SIZE} ${TABLE_REVENUE_FONT_WEIGHT}`}>
+          <span>{formatCurrencyAccounting(monthData.totalRevenue).symbol}</span>
+          <span className="tabular-nums">{formatCurrencyAccounting(monthData.totalRevenue).amount}</span>
         </td>
       </tr>
 
