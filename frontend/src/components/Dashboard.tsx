@@ -22,6 +22,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { LoadingState } from './ui/LoadingState';
 import { ToggleGroup } from './ui/toggle-group';
+import { formatCurrency } from '../utils/currency';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -29,14 +30,6 @@ import { ToggleGroup } from './ui/toggle-group';
 function parseLocalDate(dateString: string): Date {
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
-}
-
-// Format currency with exactly 2 decimal places (accounting format)
-function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
 }
 
 export function Dashboard() {

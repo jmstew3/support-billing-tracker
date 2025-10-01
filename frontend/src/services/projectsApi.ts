@@ -6,26 +6,19 @@ const TWENTY_API_TOKEN = import.meta.env.VITE_TWENTY_API_TOKEN || '';
 const USE_MOCK = import.meta.env.VITE_TWENTY_USE_MOCK === 'true';
 
 /**
+ * Format currency for display
+ * @param amount Dollar amount
+ * @returns Formatted string (e.g., "$1,250.00")
+ */
+export { formatCurrency, formatCurrencyAccounting } from '../utils/currency';
+
+/**
  * Convert revenue amount from micros to dollars
  * @param amountMicros Amount in micros (e.g., "125000000" = $125.00)
  * @returns Dollar amount as number
  */
 export function convertMicrosToDollars(amountMicros: string): number {
   return parseInt(amountMicros, 10) / 1000000;
-}
-
-/**
- * Format currency for display
- * @param amount Dollar amount
- * @returns Formatted string (e.g., "$1,250.00")
- */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
 }
 
 /**

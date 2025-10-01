@@ -6,6 +6,7 @@ import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp } from
 import {
   generateComprehensiveBilling,
   formatCurrency,
+  formatCurrencyAccounting,
 } from '../services/billingApi';
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
@@ -320,17 +321,21 @@ export function BillingOverview() {
                   {filteredData.length > 1 && (
                     <tr className="bg-muted/60 border-t-2 font-bold">
                       <td className="py-4 px-4 text-left text-base">GRAND TOTAL</td>
-                      <td className="py-4 px-4 text-right text-lg tabular-nums">
-                        {formatCurrency(displayTotals?.totalTicketsRevenue || 0)}
+                      <td className="py-4 px-4 text-right text-lg">
+                        <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg tabular-nums">
-                        {formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
+                      <td className="py-4 px-4 text-right text-lg">
+                        <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg tabular-nums">
-                        {formatCurrency(displayTotals?.totalHostingRevenue || 0)}
+                      <td className="py-4 px-4 text-right text-lg">
+                        <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg tabular-nums">
-                        {formatCurrency(displayTotals?.totalRevenue || 0)}
+                      <td className="py-4 px-4 text-right text-lg">
+                        <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
                     </tr>
                   )}
@@ -375,17 +380,21 @@ function MonthRow({
             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
           </div>
         </td>
-        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
-          {formatCurrency(monthData.ticketsRevenue)}
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
+          <span>{formatCurrencyAccounting(monthData.ticketsRevenue).symbol}</span>
+          <span className="tabular-nums">{formatCurrencyAccounting(monthData.ticketsRevenue).amount}</span>
         </td>
-        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
-          {formatCurrency(monthData.projectsRevenue)}
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
+          <span>{formatCurrencyAccounting(monthData.projectsRevenue).symbol}</span>
+          <span className="tabular-nums">{formatCurrencyAccounting(monthData.projectsRevenue).amount}</span>
         </td>
-        <td className={`py-3 px-4 text-right font-semibold tabular-nums ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
-          {formatCurrency(monthData.hostingRevenue)}
+        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
+          <span>{formatCurrencyAccounting(monthData.hostingRevenue).symbol}</span>
+          <span className="tabular-nums">{formatCurrencyAccounting(monthData.hostingRevenue).amount}</span>
         </td>
-        <td className="py-3 px-4 text-right font-bold text-base tabular-nums">
-          {formatCurrency(monthData.totalRevenue)}
+        <td className="py-3 px-4 text-right font-bold text-base">
+          <span>{formatCurrencyAccounting(monthData.totalRevenue).symbol}</span>
+          <span className="tabular-nums">{formatCurrencyAccounting(monthData.totalRevenue).amount}</span>
         </td>
       </tr>
 
@@ -481,18 +490,23 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <td className="py-2 px-4 text-xs text-right text-muted-foreground">
                 {ticket.hours}h × {formatCurrency(ticket.rate)}/hr
               </td>
-              <td className="py-2 px-4 text-right text-sm tabular-nums">
+              <td className="py-2 px-4 text-right text-sm">
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
                   <div className="flex flex-col items-end">
                     <span className="text-muted-foreground line-through text-xs">
-                      {formatCurrency(ticket.amount)}
+                      <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
                     </span>
                     <span className="font-semibold text-green-600 dark:text-green-400">
-                      {formatCurrency(ticket.netAmount || ticket.amount)}
+                      <span>{formatCurrencyAccounting(ticket.netAmount || ticket.amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(ticket.netAmount || ticket.amount).amount}</span>
                     </span>
                   </div>
                 ) : (
-                  <span className="font-semibold">{formatCurrency(ticket.amount)}</span>
+                  <span className="font-semibold">
+                    <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
+                  </span>
                 )}
               </td>
             </tr>
@@ -563,8 +577,9 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
               {project.category}
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold tabular-nums">
-              {formatCurrency(project.amount)}
+            <td className="py-2 px-4 text-right text-sm font-semibold">
+              <span>{formatCurrencyAccounting(project.amount).symbol}</span>
+              <span className="tabular-nums">{formatCurrencyAccounting(project.amount).amount}</span>
             </td>
           </tr>
         ))}
@@ -625,11 +640,17 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
               )}
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold tabular-nums">
+            <td className="py-2 px-4 text-right text-sm font-semibold">
               {hosting.creditApplied ? (
-                <span className="text-green-600 dark:text-green-400">{formatCurrency(0)}</span>
+                <span className="text-green-600 dark:text-green-400">
+                  <span>{formatCurrencyAccounting(0).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                </span>
               ) : (
-                formatCurrency(hosting.netAmount)
+                <>
+                  <span>{formatCurrencyAccounting(hosting.netAmount).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(hosting.netAmount).amount}</span>
+                </>
               )}
             </td>
           </tr>
