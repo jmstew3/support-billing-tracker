@@ -2247,12 +2247,18 @@ export function Dashboard() {
                             <LabelList
                               dataKey="netTotalCost"
                               position="top"
-                              formatter={(value: any, entry: any) => {
-                                if (value <= 0) return '';
+                              content={(props: any) => {
+                                const { x, y, width, value, index } = props;
+                                if (!value || value <= 0) return null;
+                                const entry = chartData[index];
                                 const hasFreeHours = entry.freeHoursSavings > 0;
-                                return hasFreeHours ? formatCurrency(value) : formatCurrency(entry.totalCost);
+                                const displayValue = hasFreeHours ? formatCurrency(value) : formatCurrency(entry.totalCost);
+                                return (
+                                  <text x={x + width / 2} y={y - 5} fill="#374151" textAnchor="middle" fontSize="12" fontWeight="bold">
+                                    {displayValue}
+                                  </text>
+                                );
                               }}
-                              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>
                         </ComposedChart>

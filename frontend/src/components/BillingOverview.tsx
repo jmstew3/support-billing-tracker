@@ -5,32 +5,20 @@ import { SiteFavicon } from './ui/SiteFavicon';
 import { PageHeader } from './PageHeader';
 import { usePeriod } from '../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { generateComprehensiveBilling } from '../services/billingApi';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../utils/formatting';
+import { CountBadge, CreditBadge, FreeBadge, BillingTypeBadge } from './ui/BillingBadge';
 import {
-  generateComprehensiveBilling,
-  formatCurrency,
-  formatCurrencyAccounting,
-} from '../services/billingApi';
+  CATEGORY_COLORS,
+  BADGE_BORDER_RADIUS,
+  TOTAL_REVENUE_BADGE_STYLE,
+  TABLE_REVENUE_TEXT_SIZE,
+  TABLE_REVENUE_FONT_WEIGHT,
+  GRAND_TOTAL_TEXT_SIZE,
+  GRAND_TOTAL_FONT_WEIGHT,
+} from '../config/uiConstants';
 import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
-
-// Category color scheme - using black shades for consistency
-const CATEGORY_COLORS = {
-  tickets: {
-    primary: '#000000',      // black (darkest)
-    light: 'text-black',
-    dark: 'dark:text-gray-400',
-  },
-  projects: {
-    primary: '#374151',      // gray-700 (medium dark)
-    light: 'text-gray-700',
-    dark: 'dark:text-gray-300',
-  },
-  hosting: {
-    primary: '#6B7280',      // gray-500 (lighter)
-    light: 'text-gray-600',
-    dark: 'dark:text-gray-200',
-  },
-} as const;
 
 export function BillingOverview() {
   const { selectedYear, selectedMonth, setAvailableData } = usePeriod();
@@ -112,13 +100,7 @@ export function BillingOverview() {
     return expandedSections.get(month)?.has(section) || false;
   };
 
-  // Format month for display
-  function formatMonthLabel(monthStr: string) {
-    if (monthStr === 'all') return 'All Months';
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
+  // Note: formatMonthLabel now imported from utils/formatting
 
   // Filter data based on selected month from context
   // Convert context values to month string format (YYYY-MM)
@@ -325,9 +307,9 @@ export function BillingOverview() {
                     dataKey={(entry: any) => entry.Tickets + entry.Projects + entry.Hosting}
                     position="top"
                     content={(props: any) => {
-                      const { x, y, value } = props;
+                      const { x, y, width, value } = props;
                       return (
-                        <text x={x} y={y} dx={20} dy={-4} fontSize="11" fontWeight="bold" fill="#374151" textAnchor="middle">
+                        <text x={x + width / 2} y={y - 4} fontSize="11" fontWeight="bold" fill="#374151" textAnchor="middle">
                           {formatCurrency(value)}
                         </text>
                       );
@@ -383,21 +365,21 @@ export function BillingOverview() {
 
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
-                    <tr className="bg-muted/60 border-t-2 font-bold">
+                    <tr className={`bg-muted/60 border-t-2 ${GRAND_TOTAL_FONT_WEIGHT}`}>
                       <td className="py-4 px-4 text-left text-base">GRAND TOTAL</td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
                         <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
                         <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className={`py-4 px-4 text-right ${GRAND_TOTAL_TEXT_SIZE}`}>
                         <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
@@ -444,7 +426,7 @@ function MonthRow({
             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
           </div>
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
+        <td className={`py-3 px-4 text-right ${TABLE_REVENUE_TEXT_SIZE} ${TABLE_REVENUE_FONT_WEIGHT} ${CATEGORY_COLORS.tickets.light} ${CATEGORY_COLORS.tickets.dark}`}>
           {monthData.ticketsRevenue === 0 ? (
             <span>-</span>
           ) : (
@@ -454,7 +436,7 @@ function MonthRow({
             </>
           )}
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
+        <td className={`py-3 px-4 text-right ${TABLE_REVENUE_TEXT_SIZE} ${TABLE_REVENUE_FONT_WEIGHT} ${CATEGORY_COLORS.projects.light} ${CATEGORY_COLORS.projects.dark}`}>
           {monthData.projectsRevenue === 0 ? (
             <span>-</span>
           ) : (
@@ -464,7 +446,7 @@ function MonthRow({
             </>
           )}
         </td>
-        <td className={`py-3 px-4 text-right font-semibold ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
+        <td className={`py-3 px-4 text-right ${TABLE_REVENUE_TEXT_SIZE} ${TABLE_REVENUE_FONT_WEIGHT} ${CATEGORY_COLORS.hosting.light} ${CATEGORY_COLORS.hosting.dark}`}>
           {monthData.hostingRevenue === 0 ? (
             <span>-</span>
           ) : (
@@ -475,7 +457,7 @@ function MonthRow({
           )}
         </td>
         <td className="py-3 px-4 text-right">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+          <span className={`inline-flex items-center px-3 py-1 text-sm font-medium ${BADGE_BORDER_RADIUS} ${TOTAL_REVENUE_BADGE_STYLE}`}>
             {formatCurrency(monthData.totalRevenue)}
           </span>
         </td>
@@ -540,14 +522,15 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Ticket className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                {monthData.ticketsCount} {monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}
-              </span>
+              <CountBadge
+                text={`${monthData.ticketsCount} ${monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}`}
+                size="xs"
+              />
               {hasFreeHours && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                  <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.ticketsFreeHoursApplied}h free
-                </span>
+                <CreditBadge
+                  text={`${monthData.ticketsFreeHoursApplied}h free`}
+                  size="xs"
+                />
               )}
             </div>
             <span className="font-medium text-muted-foreground">
@@ -566,9 +549,8 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <td colSpan={2} className="py-2 px-4 text-xs">
                 {ticket.description}
                 {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                    {ticket.freeHoursApplied}h free
+                  <span className="ml-2">
+                    <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
                   </span>
                 )}
               </td>
@@ -640,26 +622,27 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                {monthData.projectsCount} {monthData.projectsCount === 1 ? 'Project' : 'Projects'}
-              </span>
+              <CountBadge
+                text={`${monthData.projectsCount} ${monthData.projectsCount === 1 ? 'Project' : 'Projects'}`}
+                size="xs"
+              />
               {monthData.projectsLandingPageCredit > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                  <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.projectsLandingPageCredit} Free Landing Page Credit
-                </span>
+                <CreditBadge
+                  text={`${monthData.projectsLandingPageCredit} Free Landing Page Credit`}
+                  size="xs"
+                />
               )}
               {monthData.projectsMultiFormCredit > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                  <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.projectsMultiFormCredit} Free Multi-Form
-                </span>
+                <CreditBadge
+                  text={`${monthData.projectsMultiFormCredit} Free Multi-Form`}
+                  size="xs"
+                />
               )}
               {monthData.projectsBasicFormCredit > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                  <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.projectsBasicFormCredit} Free Basic Form{monthData.projectsBasicFormCredit > 1 ? 's' : ''}
-                </span>
+                <CreditBadge
+                  text={`${monthData.projectsBasicFormCredit} Free Basic Form${monthData.projectsBasicFormCredit > 1 ? 's' : ''}`}
+                  size="xs"
+                />
               )}
             </div>
             <span className="font-medium text-muted-foreground">
@@ -677,12 +660,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
                 <span>{project.name}</span>
-                {project.isFreeCredit && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                    FREE
-                  </span>
-                )}
+                {project.isFreeCredit && <FreeBadge size="xs" />}
               </div>
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
@@ -728,14 +706,15 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Server className="h-4 w-4 text-muted-foreground" />
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
-              </span>
+              <CountBadge
+                text={`${monthData.hostingSitesCount} ${monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}`}
+                size="xs"
+              />
               {monthData.hostingCreditsApplied > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                  <Zap className="h-3 w-3 inline mr-1" />
-                  {monthData.hostingCreditsApplied} free credit{monthData.hostingCreditsApplied !== 1 ? 's' : ''}
-                </span>
+                <CreditBadge
+                  text={`${monthData.hostingCreditsApplied} free credit${monthData.hostingCreditsApplied !== 1 ? 's' : ''}`}
+                  size="xs"
+                />
               )}
             </div>
             <span className="font-medium text-muted-foreground">
@@ -754,14 +733,8 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 <span>{hosting.siteName}</span>
               </div>
             </td>
-            <td className="py-2 px-4 text-xs text-muted-foreground">
-              {hosting.billingType === 'FULL'
-                ? 'Full Month'
-                : hosting.billingType === 'PRORATED_START'
-                ? 'Prorated Start'
-                : hosting.billingType === 'PRORATED_END'
-                ? 'Prorated End'
-                : 'Inactive'}
+            <td className="py-2 px-4 text-xs">
+              <BillingTypeBadge billingType={hosting.billingType} size="xs" />
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
               {hosting.daysActive}/{hosting.daysInMonth} days

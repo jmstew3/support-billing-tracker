@@ -5,10 +5,10 @@ import { CumulativeBillingChart } from './CumulativeBillingChart';
 import { HostingTypeChart } from './HostingTypeChart';
 import { Server, DollarSign, Gift, Zap } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
+import { formatCurrency, formatMonthLabel } from '../utils/formatting';
 import {
   fetchWebsiteProperties,
   generateMonthlyBreakdown,
-  formatCurrency,
   calculateCreditProgress,
 } from '../services/hostingApi';
 import type { WebsiteProperty, MonthlyHostingSummary } from '../types/websiteProperty';
@@ -62,13 +62,7 @@ export function HostingBilling() {
   // Available months for filter
   const availableMonths = monthlyBreakdown.map((m) => m.month);
 
-  // Format month for display
-  function formatMonthLabel(monthStr: string) {
-    if (monthStr === 'all') return 'All Months';
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }
+  // Note: formatMonthLabel now imported from utils/formatting
 
   if (loading) {
     return <LoadingState variant="hosting" />;

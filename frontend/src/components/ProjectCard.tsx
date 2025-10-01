@@ -1,7 +1,10 @@
 import { Calendar, CheckCircle, DollarSign, AlertCircle, Tag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { convertMicrosToDollars, formatCurrency } from '../services/projectsApi';
+import { InvoiceStatusBadge, ProjectCategoryBadge } from './ui/BillingBadge';
+import { BADGE_BORDER_RADIUS } from '../config/uiConstants';
 import type { Project } from '../types/project';
+import type { InvoiceStatus, ProjectCategory } from '../config/uiConstants';
 
 interface ProjectCardProps {
   project: Project;
@@ -35,71 +38,35 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
-  // Invoice status styling
-  const getInvoiceStatusStyle = (status: string) => {
+  // Invoice status icon and background styling (for card background accent)
+  const getInvoiceStatusAccent = (status: string) => {
     switch (status) {
       case 'PAID':
         return {
-          badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
           icon: CheckCircle,
           bg: 'bg-green-50/20 dark:bg-green-950/10',
-          label: 'Paid',
         };
       case 'INVOICED':
         return {
-          badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
           icon: DollarSign,
           bg: 'bg-yellow-50/20 dark:bg-yellow-950/10',
-          label: 'Invoiced',
         };
       case 'READY':
         return {
-          badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
           icon: AlertCircle,
           bg: 'bg-blue-50/20 dark:bg-blue-950/10',
-          label: 'Ready',
         };
       case 'NOT_READY':
         return {
-          badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
           icon: AlertCircle,
           bg: 'bg-gray-50/20 dark:bg-gray-950/10',
-          label: 'Not Ready',
         };
       default:
         return {
-          badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
           icon: DollarSign,
           bg: '',
-          label: status,
         };
     }
-  };
-
-  // Project category styling
-  const getCategoryStyle = (category: string) => {
-    switch (category) {
-      case 'MIGRATION':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'LANDING_PAGE':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'WEBSITE':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'MULTI_FORM':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-      case 'BASIC_FORM':
-        return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  // Format category for display
-  const formatCategory = (category: string) => {
-    return category
-      .split('_')
-      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(' ');
   };
 
   // Format date for display
@@ -110,8 +77,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   };
 
   const hostingStyle = getHostingStatusStyle(project.hostingStatus);
-  const invoiceStyle = getInvoiceStatusStyle(project.invoiceStatus);
-  const InvoiceIcon = invoiceStyle.icon;
+  const invoiceAccent = getInvoiceStatusAccent(project.invoiceStatus);
+  const InvoiceIcon = invoiceAccent.icon;
 
   return (
     <Card
@@ -124,26 +91,27 @@ export function ProjectCard({ project }: ProjectCardProps) {
         {/* Status Badges Row */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Hosting Status */}
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${hostingStyle.badge}`}>
+          <span className={`px-2.5 py-1 text-xs font-semibold ${BADGE_BORDER_RADIUS} ${hostingStyle.badge}`}>
             {project.hostingStatus}
           </span>
 
-          {/* Invoice Status */}
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${invoiceStyle.badge}`}>
+          {/* Invoice Status - Using centralized component */}
+          <span className={`inline-flex items-center gap-1 ${BADGE_BORDER_RADIUS}`}>
             <InvoiceIcon size={12} />
-            {invoiceStyle.label}
+            <InvoiceStatusBadge status={project.invoiceStatus as InvoiceStatus} size="sm" />
           </span>
 
-          {/* Project Category */}
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getCategoryStyle(project.projectCategory)}`}>
-            {formatCategory(project.projectCategory)}
-          </span>
+          {/* Project Category - Using centralized component */}
+          <ProjectCategoryBadge
+            category={project.projectCategory as ProjectCategory}
+            size="sm"
+          />
         </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col justify-between pt-0">
         {/* Revenue Amount - Prominent Display */}
-        <div className={`mb-4 p-4 rounded-lg ${invoiceStyle.bg} border border-border/30`}>
+        <div className={`mb-4 p-4 rounded-lg ${invoiceAccent.bg} border border-border/30`}>
           <div className="text-xs text-muted-foreground mb-1 font-medium">Revenue</div>
           <div className="text-3xl font-bold text-foreground">{formatCurrency(revenue)}</div>
           {project.invoiceNumber && (

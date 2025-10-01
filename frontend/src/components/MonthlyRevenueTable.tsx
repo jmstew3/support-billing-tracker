@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Calendar, AlertTriangle, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
-import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../config/pricing';
+import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import { SiteFavicon } from './ui/SiteFavicon';
+import { CountBadge, CreditBadge, FreeBadge } from './ui/BillingBadge';
+import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../config/uiConstants';
 import type { Project } from '../types/project';
 
 interface MonthlyBreakdown {
@@ -150,9 +152,10 @@ export function MonthlyRevenueTable({
                               <ChevronDown className="h-4 w-4" />
                             )}
                             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
-                              {monthData.projectCount} {monthData.projectCount === 1 ? 'project' : 'projects'}
-                            </span>
+                            <CountBadge
+                              text={`${monthData.projectCount} ${monthData.projectCount === 1 ? 'project' : 'projects'}`}
+                              size="sm"
+                            />
 
                             {/* Calculate and display credit badges for this month */}
                             {(() => {
@@ -165,28 +168,22 @@ export function MonthlyRevenueTable({
                               return (
                                 <>
                                   {landingPages.length > 0 && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                                      <Zap className="h-3 w-3 inline mr-1" />
-                                      1 Free Landing Page Credit
-                                    </span>
+                                    <CreditBadge text="1 Free Landing Page Credit" size="sm" />
                                   )}
                                   {multiForms.length > 0 && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                                      <Zap className="h-3 w-3 inline mr-1" />
-                                      1 Free Multi-Form
-                                    </span>
+                                    <CreditBadge text="1 Free Multi-Form" size="sm" />
                                   )}
                                   {basicForms.length > 0 && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                                      <Zap className="h-3 w-3 inline mr-1" />
-                                      {Math.min(basicForms.length, FREE_BASIC_FORMS_PER_MONTH)} Free Basic Form{Math.min(basicForms.length, FREE_BASIC_FORMS_PER_MONTH) > 1 ? 's' : ''}
-                                    </span>
+                                    <CreditBadge
+                                      text={`${Math.min(basicForms.length, 5)} Free Basic Form${Math.min(basicForms.length, 5) > 1 ? 's' : ''}`}
+                                      size="sm"
+                                    />
                                   )}
                                 </>
                               );
                             })()}
                           </div>
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+                          <span className={`inline-flex items-center px-3 py-1 text-sm font-medium ${BADGE_BORDER_RADIUS} ${TOTAL_REVENUE_BADGE_STYLE}`}>
                             {formatCurrency(monthData.revenue)}
                           </span>
                         </div>
@@ -239,12 +236,7 @@ export function MonthlyRevenueTable({
                                 <div className="flex items-center gap-2">
                                   <SiteFavicon websiteUrl={project.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{project.name}</div>
-                                  {isFreeCredit && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                                      <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                                      FREE
-                                    </span>
-                                  )}
+                                  {isFreeCredit && <FreeBadge size="xs" />}
                                 </div>
                               </td>
 
