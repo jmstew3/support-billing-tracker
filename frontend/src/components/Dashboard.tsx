@@ -1604,7 +1604,7 @@ export function Dashboard() {
 
         <Scorecard
           title="Total Cost"
-          value={`$${formatCurrency(filteredCosts?.totalCost || 0)}`}
+          value={`${formatCurrency(filteredCosts?.totalCost || 0)}`}
           description="Tiered pricing"
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, FolderKanban, DollarSign, BarChart3, Server, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import velocityLogo from '../assets/velocity-logo.png';
 
 interface SidebarProps {
@@ -12,9 +12,9 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
 
   const menuItems = [
     { id: 'overview' as const, label: 'Dashboard', icon: BarChart3 },
-    { id: 'home' as const, label: 'Support', icon: Home },
+    { id: 'home' as const, label: 'Support', icon: Ticket },
     { id: 'projects' as const, label: 'Projects', icon: FolderKanban },
-    { id: 'billing' as const, label: 'Hosting & Billing', icon: Server },
+    { id: 'billing' as const, label: 'Turbo Hosting', icon: Zap },
   ];
 
   const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing') => {

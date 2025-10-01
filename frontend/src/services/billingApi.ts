@@ -1,7 +1,7 @@
 import { fetchRequests } from '../utils/api';
 import { fetchProjects, convertMicrosToDollars } from './projectsApi';
 import { fetchWebsiteProperties, generateMonthlyBreakdown } from './hostingApi';
-import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE } from '../config/pricing';
+import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE, FREE_LANDING_PAGES_PER_MONTH, FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import type {
   MonthlyBillingSummary,
   BillingSummary,
@@ -69,8 +69,20 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
         }
         const monthData = monthlyMap.get(month)!;
         monthData.projectDetails.push(project);
-        monthData.projectsRevenue += project.amount;
+        monthData.projectsGrossRevenue += project.amount;
         monthData.projectsCount++;
+      }
+    });
+
+    // Apply free landing page to eligible months (June 2025 onwards)
+    monthlyMap.forEach((monthData, month) => {
+      if (month >= FREE_LANDING_PAGE_START_DATE && monthData.projectDetails.length > 0) {
+        applyFreeLandingPage(monthData);
+      } else {
+        // For months before free landing page policy, net = gross
+        monthData.projectsRevenue = monthData.projectsGrossRevenue;
+        monthData.projectsLandingPageCredit = 0;
+        monthData.projectsLandingPageSavings = 0;
       }
     });
 
@@ -215,6 +227,38 @@ function applyFreeHours(monthData: MonthlyBillingSummary): void {
 }
 
 /**
+ * Apply free landing page credit to first LANDING_PAGE project in a month
+ * Client gets 1 free landing page per month starting June 2025
+ */
+function applyFreeLandingPage(monthData: MonthlyBillingSummary): void {
+  // Find first landing page project (LANDING_PAGE category)
+  const landingPageProjects = monthData.projectDetails.filter(
+    (proj) => proj.category === 'LANDING_PAGE'
+  );
+
+  if (landingPageProjects.length > 0 && FREE_LANDING_PAGES_PER_MONTH > 0) {
+    // Apply free credit to first landing page
+    const firstLandingPage = landingPageProjects[0];
+    const originalAmount = firstLandingPage.amount;
+
+    // Mark as free credit and store original amount
+    firstLandingPage.isFreeCredit = true;
+    firstLandingPage.originalAmount = originalAmount;
+    firstLandingPage.amount = 0;
+
+    // Update month summary
+    monthData.projectsLandingPageCredit = 1;
+    monthData.projectsLandingPageSavings = originalAmount;
+    monthData.projectsRevenue = monthData.projectsGrossRevenue - originalAmount;
+  } else {
+    // No landing pages or no credits available
+    monthData.projectsLandingPageCredit = 0;
+    monthData.projectsLandingPageSavings = 0;
+    monthData.projectsRevenue = monthData.projectsGrossRevenue;
+  }
+}
+
+/**
  * Create empty month summary object
  */
 function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
@@ -227,6 +271,9 @@ function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
     ticketsCount: 0,
     ticketDetails: [],
     projectsRevenue: 0,
+    projectsGrossRevenue: 0,
+    projectsLandingPageCredit: 0,
+    projectsLandingPageSavings: 0,
     projectsCount: 0,
     projectDetails: [],
     hostingRevenue: 0,

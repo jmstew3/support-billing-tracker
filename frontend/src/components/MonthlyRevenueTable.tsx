@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
+import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { Project } from '../types/project';
 
@@ -152,8 +153,18 @@ export function MonthlyRevenueTable({
                     {/* Project Rows (only if expanded) */}
                     {isExpanded && (
                       <>
-                        {monthData.projects.map((project) => {
+                        {monthData.projects.map((project, index) => {
                           const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+
+                          // Determine if this is the first landing page in an eligible month
+                          const isEligibleMonth = monthData.month >= FREE_LANDING_PAGE_START_DATE;
+                          const isLandingPage = project.projectCategory === 'LANDING_PAGE';
+                          const landingPageIndex = monthData.projects
+                            .slice(0, index + 1)
+                            .filter(p => p.projectCategory === 'LANDING_PAGE')
+                            .length;
+                          const isFreeCredit = isEligibleMonth && isLandingPage && landingPageIndex === 1;
+
                           return (
                             <tr
                               key={project.id}
@@ -164,6 +175,11 @@ export function MonthlyRevenueTable({
                                 <div className="flex items-center gap-2">
                                   <SiteFavicon websiteUrl={project.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{project.name}</div>
+                                  {isFreeCredit && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                                      FREE
+                                    </span>
+                                  )}
                                 </div>
                               </td>
 
@@ -201,8 +217,23 @@ export function MonthlyRevenueTable({
 
                               {/* Revenue */}
                               <td className="py-3 px-4 align-middle text-right font-semibold">
-                                <span>{formatCurrencyAccounting(revenue).symbol}</span>
-                                <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
+                                {isFreeCredit ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-muted-foreground line-through text-xs">
+                                      <span>{formatCurrencyAccounting(revenue).symbol}</span>
+                                      <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
+                                    </span>
+                                    <span className="font-semibold text-green-600 dark:text-green-400">
+                                      <span>{formatCurrencyAccounting(0).symbol}</span>
+                                      <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span>{formatCurrencyAccounting(revenue).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
+                                  </>
+                                )}
                               </td>
 
                               {/* Invoice Number */}

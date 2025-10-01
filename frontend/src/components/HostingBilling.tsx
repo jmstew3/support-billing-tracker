@@ -98,7 +98,7 @@ export function HostingBilling() {
       {/* Header - Fixed height, compact */}
       <header className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="px-8 py-4 flex items-center justify-between h-16">
-          <h1 className="text-2xl font-bold">Hosting & Billing</h1>
+          <h1 className="text-2xl font-bold">Hosting</h1>
           <div className="flex items-center gap-4">
             {/* Month Filter */}
             <div className="flex items-center gap-2">

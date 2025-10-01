@@ -362,6 +362,59 @@ Three buttons control chart granularity:
 - End Date: `endDay / daysInMonth × $99`
 - Free Credits: `floor(activeSites / 21)`
 
+## Billing Policies
+
+### Free Landing Page Policy (Starting June 2025)
+
+**Policy**: Client receives 1 free landing page project per month
+
+**Implementation Details**:
+- **Effective Date**: June 2025 (`FREE_LANDING_PAGE_START_DATE = '2025-06'`)
+- **Credit Amount**: 1 landing page per month (`FREE_LANDING_PAGES_PER_MONTH = 1`)
+- **Eligibility**: Only applies to projects with category `LANDING_PAGE`
+- **Application Logic**: Credit is applied to the **first** landing page project completed in each month
+- **Categories Excluded**: `MIGRATION` and `WEBSITE` projects do not receive this credit
+
+**Configuration Location**: `frontend/src/config/pricing.ts`
+
+**How It Works**:
+1. When generating billing summaries (`billingApi.ts`), the system identifies all landing page projects per month
+2. The first landing page in each eligible month (June 2025+) receives a free credit
+3. Original amount is stored in `originalAmount` field for display purposes
+4. Project `amount` is set to $0.00 and `isFreeCredit` flag is set to `true`
+5. Month summary tracks `projectsLandingPageCredit` (0-1) and `projectsLandingPageSavings` (dollar amount)
+
+**Visual Indicators**:
+- **Billing Overview Page**:
+  - Project shows green "FREE" badge next to name
+  - Revenue column displays strikethrough original price
+  - Net amount shown as $0.00 in green
+  - Projects section header shows "1 free landing page credit" badge
+- **Projects Page**: Shows full revenue amounts (credit applied only in Billing Overview for accounting)
+
+**Revenue Calculation**:
+- `projectsGrossRevenue`: Total before free landing page credit
+- `projectsRevenue`: Net revenue after credit (`grossRevenue - landingPageSavings`)
+- `projectsLandingPageCredit`: Number of credits applied (0 or 1)
+- `projectsLandingPageSavings`: Dollar amount saved from free credit
+
+**Files Modified**:
+- `frontend/src/config/pricing.ts` - Policy constants
+- `frontend/src/types/billing.ts` - Type definitions
+- `frontend/src/services/billingApi.ts` - Credit application logic
+- `frontend/src/components/BillingOverview.tsx` - Visual display
+
+### Free Support Hours Policy (Starting June 2025)
+
+**Policy**: Client receives 10 free support hours per month
+
+**Effective Date**: June 2025 (`FREE_HOURS_START_DATE = '2025-06'`)
+**Credit Amount**: 10 hours per month (`FREE_HOURS_PER_MONTH = 10`)
+
+**Application Logic**: Hours are applied to billable support tickets, prioritizing lowest hourly rates first to maximize dollar savings
+
+**Configuration Location**: `frontend/src/config/pricing.ts`
+
 ## Data Flow Architecture
 
 ```
