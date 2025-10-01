@@ -63,6 +63,8 @@ export interface MonthlyBillingSummary {
   hostingRevenue: number; // Net revenue after credits
   hostingGross: number; // Gross before credits
   hostingSitesCount: number;
+  hostingFreeCredits: number; // Number of free credits available this month
+  hostingCreditsApplied: number; // Number of credits actually used
   hostingDetails: HostingCharge[];
 
   // Combined totals

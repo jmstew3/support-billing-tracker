@@ -101,6 +101,8 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       monthData.hostingRevenue = hostingMonth.netMrr;
       monthData.hostingGross = hostingMonth.grossMrr;
       monthData.hostingSitesCount = hostingMonth.activeSites;
+      monthData.hostingFreeCredits = hostingMonth.freeCredits;
+      monthData.hostingCreditsApplied = hostingMonth.creditsApplied;
       monthData.hostingDetails = hostingMonth.charges;
     });
 
@@ -360,6 +362,8 @@ function createEmptyMonthSummary(month: string): MonthlyBillingSummary {
     hostingRevenue: 0,
     hostingGross: 0,
     hostingSitesCount: 0,
+    hostingFreeCredits: 0,
+    hostingCreditsApplied: 0,
     hostingDetails: [],
     totalRevenue: 0,
   };
