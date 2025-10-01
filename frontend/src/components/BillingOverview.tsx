@@ -7,7 +7,7 @@ import { usePeriod } from '../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { generateComprehensiveBilling } from '../services/billingApi';
 import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../utils/formatting';
-import { CountBadge, CreditBadge, FreeBadge, BillingTypeBadge } from './ui/BillingBadge';
+import { CountBadge, CreditBadge, BillingTypeBadge } from './ui/BillingBadge';
 import {
   CATEGORY_COLORS,
   TABLE_REVENUE_TEXT_SIZE,
@@ -362,7 +362,7 @@ export function BillingOverview() {
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
                     <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
-                      <td className="py-4 px-6 text-right text-base">GRAND TOTAL</td>
+                      <td className="py-4 px-6 text-right text-base">GRAND TOTALS</td>
                       <td className="py-4 px-4 text-right text-lg">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
@@ -502,6 +502,19 @@ interface SectionProps {
 
 function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
   const hasFreeHours = monthData.ticketsFreeHoursApplied > 0;
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+
+  const toggleTicketDescription = (ticketId: string) => {
+    setExpandedTickets((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(ticketId)) {
+        newSet.delete(ticketId);
+      } else {
+        newSet.add(ticketId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <>
@@ -538,44 +551,52 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded && (
         <>
           {/* Individual Ticket Rows */}
-          {monthData.ticketDetails.map((ticket) => (
-            <tr key={ticket.id} className="border-b hover:bg-muted/30">
-              <td className="py-2 px-12 text-xs text-muted-foreground w-32">{ticket.date}</td>
-              <td className="py-2 px-4 text-xs">
-                {ticket.description}
-                {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
-                  <span className="ml-2">
-                    <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
-                  </span>
-                )}
-              </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
-                {ticket.hours}h
-              </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
-                {formatCurrency(ticket.rate)}/hr
-              </td>
-              <td className="py-2 px-4 text-right text-sm w-32">
-                {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
-                  <div className="flex flex-col items-end">
-                    <span className="text-muted-foreground line-through text-xs">
+          {monthData.ticketDetails.map((ticket) => {
+            const isTicketExpanded = expandedTickets.has(ticket.id);
+            return (
+              <tr key={ticket.id} className="border-b hover:bg-muted/30">
+                <td className="py-2 px-12 text-xs text-muted-foreground w-32">{ticket.date}</td>
+                <td className="py-2 px-4 text-xs">
+                  <div
+                    className={`cursor-pointer ${!isTicketExpanded ? 'line-clamp-2' : ''}`}
+                    onClick={() => toggleTicketDescription(ticket.id)}
+                  >
+                    {ticket.description}
+                    {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
+                      <span className="ml-2">
+                        <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
+                  {ticket.hours.toFixed(2)}h
+                </td>
+                <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+                  {formatCurrency(ticket.rate)}/hr
+                </td>
+                <td className="py-2 px-4 text-right text-sm w-32">
+                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
+                    <div className="flex flex-col items-end">
+                      <span className="text-muted-foreground line-through text-xs">
+                        <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
+                      </span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        <span>{formatCurrencyAccounting(ticket.netAmount || ticket.amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(ticket.netAmount || ticket.amount).amount}</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold">
                       <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
                       <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
                     </span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">
-                      <span>{formatCurrencyAccounting(ticket.netAmount || ticket.amount).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(ticket.netAmount || ticket.amount).amount}</span>
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-semibold">
-                    <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
+                  )}
+                </td>
+              </tr>
+            );
+          })}
 
           {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
           {hasFreeHours && (
@@ -606,6 +627,14 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
 // Projects Section Component
 function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
+  // Format category for display (e.g., "LANDING_PAGE" -> "Landing Page")
+  const formatCategory = (category: string) => {
+    return category
+      .split('_')
+      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   return (
     <>
       <tr
@@ -653,28 +682,35 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded &&
         monthData.projectDetails.map((project) => (
           <tr key={project.id} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-12 text-xs text-muted-foreground">{project.completionDate}</td>
-            <td colSpan={2} className="py-2 px-4 text-xs">
+            <td className="py-2 px-12 text-xs text-muted-foreground w-32">{project.completionDate}</td>
+            <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
                 <span>{project.name}</span>
-                {project.isFreeCredit && <FreeBadge size="xs" />}
+                {project.isFreeCredit && <Zap className="h-4 w-4 inline text-green-600 dark:text-green-400" />}
               </div>
             </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-              {project.category}
+            <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+              {formatCategory(project.category)}
             </td>
-            <td className="py-2 px-4 text-right text-sm">
+            <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+              <span>{formatCurrencyAccounting(project.originalAmount || project.amount).symbol}</span>
+              <span className="tabular-nums">{formatCurrencyAccounting(project.originalAmount || project.amount).amount}</span>
+            </td>
+            <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+              {project.isFreeCredit && (
+                <>
+                  <span>-{formatCurrencyAccounting(project.originalAmount || project.amount).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(project.originalAmount || project.amount).amount}</span>
+                </>
+              )}
+            </td>
+            <td className="py-2 px-4 text-right text-sm w-32">
               {project.isFreeCredit ? (
-                <div className="flex flex-col items-end">
-                  <span className="text-muted-foreground line-through text-xs">
-                    <span>{formatCurrencyAccounting(project.originalAmount || 0).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(project.originalAmount || 0).amount}</span>
-                  </span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">
-                    -
-                  </span>
-                </div>
+                <span className="text-green-600 dark:text-green-400">
+                  <span>{formatCurrencyAccounting(0).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                </span>
               ) : (
                 <span className="font-semibold">
                   <span>{formatCurrencyAccounting(project.amount).symbol}</span>

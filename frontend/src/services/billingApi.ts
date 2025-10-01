@@ -188,7 +188,7 @@ function transformProjectsToBillable(projects: Project[]): BillableProject[] {
       id: proj.id,
       name: proj.name,
       websiteUrl: proj.websiteUrl,
-      completionDate: proj.projectCompletionDate || '',
+      completionDate: proj.projectCompletionDate?.split('T')[0] || '',
       category: proj.projectCategory || 'Unknown',
       hostingStatus: proj.hostingStatus || 'INACTIVE',
       amount: convertMicrosToDollars(proj.revenueAmount.amountMicros),
