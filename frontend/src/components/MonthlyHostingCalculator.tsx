@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
-import { formatCurrency } from '../services/hostingApi';
+import { formatCurrency, formatCurrencyAccounting } from '../services/hostingApi';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
 
@@ -376,8 +376,9 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               </td>
 
                               {/* Gross Amount */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
-                                {formatCurrency(charge.grossAmount)}
+                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                                <span>{formatCurrencyAccounting(charge.grossAmount).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(charge.grossAmount).amount}</span>
                               </td>
 
                               {/* Credit Applied */}
@@ -390,11 +391,17 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               </td>
 
                               {/* Net Amount */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
+                              <td className="py-3 px-4 align-middle text-right font-semibold">
                                 {charge.creditApplied ? (
-                                  <span className="text-green-600 dark:text-green-400">{formatCurrency(0)}</span>
+                                  <span className="text-green-600 dark:text-green-400">
+                                    <span>{formatCurrencyAccounting(0).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                                  </span>
                                 ) : (
-                                  formatCurrency(charge.netAmount)
+                                  <>
+                                    <span>{formatCurrencyAccounting(charge.netAmount).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(charge.netAmount).amount}</span>
+                                  </>
                                 )}
                               </td>
                             </tr>
@@ -411,11 +418,17 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                               </span>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-right tabular-nums">{formatCurrency(monthData.grossMrr)}</td>
+                          <td className="py-3 px-4 text-right">
+                            <span>{formatCurrencyAccounting(monthData.grossMrr).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.grossMrr).amount}</span>
+                          </td>
                           <td className="py-3 px-4 text-center text-xs">
                             {monthData.creditsApplied > 0 && `${monthData.creditsApplied}×`}
                           </td>
-                          <td className="py-3 px-4 text-right tabular-nums">{formatCurrency(monthData.netMrr)}</td>
+                          <td className="py-3 px-4 text-right">
+                            <span>{formatCurrencyAccounting(monthData.netMrr).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.netMrr).amount}</span>
+                          </td>
                         </tr>
                       </>
                     )}
@@ -429,11 +442,22 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                   <td colSpan={5} className="py-4 px-6 text-right text-base">
                     GRAND TOTAL
                   </td>
-                  <td className="py-4 px-4 text-right text-lg tabular-nums">{formatCurrency(grandTotalGross)}</td>
-                  <td className="py-4 px-4 text-center text-sm tabular-nums">
-                    {grandTotalCredits > 0 && `-${formatCurrency(grandTotalCredits)}`}
+                  <td className="py-4 px-4 text-right text-lg">
+                    <span>{formatCurrencyAccounting(grandTotalGross).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(grandTotalGross).amount}</span>
                   </td>
-                  <td className="py-4 px-4 text-right text-lg tabular-nums">{formatCurrency(grandTotalNet)}</td>
+                  <td className="py-4 px-4 text-center text-sm">
+                    {grandTotalCredits > 0 && (
+                      <>
+                        <span>-{formatCurrencyAccounting(grandTotalCredits).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(grandTotalCredits).amount}</span>
+                      </>
+                    )}
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">
+                    <span>{formatCurrencyAccounting(grandTotalNet).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(grandTotalNet).amount}</span>
+                  </td>
                 </tr>
               )}
             </tbody>

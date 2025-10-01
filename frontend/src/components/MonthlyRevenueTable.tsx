@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
-import { formatCurrency, convertMicrosToDollars } from '../services/projectsApi';
+import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
 import { SiteFavicon } from './ui/SiteFavicon';
 import type { Project } from '../types/project';
 
@@ -200,8 +200,9 @@ export function MonthlyRevenueTable({
                               </td>
 
                               {/* Revenue */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold tabular-nums">
-                                {formatCurrency(revenue)}
+                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                                <span>{formatCurrencyAccounting(revenue).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
                               </td>
 
                               {/* Invoice Number */}
@@ -217,8 +218,9 @@ export function MonthlyRevenueTable({
                           <td colSpan={5} className="py-3 px-6 text-right text-sm">
                             {formatMonthLabel(monthData.month)} Subtotal
                           </td>
-                          <td className="py-3 px-4 text-right tabular-nums">
-                            {formatCurrency(monthData.revenue)}
+                          <td className="py-3 px-4 text-right">
+                            <span>{formatCurrencyAccounting(monthData.revenue).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.revenue).amount}</span>
                           </td>
                           <td className="py-3 px-4"></td>
                         </tr>
@@ -233,8 +235,9 @@ export function MonthlyRevenueTable({
                 <td colSpan={5} className="py-4 pr-8 text-right text-base">
                   GRAND TOTAL
                 </td>
-                <td className="py-4 px-4 text-right text-lg tabular-nums">
-                  {formatCurrency(grandTotal)}
+                <td className="py-4 px-4 text-right text-lg">
+                  <span>{formatCurrencyAccounting(grandTotal).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(grandTotal).amount}</span>
                 </td>
                 <td className="py-4 px-4"></td>
               </tr>
