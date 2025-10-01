@@ -16,7 +16,7 @@ import type { ChatRequest } from '../types/request';
 import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
 import { formatTime } from '../utils/timeUtils';
 import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone, Zap } from 'lucide-react';
 import { PRICING_CONFIG } from '../config/pricing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LabelList } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -743,6 +743,41 @@ export function Dashboard() {
     return true;
   });
   const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
+
+  // Create filtered dataset for calendar heatmap - includes ALL active requests (billable + non-billable)
+  // This shows the full rhythm and cadence of communication, excluding only archived requests
+  const activeRequestsForCalendar = requests.filter(request => {
+    // Only include active requests (exclude archived)
+    if (request.Status !== 'active') return false;
+
+    const requestDate = parseLocalDate(request.Date);
+    const requestYear = requestDate.getFullYear();
+    const requestMonth = requestDate.getMonth() + 1;
+
+    if (requestYear !== selectedYear) return false;
+    if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
+
+    return true;
+  });
+
+  // Generate calendar-specific data that includes ALL active requests
+  const getCalendarData = () => {
+    try {
+      if (timeViewMode === 'day' && selectedDay !== 'all') {
+        // For day view, use active requests filtered to the selected day
+        const dayActiveRequests = activeRequestsForCalendar.filter(r => r.Date === selectedDay);
+        return processHourlyRequests(dayActiveRequests, selectedDay);
+      } else {
+        // For month/all views, use all active requests for the calendar
+        return processDailyRequests(activeRequestsForCalendar);
+      }
+    } catch (error) {
+      console.error('Error getting calendar data:', error);
+      return [];
+    }
+  };
+
+  const calendarData = getCalendarData();
 
   // Calculate current month string for free hours policy (YYYY-MM format)
   const getCurrentMonthString = () => {
@@ -1566,17 +1601,11 @@ export function Dashboard() {
             title="Total Cost"
             value={
               filteredCosts?.freeHoursSavings > 0 ? (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="line-through text-muted-foreground text-sm">
-                      {formatCurrency(filteredCosts.grossTotalCost)}
-                    </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
-                      {filteredCosts.freeHoursApplied}h free
-                    </span>
-                  </div>
-                  <span className="text-green-600 dark:text-green-400">
-                    {formatCurrency(filteredCosts.netTotalCost)}
+                <div className="flex items-center gap-2">
+                  <span>{formatCurrency(filteredCosts.netTotalCost)}</span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                    <Zap className="h-2.5 w-2.5 inline mr-0.5" />
+                    {filteredCosts.freeHoursApplied}h
                   </span>
                 </div>
               ) : (
@@ -1585,7 +1614,7 @@ export function Dashboard() {
             }
             description={
               filteredCosts?.freeHoursSavings > 0
-                ? `After ${formatCurrency(filteredCosts.freeHoursSavings)} free hours credit`
+                ? `Saved ${formatCurrency(filteredCosts.freeHoursSavings)} in free hours`
                 : "Tiered pricing"
             }
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
@@ -1671,7 +1700,7 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <RequestCalendarHeatmap
-            data={chartData}
+            data={calendarData}
             isHourlyView={timeViewMode === 'day' && selectedDay !== 'all'}
             onDateClick={handleCalendarDateClick}
             selectedDate={selectedDay === 'all' ? undefined : selectedDay}
@@ -2547,6 +2576,101 @@ export function Dashboard() {
               <span>Showing {filteredAndSortedRequests.length} requests</span>
             </div>
           </div>
+
+          {/* Active Filters Display */}
+          {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Category Filters */}
+              {categoryFilter.map(category => (
+                <div key={`category-${category}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Category:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{category}</span>
+                  <button
+                    onClick={() => {
+                      setCategoryFilter(categoryFilter.filter(c => c !== category));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Urgency Filters */}
+              {urgencyFilter.map(urgency => (
+                <div key={`urgency-${urgency}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Urgency:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{urgency}</span>
+                  <button
+                    onClick={() => {
+                      setUrgencyFilter(urgencyFilter.filter(u => u !== urgency));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Source Filters */}
+              {sourceFilter.map(source => (
+                <div key={`source-${source}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Source:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{source === 'sms' ? 'Text' : source}</span>
+                  <button
+                    onClick={() => {
+                      setSourceFilter(sourceFilter.filter(s => s !== source));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Day Filters */}
+              {dayFilter.map(day => (
+                <div key={`day-${day}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Day:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{day}</span>
+                  <button
+                    onClick={() => {
+                      setDayFilter(dayFilter.filter(d => d !== day));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Date Filter */}
+              {dateFilter !== 'all' && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{dateFilter}</span>
+                  <button
+                    onClick={() => {
+                      setDateFilter('all');
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="overflow-visible" style={{position: 'static'}}>
             <Table>
