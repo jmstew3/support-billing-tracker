@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Calendar, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertTriangle, Zap } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
 import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import { SiteFavicon } from './ui/SiteFavicon';
-import { CountBadge, CreditBadge, FreeBadge } from './ui/BillingBadge';
-import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../config/uiConstants';
+import { CountBadge, CreditBadge } from './ui/BillingBadge';
 import type { Project } from '../types/project';
 
 interface MonthlyBreakdown {
@@ -41,8 +40,49 @@ export function MonthlyRevenueTable({
     });
   };
 
-  // Calculate grand total
+  // Calculate grand totals
   const grandTotal = monthlyBreakdown.reduce((sum, month) => sum + month.revenue, 0);
+
+  // Calculate total credits applied (dollar amount)
+  const grandTotalCredits = monthlyBreakdown.reduce((sum, monthData) => {
+    const isEligibleMonth = monthData.month >= FREE_LANDING_PAGE_START_DATE;
+    if (!isEligibleMonth) return sum;
+
+    let monthCreditAmount = 0;
+    monthData.projects.forEach((project, index) => {
+      const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+
+      // Check landing page credit (1st landing page)
+      const isLandingPage = project.projectCategory === 'LANDING_PAGE';
+      const landingPageIndex = monthData.projects
+        .slice(0, index + 1)
+        .filter(p => p.projectCategory === 'LANDING_PAGE')
+        .length;
+      const isFreeLandingPage = isLandingPage && landingPageIndex === 1;
+
+      // Check multi-form credit (1st multi-form)
+      const isMultiForm = project.projectCategory === 'MULTI_FORM';
+      const multiFormIndex = monthData.projects
+        .slice(0, index + 1)
+        .filter(p => p.projectCategory === 'MULTI_FORM')
+        .length;
+      const isFreeMultiForm = isMultiForm && multiFormIndex === 1;
+
+      // Check basic form credit (first 5 basic forms)
+      const isBasicForm = project.projectCategory === 'BASIC_FORM';
+      const basicFormIndex = monthData.projects
+        .slice(0, index + 1)
+        .filter(p => p.projectCategory === 'BASIC_FORM')
+        .length;
+      const isFreeBasicForm = isBasicForm && basicFormIndex <= 5;
+
+      if (isFreeLandingPage || isFreeMultiForm || isFreeBasicForm) {
+        monthCreditAmount += revenue;
+      }
+    });
+
+    return sum + monthCreditAmount;
+  }, 0);
 
   // Format month for display (e.g., "September 2025")
   function formatMonthLabel(monthStr: string) {
@@ -106,7 +146,7 @@ export function MonthlyRevenueTable({
           <table className="w-full caption-bottom text-sm">
             {/* Main Table Header */}
             <thead className="[&_tr]:border-b" style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-              <tr className="border-b">
+              <tr className="border-b divide-x">
                 <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px]">
                   Name
                 </th>
@@ -122,11 +162,17 @@ export function MonthlyRevenueTable({
                 <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[110px]">
                   Completed
                 </th>
-                <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[100px]">
-                  Revenue
-                </th>
                 <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[110px]">
                   Invoice #
+                </th>
+                <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[100px]">
+                  Gross
+                </th>
+                <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[80px]">
+                  Credit
+                </th>
+                <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground min-w-[100px]">
+                  Net
                 </th>
               </tr>
             </thead>
@@ -143,7 +189,7 @@ export function MonthlyRevenueTable({
                       className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
                       onClick={() => toggleMonth(monthData.month)}
                     >
-                      <td colSpan={7} className="py-3 px-6">
+                      <td colSpan={9} className="py-3 px-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {isExpanded ? (
@@ -183,9 +229,7 @@ export function MonthlyRevenueTable({
                               );
                             })()}
                           </div>
-                          <span className={`inline-flex items-center px-3 py-1 text-sm font-medium ${BADGE_BORDER_RADIUS} ${TOTAL_REVENUE_BADGE_STYLE}`}>
-                            {formatCurrency(monthData.revenue)}
-                          </span>
+                          <div className="font-bold text-base tabular-nums">{formatCurrency(monthData.revenue)}</div>
                         </div>
                       </td>
                     </tr>
@@ -229,14 +273,14 @@ export function MonthlyRevenueTable({
                           return (
                             <tr
                               key={project.id}
-                              className="border-b transition-colors hover:bg-muted/50"
+                              className="border-b divide-x transition-colors hover:bg-muted/50"
                             >
                               {/* Name - with left indent */}
                               <td className="py-3 pl-12 pr-4 align-middle">
                                 <div className="flex items-center gap-2">
                                   <SiteFavicon websiteUrl={project.websiteUrl} size={16} />
                                   <div className="line-clamp-2 font-medium">{project.name}</div>
-                                  {isFreeCredit && <FreeBadge size="xs" />}
+                                  {isFreeCredit && <Zap className="h-4 w-4 inline text-green-600 dark:text-green-400" />}
                                 </div>
                               </td>
 
@@ -274,23 +318,38 @@ export function MonthlyRevenueTable({
                               </td>
 
                               {/* Completion Date */}
-                              <td className="py-3 px-4 align-middle text-xs font-medium">
+                              <td className="py-3 px-4 align-middle text-muted-foreground text-xs">
                                 {formatDate(project.projectCompletionDate)}
                               </td>
 
-                              {/* Revenue */}
-                              <td className="py-3 px-4 align-middle text-right font-semibold">
+                              {/* Invoice Number */}
+                              <td className="py-3 px-4 align-middle text-muted-foreground text-xs">
+                                {project.invoiceNumber || 'N/A'}
+                              </td>
+
+                              {/* Gross Amount */}
+                              <td className="py-3 px-4 align-middle text-right text-xs">
+                                <span>{formatCurrencyAccounting(revenue).symbol}</span>
+                                <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
+                              </td>
+
+                              {/* Credit Applied */}
+                              <td className="py-3 px-4 align-middle text-right text-xs">
+                                {isFreeCredit && (
+                                  <>
+                                    <span>-{formatCurrencyAccounting(revenue).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
+                                  </>
+                                )}
+                              </td>
+
+                              {/* Net Amount */}
+                              <td className="py-3 px-4 align-middle text-right text-xs">
                                 {isFreeCredit ? (
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-muted-foreground line-through text-xs">
-                                      <span>{formatCurrencyAccounting(revenue).symbol}</span>
-                                      <span className="tabular-nums">{formatCurrencyAccounting(revenue).amount}</span>
-                                    </span>
-                                    <span className="font-semibold text-green-600 dark:text-green-400">
-                                      <span>{formatCurrencyAccounting(0).symbol}</span>
-                                      <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
-                                    </span>
-                                  </div>
+                                  <span className="text-green-600 dark:text-green-400">
+                                    <span>{formatCurrencyAccounting(0).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                                  </span>
                                 ) : (
                                   <>
                                     <span>{formatCurrencyAccounting(revenue).symbol}</span>
@@ -298,25 +357,121 @@ export function MonthlyRevenueTable({
                                   </>
                                 )}
                               </td>
-
-                              {/* Invoice Number */}
-                              <td className="py-3 px-4 align-middle text-muted-foreground text-xs">
-                                {project.invoiceNumber || 'N/A'}
-                              </td>
                             </tr>
                           );
                         })}
 
                         {/* Month Subtotal Row */}
-                        <tr className="bg-muted/30 border-b font-semibold">
-                          <td colSpan={5} className="py-3 px-6 text-right text-sm">
+                        <tr className="bg-muted/30 border-b divide-x font-semibold">
+                          <td colSpan={6} className="py-3 px-6 text-right text-sm">
                             {formatMonthLabel(monthData.month)} Subtotal
                           </td>
                           <td className="py-3 px-4 text-right">
                             <span>{formatCurrencyAccounting(monthData.revenue).symbol}</span>
                             <span className="tabular-nums">{formatCurrencyAccounting(monthData.revenue).amount}</span>
                           </td>
-                          <td className="py-3 px-4"></td>
+                          <td className="py-3 px-4 text-right">
+                            {(() => {
+                              // Calculate dollar amount of credits for this month
+                              const isEligibleMonth = monthData.month >= FREE_LANDING_PAGE_START_DATE;
+                              if (!isEligibleMonth) return '';
+
+                              let monthCreditAmount = 0;
+                              monthData.projects.forEach((project, index) => {
+                                const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+
+                                // Check landing page credit (1st landing page)
+                                const isLandingPage = project.projectCategory === 'LANDING_PAGE';
+                                const landingPageIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'LANDING_PAGE')
+                                  .length;
+                                const isFreeLandingPage = isLandingPage && landingPageIndex === 1;
+
+                                // Check multi-form credit (1st multi-form)
+                                const isMultiForm = project.projectCategory === 'MULTI_FORM';
+                                const multiFormIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'MULTI_FORM')
+                                  .length;
+                                const isFreeMultiForm = isMultiForm && multiFormIndex === 1;
+
+                                // Check basic form credit (first 5 basic forms)
+                                const isBasicForm = project.projectCategory === 'BASIC_FORM';
+                                const basicFormIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'BASIC_FORM')
+                                  .length;
+                                const isFreeBasicForm = isBasicForm && basicFormIndex <= 5;
+
+                                if (isFreeLandingPage || isFreeMultiForm || isFreeBasicForm) {
+                                  monthCreditAmount += revenue;
+                                }
+                              });
+
+                              return monthCreditAmount > 0 ? (
+                                <>
+                                  <span>-{formatCurrencyAccounting(monthCreditAmount).symbol}</span>
+                                  <span className="tabular-nums">{formatCurrencyAccounting(monthCreditAmount).amount}</span>
+                                </>
+                              ) : '';
+                            })()}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {(() => {
+                              // Calculate net amount (gross - credits)
+                              const isEligibleMonth = monthData.month >= FREE_LANDING_PAGE_START_DATE;
+                              if (!isEligibleMonth) {
+                                return (
+                                  <>
+                                    <span>{formatCurrencyAccounting(monthData.revenue).symbol}</span>
+                                    <span className="tabular-nums">{formatCurrencyAccounting(monthData.revenue).amount}</span>
+                                  </>
+                                );
+                              }
+
+                              let monthCreditAmount = 0;
+                              monthData.projects.forEach((project, index) => {
+                                const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+
+                                // Check landing page credit (1st landing page)
+                                const isLandingPage = project.projectCategory === 'LANDING_PAGE';
+                                const landingPageIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'LANDING_PAGE')
+                                  .length;
+                                const isFreeLandingPage = isLandingPage && landingPageIndex === 1;
+
+                                // Check multi-form credit (1st multi-form)
+                                const isMultiForm = project.projectCategory === 'MULTI_FORM';
+                                const multiFormIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'MULTI_FORM')
+                                  .length;
+                                const isFreeMultiForm = isMultiForm && multiFormIndex === 1;
+
+                                // Check basic form credit (first 5 basic forms)
+                                const isBasicForm = project.projectCategory === 'BASIC_FORM';
+                                const basicFormIndex = monthData.projects
+                                  .slice(0, index + 1)
+                                  .filter(p => p.projectCategory === 'BASIC_FORM')
+                                  .length;
+                                const isFreeBasicForm = isBasicForm && basicFormIndex <= 5;
+
+                                if (isFreeLandingPage || isFreeMultiForm || isFreeBasicForm) {
+                                  monthCreditAmount += revenue;
+                                }
+                              });
+
+                              const netAmount = monthData.revenue - monthCreditAmount;
+                              return (
+                                <>
+                                  <span>{formatCurrencyAccounting(netAmount).symbol}</span>
+                                  <span className="tabular-nums">{formatCurrencyAccounting(netAmount).amount}</span>
+                                </>
+                              );
+                            })()}
+                          </td>
                         </tr>
                       </>
                     )}
@@ -325,16 +480,29 @@ export function MonthlyRevenueTable({
               })}
 
               {/* Grand Total Row */}
-              <tr className="bg-muted/60 border-t-2 font-bold">
-                <td colSpan={5} className="py-4 pr-8 text-right text-base">
-                  GRAND TOTAL
-                </td>
-                <td className="py-4 px-4 text-right text-lg">
-                  <span>{formatCurrencyAccounting(grandTotal).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(grandTotal).amount}</span>
-                </td>
-                <td className="py-4 px-4"></td>
-              </tr>
+              {monthlyBreakdown.length > 1 && (
+                <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 divide-x divide-white/20 dark:divide-white/20 font-bold">
+                  <td colSpan={6} className="py-4 px-6 text-right text-base">
+                    GRAND TOTAL
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">
+                    <span>{formatCurrencyAccounting(grandTotal).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(grandTotal).amount}</span>
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">
+                    {grandTotalCredits > 0 && (
+                      <>
+                        <span>-{formatCurrencyAccounting(grandTotalCredits).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(grandTotalCredits).amount}</span>
+                      </>
+                    )}
+                  </td>
+                  <td className="py-4 px-4 text-right text-lg">
+                    <span>{formatCurrencyAccounting(grandTotal - grandTotalCredits).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(grandTotal - grandTotalCredits).amount}</span>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

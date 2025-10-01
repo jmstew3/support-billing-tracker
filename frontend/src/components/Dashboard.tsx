@@ -1885,17 +1885,13 @@ export function Dashboard() {
                         <td className="py-5 px-4">Total</td>
                         {monthlyCosts.map((monthData) => (
                           <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4 text-left border-l border-border/40">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
-                              <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
-                              <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
-                            </span>
+                            <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
+                            <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
                           </td>
                         ))}
                         <td className="py-5 px-4 text-left border-l border-border/40">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
-                            <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
-                            <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
-                          </span>
+                          <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
                         </td>
                       </tr>
                     </tbody>
