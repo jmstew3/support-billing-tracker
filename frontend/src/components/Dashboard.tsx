@@ -1711,7 +1711,7 @@ export function Dashboard() {
       </Card>
 
       {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 sm:gap-8 grid-cols-1 lg:grid-cols-3 xl:grid-cols-5">
         {filteredCosts && (
           <Card className="flex flex-col h-full lg:col-span-2 xl:col-span-3">
             <CardHeader className="pb-3">

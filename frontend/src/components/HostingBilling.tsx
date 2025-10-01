@@ -119,9 +119,9 @@ export function HostingBilling() {
 
       {/* Main Content - Scrollable */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Scorecards */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Scorecard
               title="Active Sites"
               value={currentSummary.activeSites}
@@ -189,9 +189,9 @@ export function HostingBilling() {
 
           {/* Charts Section - Show when viewing all months */}
           {selectedMonth === 'all' && monthlyBreakdown.length > 0 && (
-            <div className="grid grid-cols-3 gap-6">
-              {/* Cumulative Billing Chart - 2/3 width */}
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Cumulative Billing Chart - 2/3 width on desktop */}
+              <div className="lg:col-span-2">
                 <CumulativeBillingChart
                   data={monthlyBreakdown.map((m) => ({
                     month: m.month,

@@ -13,7 +13,7 @@ function App() {
     <PeriodProvider>
       <div className="flex h-screen overflow-hidden">
         <Sidebar currentView={currentView} onNavigate={setCurrentView} />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pt-14 sm:pt-0">
           {currentView === 'home' && <Dashboard />}
           {currentView === 'projects' && <Projects />}
           {currentView === 'overview' && <BillingOverview />}

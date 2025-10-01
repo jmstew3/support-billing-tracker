@@ -33,26 +33,30 @@ export function RequestBarChart({ data, isHourlyView = false }: RequestBarChartP
   });
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <BarChart data={formattedData}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="date" 
-          angle={-45}
-          textAnchor="end"
-          height={80}
-          interval={0}
-        />
-        <YAxis 
-          allowDecimals={false}
-          tickCount={6}
-        />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="low" fill="#10b981" name="Low Priority" />
-        <Bar dataKey="medium" fill="#f59e0b" name="Medium Priority" />
-        <Bar dataKey="high" fill="#ef4444" name="High Priority" />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="w-full min-h-[300px] h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={formattedData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="date"
+            angle={-45}
+            textAnchor="end"
+            height={80}
+            interval={0}
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis
+            allowDecimals={false}
+            tickCount={6}
+            tick={{ fontSize: 12 }}
+          />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="low" fill="#10b981" name="Low Priority" />
+          <Bar dataKey="medium" fill="#f59e0b" name="Medium Priority" />
+          <Bar dataKey="high" fill="#ef4444" name="High Priority" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

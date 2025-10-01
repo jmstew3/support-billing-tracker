@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import velocityLogo from '../assets/velocity-logo.png';
 
 interface SidebarProps {
@@ -9,6 +9,24 @@ interface SidebarProps {
 
 export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Close mobile menu when view changes
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [currentView]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 640) {
+        setIsMobileOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuItems = [
     { id: 'overview' as const, label: 'Dashboard', icon: BarChart3 },
@@ -24,32 +42,53 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
   };
 
   return (
-    <div
-      className={`
-        h-screen bg-muted/30 border-r border-border/50 flex flex-col
-        transition-all duration-300 ease-in-out
-        ${isCollapsed ? 'w-16' : 'w-60'}
-      `}
-    >
-      {/* Header */}
-      <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
-        {!isCollapsed && (
-          <div className="bg-black px-2.5 py-1 rounded">
-            <img
-              src={velocityLogo}
-              alt="Velocity Dashboard"
-              className="h-5 w-auto object-contain"
-            />
-          </div>
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-      </div>
+    <>
+      {/* Mobile hamburger button - only visible on screens < 640px */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="sm:hidden fixed top-3 left-3 z-50 p-3 rounded-md bg-background border border-border shadow-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+        aria-label="Toggle menu"
+      >
+        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile overlay - only visible when menu is open on mobile */}
+      {isMobileOpen && (
+        <div
+          className="sm:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`
+          h-screen bg-muted/30 border-r border-border/50 flex flex-col
+          transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'w-16' : 'w-60'}
+          sm:relative fixed z-40
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
+        `}
+      >
+        {/* Header */}
+        <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
+          {!isCollapsed && (
+            <div className="bg-black px-2.5 py-1 rounded">
+              <img
+                src={velocityLogo}
+                alt="Velocity Dashboard"
+                className="h-5 w-auto object-contain"
+              />
+            </div>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden sm:block p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
 
       {/* Navigation menu */}
       <nav className="flex-1 py-3">
@@ -63,7 +102,7 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
                 <button
                   onClick={() => handleNavigation(item.id)}
                   className={`
-                    relative w-full flex items-center gap-3 px-3 py-2 rounded-md
+                    relative w-full flex items-center gap-3 px-3 py-3 rounded-md min-h-[44px]
                     text-sm font-medium transition-all duration-200
                     ${
                       isActive
@@ -108,6 +147,7 @@ export function Sidebar({ currentView = 'home', onNavigate }: SidebarProps) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

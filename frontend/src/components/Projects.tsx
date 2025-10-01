@@ -217,7 +217,7 @@ export function Projects() {
         </div>
 
         {/* Billing Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <Scorecard
             title="Ready to Invoice"
             value={formatCurrency(billingSummary.totalReadyRevenue)}
@@ -241,9 +241,9 @@ export function Projects() {
 
         {/* Charts Section - Cumulative Billing (2/3) and Category Breakdown (1/3) */}
         {billingSummary.monthlyBreakdown.length > 0 && (
-          <div className="grid grid-cols-3 gap-6">
-            {/* Cumulative Billing Chart - Takes 2 columns */}
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Cumulative Billing Chart - Takes 2 columns on desktop */}
+            <div className="lg:col-span-2">
               <CumulativeBillingChart
                 data={billingSummary.monthlyBreakdown.map((m) => ({
                   month: m.month,
