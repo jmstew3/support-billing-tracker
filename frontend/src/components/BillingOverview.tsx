@@ -134,7 +134,15 @@ export function BillingOverview() {
   // Calculate totals for filtered data
   const displayTotals =
     currentMonthString === 'all'
-      ? billingSummary
+      ? {
+          ...billingSummary,
+          // Override totalHostingRevenue to sum all months for table display
+          // (billingSummary.totalHostingRevenue is MRR = latest month only)
+          totalHostingRevenue: billingSummary?.monthlyBreakdown.reduce(
+            (sum, m) => sum + m.hostingRevenue,
+            0
+          ) || 0,
+        }
       : {
           totalRevenue: filteredData.reduce((sum, m) => sum + m.totalRevenue, 0),
           totalTicketsRevenue: filteredData.reduce((sum, m) => sum + m.ticketsRevenue, 0),
@@ -258,7 +266,11 @@ export function BillingOverview() {
             />
             <Scorecard
               title={currentMonthString === 'all' ? 'Current Hosting MRR' : 'Hosting MRR'}
-              value={formatCurrency(displayTotals?.totalHostingRevenue || 0)}
+              value={formatCurrency(
+                currentMonthString === 'all' && billingSummary
+                  ? billingSummary.totalHostingRevenue // Latest month MRR
+                  : displayTotals?.totalHostingRevenue || 0 // Filtered month(s) sum
+              )}
               icon={<Server className="h-4 w-4 text-muted-foreground" />}
               description={
                 currentMonthString === 'all' && billingSummary?.monthlyBreakdown.length
@@ -462,9 +474,10 @@ function MonthRow({
             </>
           )}
         </td>
-        <td className="py-3 px-4 text-right font-bold text-base">
-          <span>{formatCurrencyAccounting(monthData.totalRevenue).symbol}</span>
-          <span className="tabular-nums">{formatCurrencyAccounting(monthData.totalRevenue).amount}</span>
+        <td className="py-3 px-4 text-right">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black">
+            {formatCurrency(monthData.totalRevenue)}
+          </span>
         </td>
       </tr>
 
@@ -718,6 +731,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                 {monthData.hostingSitesCount} {monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}
               </span>
+              {monthData.hostingCreditsApplied > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-3 w-3 inline mr-1" />
+                  {monthData.hostingCreditsApplied} free credit{monthData.hostingCreditsApplied !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             <span className="font-medium text-muted-foreground">
               {monthData.hostingRevenue === 0 ? '-' : formatCurrency(monthData.hostingRevenue)}
