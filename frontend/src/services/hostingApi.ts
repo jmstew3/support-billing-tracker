@@ -195,8 +195,14 @@ function calculateGrossAmount(daysActive: number, daysInMonth: number): number {
 /**
  * Calculate free credits available
  * 1 free credit per 20 sites hosted
+ *
+ * NOTE: Free credits do NOT apply to May 2025
  */
-function calculateFreeCredits(activeSites: number): number {
+function calculateFreeCredits(activeSites: number, targetMonth: string): number {
+  // No free credits for May 2025
+  if (targetMonth === '2025-05') {
+    return 0;
+  }
   return Math.floor(activeSites / 20);
 }
 
@@ -236,7 +242,7 @@ export function calculateMonthlyHosting(
   // Calculate metrics
   const activeSites = charges.length;
   const grossMrr = charges.reduce((sum, charge) => sum + charge.grossAmount, 0);
-  const freeCredits = calculateFreeCredits(activeSites);
+  const freeCredits = calculateFreeCredits(activeSites, targetMonth);
 
   // Apply free credits (prioritize full-month charges, then highest prorated)
   const sortedCharges = [...charges].sort((a, b) => {

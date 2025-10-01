@@ -362,6 +362,12 @@ Three buttons control chart granularity:
 - End Date: `endDay / daysInMonth × $99`
 - Free Credits: `floor(activeSites / 21)`
 
+**Free Hosting Credits Policy**:
+- **Credit Formula**: 1 free site per 20 paid sites (`floor(activeSites / 20)`)
+- **Exclusion**: Free hosting credits do NOT apply to May 2025
+- **Effective**: June 2025 onwards
+- **Implementation**: Credits are prioritized for full-month charges first, then highest prorated amounts
+
 ## Billing Policies
 
 ### Free Landing Page Policy (Starting June 2025)
