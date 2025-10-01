@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { CumulativeBillingChart } from './CumulativeBillingChart';
+import { HostingTypeChart } from './HostingTypeChart';
 import { Server, DollarSign, Gift } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
 import {
@@ -184,14 +185,59 @@ export function HostingBilling() {
             </div>
           )}
 
-          {/* Cumulative Billing Chart - Show when viewing all months */}
+          {/* Charts Section - Show when viewing all months */}
           {selectedMonth === 'all' && monthlyBreakdown.length > 0 && (
-            <CumulativeBillingChart
-              data={monthlyBreakdown.map((m) => ({
-                month: m.month,
-                revenue: m.netMrr,
-              }))}
-            />
+            <div className="grid grid-cols-3 gap-6">
+              {/* Cumulative Billing Chart - 2/3 width */}
+              <div className="col-span-2">
+                <CumulativeBillingChart
+                  data={monthlyBreakdown.map((m) => ({
+                    month: m.month,
+                    revenue: m.netMrr,
+                  }))}
+                />
+              </div>
+
+              {/* Hosting Type Chart - 1/3 width */}
+              <div className="col-span-1">
+                <HostingTypeChart
+                  data={(() => {
+                    // Get the most recent month (monthlyBreakdown is sorted chronologically)
+                    const mostRecentMonth = monthlyBreakdown[monthlyBreakdown.length - 1];
+
+                    if (!mostRecentMonth) {
+                      return [];
+                    }
+
+                    // Collect unique site names from most recent month only
+                    const uniqueSites = new Set<string>();
+                    mostRecentMonth.charges.forEach((charge) => {
+                      uniqueSites.add(charge.siteName);
+                    });
+
+                    // Count unique websites vs landing pages
+                    let websites = 0;
+                    let landingPages = 0;
+                    uniqueSites.forEach((siteName) => {
+                      if (siteName.includes('LP')) {
+                        landingPages++;
+                      } else {
+                        websites++;
+                      }
+                    });
+
+                    // Return single data point with unique counts
+                    return [
+                      {
+                        month: mostRecentMonth.month,
+                        websites,
+                        landingPages,
+                      },
+                    ];
+                  })()}
+                />
+              </div>
+            </div>
           )}
 
           {/* Monthly Breakdown Table */}
