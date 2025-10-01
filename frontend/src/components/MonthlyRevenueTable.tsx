@@ -230,7 +230,7 @@ export function MonthlyRevenueTable({
 
               {/* Grand Total Row */}
               <tr className="bg-muted/60 border-t-2 font-bold">
-                <td colSpan={5} className="py-4 px-6 text-right text-base">
+                <td colSpan={5} className="py-4 pr-8 text-right text-base">
                   GRAND TOTAL
                 </td>
                 <td className="py-4 px-4 text-right text-lg tabular-nums">
