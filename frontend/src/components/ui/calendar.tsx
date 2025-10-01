@@ -149,16 +149,16 @@ export function Calendar({
               disabled={isDisabled}
               className={clsx(
                 "h-8 w-8 text-sm rounded-md transition-all",
-                "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
+                "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-1",
                 {
-                  "bg-blue-600 text-white hover:bg-blue-700": isSelected,
-                  "bg-blue-100 text-blue-900 hover:bg-blue-200": isPartOfSelectedMonth && !isSelected,
-                  "bg-blue-50 text-blue-700": isHighlighted && !isSelected && !isPartOfSelectedMonth,
+                  "bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200": isSelected,
+                  "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600": isPartOfSelectedMonth && !isSelected,
+                  "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100": isHighlighted && !isSelected && !isPartOfSelectedMonth,
                   "text-gray-400": !isInMonth,
-                  "text-gray-900": isInMonth && !isSelected && !isDisabled && !isPartOfSelectedMonth,
+                  "text-gray-900 dark:text-gray-100": isInMonth && !isSelected && !isDisabled && !isPartOfSelectedMonth,
                   "opacity-50 cursor-not-allowed": isDisabled,
                   "font-semibold": isTodayDate,
-                  "ring-1 ring-gray-300": isTodayDate && !isSelected && !isPartOfSelectedMonth,
+                  "ring-1 ring-gray-300 dark:ring-gray-600": isTodayDate && !isSelected && !isPartOfSelectedMonth,
                 }
               )}
               aria-label={format(day, "PPPP")}
