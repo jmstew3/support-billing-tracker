@@ -1536,128 +1536,80 @@ export function Dashboard() {
       {/* Main Content Container */}
       <div className="flex-1 overflow-auto">
         <div className="p-8 space-y-8">
-        {/* Info section - Not sticky */}
-        <div className="space-y-2">
-        <p className="text-muted-foreground">
-          {hideNonBillable ? (
-            <>
-              Showing <span className="font-medium">{billableFilteredRequests.length}</span> billable requests
-              <span className="text-orange-600 dark:text-orange-400 ml-2">
-                ({nonBillableRequests.length} non-billable hidden)
-              </span>
-            </>
-          ) : (
-            <>
-              Showing <span className="font-medium">{billableFilteredRequests.length + nonBillableRequests.length}</span> total requests
-              {nonBillableRequests.length > 0 && (
-                <span className="text-muted-foreground ml-2">
-                  ({billableRequests.length} billable, {nonBillableRequests.length} non-billable)
-                </span>
-              )}
-            </>
-          )}
-        </p>
-        <div className="flex items-center space-x-3">
-          {false ? (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-md text-xs">
-              <Info className="w-3 h-3" />
-              <span>Working Version (CSV)</span>
-            </div>
-          ) : null}
-          {false && (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-md text-xs">
-              <Clock className="w-3 h-3" />
-              <span>Unsaved changes - click Save button</span>
-            </div>
-          )}
-          {!apiAvailable && (
-            <span className="text-xs text-muted-foreground">
-              Manual save required • Original data protected
-            </span>
-          )}
+
+      {/* All Scorecards in One Row */}
+      <div className="flex gap-4 w-full">
+        <div className="flex-1">
+          <Scorecard
+            title="Billable Requests"
+            value={billableFilteredRequests.length}
+            description={(() => {
+              const totalActive = requests.filter(r => r.Status === 'active').length;
+              const billablePercentage = totalActive > 0
+                ? Math.round((billableFilteredRequests.length / totalActive) * 100)
+                : 0;
+              return `${billablePercentage}% billable`;
+            })()}
+            icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
+          />
         </div>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Scorecard
-          title="Total Requests"
-          value={billableFilteredRequests.length}
-          description={(() => {
-            const smsCount = billableFilteredRequests.filter(r => (r.source || 'sms') === 'sms').length;
-            const ticketCount = billableFilteredRequests.filter(r => r.source === 'ticket').length;
-            const otherCount = billableFilteredRequests.filter(r => r.source && r.source !== 'sms' && r.source !== 'ticket').length;
+        <div className="flex-1">
+          <Scorecard
+            title="Total Cost"
+            value={`${formatCurrency(filteredCosts?.totalCost || 0)}`}
+            description="Tiered pricing"
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
 
-            const parts = [];
-            if (smsCount > 0) parts.push(`${smsCount} Text`);
-            if (ticketCount > 0) parts.push(`${ticketCount} Ticket`);
-            if (otherCount > 0) parts.push(`${otherCount} Other`);
-
-            return parts.length > 0 ? parts.join(', ') : (
-              timeViewMode === 'day' && selectedDay !== 'all'
-                ? `Across ${chartData.length} hours`
-                : `Across ${chartData.length} days`
-            );
-          })()}
-          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
-        />
-
-        <Scorecard
-          title="Total Cost"
-          value={`${formatCurrency(filteredCosts?.totalCost || 0)}`}
-          description="Tiered pricing"
-          icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-        />
-
-        <Scorecard
-          title="High Priority"
-          value={billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length}
-          description={`${billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable`}
-          icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
-        />
-      </div>
-
-      {/* Activity Insights Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Scorecard
-          title="Most Active Day"
-          value={
-            <div>
+        <div className="flex-1">
+          <Scorecard
+            title="Most Active Day"
+            value={
               <div>
-                {mostActiveDay.displayText}
+                <div>
+                  {mostActiveDay.displayText}
+                </div>
+                {mostActiveDay.subtitle && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {mostActiveDay.subtitle}
+                  </p>
+                )}
               </div>
-              {mostActiveDay.subtitle && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {mostActiveDay.subtitle}
-                </p>
-              )}
-            </div>
-          }
-          description={`${mostActiveDay.count} requests${mostActiveDay.dates.length > 1 ? ' each' : ''}`}
-          icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-          valueClassName="!p-0"
-        />
+            }
+            description={`${mostActiveDay.count} requests${mostActiveDay.dates.length > 1 ? ' each' : ''}`}
+            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+            valueClassName="!p-0"
+          />
+        </div>
 
-        <Scorecard
-          title="Peak Time"
-          value={mostActiveTimeRange.range.split(' (')[0]}
-          description={`${mostActiveTimeRange.count} requests`}
-          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-        />
+        <div className="flex-1">
+          <Scorecard
+            title="Peak Time"
+            value={mostActiveTimeRange.range.split(' (')[0]}
+            description={`${mostActiveTimeRange.count} requests`}
+            icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
 
-        <Scorecard
-          title="Busiest Day"
-          value={busiestDayOfWeek.day}
-          description={`${busiestDayOfWeek.count} requests on average`}
-          icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
-        />
+        <div className="flex-1">
+          <Scorecard
+            title="Busiest Day"
+            value={busiestDayOfWeek.day}
+            description={`${busiestDayOfWeek.count} requests on average`}
+            icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
 
-        <Scorecard
-          title="Top Category"
-          value={topCategory.category}
-          description={`${topCategory.percentage}% of requests`}
-          icon={<Tag className="h-4 w-4 text-muted-foreground" />}
-        />
+        <div className="flex-1">
+          <Scorecard
+            title="Top Category"
+            value={topCategory.category}
+            description={`${topCategory.percentage}% of requests`}
+            icon={<Tag className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
       </div>
 
       {/* Requests Over Time - Full Width */}
@@ -1746,9 +1698,9 @@ export function Dashboard() {
                     <tbody className="text-sm">
                       {/* Promotion Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-3 px-4">Promotion</td>
+                        <td className="py-5 px-4">Promotion</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-5 px-4">
                             {monthData.costs.promotionalCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
@@ -1759,7 +1711,7 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
                             return total === 0 ? (
@@ -1775,9 +1727,9 @@ export function Dashboard() {
                       </tr>
                       {/* Low Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-3 px-4">Low</td>
+                        <td className="py-5 px-4">Low</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-5 px-4">
                             {monthData.costs.regularCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
@@ -1788,7 +1740,7 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
                             return total === 0 ? (
@@ -1804,9 +1756,9 @@ export function Dashboard() {
                       </tr>
                       {/* Medium Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-3 px-4">Medium</td>
+                        <td className="py-5 px-4">Medium</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-5 px-4">
                             {monthData.costs.sameDayCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
@@ -1817,7 +1769,7 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
                             return total === 0 ? (
@@ -1833,9 +1785,9 @@ export function Dashboard() {
                       </tr>
                       {/* High Row */}
                       <tr className="border-b border-border/40 hover:bg-muted/30">
-                        <td className="py-3 px-4">High</td>
+                        <td className="py-5 px-4">High</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-5 px-4">
                             {monthData.costs.emergencyCost === 0 ? (
                               <div className="text-center">-</div>
                             ) : (
@@ -1846,7 +1798,7 @@ export function Dashboard() {
                             )}
                           </td>
                         ))}
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {(() => {
                             const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
                             return total === 0 ? (
@@ -1862,16 +1814,16 @@ export function Dashboard() {
                       </tr>
                       {/* Total Row */}
                       <tr className="bg-muted/50 font-semibold">
-                        <td className="py-3 px-4">Total</td>
+                        <td className="py-5 px-4">Total</td>
                         {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-3 px-4">
+                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-5 px-4">
                             <div className="flex justify-between items-center gap-1">
                               <span>$</span>
                               <span className="tabular-nums text-right flex-1">{formatCurrency(monthData.costs.totalCost)}</span>
                             </div>
                           </td>
                         ))}
-                        <td className="py-3 px-4">
+                        <td className="py-5 px-4">
                           <div className="flex justify-between items-center gap-1">
                             <span>$</span>
                             <span className="tabular-nums text-right flex-1">{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
@@ -1887,20 +1839,20 @@ export function Dashboard() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
+                        <th className="text-left py-4 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
+                        <th className="text-center py-4 px-4 font-medium text-sm text-muted-foreground">Rate</th>
+                        <th className="text-right py-4 px-4 font-medium text-sm text-muted-foreground">Hours</th>
+                        <th className="text-right py-4 px-4 font-medium text-sm text-muted-foreground">Cost</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Promotion</td>
-                        <td className="text-center py-3 px-4">$125/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
+                        <td className="py-5 px-4">Promotion</td>
+                        <td className="text-center py-5 px-4">$125/hr</td>
+                        <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.promotionalHours === 0 ? '-' : filteredCosts.promotionalHours.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {filteredCosts.promotionalCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
@@ -1912,12 +1864,12 @@ export function Dashboard() {
                         </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Low</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
+                        <td className="py-5 px-4">Low</td>
+                        <td className="text-center py-5 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
+                        <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {filteredCosts.regularCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
@@ -1929,12 +1881,12 @@ export function Dashboard() {
                         </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Medium</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
+                        <td className="py-5 px-4">Medium</td>
+                        <td className="text-center py-5 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
+                        <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {filteredCosts.sameDayCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
@@ -1946,12 +1898,12 @@ export function Dashboard() {
                         </td>
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">High</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
+                        <td className="py-5 px-4">High</td>
+                        <td className="text-center py-5 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
+                        <td className="text-right py-5 px-4 font-semibold">
                           {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 font-semibold">
+                        <td className="py-5 px-4 font-semibold">
                           {filteredCosts.emergencyCost === 0 ? (
                             <div className="text-center">-</div>
                           ) : (
@@ -1963,10 +1915,10 @@ export function Dashboard() {
                         </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-3 px-4">Total</td>
-                        <td className="text-center py-3 px-4">-</td>
-                        <td className="text-right py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-5 px-4">Total</td>
+                        <td className="text-center py-5 px-4">-</td>
+                        <td className="text-right py-5 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
+                        <td className="py-5 px-4">
                           <div className="flex justify-between items-center gap-1">
                             <span>$</span>
                             <span className="tabular-nums text-right flex-1">{formatCurrency(filteredCosts.totalCost)}</span>
@@ -1997,11 +1949,8 @@ export function Dashboard() {
                       <ResponsiveContainer width="100%" height={400}>
                         <ComposedChart data={chartData}>
                           <defs>
-                            <pattern id="diagonalStripesMonthly" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#9CA3AF" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
+                            <pattern id="whiteWithBorderMonthly" patternUnits="userSpaceOnUse" width="100%" height="100%">
+                              <rect width="100%" height="100%" fill="#FFFFFF" stroke="#000000" strokeWidth="2" />
                             </pattern>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
@@ -2129,12 +2078,8 @@ export function Dashboard() {
                                           width: '14px',
                                           height: '14px',
                                           borderRadius: '4px',
-                                          backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
-                                          backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value || '']
-                                            ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
-                                            : entry.value === 'Promotion'
-                                            ? 'repeating-linear-gradient(45deg, #D1D5DB, #D1D5DB 2px, #9CA3AF 2px, #9CA3AF 4px)'
-                                            : 'none',
+                                          backgroundColor: entry.value === 'Promotion' ? '#FFFFFF' : entry.color,
+                                          border: entry.value === 'Promotion' ? '2px solid #000000' : 'none',
                                           opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.5
                                         }} />
                                         <span style={{ color: visibleUrgencies[entry.value || ''] ? '#374151' : '#9CA3AF' }}>
@@ -2197,11 +2142,11 @@ export function Dashboard() {
                           <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#000000" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#374151" : "#D1D5DB"} />
                           <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#6B7280" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"}>
+                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "#FFFFFF" : "#D1D5DB"} stroke={visibleUrgencies.Promotion ? "#000000" : "#D1D5DB"} strokeWidth={2}>
                             <LabelList
                               dataKey="totalCost"
                               position="top"
-                              formatter={(value: any) => value > 0 ? `$${formatCurrency(value)}` : ''}
+                              formatter={(value: any) => value > 0 ? formatCurrency(value) : ''}
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>
@@ -2211,23 +2156,15 @@ export function Dashboard() {
                   } else if (filteredCosts) {
                     // Transform data for service tier view
                     const chartData = [
-                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: visibleUrgencies.Promotion ? 'url(#diagonalStripesTier)' : '#D1D5DB' },
-                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB' },
-                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB' },
-                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB' },
+                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: visibleUrgencies.Promotion ? '#FFFFFF' : '#D1D5DB', stroke: visibleUrgencies.Promotion ? '#000000' : '#D1D5DB' },
+                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB', stroke: 'none' },
+                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB', stroke: 'none' },
+                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB', stroke: 'none' },
                     ];
 
                     return (
                       <ResponsiveContainer width="100%" height={400}>
                         <BarChart data={chartData}>
-                          <defs>
-                            <pattern id="diagonalStripesTier" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#9CA3AF" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#000000" strokeWidth="2" className="dark:stroke-slate-600" />
-                            </pattern>
-                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
                           <XAxis
                             dataKey="name"
@@ -2275,12 +2212,13 @@ export function Dashboard() {
                           />
                           <Bar dataKey="cost" name="Cost" shape={(props: any) => {
                             const { fill, x, y, width, height } = props;
-                            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
+                            const { stroke } = props.payload;
+                            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} stroke={stroke} strokeWidth={stroke && stroke !== 'none' ? 2 : 0} />;
                           }}>
                             <LabelList
                               dataKey="cost"
                               position="top"
-                              formatter={(value: any) => `$${formatCurrency(value)}`}
+                              formatter={(value: any) => formatCurrency(value)}
                               style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
                             />
                           </Bar>
@@ -2355,24 +2293,18 @@ export function Dashboard() {
                       />
                       <div className={`block w-12 h-7 rounded-full transition-all duration-300 ${
                         hideNonBillable
-                          ? 'bg-blue-600 dark:bg-blue-500'
+                          ? 'bg-black dark:bg-black'
                           : 'bg-gray-300 dark:bg-gray-600'
                       }`}>
-                        <div className={`absolute left-0.5 top-0.5 bg-white dark:bg-gray-200 w-6 h-6 rounded-full transition-transform duration-300 flex items-center justify-center ${
+                        <div className={`absolute left-0.5 top-0.5 bg-white dark:bg-gray-200 w-6 h-6 rounded-full transition-transform duration-300 ${
                           hideNonBillable ? 'transform translate-x-5' : ''
                         }`}>
-                          {/* Eye icon that changes based on state */}
-                          {hideNonBillable ? (
-                            <Eye className="w-3 h-3 text-blue-600 dark:text-blue-500" />
-                          ) : (
-                            <EyeOff className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                          )}
                         </div>
                       </div>
                     </div>
 
                     {/* ON indicator */}
-                    <span className={`text-xs font-medium ml-2 mr-3 transition-opacity ${hideNonBillable ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-muted-foreground/50'}`}>
+                    <span className={`text-xs font-medium ml-2 mr-3 transition-opacity ${hideNonBillable ? 'text-black dark:text-white font-semibold' : 'text-muted-foreground/50'}`}>
                       ON
                     </span>
 
@@ -2878,13 +2810,13 @@ export function Dashboard() {
                           <TooltipTrigger asChild>
                             <div className="inline-flex items-center justify-center">
                               {request.source === 'ticket' ? (
-                                <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                                <Ticket className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Ticket System" />
                               ) : request.source === 'email' ? (
-                                <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                                <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Email" />
                               ) : request.source === 'phone' ? (
-                                <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                                <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Phone" />
                               ) : (
-                                <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                                <MessageCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Text" />
                               )}
                             </div>
                           </TooltipTrigger>
@@ -3036,13 +2968,13 @@ export function Dashboard() {
                                 <TooltipTrigger asChild>
                                   <div className="inline-flex items-center justify-center">
                                     {request.source === 'ticket' ? (
-                                      <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                                      <Ticket className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Ticket System" />
                                     ) : request.source === 'email' ? (
-                                      <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                                      <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Email" />
                                     ) : request.source === 'phone' ? (
-                                      <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                                      <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Phone" />
                                     ) : (
-                                      <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                                      <MessageCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Text" />
                                     )}
                                   </div>
                                 </TooltipTrigger>
@@ -3069,12 +3001,12 @@ export function Dashboard() {
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               request.Urgency === 'HIGH'
-                                ? 'bg-red-100 text-red-800'
+                                ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
                                 : request.Urgency === 'MEDIUM'
-                                ? 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-gray-600 text-white dark:bg-gray-400 dark:text-gray-900'
                                 : request.Urgency === 'PROMOTION'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-green-100 text-green-800'
+                                ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+                                : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                             }`}>
                               {request.Urgency}
                             </span>
@@ -3082,7 +3014,7 @@ export function Dashboard() {
                           <TableCell>
                             <button
                               onClick={() => handleRestoreRequest(request.id, originalIndex)}
-                              className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-all duration-200"
+                              className="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all duration-200"
                               title="Restore request"
                             >
                               <RotateCcw className="w-4 h-4" />

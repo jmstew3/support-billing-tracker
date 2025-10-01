@@ -98,8 +98,8 @@ export function Calendar({
           onClick={handleMonthClick}
           className={clsx(
             "px-3 py-1 text-sm font-semibold rounded-md transition-all",
-            "hover:bg-blue-50 hover:text-blue-700",
-            isMonthSelected && "bg-blue-100 text-blue-700"
+            "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100",
+            isMonthSelected && "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           )}
           title="Click to select entire month"
         >

@@ -175,7 +175,7 @@ export function DatePickerPopover({
           "flex items-center space-x-2 px-3 py-1.5 text-sm min-w-[180px]",
           "border border-border rounded-md bg-background",
           "hover:bg-accent transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          "focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-1"
         )}
       >
         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -193,8 +193,8 @@ export function DatePickerPopover({
               className={clsx(
                 "flex-1 px-4 py-2 text-sm font-medium transition-colors",
                 viewMode === 'calendar'
-                  ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-b-2 border-black dark:border-white"
+                  : "text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
               )}
             >
               Calendar
@@ -205,8 +205,8 @@ export function DatePickerPopover({
               className={clsx(
                 "flex-1 px-4 py-2 text-sm font-medium transition-colors",
                 viewMode === 'presets'
-                  ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-b-2 border-black dark:border-white"
+                  : "text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
               )}
             >
               Quick Select
@@ -285,7 +285,7 @@ export function DatePickerPopover({
                       onYearChange(Number(e.target.value));
                       setIsOpen(false);
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                   >
                     {availableYears.map(year => (
                       <option key={year} value={year}>{year}</option>

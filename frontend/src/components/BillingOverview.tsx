@@ -52,8 +52,12 @@ export function BillingOverview() {
       const data = await generateComprehensiveBilling();
       setBillingSummary(data);
 
-      // Start with all months collapsed
-      setExpandedMonths(new Set());
+      // Start with all months expanded (Level 1 visible)
+      const allMonths = new Set(data.monthlyBreakdown.map((m) => m.month));
+      setExpandedMonths(allMonths);
+
+      // Start with all sections (tickets/projects/hosting) collapsed (Level 2 visible but contents hidden)
+      setExpandedSections(new Map());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load billing data');
       console.error('Error loading billing data:', err);
@@ -295,7 +299,7 @@ export function BillingOverview() {
                   <col style={{ width: '18.75%' }} />
                   <col style={{ width: '18.75%' }} />
                 </colgroup>
-                <thead className="[&_tr]:border-b">
+                <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
                   <tr className="border-b">
                     <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                       Month
