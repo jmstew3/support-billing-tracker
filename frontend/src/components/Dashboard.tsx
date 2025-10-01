@@ -747,7 +747,7 @@ export function Dashboard() {
   // Calculate current month string for free hours policy (YYYY-MM format)
   const getCurrentMonthString = () => {
     if (selectedMonth === 'all') return undefined;
-    return `${selectedYear}-${selectedMonth}`;
+    return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
   };
 
   const filteredCosts = calculateCosts(billableFilteredRequests, getCurrentMonthString());
