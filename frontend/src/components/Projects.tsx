@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { FolderKanban, Loader2, AlertCircle, Search, DollarSign } from 'lucide-react';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
 import { CumulativeBillingChart } from './CumulativeBillingChart';
+import { ProjectCategoryPieChart } from './ProjectCategoryPieChart';
 import { Scorecard } from './ui/Scorecard';
 import { LoadingState } from './ui/LoadingState';
 import { fetchProjects, formatCurrency, convertMicrosToDollars } from '../services/projectsApi';
+import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
 import type { Project, ProjectFilters } from '../types/project';
 
 export function Projects() {
@@ -71,14 +73,16 @@ export function Projects() {
     const monthlyMap = new Map<string, { revenue: number; projects: Project[] }>();
 
     readyProjects.forEach((project) => {
-      const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
-      totalReadyRevenue += revenue;
-
+      // Only count projects with completion dates in total revenue
+      // Projects without completion dates are tracked separately
       if (project.projectCompletionDate) {
+        const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+        totalReadyRevenue += revenue;
         totalCompletedProjects++;
 
-        const date = new Date(project.projectCompletionDate);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        // Use string extraction to avoid timezone conversion issues
+        // If we use new Date(), "2025-07-01" gets shifted to June 30 in EDT
+        const monthKey = project.projectCompletionDate.substring(0, 7); // YYYY-MM
 
         if (!monthlyMap.has(monthKey)) {
           monthlyMap.set(monthKey, { revenue: 0, projects: [] });
@@ -87,6 +91,21 @@ export function Projects() {
         const monthData = monthlyMap.get(monthKey)!;
         monthData.revenue += revenue;
         monthData.projects.push(project);
+      }
+    });
+
+    // Apply free landing page credit to eligible months (June 2025 onwards)
+    let totalLandingPageSavings = 0;
+    monthlyMap.forEach((monthData, monthKey) => {
+      if (monthKey >= FREE_LANDING_PAGE_START_DATE) {
+        // Find first landing page in this month
+        const landingPages = monthData.projects.filter(p => p.projectCategory === 'LANDING_PAGE');
+        if (landingPages.length > 0) {
+          const firstLandingPage = landingPages[0];
+          const landingPageRevenue = convertMicrosToDollars(firstLandingPage.revenueAmount.amountMicros);
+          monthData.revenue -= landingPageRevenue; // Subtract from month total
+          totalLandingPageSavings += landingPageRevenue; // Track total savings
+        }
       }
     });
 
@@ -100,11 +119,22 @@ export function Projects() {
       }))
       .sort((a, b) => a.month.localeCompare(b.month)); // Chronological order
 
+    // Calculate projects without completion dates
+    const projectsWithoutCompletionDate = readyProjects.filter(p => !p.projectCompletionDate).length;
+    const revenueWithoutCompletionDate = readyProjects
+      .filter(p => !p.projectCompletionDate)
+      .reduce((sum, p) => sum + convertMicrosToDollars(p.revenueAmount.amountMicros), 0);
+
+    // Adjust total revenue to account for free landing pages
+    const adjustedTotalRevenue = totalReadyRevenue - totalLandingPageSavings;
+
     return {
-      totalReadyRevenue,
+      totalReadyRevenue: adjustedTotalRevenue,
       readyProjectCount: readyProjects.length,
       totalCompletedProjects,
       monthlyBreakdown,
+      projectsWithoutCompletionDate,
+      revenueWithoutCompletionDate,
     };
   }, [readyProjects]);
 
@@ -180,14 +210,29 @@ export function Projects() {
           />
         </div>
 
-        {/* Cumulative Billing Chart */}
+        {/* Charts Section - Cumulative Billing (2/3) and Category Breakdown (1/3) */}
         {billingSummary.monthlyBreakdown.length > 0 && (
-          <CumulativeBillingChart
-            data={billingSummary.monthlyBreakdown.map((m) => ({
-              month: m.month,
-              revenue: m.revenue,
-            }))}
-          />
+          <div className="grid grid-cols-3 gap-6">
+            {/* Cumulative Billing Chart - Takes 2 columns */}
+            <div className="col-span-2">
+              <CumulativeBillingChart
+                data={billingSummary.monthlyBreakdown.map((m) => ({
+                  month: m.month,
+                  revenue: m.revenue,
+                }))}
+              />
+            </div>
+
+            {/* Category Pie Chart - Takes 1 column */}
+            <div className="col-span-1">
+              <div className="bg-card border border-border p-6 h-full flex flex-col">
+                <h3 className="text-sm font-semibold mb-4">Category Breakdown</h3>
+                <div className="flex-1 min-h-[300px]">
+                  <ProjectCategoryPieChart projects={readyProjects} />
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Filters */}

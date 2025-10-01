@@ -29,6 +29,8 @@ export interface BillableProject {
   category: string;
   hostingStatus: string;
   amount: number; // Revenue in dollars
+  isFreeCredit?: boolean; // True if this project received free landing page credit
+  originalAmount?: number; // Original amount before free credit (for display)
 }
 
 /**
@@ -46,7 +48,10 @@ export interface MonthlyBillingSummary {
   ticketDetails: BillableTicket[];
 
   // Projects data
-  projectsRevenue: number;
+  projectsRevenue: number; // Net revenue after free landing page credit
+  projectsGrossRevenue: number; // Revenue before free landing page credit
+  projectsLandingPageCredit: number; // Number of free landing page credits applied (0-1)
+  projectsLandingPageSavings: number; // Dollar amount saved from free landing page
   projectsCount: number;
   projectDetails: BillableProject[];
 

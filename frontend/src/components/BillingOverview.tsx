@@ -129,6 +129,12 @@ export function BillingOverview() {
       ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0) || 0
       : filteredData.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0);
 
+  // Calculate free landing page savings for display
+  const totalLandingPageSavings =
+    selectedMonth === 'all'
+      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0) || 0
+      : filteredData.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0);
+
   if (loading) {
     return <LoadingState variant="overview" />;
   }
@@ -208,7 +214,11 @@ export function BillingOverview() {
               title="Project Revenue"
               value={formatCurrency(displayTotals?.totalProjectsRevenue || 0)}
               icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
-              description="Ready to invoice projects"
+              description={
+                totalLandingPageSavings > 0
+                  ? `After ${formatCurrency(totalLandingPageSavings)} landing page credit`
+                  : 'Ready to invoice projects'
+              }
             />
             <Scorecard
               title={selectedMonth === 'all' ? 'Current Hosting MRR' : 'Hosting MRR'}
@@ -556,6 +566,11 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700">
                 {monthData.projectsCount} {monthData.projectsCount === 1 ? 'Project' : 'Projects'}
               </span>
+              {monthData.projectsLandingPageCredit > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  {monthData.projectsLandingPageCredit} free landing page credit
+                </span>
+              )}
             </div>
             <span className="font-semibold">
               {formatCurrency(monthData.projectsRevenue)}
@@ -572,14 +587,34 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
                 <span>{project.name}</span>
+                {project.isFreeCredit && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-green-200 dark:ring-green-800">
+                    FREE
+                  </span>
+                )}
               </div>
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
               {project.category}
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold">
-              <span>{formatCurrencyAccounting(project.amount).symbol}</span>
-              <span className="tabular-nums">{formatCurrencyAccounting(project.amount).amount}</span>
+            <td className="py-2 px-4 text-right text-sm">
+              {project.isFreeCredit ? (
+                <div className="flex flex-col items-end">
+                  <span className="text-muted-foreground line-through text-xs">
+                    <span>{formatCurrencyAccounting(project.originalAmount || 0).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(project.originalAmount || 0).amount}</span>
+                  </span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    <span>{formatCurrencyAccounting(0).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                  </span>
+                </div>
+              ) : (
+                <span className="font-semibold">
+                  <span>{formatCurrencyAccounting(project.amount).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(project.amount).amount}</span>
+                </span>
+              )}
             </td>
           </tr>
         ))}
