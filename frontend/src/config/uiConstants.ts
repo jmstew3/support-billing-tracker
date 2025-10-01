@@ -76,11 +76,11 @@ export const PROJECT_CATEGORY_LABELS: Record<ProjectCategory, string> = {
 };
 
 export const PROJECT_CATEGORY_BADGE_STYLES: Record<ProjectCategory, string> = {
-  WEBSITE: 'bg-purple-100 text-purple-800 ring-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:ring-purple-800',
-  LANDING_PAGE: 'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:ring-blue-800',
-  MIGRATION: 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-800',
-  MULTI_FORM: 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-800',
-  BASIC_FORM: 'bg-teal-100 text-teal-800 ring-teal-200 dark:bg-teal-950/30 dark:text-teal-300 dark:ring-teal-800',
+  WEBSITE: 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:ring-gray-800',
+  LANDING_PAGE: 'bg-gray-200 text-gray-900 ring-gray-300 dark:bg-gray-800/30 dark:text-gray-200 dark:ring-gray-700',
+  MIGRATION: 'bg-gray-300 text-gray-900 ring-gray-400 dark:bg-gray-700/30 dark:text-gray-200 dark:ring-gray-600',
+  MULTI_FORM: 'bg-gray-400 text-gray-900 ring-gray-500 dark:bg-gray-600/30 dark:text-gray-100 dark:ring-gray-500',
+  BASIC_FORM: 'bg-gray-500 text-white ring-gray-600 dark:bg-gray-500/30 dark:text-gray-100 dark:ring-gray-400',
 };
 
 // ============================================================================
