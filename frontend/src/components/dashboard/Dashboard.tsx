@@ -261,7 +261,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
               monthlyData={filteredData}
               selectedYear={selectedYear}
               title={currentMonthString === 'all' ? 'Monthly Revenue by Category' : `${formatMonthLabel(currentMonthString)} Revenue Breakdown`}
-              initialViewType="chart"
+              initialViewType="table"
               gridSpan=""
             />
           </div>

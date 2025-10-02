@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { DailyRequestCount } from '../../types/request';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface RequestCalendarHeatmapProps {
   data: DailyRequestCount[];
@@ -14,6 +14,12 @@ interface RequestCalendarHeatmapProps {
 
 export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, selectedDate, onBackToCalendar, isSingleMonth }: RequestCalendarHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+
+  // Months per page for responsive design
+  const MONTHS_PER_PAGE_DESKTOP = 3;
+  const MONTHS_PER_PAGE_TABLET = 2;
+  const MONTHS_PER_PAGE_MOBILE = 1;
 
   // Group data by month
   const monthlyData = useMemo(() => {
@@ -260,7 +266,7 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
   const textSize = isSingleMonth ? 'text-xs sm:text-sm md:text-base' : 'text-[10px] sm:text-xs';
   const headerHeight = isSingleMonth ? 'h-6 sm:h-7 md:h-8' : 'h-4 sm:h-5';
 
-  // Filter to show only the selected month when isSingleMonth is true
+  // Filter to show only the selected month when isSingleMonth is true, or paginate when showing all
   const displayData = isSingleMonth && monthlyData.length > 0
     ? monthlyData.filter(month => {
         // Show the month that contains the most data points from the current filtered data
@@ -269,13 +275,75 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         );
         return data.some(d => monthDates.includes(d.date));
       }).slice(0, 1) // Ensure only one month is shown
-    : monthlyData;
+    : monthlyData.slice(currentMonthIndex, currentMonthIndex + MONTHS_PER_PAGE_DESKTOP);
+
+  // Navigation helpers
+  const totalMonths = monthlyData.length;
+  const canGoBack = currentMonthIndex > 0;
+  const canGoForward = currentMonthIndex + MONTHS_PER_PAGE_DESKTOP < totalMonths;
+
+  const handlePrevious = () => {
+    setCurrentMonthIndex(Math.max(0, currentMonthIndex - MONTHS_PER_PAGE_DESKTOP));
+  };
+
+  const handleNext = () => {
+    setCurrentMonthIndex(Math.min(totalMonths - MONTHS_PER_PAGE_DESKTOP, currentMonthIndex + MONTHS_PER_PAGE_DESKTOP));
+  };
+
+  // Get month range text for indicator
+  const getMonthRangeText = () => {
+    if (displayData.length === 0) return '';
+    const startMonth = displayData[0].monthName;
+    const endMonth = displayData[displayData.length - 1].monthName;
+    const startIndex = currentMonthIndex + 1;
+    const endIndex = Math.min(currentMonthIndex + MONTHS_PER_PAGE_DESKTOP, totalMonths);
+
+    if (startMonth === endMonth) {
+      return `Showing ${startMonth} (${startIndex} of ${totalMonths})`;
+    }
+    return `Showing ${startMonth} - ${endMonth} (${startIndex}-${endIndex} of ${totalMonths})`;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Container - no horizontal scroll when single month */}
-      <div className={isSingleMonth ? '' : 'overflow-x-auto pb-4'}>
-        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-8 min-w-fit justify-center'}>
+      {/* Navigation Controls - Only show when not in single month view */}
+      {!isSingleMonth && totalMonths > MONTHS_PER_PAGE_DESKTOP && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={handlePrevious}
+            disabled={!canGoBack}
+            className={`p-2 rounded-md transition-colors ${
+              canGoBack
+                ? 'hover:bg-gray-100 text-gray-700'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title={canGoBack ? 'Previous months' : 'At beginning'}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <span className="text-sm text-gray-600 font-medium min-w-[280px] text-center">
+            {getMonthRangeText()}
+          </span>
+
+          <button
+            onClick={handleNext}
+            disabled={!canGoForward}
+            className={`p-2 rounded-md transition-colors ${
+              canGoForward
+                ? 'hover:bg-gray-100 text-gray-700'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title={canGoForward ? 'Next months' : 'At end'}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Calendar Container - No horizontal scroll, centered */}
+      <div>
+        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-8 justify-center'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
               <h3 className="text-sm font-bold text-muted-foreground mb-4 text-center">{monthData.monthName}</h3>

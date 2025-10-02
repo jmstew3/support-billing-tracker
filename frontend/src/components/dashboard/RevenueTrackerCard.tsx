@@ -28,6 +28,8 @@ export interface RevenueTrackerCardProps {
   description?: string;
   /** Initial view type (default: 'table') */
   initialViewType?: 'table' | 'chart';
+  /** Optional grid span classes for layout control */
+  gridSpan?: string;
 }
 
 /**
@@ -51,6 +53,7 @@ export function RevenueTrackerCard({
   title = 'Revenue Tracker',
   description,
   initialViewType = 'table',
+  gridSpan,
 }: RevenueTrackerCardProps) {
   const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({
     Tickets: true,
@@ -108,11 +111,16 @@ export function RevenueTrackerCard({
           <thead>
             <tr className={TABLE_STYLES.headerRow}>
               <th className={TABLE_STYLES.headerCell}>Category</th>
-              {monthlyData.map((month) => (
-                <th key={month.month} className={TABLE_STYLES.headerCellWithBorder}>
-                  {new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short' })}
-                </th>
-              ))}
+              {monthlyData.map((month) => {
+                // Parse date manually to avoid timezone issues
+                const [year, monthNum] = month.month.split('-').map(Number);
+                const date = new Date(year, monthNum - 1, 1); // monthNum is 1-indexed, Date() month is 0-indexed
+                return (
+                  <th key={month.month} className={TABLE_STYLES.headerCellWithBorder}>
+                    {date.toLocaleDateString('en-US', { month: 'short' })}
+                  </th>
+                );
+              })}
               <th className={TABLE_STYLES.headerCellWithBorder}>Total</th>
             </tr>
           </thead>
@@ -224,13 +232,18 @@ export function RevenueTrackerCard({
       return <div className="text-center text-muted-foreground py-8">No data available</div>;
     }
 
-    const chartData = monthlyData.map(month => ({
-      month: new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
-      Tickets: month.ticketsRevenue,
-      Projects: month.projectsRevenue,
-      Hosting: month.hostingRevenue,
-      total: month.totalRevenue,
-    }));
+    const chartData = monthlyData.map(month => {
+      // Parse date manually to avoid timezone issues
+      const [year, monthNum] = month.month.split('-').map(Number);
+      const date = new Date(year, monthNum - 1, 1); // monthNum is 1-indexed, Date() month is 0-indexed
+      return {
+        month: date.toLocaleDateString('en-US', { month: 'short' }),
+        Tickets: month.ticketsRevenue,
+        Projects: month.projectsRevenue,
+        Hosting: month.hostingRevenue,
+        total: month.totalRevenue,
+      };
+    });
 
     return (
       <ResponsiveContainer width="100%" height={400}>
@@ -376,6 +389,7 @@ export function RevenueTrackerCard({
       renderTable={renderTable}
       renderChart={renderChart}
       initialViewType={initialViewType}
+      gridSpan={gridSpan}
     />
   );
 }

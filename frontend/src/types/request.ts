@@ -42,4 +42,16 @@ export interface CostCalculation {
   freeHoursApplied: number;      // Hours credited (0-10)
   freeHoursSavings: number;      // Dollar savings from free hours
   netTotalCost: number;          // Cost after free hours (actual billable)
+
+  // Net costs per category (after free hours deduction)
+  regularNetCost?: number;       // Regular/Low urgency net cost
+  sameDayNetCost?: number;       // Same Day/Medium urgency net cost
+  emergencyNetCost?: number;     // Emergency/High urgency net cost
+  promotionalNetCost?: number;   // Promotional net cost
+
+  // Free hours applied per category
+  regularFreeHours?: number;     // Free hours applied to Regular/Low
+  sameDayFreeHours?: number;     // Free hours applied to Same Day/Medium
+  emergencyFreeHours?: number;   // Free hours applied to Emergency/High
+  promotionalFreeHours?: number; // Free hours applied to Promotional
 }

@@ -155,6 +155,12 @@ export function calculateCosts(requests: ChatRequest[], month?: string): CostCal
   let freeHoursApplied = 0;
   let freeHoursSavings = 0;
 
+  // Track free hours by category
+  let promotionalFreeHours = 0;
+  let regularFreeHours = 0;
+  let sameDayFreeHours = 0;
+  let emergencyFreeHours = 0;
+
   if (applyFreeHours && requests.length > 0) {
     // Sort requests chronologically: by date first, then by time
     // This ensures the first 10 hours of work each month receive the free hours credit
@@ -184,11 +190,33 @@ export function calculateCosts(requests: ChatRequest[], month?: string): CostCal
       const freeHoursForRequest = Math.min(requestHours, remainingFreeHours);
       const savings = freeHoursForRequest * rate;
 
+      // Track free hours by urgency category
+      switch (request.Urgency) {
+        case 'PROMOTION':
+          promotionalFreeHours += freeHoursForRequest;
+          break;
+        case 'LOW':
+          regularFreeHours += freeHoursForRequest;
+          break;
+        case 'MEDIUM':
+          sameDayFreeHours += freeHoursForRequest;
+          break;
+        case 'HIGH':
+          emergencyFreeHours += freeHoursForRequest;
+          break;
+      }
+
       freeHoursApplied += freeHoursForRequest;
       freeHoursSavings += savings;
       remainingFreeHours -= freeHoursForRequest;
     }
   }
+
+  // Calculate net costs per category
+  const promotionalNetCost = promotionalCost - (promotionalFreeHours * RATES.promotion);
+  const regularNetCost = regularCost - (regularFreeHours * RATES.regular);
+  const sameDayNetCost = sameDayCost - (sameDayFreeHours * RATES.sameDay);
+  const emergencyNetCost = emergencyCost - (emergencyFreeHours * RATES.emergency);
 
   const netTotalCost = grossTotalCost - freeHoursSavings;
 
@@ -205,7 +233,18 @@ export function calculateCosts(requests: ChatRequest[], month?: string): CostCal
     grossTotalCost,
     freeHoursApplied,
     freeHoursSavings,
-    netTotalCost
+    netTotalCost,
+    // Net costs per category (only included when free hours are applied)
+    ...(applyFreeHours ? {
+      regularNetCost,
+      sameDayNetCost,
+      emergencyNetCost,
+      promotionalNetCost,
+      regularFreeHours,
+      sameDayFreeHours,
+      emergencyFreeHours,
+      promotionalFreeHours
+    } : {})
   };
 }
 

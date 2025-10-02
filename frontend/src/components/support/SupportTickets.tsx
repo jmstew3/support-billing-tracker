@@ -1654,58 +1654,63 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         />
       </div>
 
-      {/* Requests Over Time - Full Width */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {timeViewMode === 'day' && selectedDay !== 'all'
-              ? (() => {
-                  try {
-                    return `Requests by Hour - ${parseLocalDate(selectedDay).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric'
-                    })}`;
-                  } catch (error) {
-                    return `Requests by Hour - ${selectedDay}`;
-                  }
-                })()
-              : timeViewMode === 'month' && selectedMonth !== 'all'
-              ? `Request Calendar - ${monthNames[selectedMonth - 1]} ${selectedYear}`
-              : 'Request Calendar Overview'
-            }
-          </CardTitle>
-          <CardDescription>
-            {timeViewMode === 'day' && selectedDay !== 'all'
-              ? 'Hourly view not available in calendar format'
-              : 'Daily request intensity shown as color-coded calendar grid'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestCalendarHeatmap
-            data={calendarData}
-            isHourlyView={timeViewMode === 'day' && selectedDay !== 'all'}
-            onDateClick={handleCalendarDateClick}
-            selectedDate={selectedDay === 'all' ? undefined : selectedDay}
-            onBackToCalendar={handleBackToCalendar}
-            isSingleMonth={selectedMonth !== 'all'}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-4 sm:gap-8 grid-cols-1 lg:grid-cols-3 xl:grid-cols-5">
-        {filteredCosts && (
+      {/* Cost Tracker - Full Width */}
+      {filteredCosts && (
+        <div className="w-full">
           <CostTrackerCard
             costData={filteredCosts}
             monthlyCosts={monthlyCosts || undefined}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            gridSpan=""
           />
-        )}
+        </div>
+      )}
 
-        <Card className="lg:col-span-1 xl:col-span-2">
+      {/* Request Calendar and Categories - Side by Side on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4 sm:gap-6">
+        {/* Request Calendar - 3fr on desktop */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {timeViewMode === 'day' && selectedDay !== 'all'
+                ? (() => {
+                    try {
+                      return `Requests by Hour - ${parseLocalDate(selectedDay).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric'
+                      })}`;
+                    } catch (error) {
+                      return `Requests by Hour - ${selectedDay}`;
+                    }
+                  })()
+                : timeViewMode === 'month' && selectedMonth !== 'all'
+                ? `Request Calendar - ${monthNames[selectedMonth - 1]} ${selectedYear}`
+                : 'Request Calendar Overview'
+              }
+            </CardTitle>
+            <CardDescription>
+              {timeViewMode === 'day' && selectedDay !== 'all'
+                ? 'Hourly view not available in calendar format'
+                : 'Daily request intensity shown as color-coded calendar grid'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RequestCalendarHeatmap
+              data={calendarData}
+              isHourlyView={timeViewMode === 'day' && selectedDay !== 'all'}
+              onDateClick={handleCalendarDateClick}
+              selectedDate={selectedDay === 'all' ? undefined : selectedDay}
+              onBackToCalendar={handleBackToCalendar}
+              isSingleMonth={selectedMonth !== 'all'}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Request Categories Chart - 1fr on desktop */}
+        <Card>
           <CardHeader>
             <CardTitle>Request Categories</CardTitle>
             <CardDescription>Distribution of request types</CardDescription>
