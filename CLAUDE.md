@@ -573,17 +573,45 @@ thad-chat/
 └── frontend/                          # Stage 3: React dashboard
     ├── src/
     │   ├── components/
-    │   │   ├── Dashboard.tsx          # Billing Overview - Comprehensive rollup (MAIN PAGE)
-    │   │   ├── SupportTickets.tsx     # Support - Ticket tracking and analysis
-    │   │   ├── Projects.tsx           # Projects - Revenue tracking (ready to invoice)
-    │   │   ├── TurboHosting.tsx       # Turbo Hosting - MRR tracking
-    │   │   ├── RequestBarChart.tsx    # Time-series chart
-    │   │   ├── CategoryPieChart.tsx   # Modern pie chart with animations
-    │   │   ├── CategoryRadarChart.tsx # Radar chart for category metrics
-    │   │   ├── MonthlyHostingCalculator.tsx # Hosting breakdown table
-    │   │   ├── MonthlyRevenueTable.tsx      # Projects monthly table
-    │   │   ├── Sidebar.tsx            # Navigation sidebar
-    │   │   └── EditableCell.tsx       # In-line editing
+    │   │   ├── base/                  # Reusable base components
+    │   │   │   └── DataTrackerCard.tsx # Base tracker with render props pattern
+    │   │   ├── shared/                # Cross-page shared components
+    │   │   │   ├── PageHeader.tsx     # Page title and controls
+    │   │   │   ├── Sidebar.tsx        # Navigation sidebar
+    │   │   │   ├── Pagination.tsx     # Table pagination
+    │   │   │   ├── EditableCell.tsx   # In-line editing (text)
+    │   │   │   ├── EditableNumberCell.tsx # In-line editing (numbers)
+    │   │   │   ├── DatePickerPopover.tsx  # Date selection
+    │   │   │   ├── ConfirmDialog.tsx  # Action confirmations
+    │   │   │   ├── Scorecard.tsx      # Metric display cards
+    │   │   │   └── LoadingState.tsx   # Skeleton loading animations
+    │   │   ├── charts/                # Visualization components
+    │   │   │   ├── RequestBarChart.tsx      # Time-series chart
+    │   │   │   ├── CategoryPieChart.tsx     # Modern pie chart with animations
+    │   │   │   ├── CategoryRadarChart.tsx   # Radar chart for category metrics
+    │   │   │   ├── RequestCalendarHeatmap.tsx # Calendar heatmap
+    │   │   │   ├── CumulativeBillingChart.tsx # Revenue growth chart
+    │   │   │   ├── HostingTypeChart.tsx     # Hosting billing type distribution
+    │   │   │   └── ProjectCategoryPieChart.tsx # Project category distribution
+    │   │   ├── support/               # Support page components
+    │   │   │   ├── SupportTickets.tsx # Support ticket tracking (MAIN PAGE)
+    │   │   │   └── CostTrackerCard.tsx # Cost tracking by urgency levels
+    │   │   ├── dashboard/             # Dashboard page components
+    │   │   │   ├── Dashboard.tsx      # Billing Overview (MAIN LANDING PAGE)
+    │   │   │   └── RevenueTrackerCard.tsx # Revenue tracking by categories
+    │   │   ├── projects/              # Projects page components
+    │   │   │   ├── Projects.tsx       # Project revenue tracking
+    │   │   │   ├── ProjectCard.tsx    # Individual project card
+    │   │   │   └── MonthlyRevenueTable.tsx # Projects monthly breakdown
+    │   │   ├── hosting/               # Hosting page components
+    │   │   │   ├── TurboHosting.tsx   # Turbo Hosting MRR tracking
+    │   │   │   └── MonthlyHostingCalculator.tsx # Hosting breakdown table
+    │   │   └── ui/                    # Primitive UI components (shadcn/ui)
+    │   │       ├── button.tsx
+    │   │       ├── card.tsx
+    │   │       ├── table.tsx
+    │   │       ├── tooltip.tsx
+    │   │       └── ...
     │   ├── services/
     │   │   ├── twentyApi.ts           # Twenty CRM API integration
     │   │   ├── projectsApi.ts         # Projects API service
@@ -634,12 +662,13 @@ Routes are managed in `App.tsx`:
 #### 1. Billing Overview (Dashboard.tsx)
 **Navigation**: Sidebar → "Dashboard" (BarChart3 icon)
 **Route**: `'overview'`
-**Main Component**: `Dashboard`
+**Main Component**: `dashboard/Dashboard.tsx`
 **Child Components**:
-- `Scorecard` - Revenue metrics display
-- `LoadingState` - Skeleton loading animations
-- `SiteFavicon` - Website favicons in hosting section
-- `PageHeader` - Page title and controls
+- `shared/Scorecard` - Revenue metrics display
+- `shared/LoadingState` - Skeleton loading animations
+- `shared/PageHeader` - Page title and controls
+- `dashboard/RevenueTrackerCard` - Revenue tracking by categories (NEW)
+- `base/DataTrackerCard` - Base component for RevenueTrackerCard styling
 - `BillingBadge` components:
   - `CountBadge` - Item count indicators
   - `CreditBadge` - Free credit indicators
@@ -655,17 +684,19 @@ Routes are managed in `App.tsx`:
 #### 2. Support (SupportTickets.tsx)
 **Navigation**: Sidebar → "Support" (Ticket icon)
 **Route**: `'home'`
-**Main Component**: `SupportTickets`
+**Main Component**: `support/SupportTickets.tsx`
 **Child Components**:
-- `Card`, `Scorecard`, `ThemeToggle` - UI containers and controls
-- `Table` components - Data table display
-- `RequestCalendarHeatmap` - Calendar view of requests
-- `CategoryRadarChart` - Multi-dimensional category analysis
-- `CategoryPieChart` - Category distribution
-- `Pagination` - Table pagination controls
-- `EditableCell`, `EditableNumberCell` - Inline editing
-- `ConfirmDialog` - Action confirmations
-- `DatePickerPopover` - Date selection
+- `ui/Card`, `shared/Scorecard`, `ThemeToggle` - UI containers and controls
+- `ui/Table` components - Data table display
+- `support/CostTrackerCard` - Cost tracking by urgency levels (REFACTORED)
+- `base/DataTrackerCard` - Base component for CostTrackerCard styling
+- `charts/RequestCalendarHeatmap` - Calendar view of requests
+- `charts/CategoryRadarChart` - Multi-dimensional category analysis
+- `charts/CategoryPieChart` - Category distribution
+- `shared/Pagination` - Table pagination controls
+- `shared/EditableCell`, `shared/EditableNumberCell` - Inline editing
+- `shared/ConfirmDialog` - Action confirmations
+- `shared/DatePickerPopover` - Date selection
 - Recharts components: `BarChart`, `ComposedChart`
 
 **Services Used**:
@@ -678,13 +709,14 @@ Routes are managed in `App.tsx`:
 #### 3. Projects (Projects.tsx)
 **Navigation**: Sidebar → "Projects" (FolderKanban icon)
 **Route**: `'projects'`
-**Main Component**: `Projects`
+**Main Component**: `projects/Projects.tsx`
 **Child Components**:
-- `MonthlyRevenueTable` - Monthly project breakdown
-- `CumulativeBillingChart` - Revenue growth visualization
-- `ProjectCategoryPieChart` - Project category distribution
-- `Scorecard` - Revenue metrics
-- `LoadingState` - Loading animations
+- `projects/MonthlyRevenueTable` - Monthly project breakdown
+- `projects/ProjectCard` - Individual project card
+- `charts/CumulativeBillingChart` - Revenue growth visualization
+- `charts/ProjectCategoryPieChart` - Project category distribution
+- `shared/Scorecard` - Revenue metrics
+- `shared/LoadingState` - Loading animations
 
 **Services Used**:
 - `projectsApi.ts` → `fetchProjects()`, `formatCurrency()`, `convertMicrosToDollars()`
@@ -695,13 +727,13 @@ Routes are managed in `App.tsx`:
 #### 4. Turbo Hosting (TurboHosting.tsx)
 **Navigation**: Sidebar → "Turbo Hosting" (Zap icon)
 **Route**: `'billing'`
-**Main Component**: `TurboHosting`
+**Main Component**: `hosting/TurboHosting.tsx`
 **Child Components**:
-- `Scorecard` - MRR metrics
-- `LoadingState` - Loading animations
-- `CumulativeBillingChart` - MRR growth visualization
-- `HostingTypeChart` - Billing type distribution
-- `MonthlyHostingCalculator` - Detailed monthly breakdown table
+- `shared/Scorecard` - MRR metrics
+- `shared/LoadingState` - Loading animations
+- `charts/CumulativeBillingChart` - MRR growth visualization
+- `charts/HostingTypeChart` - Billing type distribution
+- `hosting/MonthlyHostingCalculator` - Detailed monthly breakdown table
 
 **Services Used**:
 - `hostingApi.ts` → `fetchWebsiteProperties()`, `generateMonthlyBreakdown()`, `calculateCreditProgress()`
@@ -712,6 +744,48 @@ Routes are managed in `App.tsx`:
 ## Development History & Updates
 
 ### Recent Major Updates
+
+#### Component Architecture Refactoring (October 2, 2025) 🏗️
+- **Base Component Architecture with Render Props Pattern**:
+  - Created `DataTrackerCard.tsx` as single source of truth for all tracker component styling
+  - Implements render props pattern where child components provide data logic via functions
+  - Exports shared `TABLE_STYLES` and `CHART_STYLES` constants for consistency
+  - Ensures identical look-and-feel across all tracker components with zero style duplication
+
+- **New Specialized Tracker Components**:
+  - `CostTrackerCard.tsx` - Support ticket cost tracking by urgency levels (Promotion, Low, Medium, High)
+  - `RevenueTrackerCard.tsx` - Revenue tracking by categories (Tickets, Projects, Hosting) for Dashboard
+  - Both components use same base styling but handle different data structures
+  - Layout: CostTrackerCard = urgency × months, RevenueTrackerCard = categories × months
+
+- **Folder Structure Reorganization**:
+  - Created `components/base/` for reusable base components
+  - Created `components/shared/` for cross-page shared components (PageHeader, Sidebar, etc.)
+  - Created `components/charts/` for all visualization components
+  - Created page-specific folders: `support/`, `dashboard/`, `projects/`, `hosting/`
+  - Improves maintainability and semantic organization
+
+- **Files Created**:
+  - `frontend/src/components/base/DataTrackerCard.tsx` - Base component with all styling
+  - `frontend/src/components/support/CostTrackerCard.tsx` - Refactored from SupportTickets.tsx
+  - `frontend/src/components/dashboard/RevenueTrackerCard.tsx` - New component for Dashboard
+
+- **Files Moved**:
+  - 9 shared components moved to `components/shared/`
+  - 7 chart components moved to `components/charts/`
+  - Page components moved to respective folders (`support/`, `dashboard/`, `projects/`, `hosting/`)
+
+- **Files Modified**:
+  - `App.tsx` - Updated all imports for new folder structure
+  - `SupportTickets.tsx` - Reduced from 3,247 to 2,628 lines (619 lines removed, 19% smaller)
+  - Multiple components - Fixed import paths after folder reorganization
+
+- **Benefits**:
+  - Single source of truth for styling - impossible for tracker components to diverge visually
+  - Clear separation of concerns - base handles styling, specialized components handle data logic
+  - Better organization - easy to locate any component by purpose/page
+  - Improved maintainability - update styling once in base component, affects all children
+  - Scalable architecture - easy to add new tracker variants without duplicating code
 
 #### Component Renaming for Semantic Clarity (October 2, 2025) 📝
 - **Renamed Components to Match Sidebar Labels**:
