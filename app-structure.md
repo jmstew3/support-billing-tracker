@@ -6,26 +6,31 @@ This document provides a visual breakdown of the 4 main pages in the Thad Chat R
 
 | Route ID | Component File | Sidebar Label | Icon | Purpose |
 |----------|---------------|---------------|------|---------|
-| `'overview'` | `Dashboard.tsx` | Dashboard | BarChart3 | Billing Overview (Main Landing Page) |
-| `'home'` | `SupportTickets.tsx` | Support | Ticket | Support Ticket Tracking |
-| `'projects'` | `Projects.tsx` | Projects | FolderKanban | Project Revenue Tracking |
-| `'billing'` | `TurboHosting.tsx` | Turbo Hosting | Zap | Hosting MRR Tracking |
+| `'overview'` | `dashboard/Dashboard.tsx` | Dashboard | BarChart3 | Billing Overview (Main Landing Page) |
+| `'home'` | `support/SupportTickets.tsx` | Support | Ticket | Support Ticket Tracking |
+| `'projects'` | `projects/Projects.tsx` | Projects | FolderKanban | Project Revenue Tracking |
+| `'billing'` | `hosting/TurboHosting.tsx` | Turbo Hosting | Zap | Hosting MRR Tracking |
 
 ---
 
 ## 📊 Dashboard (Billing Overview)
 
-**File**: `frontend/src/components/Dashboard.tsx`
+**File**: `frontend/src/components/dashboard/Dashboard.tsx`
 **Purpose**: Comprehensive billing rollup combining all revenue sources
 
 ```
-Dashboard.tsx
-├── PageHeader.tsx
-│   ├── PeriodSelector.tsx
+dashboard/Dashboard.tsx
+├── shared/PageHeader.tsx
+│   ├── shared/PeriodSelector.tsx
 │   └── ViewModeToggle.tsx (optional)
-├── ui/Scorecard.tsx (×4)
+├── shared/Scorecard.tsx (×4)
 │   └── Total Revenue, Support Tickets, Projects, Hosting MRR
-├── ui/LoadingState.tsx (conditional)
+├── shared/LoadingState.tsx (conditional)
+├── dashboard/RevenueTrackerCard.tsx (NEW - revenue tracking by category)
+│   └── base/DataTrackerCard.tsx (base component with render props)
+│       ├── ui/card.tsx
+│       ├── ui/toggle-group.tsx (Table/Chart toggle)
+│       └── Recharts (BarChart/ComposedChart)
 ├── Recharts (BarChart)
 │   ├── Bar
 │   ├── XAxis
@@ -58,39 +63,40 @@ Dashboard.tsx
 
 ## 🎫 SupportTickets (Support)
 
-**File**: `frontend/src/components/SupportTickets.tsx`
+**File**: `frontend/src/components/support/SupportTickets.tsx`
 **Purpose**: Support ticket tracking and analysis from iMessage/Twenty CRM
 
 ```
-SupportTickets.tsx
+support/SupportTickets.tsx
 ├── ui/card.tsx
 │   ├── Card (×2 for Request Categories + Billable Requests table)
 │   ├── CardHeader
 │   ├── CardTitle
 │   ├── CardDescription
 │   └── CardContent
-├── ui/Scorecard.tsx (×5)
+├── shared/Scorecard.tsx (×5)
 │   └── Total Requests, Revenue, Hours, Avg Rate, Cost
 ├── ui/ThemeToggle.tsx
-├── ui/LoadingState.tsx (conditional)
-├── RequestCalendarHeatmap.tsx
-├── CostTrackerCard.tsx (reusable cost tracker component)
-│   ├── ui/card.tsx
-│   ├── ui/toggle-group.tsx (Table/Chart toggle)
-│   ├── Recharts (BarChart/ComposedChart)
-│   │   ├── Bar
-│   │   ├── XAxis
-│   │   ├── YAxis
-│   │   ├── CartesianGrid
-│   │   ├── Tooltip
-│   │   ├── Legend
-│   │   ├── ResponsiveContainer
-│   │   └── LabelList
-│   └── formatCurrency utilities
-├── CategoryRadarChart.tsx
-├── CategoryPieChart.tsx
+├── shared/LoadingState.tsx (conditional)
+├── charts/RequestCalendarHeatmap.tsx
+├── support/CostTrackerCard.tsx (REFACTORED - cost tracking by urgency)
+│   └── base/DataTrackerCard.tsx (base component with render props)
+│       ├── ui/card.tsx
+│       ├── ui/toggle-group.tsx (Table/Chart toggle)
+│       ├── Recharts (BarChart/ComposedChart)
+│       │   ├── Bar
+│       │   ├── XAxis
+│       │   ├── YAxis
+│       │   ├── CartesianGrid
+│       │   ├── Tooltip
+│       │   ├── Legend
+│       │   ├── ResponsiveContainer
+│       │   └── LabelList
+│       └── formatCurrency utilities
+├── charts/CategoryRadarChart.tsx
+├── charts/CategoryPieChart.tsx
 ├── ui/toggle-group.tsx (Pie/Radar toggle)
-├── DatePickerPopover.tsx
+├── shared/DatePickerPopover.tsx
 ├── ui/table.tsx (for Billable Requests table only)
 │   ├── Table
 │   ├── TableHeader
@@ -98,15 +104,15 @@ SupportTickets.tsx
 │   ├── TableBody
 │   ├── TableRow
 │   └── TableCell
-│       ├── EditableCell.tsx (for category/urgency)
-│       └── EditableNumberCell.tsx (for hours)
+│       ├── shared/EditableCell.tsx (for category/urgency)
+│       └── shared/EditableNumberCell.tsx (for hours)
 ├── ui/tooltip.tsx
 │   ├── Tooltip
 │   ├── TooltipTrigger
 │   ├── TooltipProvider
 │   └── TooltipContent
-├── Pagination.tsx
-└── ConfirmDialog.tsx
+├── shared/Pagination.tsx
+└── shared/ConfirmDialog.tsx
 ```
 
 **Services Used**:
@@ -117,23 +123,24 @@ SupportTickets.tsx
 
 ## 📁 Projects
 
-**File**: `frontend/src/components/Projects.tsx`
+**File**: `frontend/src/components/projects/Projects.tsx`
 **Purpose**: Project revenue tracking for QuickBooks reconciliation
 
 ```
-Projects.tsx
-├── ui/Scorecard.tsx (×3)
+projects/Projects.tsx
+├── shared/Scorecard.tsx (×3)
 │   └── Total Revenue, Project Count, Average Revenue
-├── ui/LoadingState.tsx (conditional)
-├── MonthlyRevenueTable.tsx
+├── shared/LoadingState.tsx (conditional)
+├── projects/MonthlyRevenueTable.tsx
+│   ├── projects/ProjectCard.tsx
 │   ├── ui/SiteFavicon.tsx
 │   ├── ui/BillingBadge.tsx
 │   │   ├── CountBadge
 │   │   └── CreditBadge
 │   └── Collapsible UI (ChevronDown/Up icons)
-├── CumulativeBillingChart.tsx
+├── charts/CumulativeBillingChart.tsx
 │   └── Recharts (Line Chart)
-└── ProjectCategoryPieChart.tsx
+└── charts/ProjectCategoryPieChart.tsx
     └── Recharts (Pie Chart)
 ```
 
@@ -143,24 +150,24 @@ Projects.tsx
 
 ## ⚡ TurboHosting (Turbo Hosting)
 
-**File**: `frontend/src/components/TurboHosting.tsx`
+**File**: `frontend/src/components/hosting/TurboHosting.tsx`
 **Purpose**: Website hosting monthly recurring revenue (MRR) tracking
 
 ```
-TurboHosting.tsx
-├── ui/Scorecard.tsx (×3)
+hosting/TurboHosting.tsx
+├── shared/Scorecard.tsx (×3)
 │   └── Active Sites, Gross MRR, Net MRR
-├── ui/LoadingState.tsx (conditional)
-├── MonthlyHostingCalculator.tsx
+├── shared/LoadingState.tsx (conditional)
+├── hosting/MonthlyHostingCalculator.tsx
 │   ├── ui/SiteFavicon.tsx
 │   ├── ui/BillingBadge.tsx
 │   │   ├── BillingTypeBadge
 │   │   ├── CountBadge
 │   │   └── CreditBadge
 │   └── Collapsible UI (ChevronDown/Up icons)
-├── CumulativeBillingChart.tsx
+├── charts/CumulativeBillingChart.tsx
 │   └── Recharts (Line Chart for MRR growth)
-└── HostingTypeChart.tsx
+└── charts/HostingTypeChart.tsx
     └── Recharts (Pie Chart for site types)
 ```
 
@@ -172,38 +179,54 @@ TurboHosting.tsx
 
 | Component File | Dashboard | Support | Projects | Turbo Hosting |
 |---|:---:|:---:|:---:|:---:|
-| `ui/Scorecard.tsx` | ✅ | ✅ | ✅ | ✅ |
-| `ui/LoadingState.tsx` | ✅ | ✅ | ✅ | ✅ |
+| `shared/Scorecard.tsx` | ✅ | ✅ | ✅ | ✅ |
+| `shared/LoadingState.tsx` | ✅ | ✅ | ✅ | ✅ |
 | `ui/SiteFavicon.tsx` | ✅ | ❌ | ✅ | ✅ |
 | `ui/BillingBadge.tsx` | ✅ | ❌ | ✅ | ✅ |
-| `CumulativeBillingChart.tsx` | ❌ | ❌ | ✅ | ✅ |
+| `charts/CumulativeBillingChart.tsx` | ❌ | ❌ | ✅ | ✅ |
 | Recharts Library | ✅ | ✅ | ✅ | ✅ |
-| `PageHeader.tsx` | ✅ | ❌ | ❌ | ❌ |
-| `ui/card.tsx` | ❌ | ✅ | ❌ | ❌ |
+| `shared/PageHeader.tsx` | ✅ | ❌ | ❌ | ❌ |
+| `ui/card.tsx` | ✅ | ✅ | ❌ | ❌ |
 | `ui/table.tsx` | ❌ | ✅ | ❌ | ❌ |
+| `base/DataTrackerCard.tsx` | ✅ | ✅ | ❌ | ❌ |
 
 ---
 
 ## Component Categories by Location
 
+### Base Components (Reusable Architecture)
+**Location**: `frontend/src/components/base/`
+
+- `DataTrackerCard.tsx` - Base component for tracker cards with render props pattern
+  - Exports `TABLE_STYLES` and `CHART_STYLES` constants
+  - Single source of truth for all tracker styling
+  - Used by CostTrackerCard and RevenueTrackerCard
+
 ### Core Page Components
-**Location**: `frontend/src/components/`
+**Location**: `frontend/src/components/[page-name]/`
 
-- `Dashboard.tsx` - Billing Overview (main landing page)
-- `SupportTickets.tsx` - Support ticket tracking
-- `Projects.tsx` - Project revenue tracking
-- `TurboHosting.tsx` - Turbo Hosting MRR tracking
+- `dashboard/Dashboard.tsx` - Billing Overview (main landing page)
+- `support/SupportTickets.tsx` - Support ticket tracking
+- `projects/Projects.tsx` - Project revenue tracking
+- `hosting/TurboHosting.tsx` - Turbo Hosting MRR tracking
 
-### Layout Components
-**Location**: `frontend/src/components/`
+### Shared Components (Cross-Page)
+**Location**: `frontend/src/components/shared/`
 
 - `PageHeader.tsx` - Page header with title and controls
 - `PeriodSelector.tsx` - Month/year selection dropdown
 - `ViewModeToggle.tsx` - View mode toggle buttons
 - `Sidebar.tsx` - App-level navigation sidebar
+- `Scorecard.tsx` - Metric display card
+- `LoadingState.tsx` - Skeleton loading animations
+- `EditableCell.tsx` - In-line cell editing (text)
+- `EditableNumberCell.tsx` - In-line cell editing (numbers)
+- `DatePickerPopover.tsx` - Date selection popover
+- `ConfirmDialog.tsx` - Confirmation dialog for bulk actions
+- `Pagination.tsx` - Table pagination controls
 
 ### Chart Components
-**Location**: `frontend/src/components/`
+**Location**: `frontend/src/components/charts/`
 
 - `RequestCalendarHeatmap.tsx` - Calendar heatmap for requests
 - `CategoryRadarChart.tsx` - Multi-dimensional category analysis
@@ -212,27 +235,32 @@ TurboHosting.tsx
 - `HostingTypeChart.tsx` - Hosting type distribution pie chart
 - `ProjectCategoryPieChart.tsx` - Project category pie chart
 
-### Table Components
-**Location**: `frontend/src/components/`
+### Page-Specific Components
 
-- `CostTrackerCard.tsx` - Reusable support ticket cost tracker with table/chart toggle
+#### Support Components
+**Location**: `frontend/src/components/support/`
+
+- `CostTrackerCard.tsx` - Cost tracking by urgency levels (uses DataTrackerCard base)
+
+#### Dashboard Components
+**Location**: `frontend/src/components/dashboard/`
+
+- `RevenueTrackerCard.tsx` - Revenue tracking by categories (uses DataTrackerCard base)
+
+#### Projects Components
+**Location**: `frontend/src/components/projects/`
+
 - `MonthlyRevenueTable.tsx` - Projects monthly breakdown table
+- `ProjectCard.tsx` - Individual project card
+
+#### Hosting Components
+**Location**: `frontend/src/components/hosting/`
+
 - `MonthlyHostingCalculator.tsx` - Hosting monthly breakdown table
 
-### Interactive Components
-**Location**: `frontend/src/components/`
-
-- `EditableCell.tsx` - In-line cell editing (text)
-- `EditableNumberCell.tsx` - In-line cell editing (numbers)
-- `DatePickerPopover.tsx` - Date selection popover
-- `ConfirmDialog.tsx` - Confirmation dialog for bulk actions
-- `Pagination.tsx` - Table pagination controls
-
-### UI Components
+### UI Components (Primitives)
 **Location**: `frontend/src/components/ui/`
 
-- `Scorecard.tsx` - Metric display card
-- `LoadingState.tsx` - Skeleton loading animations
 - `SiteFavicon.tsx` - Website favicon display
 - `BillingBadge.tsx` - Badge components (Count, Credit, BillingType)
 - `ThemeToggle.tsx` - Dark/light mode toggle
@@ -240,6 +268,7 @@ TurboHosting.tsx
 - `table.tsx` - Table primitive components
 - `tooltip.tsx` - Tooltip components
 - `toggle-group.tsx` - Toggle group component
+- `button.tsx`, `calendar.tsx`, etc. - Other shadcn/ui primitives
 
 ### External Libraries
 
@@ -310,36 +339,49 @@ TurboHosting.tsx
 
 ```
 frontend/src/components/
-├── Dashboard.tsx                    # Main billing overview page
-├── SupportTickets.tsx              # Support ticket tracking page
-├── Projects.tsx                     # Project revenue page
-├── TurboHosting.tsx                # Turbo Hosting MRR page
-├── PageHeader.tsx                   # Shared page header
-├── PeriodSelector.tsx              # Month/year selector
-├── ViewModeToggle.tsx              # View mode toggle
-├── Sidebar.tsx                      # App navigation
-├── RequestCalendarHeatmap.tsx      # Calendar heatmap chart
-├── CategoryRadarChart.tsx          # Radar chart
-├── CategoryPieChart.tsx            # Pie chart
-├── CumulativeBillingChart.tsx      # Line chart (revenue growth)
-├── HostingTypeChart.tsx            # Pie chart (hosting types)
-├── ProjectCategoryPieChart.tsx     # Pie chart (project categories)
-├── CostTrackerCard.tsx             # Reusable cost tracker (table + chart)
-├── MonthlyRevenueTable.tsx         # Projects table
-├── MonthlyHostingCalculator.tsx    # Hosting table
-├── EditableCell.tsx                # Text editing
-├── EditableNumberCell.tsx          # Number editing
-├── DatePickerPopover.tsx           # Date picker
-├── ConfirmDialog.tsx               # Confirmation dialog
-├── Pagination.tsx                   # Table pagination
-└── ui/
-    ├── Scorecard.tsx               # Metric cards
-    ├── LoadingState.tsx            # Loading skeletons
+├── base/                            # Reusable base components
+│   └── DataTrackerCard.tsx         # Base tracker with render props pattern
+├── shared/                          # Cross-page shared components
+│   ├── PageHeader.tsx              # Page header with title and controls
+│   ├── PeriodSelector.tsx          # Month/year selector
+│   ├── ViewModeToggle.tsx          # View mode toggle
+│   ├── Sidebar.tsx                 # App navigation
+│   ├── Scorecard.tsx               # Metric display cards
+│   ├── LoadingState.tsx            # Skeleton loading animations
+│   ├── EditableCell.tsx            # Text editing
+│   ├── EditableNumberCell.tsx      # Number editing
+│   ├── DatePickerPopover.tsx       # Date picker
+│   ├── ConfirmDialog.tsx           # Confirmation dialog
+│   └── Pagination.tsx              # Table pagination
+├── charts/                          # Visualization components
+│   ├── RequestCalendarHeatmap.tsx  # Calendar heatmap chart
+│   ├── CategoryRadarChart.tsx      # Radar chart
+│   ├── CategoryPieChart.tsx        # Pie chart (categories)
+│   ├── CumulativeBillingChart.tsx  # Line chart (revenue growth)
+│   ├── HostingTypeChart.tsx        # Pie chart (hosting types)
+│   └── ProjectCategoryPieChart.tsx # Pie chart (project categories)
+├── support/                         # Support page components
+│   ├── SupportTickets.tsx          # Support ticket tracking page
+│   └── CostTrackerCard.tsx         # Cost tracking by urgency (uses base)
+├── dashboard/                       # Dashboard page components
+│   ├── Dashboard.tsx               # Main billing overview page
+│   └── RevenueTrackerCard.tsx      # Revenue tracking by category (uses base)
+├── projects/                        # Projects page components
+│   ├── Projects.tsx                # Project revenue page
+│   ├── MonthlyRevenueTable.tsx     # Projects monthly breakdown
+│   └── ProjectCard.tsx             # Individual project card
+├── hosting/                         # Hosting page components
+│   ├── TurboHosting.tsx            # Turbo Hosting MRR page
+│   └── MonthlyHostingCalculator.tsx # Hosting monthly breakdown
+└── ui/                              # Primitive UI components (shadcn/ui)
     ├── SiteFavicon.tsx             # Favicon display
     ├── BillingBadge.tsx            # Badge components
     ├── ThemeToggle.tsx             # Theme toggle
     ├── card.tsx                    # Card primitives
     ├── table.tsx                   # Table primitives
     ├── tooltip.tsx                 # Tooltip primitives
-    └── toggle-group.tsx            # Toggle group
+    ├── toggle-group.tsx            # Toggle group
+    ├── button.tsx                  # Button primitives
+    ├── calendar.tsx                # Calendar primitives
+    └── ...                         # Other shadcn/ui components
 ```
