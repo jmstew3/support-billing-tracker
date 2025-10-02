@@ -360,9 +360,9 @@ export function RevenueTrackerCard({
               );
             }}
           />
-          <Bar dataKey="Tickets" stackId="a" fill={visibleCategories.Tickets ? "#3B82F6" : "#D1D5DB"} />
-          <Bar dataKey="Projects" stackId="a" fill={visibleCategories.Projects ? "#F59E0B" : "#D1D5DB"} />
-          <Bar dataKey="Hosting" stackId="a" fill={visibleCategories.Hosting ? "#10B981" : "#D1D5DB"}>
+          <Bar dataKey="Tickets" stackId="a" fill={visibleCategories.Tickets ? CHART_STYLES.barColors.tickets : CHART_STYLES.barColors.disabled} />
+          <Bar dataKey="Projects" stackId="a" fill={visibleCategories.Projects ? CHART_STYLES.barColors.projects : CHART_STYLES.barColors.disabled} />
+          <Bar dataKey="Hosting" stackId="a" fill={visibleCategories.Hosting ? CHART_STYLES.barColors.hosting : CHART_STYLES.barColors.disabled}>
             <LabelList
               dataKey="total"
               position="top"
