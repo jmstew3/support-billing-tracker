@@ -5,7 +5,7 @@ import { SiteFavicon } from '../ui/SiteFavicon';
 import { PageHeader } from '../shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../contexts/PeriodContext';
-import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Calculator, Gift } from 'lucide-react';
 import { generateComprehensiveBilling } from '../../services/billingApi';
 import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../../utils/formatting';
 import { CountBadge, CreditBadge, BillingTypeBadge } from '../ui/BillingBadge';
@@ -159,6 +159,29 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   // Calculate total project credits
   const totalProjectCredits = totalLandingPageSavings + totalMultiFormSavings + totalBasicFormSavings;
 
+  // Calculate average costs
+  const totalTicketsCount = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsCount, 0) || 0;
+  const totalTicketsRevenue = billingSummary?.totalTicketsRevenue || 0;
+  const averageTicketCost = totalTicketsCount > 0 ? totalTicketsRevenue / totalTicketsCount : 0;
+
+  const totalProjectsCount = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsCount, 0) || 0;
+  const totalProjectsRevenue = billingSummary?.totalProjectsRevenue || 0;
+  const averageProjectCost = totalProjectsCount > 0 ? totalProjectsRevenue / totalProjectsCount : 0;
+
+  const totalHostingSiteMonths = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingSitesCount, 0) || 0;
+  const totalHostingRevenue = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingRevenue, 0) || 0;
+  const averageHostingCost = totalHostingSiteMonths > 0 ? totalHostingRevenue / totalHostingSiteMonths : 0;
+
+  // Calculate total discounts
+  const totalDiscounts = billingSummary?.monthlyBreakdown.reduce((sum, m) =>
+    sum +
+    (m.ticketsFreeHoursSavings || 0) +
+    (m.projectsLandingPageSavings || 0) +
+    (m.projectsMultiFormSavings || 0) +
+    (m.projectsBasicFormSavings || 0) +
+    (m.hostingCreditsApplied || 0),
+  0) || 0;
+
   if (loading) {
     return <LoadingState variant="overview" />;
   }
@@ -252,6 +275,34 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   ? `As of ${formatMonthLabel(billingSummary.monthlyBreakdown[billingSummary.monthlyBreakdown.length - 1].month)}`
                   : 'Net hosting revenue'
               }
+            />
+          </div>
+
+          {/* New Row - Average Costs and Total Discounts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <Scorecard
+              title="Avg Ticket Cost"
+              value={formatCurrency(averageTicketCost)}
+              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              description="Per support ticket"
+            />
+            <Scorecard
+              title="Avg Project Cost"
+              value={formatCurrency(averageProjectCost)}
+              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              description="Per project"
+            />
+            <Scorecard
+              title="Avg Hosting Cost"
+              value={formatCurrency(averageHostingCost)}
+              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              description="Per site per month"
+            />
+            <Scorecard
+              title="Total Discounts"
+              value={formatCurrency(totalDiscounts)}
+              icon={<Gift className="h-4 w-4 text-muted-foreground" />}
+              description="All free credits applied"
             />
           </div>
 
