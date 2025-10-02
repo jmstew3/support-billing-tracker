@@ -1,6 +1,6 @@
-import { usePeriod } from '../contexts/PeriodContext';
-import type { ViewMode } from '../contexts/PeriodContext';
-import { ToggleGroup } from './ui/toggle-group';
+import { usePeriod } from '../../contexts/PeriodContext';
+import type { ViewMode } from '../../contexts/PeriodContext';
+import { ToggleGroup } from '../ui/toggle-group';
 
 export interface ViewModeToggleProps {
   /**

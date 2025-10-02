@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap } from 'lucide-react';
-import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate, formatCount } from '../utils/formatting';
-import { BillingTypeBadge, CountBadge, CreditBadge } from './ui/BillingBadge';
-import { SiteFavicon } from './ui/SiteFavicon';
-import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../config/uiConstants';
-import type { MonthlyHostingSummary, BillingType } from '../types/websiteProperty';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate, formatCount } from '../../utils/formatting';
+import { BillingTypeBadge, CountBadge, CreditBadge } from '../ui/BillingBadge';
+import { SiteFavicon } from '../ui/SiteFavicon';
+import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../../config/uiConstants';
+import type { MonthlyHostingSummary, BillingType } from '../../types/websiteProperty';
 
 interface MonthlyHostingCalculatorProps {
   monthlyBreakdown: MonthlyHostingSummary[];

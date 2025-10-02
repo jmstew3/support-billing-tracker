@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { DailyRequestCount } from '../types/request';
+import type { DailyRequestCount } from '../../types/request';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
 import { ArrowLeft, Clock } from 'lucide-react';
 

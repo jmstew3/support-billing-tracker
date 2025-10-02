@@ -1,10 +1,10 @@
 import { Calendar, CheckCircle, DollarSign, AlertCircle, Tag } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { convertMicrosToDollars, formatCurrency } from '../services/projectsApi';
-import { InvoiceStatusBadge, ProjectCategoryBadge } from './ui/BillingBadge';
-import { BADGE_BORDER_RADIUS } from '../config/uiConstants';
-import type { Project } from '../types/project';
-import type { InvoiceStatus, ProjectCategory } from '../config/uiConstants';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { convertMicrosToDollars, formatCurrency } from '../../services/projectsApi';
+import { InvoiceStatusBadge, ProjectCategoryBadge } from '../ui/BillingBadge';
+import { BADGE_BORDER_RADIUS } from '../../config/uiConstants';
+import type { Project } from '../../types/project';
+import type { InvoiceStatus, ProjectCategory } from '../../config/uiConstants';
 
 interface ProjectCardProps {
   project: Project;

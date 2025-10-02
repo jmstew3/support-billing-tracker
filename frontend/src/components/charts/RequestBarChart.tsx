@@ -1,5 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { DailyRequestCount } from '../types/request';
+import type { DailyRequestCount } from '../../types/request';
 import { format, parseISO } from 'date-fns';
 
 interface RequestBarChartProps {

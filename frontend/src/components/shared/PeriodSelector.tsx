@@ -1,12 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { usePeriod } from '../contexts/PeriodContext';
+import { usePeriod } from '../../contexts/PeriodContext';
 import { DatePickerPopover } from './DatePickerPopover';
 
 export interface PeriodSelectorProps {
   /**
    * Type of selector to display:
-   * - 'full': Arrows + DatePickerPopover (like Dashboard)
-   * - 'simple': Just a dropdown select (like current BillingOverview/HostingBilling)
+   * - 'full': Arrows + DatePickerPopover (like SupportTickets)
+   * - 'simple': Just a dropdown select (like Dashboard/TurboHosting)
    */
   type?: 'full' | 'simple';
 

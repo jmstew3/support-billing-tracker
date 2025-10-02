@@ -2,7 +2,7 @@
  * Centralized UI Constants
  *
  * Single source of truth for labels, styles, and display formats
- * across all dashboard pages (Dashboard, Hosting, BillingOverview, Projects)
+ * across all dashboard pages (Dashboard, Hosting, SupportTickets, Projects)
  */
 
 import type { BillingType } from '../types/websiteProperty';

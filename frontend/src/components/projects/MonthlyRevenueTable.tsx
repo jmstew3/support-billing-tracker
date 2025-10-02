@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, Zap } from 'lucide-react';
-import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../services/projectsApi';
-import { FREE_LANDING_PAGE_START_DATE } from '../config/pricing';
-import { SiteFavicon } from './ui/SiteFavicon';
-import { CountBadge, CreditBadge } from './ui/BillingBadge';
-import type { Project } from '../types/project';
+import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../../services/projectsApi';
+import { FREE_LANDING_PAGE_START_DATE } from '../../config/pricing';
+import { SiteFavicon } from '../ui/SiteFavicon';
+import { CountBadge, CreditBadge } from '../ui/BillingBadge';
+import type { Project } from '../../types/project';
 
 interface MonthlyBreakdown {
   month: string; // Format: YYYY-MM

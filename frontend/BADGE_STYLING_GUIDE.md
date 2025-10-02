@@ -126,9 +126,9 @@ import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../config/uiCons
 ### Migration Status
 
 **✅ Completed:**
-- [x] `src/components/BillingOverview.tsx` - All badges use centralized components
+- [x] `src/components/Dashboard.tsx` - All badges use centralized components
 - [x] `src/components/MonthlyHostingCalculator.tsx` - All badges use centralized components
-- [x] `src/components/HostingBilling.tsx` - Uses centralized formatting
+- [x] `src/components/TurboHosting.tsx` - Uses centralized formatting
 - [x] `src/components/MonthlyRevenueTable.tsx` - Migrated to CountBadge, CreditBadge, FreeBadge, and TOTAL_REVENUE_BADGE_STYLE
 - [x] `src/components/ProjectCard.tsx` - Migrated to InvoiceStatusBadge, ProjectCategoryBadge, and BADGE_BORDER_RADIUS
 

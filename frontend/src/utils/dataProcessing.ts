@@ -158,7 +158,7 @@ export function calculateCosts(requests: ChatRequest[], month?: string): CostCal
   if (applyFreeHours && requests.length > 0) {
     // Sort requests chronologically: by date first, then by time
     // This ensures the first 10 hours of work each month receive the free hours credit
-    // Matches the BillingOverview calculation for consistency
+    // Matches the Dashboard calculation for consistency
     const sortedRequests = [...requests].sort((a, b) => {
       // First, compare dates (YYYY-MM-DD format sorts correctly as strings)
       if (a.Date !== b.Date) {

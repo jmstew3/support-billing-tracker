@@ -290,42 +290,22 @@ Three buttons control chart granularity:
 
 #### Application Pages
 
-##### 1. Home (Dashboard)
-**Purpose**: Support ticket tracking and analysis from iMessage/Twenty CRM
+The application has 4 main pages accessible via the sidebar navigation:
 
-**Key Features**:
-- Support ticket list with real-time filtering and search
-- Interactive charts (bar chart, pie chart, radar chart, calendar heatmap)
-- Cost calculation based on tiered pricing (Regular/Same Day/Emergency)
-- Source tracking (SMS vs Ticket System)
-- Editable fields for category, urgency, and hours
-- Status-based management (active/deleted/ignored)
+##### 1. Billing Overview (Dashboard.tsx) 📊
+**Purpose**: Comprehensive billing rollup combining all revenue sources (MAIN LANDING PAGE)
 
-**Data Source**: Twenty CRM support tickets + iMessage CSV exports
-
-##### 2. Projects
-**Purpose**: Project revenue tracking for QuickBooks reconciliation
-
-**Key Features**:
-- Displays ONLY "Ready" invoice status projects (ready to invoice)
-- Monthly revenue breakdown organized by `projectCompletionDate`
-- Cumulative billing chart showing revenue growth
-- Filter by hosting status and project category
-- Search functionality across project names
-- Color-coded status badges (Gray/Blue/Yellow/Green)
-
-**Data Source**: Twenty CRM projects API (`/rest/projects`)
-
-##### 3. Billing Overview (NEW)
-**Purpose**: Comprehensive billing rollup combining all revenue sources
+**File**: `frontend/src/components/Dashboard.tsx`
+**Route**: `'overview'` view in App.tsx
+**Sidebar**: "Billing Overview" (BarChart3 icon)
 
 **Key Features**:
 - **Unified Revenue View**: Combines tickets, projects, and hosting in single dashboard
 - **Monthly Breakdown**: Nested collapsible table structure
   - Month header row with total revenue
-  - Support Tickets subsection (billable hours from Dashboard)
+  - Support Tickets subsection (billable hours from Support page)
   - Projects subsection (ready to invoice from Projects page)
-  - Hosting subsection (monthly recurring from Hosting & Billing page)
+  - Hosting subsection (monthly recurring from Turbo Hosting page)
 - **Summary Scorecards**:
   - Total Revenue (combined)
   - Support Tickets Revenue (blue)
@@ -340,10 +320,67 @@ Three buttons control chart granularity:
 - Projects: `fetchProjects()` from Twenty CRM (READY status only)
 - Hosting: `fetchWebsiteProperties()` with proration logic
 
-**Navigation**: Accessible via Sidebar → "Billing Overview" (BarChart3 icon)
+**Components Used**:
+- Scorecard, LoadingState, SiteFavicon, PageHeader
+- BillingBadge (CountBadge, CreditBadge, BillingTypeBadge)
+- Recharts (BarChart, PieChart)
+- Services: billingApi.ts
+- Types: billing.ts
 
-##### 4. Hosting & Billing
+##### 2. Support (SupportTickets.tsx) 🎫
+**Purpose**: Support ticket tracking and analysis from iMessage/Twenty CRM
+
+**File**: `frontend/src/components/SupportTickets.tsx`
+**Route**: `'home'` view in App.tsx
+**Sidebar**: "Support" (Ticket icon)
+
+**Key Features**:
+- Support ticket list with real-time filtering and search
+- Interactive charts (bar chart, pie chart, radar chart, calendar heatmap)
+- Cost calculation based on tiered pricing (Regular/Same Day/Emergency)
+- Source tracking (SMS vs Ticket System)
+- Editable fields for category, urgency, and hours
+- Status-based management (active/deleted/ignored)
+
+**Data Source**: Twenty CRM support tickets + iMessage CSV exports
+
+**Components Used**:
+- Card, Scorecard, ThemeToggle, Table components
+- RequestCalendarHeatmap, CategoryRadarChart, CategoryPieChart
+- Pagination, EditableCell, EditableNumberCell, ConfirmDialog, DatePickerPopover
+- Recharts (BarChart, ComposedChart)
+- Services: api.ts (fetchRequests, updateRequest)
+- Types: request.ts
+
+##### 3. Projects (Projects.tsx) 📁
+**Purpose**: Project revenue tracking for QuickBooks reconciliation
+
+**File**: `frontend/src/components/Projects.tsx`
+**Route**: `'projects'` view in App.tsx
+**Sidebar**: "Projects" (FolderKanban icon)
+
+**Key Features**:
+- Displays ONLY "Ready" invoice status projects (ready to invoice)
+- Monthly revenue breakdown organized by `projectCompletionDate`
+- Cumulative billing chart showing revenue growth
+- Filter by hosting status and project category
+- Search functionality across project names
+- Color-coded status badges (Gray/Blue/Yellow/Green)
+
+**Data Source**: Twenty CRM projects API (`/rest/projects`)
+
+**Components Used**:
+- MonthlyRevenueTable, CumulativeBillingChart, ProjectCategoryPieChart
+- Scorecard, LoadingState
+- Services: projectsApi.ts
+- Types: project.ts
+
+##### 4. Turbo Hosting (TurboHosting.tsx) ⚡
 **Purpose**: Website hosting monthly recurring revenue (MRR) tracking
+
+**File**: `frontend/src/components/TurboHosting.tsx`
+**Route**: `'billing'` view in App.tsx
+**Sidebar**: "Turbo Hosting" (Zap icon)
 
 **Key Features**:
 - Proration calculations for partial-month hosting
@@ -367,6 +404,12 @@ Three buttons control chart granularity:
 - **Exclusion**: Free hosting credits do NOT apply to May 2025
 - **Effective**: June 2025 onwards
 - **Implementation**: Credits are prioritized for full-month charges first, then highest prorated amounts
+
+**Components Used**:
+- Scorecard, LoadingState
+- CumulativeBillingChart, HostingTypeChart, MonthlyHostingCalculator
+- Services: hostingApi.ts
+- Types: websiteProperty.ts
 
 ## Billing Policies
 
@@ -408,7 +451,7 @@ Three buttons control chart granularity:
 - `frontend/src/config/pricing.ts` - Policy constants
 - `frontend/src/types/billing.ts` - Type definitions
 - `frontend/src/services/billingApi.ts` - Credit application logic
-- `frontend/src/components/BillingOverview.tsx` - Visual display
+- `frontend/src/components/Dashboard.tsx` - Visual display (Billing Overview)
 
 ### Free Multi-Form Policy (Starting June 2025)
 
@@ -530,10 +573,10 @@ thad-chat/
 └── frontend/                          # Stage 3: React dashboard
     ├── src/
     │   ├── components/
-    │   │   ├── Dashboard.tsx          # Main dashboard component (support tickets)
-    │   │   ├── Projects.tsx           # Projects page (ready to invoice)
-    │   │   ├── HostingBilling.tsx     # Hosting & billing page
-    │   │   ├── BillingOverview.tsx    # Comprehensive billing rollup (NEW)
+    │   │   ├── Dashboard.tsx          # Billing Overview - Comprehensive rollup (MAIN PAGE)
+    │   │   ├── SupportTickets.tsx     # Support - Ticket tracking and analysis
+    │   │   ├── Projects.tsx           # Projects - Revenue tracking (ready to invoice)
+    │   │   ├── TurboHosting.tsx       # Turbo Hosting - MRR tracking
     │   │   ├── RequestBarChart.tsx    # Time-series chart
     │   │   ├── CategoryPieChart.tsx   # Modern pie chart with animations
     │   │   ├── CategoryRadarChart.tsx # Radar chart for category metrics
@@ -545,7 +588,7 @@ thad-chat/
     │   │   ├── twentyApi.ts           # Twenty CRM API integration
     │   │   ├── projectsApi.ts         # Projects API service
     │   │   ├── hostingApi.ts          # Hosting API service
-    │   │   └── billingApi.ts          # Comprehensive billing aggregation (NEW)
+    │   │   └── billingApi.ts          # Comprehensive billing aggregation
     │   ├── utils/
     │   │   ├── dataProcessing.ts      # Data transformation
     │   │   ├── csvExport.ts           # Save functionality
@@ -555,14 +598,144 @@ thad-chat/
     │       ├── request.ts             # TypeScript interfaces for requests
     │       ├── project.ts             # TypeScript interfaces for projects
     │       ├── websiteProperty.ts     # TypeScript interfaces for hosting
-    │       └── billing.ts             # TypeScript interfaces for billing (NEW)
+    │       └── billing.ts             # TypeScript interfaces for billing
     └── public/
         └── thad_requests_table.csv    # Data source for dashboard
 ```
 
+## Navigation & Routing
+
+### Sidebar Navigation Structure
+
+The application uses a sidebar navigation with 4 main menu items defined in `Sidebar.tsx`:
+
+| Sidebar Label | Icon | Route ID | Component File | Purpose |
+|--------------|------|----------|----------------|---------|
+| **Dashboard** | BarChart3 | `'overview'` | `Dashboard.tsx` | Billing Overview (Main Landing Page) |
+| **Support** | Ticket | `'home'` | `SupportTickets.tsx` | Support Ticket Tracking |
+| **Projects** | FolderKanban | `'projects'` | `Projects.tsx` | Project Revenue Tracking |
+| **Turbo Hosting** | Zap | `'billing'` | `TurboHosting.tsx` | Hosting MRR Tracking |
+
+### Routing Configuration
+
+Routes are managed in `App.tsx`:
+
+```typescript
+{currentView === 'overview' && <Dashboard />}      // Billing Overview (default)
+{currentView === 'home' && <SupportTickets />}     // Support Tickets
+{currentView === 'projects' && <Projects />}        // Projects
+{currentView === 'billing' && <TurboHosting />}  // Turbo Hosting
+```
+
+**Default View**: `'overview'` (Billing Overview / Dashboard)
+
+### Page-to-Component Mapping
+
+#### 1. Billing Overview (Dashboard.tsx)
+**Navigation**: Sidebar → "Dashboard" (BarChart3 icon)
+**Route**: `'overview'`
+**Main Component**: `Dashboard`
+**Child Components**:
+- `Scorecard` - Revenue metrics display
+- `LoadingState` - Skeleton loading animations
+- `SiteFavicon` - Website favicons in hosting section
+- `PageHeader` - Page title and controls
+- `BillingBadge` components:
+  - `CountBadge` - Item count indicators
+  - `CreditBadge` - Free credit indicators
+  - `BillingTypeBadge` - Billing cycle type badges
+- Recharts components: `BarChart`, `PieChart`
+
+**Services Used**:
+- `billingApi.ts` → `generateComprehensiveBilling()`
+
+**Type Definitions**:
+- `billing.ts` → `BillingSummary`, `MonthlyBillingSummary`
+
+#### 2. Support (SupportTickets.tsx)
+**Navigation**: Sidebar → "Support" (Ticket icon)
+**Route**: `'home'`
+**Main Component**: `SupportTickets`
+**Child Components**:
+- `Card`, `Scorecard`, `ThemeToggle` - UI containers and controls
+- `Table` components - Data table display
+- `RequestCalendarHeatmap` - Calendar view of requests
+- `CategoryRadarChart` - Multi-dimensional category analysis
+- `CategoryPieChart` - Category distribution
+- `Pagination` - Table pagination controls
+- `EditableCell`, `EditableNumberCell` - Inline editing
+- `ConfirmDialog` - Action confirmations
+- `DatePickerPopover` - Date selection
+- Recharts components: `BarChart`, `ComposedChart`
+
+**Services Used**:
+- `api.ts` → `fetchRequests()`, `updateRequest()`, `bulkUpdateRequests()`, `deleteRequest()`, `checkAPIHealth()`
+- `dataProcessing.ts` → `processDailyRequests()`, `processCategoryData()`, `calculateCosts()`, `categorizeRequest()`
+
+**Type Definitions**:
+- `request.ts` → `ChatRequest`
+
+#### 3. Projects (Projects.tsx)
+**Navigation**: Sidebar → "Projects" (FolderKanban icon)
+**Route**: `'projects'`
+**Main Component**: `Projects`
+**Child Components**:
+- `MonthlyRevenueTable` - Monthly project breakdown
+- `CumulativeBillingChart` - Revenue growth visualization
+- `ProjectCategoryPieChart` - Project category distribution
+- `Scorecard` - Revenue metrics
+- `LoadingState` - Loading animations
+
+**Services Used**:
+- `projectsApi.ts` → `fetchProjects()`, `formatCurrency()`, `convertMicrosToDollars()`
+
+**Type Definitions**:
+- `project.ts` → `Project`, `ProjectFilters`
+
+#### 4. Turbo Hosting (TurboHosting.tsx)
+**Navigation**: Sidebar → "Turbo Hosting" (Zap icon)
+**Route**: `'billing'`
+**Main Component**: `TurboHosting`
+**Child Components**:
+- `Scorecard` - MRR metrics
+- `LoadingState` - Loading animations
+- `CumulativeBillingChart` - MRR growth visualization
+- `HostingTypeChart` - Billing type distribution
+- `MonthlyHostingCalculator` - Detailed monthly breakdown table
+
+**Services Used**:
+- `hostingApi.ts` → `fetchWebsiteProperties()`, `generateMonthlyBreakdown()`, `calculateCreditProgress()`
+
+**Type Definitions**:
+- `websiteProperty.ts` → `WebsiteProperty`, `MonthlyHostingSummary`
+
 ## Development History & Updates
 
 ### Recent Major Updates
+
+#### Component Renaming for Semantic Clarity (October 2, 2025) 📝
+- **Renamed Components to Match Sidebar Labels**:
+  - `BillingOverview.tsx` → `Dashboard.tsx` (Billing Overview - main landing page)
+  - `Dashboard.tsx` → `SupportTickets.tsx` (Support ticket tracking)
+  - `HostingBilling.tsx` → `TurboHosting.tsx` (Turbo Hosting - MRR tracking)
+
+- **Benefits**:
+  - Component names now align with user-facing sidebar labels
+  - More semantic and intuitive naming convention
+  - Dashboard is now the comprehensive billing overview (main page)
+  - Eliminates confusion between multiple "dashboard" concepts
+
+- **Files Modified**:
+  - Component files: `Dashboard.tsx`, `SupportTickets.tsx`, `TurboHosting.tsx`
+  - Imports: `App.tsx`
+  - Documentation: `CLAUDE.md`, `mobile-optimization.md`, `BADGE_STYLING_GUIDE.md`
+  - Comments: `PageHeader.tsx`, `PeriodSelector.tsx`
+
+- **Navigation Mapping**:
+  - `'overview'` → Dashboard.tsx (Billing Overview)
+  - `'home'` → SupportTickets.tsx (Support)
+  - `'projects'` → Projects.tsx (Projects)
+  - `'billing'` → TurboHosting.tsx (Turbo Hosting)
 
 #### Invoice Status Enum Update (September 30, 2025) 💼
 - **Updated Invoice Status Values for Twenty CRM Projects**:
@@ -611,7 +784,7 @@ thad-chat/
   - Deselected items fade to grey but remain visible for easy re-enabling
   - Visual feedback with reduced opacity for inactive legend items
   - Reset button appears when filters are modified from default state
-  - Files Modified: `Dashboard.tsx` (lines 100-105, 2065-2175)
+  - Files Modified: `SupportTickets.tsx` (previously Dashboard.tsx) (lines 100-105, 2065-2175)
 
 - **Enhanced Chart Interactivity**:
   - Stacked bar chart maintains visual continuity with grayed out bars
@@ -631,7 +804,7 @@ thad-chat/
   - Removed savings calculations and displays
   - Simplified cost scorecard to show only tiered pricing
   - Cleaned up Cost Calculation table to focus on service tiers
-  - Files Modified: `types/request.ts`, `config/pricing.ts`, `utils/dataProcessing.ts`, `Dashboard.tsx`
+  - Files Modified: `types/request.ts`, `config/pricing.ts`, `utils/dataProcessing.ts`, `SupportTickets.tsx`
 
 - **Centralized Pricing Configuration**:
   - Created single source of truth: `frontend/src/config/pricing.ts`
@@ -652,7 +825,7 @@ thad-chat/
   - Smart navigation that skips months without data
   - Tooltips show target month (e.g., "Go to August 2025")
   - Automatic year boundary handling
-  - Files Modified: `Dashboard.tsx`
+  - Files Modified: `SupportTickets.tsx`
 
 - **Simplified Request Count Display**:
   - Replaced verbose multi-count display with clear, concise format
@@ -696,7 +869,7 @@ thad-chat/
   - Source filtering allows viewing SMS-only, tickets-only, or both
 - **Files Modified**:
   - Created: `twentyApi.ts`, `ticketTransform.ts`
-  - Modified: `Dashboard.tsx`, `docker-compose.yml`, `.env.docker`, `.gitignore`
+  - Modified: `SupportTickets.tsx`, `docker-compose.yml`, `.env.docker`, `.gitignore`
 - **Benefits**: Unified view of all support requests regardless of source channel
 
 #### Source Indicators Implementation (September 23, 2025) 📱
@@ -710,7 +883,7 @@ thad-chat/
   - Interactive tooltips showing "Via Text", "Via Ticket System", etc.
   - Source filtering with checkbox dropdown for multiple selections
   - Total Requests scorecard now shows source breakdown (e.g., "189 Text, 52 Ticket")
-  - Files Modified: `Dashboard.tsx`, `request.ts`, `ui/tooltip.tsx`
+  - Files Modified: `SupportTickets.tsx`, `request.ts`, `ui/tooltip.tsx`
 
 - **Column Width Optimizations**:
   - Request Summary column: Narrowed from 300px to 200px minimum width
@@ -718,7 +891,7 @@ thad-chat/
   - Date column: Added minimum width of 110px for better visibility
   - Day column: Reduced to 80px width (w-20)
   - Result: Better balanced table layout with improved Date column readability
-  - Files Modified: `Dashboard.tsx`
+  - Files Modified: `SupportTickets.tsx`
 
 #### Header & Navigation Improvements (September 16, 2025) 🎨
 - **Sticky Header Implementation**:
@@ -726,7 +899,7 @@ thad-chat/
   - Title "Request Analysis Dashboard" remains visible while scrolling
   - Full-width border separator extends edge-to-edge in browser
   - Clean flat design with no box shadows
-  - Files Modified: `Dashboard.tsx` (lines 883-978)
+  - Files Modified: `SupportTickets.tsx` (lines 883-978)
 
 - **CORS Configuration Fix**:
   - Fixed API connection issues for multiple localhost ports
@@ -738,7 +911,7 @@ thad-chat/
   - Removed emoji icons from View toggle buttons (All/Month/Day)
   - Conditional display of "Manual save required" message (hidden in API mode)
   - Improved layout with left-aligned title and right-aligned controls
-  - Files Modified: `Dashboard.tsx`, `api.ts`
+  - Files Modified: `SupportTickets.tsx`, `api.ts`
 
 #### UI/UX Enhancements (September 16, 2025) 🎨
 - **Bulk Actions with Apply Pattern**:
@@ -746,7 +919,7 @@ thad-chat/
   - Added staged changes with Apply/Cancel buttons
   - Automatic selection clearing after successful application
   - Prevents accidental bulk changes with explicit user confirmation
-  - Files Modified: `Dashboard.tsx` (lines 105-106, 670-733, 1266-1323)
+  - Files Modified: `SupportTickets.tsx` (lines 105-106, 670-733, 1266-1323)
 
 - **Enhanced Pie Chart Labels**:
   - Added callout lines connecting slices to labels
@@ -775,7 +948,7 @@ thad-chat/
   - Color-coordinated charts with consistent theming
   - Enhanced interactivity with smooth animations
 - **Files Added**: `CategoryRadarChart.tsx`
-- **Files Modified**: `CategoryPieChart.tsx`, `Dashboard.tsx`
+- **Files Modified**: `CategoryPieChart.tsx`, `SupportTickets.tsx`
 - **Benefits**: Multi-dimensional data analysis and improved visual appeal
 
 #### Flat Rate Pricing Feature (December 2024) 💰
@@ -785,7 +958,7 @@ thad-chat/
   - Automatic savings calculation (amount and percentage)
   - Enhanced Total Cost card with strikethrough tiered pricing
   - Green-highlighted savings display in cost breakdown
-- **Files Modified**: `Dashboard.tsx`, `dataProcessing.ts`, `request.ts`
+- **Files Modified**: `SupportTickets.tsx`, `dataProcessing.ts`, `request.ts`
 - **Benefits**: Clear demonstration of value to clients through savings visualization
 
 #### Search Functionality (December 2024) 🔍
@@ -795,7 +968,7 @@ thad-chat/
   - Clear button for quick reset
   - Case-insensitive substring matching
   - Integration with existing filters and pagination
-- **Files Modified**: `Dashboard.tsx`
+- **Files Modified**: `SupportTickets.tsx`
 - **User Experience**: Instantly filter hundreds of requests by typing keywords
 
 #### Status-Based Deletion System (July 2025) 🎯
@@ -806,7 +979,7 @@ thad-chat/
   - Portable - status travels with CSV exports
   - Reversible - toggle between states freely
   - Persistent across sessions and deployments
-- **Files Modified**: `Dashboard.tsx`, `csvExport.ts`, `request.ts`
+- **Files Modified**: `SupportTickets.tsx`, `csvExport.ts`, `request.ts`
 - **Data Persistence**: Status column added to CSV format for complete state preservation
 
 #### Enhanced Data Persistence (July 2025)
@@ -821,17 +994,17 @@ thad-chat/
 
 #### Bulk Actions Implementation (July 2025)
 - **Feature**: Added comprehensive bulk selection and editing capabilities
-- **Components**: 
+- **Components**:
   - Checkbox column for individual and bulk selection
   - Bulk actions toolbar with delete, category change, and urgency change
   - Smart selection clearing on filter/pagination changes
-- **Files Modified**: `Dashboard.tsx`
+- **Files Modified**: `SupportTickets.tsx`
 - **Benefits**: Significantly improved workflow efficiency for managing multiple requests
 
 #### Week View Removal (July 2025)
 - **Issue**: Week view was overcomplicating the dashboard interface
 - **Solution**: Simplified to 3-mode system (All/Month/Day)
-- **Files Modified**: `Dashboard.tsx`, removed week-related functions and UI elements
+- **Files Modified**: `SupportTickets.tsx`, removed week-related functions and UI elements
 - **Result**: Cleaner, more intuitive interface
 
 #### Y-Axis Display Fix

@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Scorecard } from './ui/Scorecard';
-import { LoadingState } from './ui/LoadingState';
-import { SiteFavicon } from './ui/SiteFavicon';
-import { PageHeader } from './PageHeader';
-import { usePeriod } from '../contexts/PeriodContext';
+import { Scorecard } from '../ui/Scorecard';
+import { LoadingState } from '../ui/LoadingState';
+import { SiteFavicon } from '../ui/SiteFavicon';
+import { PageHeader } from '../shared/PageHeader';
+import { usePeriod } from '../../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
-import { generateComprehensiveBilling } from '../services/billingApi';
-import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../utils/formatting';
-import { CountBadge, CreditBadge, BillingTypeBadge } from './ui/BillingBadge';
+import { generateComprehensiveBilling } from '../../services/billingApi';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../../utils/formatting';
+import { CountBadge, CreditBadge, BillingTypeBadge } from '../ui/BillingBadge';
 import {
   CATEGORY_COLORS,
   TABLE_REVENUE_TEXT_SIZE,
   TABLE_REVENUE_FONT_WEIGHT,
-} from '../config/uiConstants';
-import type { BillingSummary, MonthlyBillingSummary } from '../types/billing';
+} from '../../config/uiConstants';
+import type { BillingSummary, MonthlyBillingSummary } from '../../types/billing';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, PieChart, Pie, Cell } from 'recharts';
 
-interface BillingOverviewProps {
+interface DashboardProps {
   onToggleMobileMenu?: () => void;
 }
 
-export function BillingOverview({ onToggleMobileMenu }: BillingOverviewProps) {
+export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   const { selectedYear, selectedMonth, setAvailableData } = usePeriod();
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,7 +190,7 @@ export function BillingOverview({ onToggleMobileMenu }: BillingOverviewProps) {
     <div className="flex flex-col h-full">
       {/* Sticky Header */}
       <PageHeader
-        title="Billing Overview"
+        title="Dashboard"
         periodSelectorType="full"
         showViewToggle={false}
         onToggleMobileMenu={onToggleMobileMenu}

@@ -1,15 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { FolderKanban, Loader2, AlertCircle, Search, DollarSign } from 'lucide-react';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
-import { CumulativeBillingChart } from './CumulativeBillingChart';
-import { ProjectCategoryPieChart } from './ProjectCategoryPieChart';
-import { Scorecard } from './ui/Scorecard';
-import { LoadingState } from './ui/LoadingState';
-import { fetchProjects, formatCurrency, convertMicrosToDollars } from '../services/projectsApi';
-import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../config/pricing';
-import type { Project, ProjectFilters } from '../types/project';
+import { CumulativeBillingChart } from '../charts/CumulativeBillingChart';
+import { ProjectCategoryPieChart } from '../charts/ProjectCategoryPieChart';
+import { Scorecard } from '../ui/Scorecard';
+import { LoadingState } from '../ui/LoadingState';
+import { fetchProjects, formatCurrency, convertMicrosToDollars } from '../../services/projectsApi';
+import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../../config/pricing';
+import type { Project, ProjectFilters } from '../../types/project';
 
-export function Projects() {
+interface ProjectsProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export function Projects({ onToggleMobileMenu }: ProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
