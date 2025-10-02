@@ -33,6 +33,16 @@ export interface CostData {
   netTotalCost?: number;
   freeHoursApplied?: number;
   freeHoursSavings?: number;
+  // Net costs per category (after free hours)
+  regularNetCost?: number;
+  sameDayNetCost?: number;
+  emergencyNetCost?: number;
+  promotionalNetCost?: number;
+  // Free hours applied per category
+  regularFreeHours?: number;
+  sameDayFreeHours?: number;
+  emergencyFreeHours?: number;
+  promotionalFreeHours?: number;
 }
 
 export interface MonthlyCostData {
@@ -56,6 +66,8 @@ export interface CostTrackerCardProps {
   description?: string;
   /** Initial view type (default: 'table') */
   initialViewType?: 'table' | 'chart';
+  /** Optional grid span classes for layout control */
+  gridSpan?: string;
 }
 
 /**
@@ -92,6 +104,7 @@ export function CostTrackerCard({
   title = 'Support Ticket Cost Tracker',
   description,
   initialViewType = 'table',
+  gridSpan,
 }: CostTrackerCardProps) {
   const [visibleUrgencies, setVisibleUrgencies] = useState<Record<string, boolean>>({
     Promotion: true,
@@ -171,21 +184,31 @@ export function CostTrackerCard({
             {/* Promotion Row */}
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>Promotion</td>
-              {monthlyCosts.map((monthData) => (
-                <td key={`promotion-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  {monthData.costs.promotionalCost === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(monthData.costs.promotionalCost).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.promotionalCost).amount}</span>
-                    </>
-                  )}
-                </td>
-              ))}
+              {monthlyCosts.map((monthData) => {
+                const amount = monthData.costs.promotionalNetCost !== undefined
+                  ? monthData.costs.promotionalNetCost
+                  : monthData.costs.promotionalCost;
+                return (
+                  <td key={`promotion-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
+                    {amount === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
+                  const total = monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.promotionalNetCost !== undefined
+                      ? m.costs.promotionalNetCost
+                      : m.costs.promotionalCost;
+                    return sum + amount;
+                  }, 0);
                   return total === 0 ? (
                     '-'
                   ) : (
@@ -200,21 +223,31 @@ export function CostTrackerCard({
             {/* Low Row */}
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>Low</td>
-              {monthlyCosts.map((monthData) => (
-                <td key={`low-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  {monthData.costs.regularCost === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(monthData.costs.regularCost).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.regularCost).amount}</span>
-                    </>
-                  )}
-                </td>
-              ))}
+              {monthlyCosts.map((monthData) => {
+                const amount = monthData.costs.regularNetCost !== undefined
+                  ? monthData.costs.regularNetCost
+                  : monthData.costs.regularCost;
+                return (
+                  <td key={`low-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
+                    {amount === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
+                  const total = monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.regularNetCost !== undefined
+                      ? m.costs.regularNetCost
+                      : m.costs.regularCost;
+                    return sum + amount;
+                  }, 0);
                   return total === 0 ? (
                     '-'
                   ) : (
@@ -229,21 +262,31 @@ export function CostTrackerCard({
             {/* Medium Row */}
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>Medium</td>
-              {monthlyCosts.map((monthData) => (
-                <td key={`medium-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  {monthData.costs.sameDayCost === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(monthData.costs.sameDayCost).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.sameDayCost).amount}</span>
-                    </>
-                  )}
-                </td>
-              ))}
+              {monthlyCosts.map((monthData) => {
+                const amount = monthData.costs.sameDayNetCost !== undefined
+                  ? monthData.costs.sameDayNetCost
+                  : monthData.costs.sameDayCost;
+                return (
+                  <td key={`medium-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
+                    {amount === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
+                  const total = monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.sameDayNetCost !== undefined
+                      ? m.costs.sameDayNetCost
+                      : m.costs.sameDayCost;
+                    return sum + amount;
+                  }, 0);
                   return total === 0 ? (
                     '-'
                   ) : (
@@ -258,21 +301,31 @@ export function CostTrackerCard({
             {/* High Row */}
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>High</td>
-              {monthlyCosts.map((monthData) => (
-                <td key={`high-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  {monthData.costs.emergencyCost === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(monthData.costs.emergencyCost).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.emergencyCost).amount}</span>
-                    </>
-                  )}
-                </td>
-              ))}
+              {monthlyCosts.map((monthData) => {
+                const amount = monthData.costs.emergencyNetCost !== undefined
+                  ? monthData.costs.emergencyNetCost
+                  : monthData.costs.emergencyCost;
+                return (
+                  <td key={`high-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
+                    {amount === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(amount).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
+                  const total = monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.emergencyNetCost !== undefined
+                      ? m.costs.emergencyNetCost
+                      : m.costs.emergencyCost;
+                    return sum + amount;
+                  }, 0);
                   return total === 0 ? (
                     '-'
                   ) : (
@@ -289,13 +342,31 @@ export function CostTrackerCard({
               <td className={TABLE_STYLES.cell}>Total</td>
               {monthlyCosts.map((monthData) => (
                 <td key={`total-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  <span>{formatCurrencyAccounting(monthData.costs.totalCost).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(monthData.costs.totalCost).amount}</span>
+                  <span>{formatCurrencyAccounting(
+                    monthData.costs.freeHoursSavings && monthData.costs.freeHoursSavings > 0
+                      ? monthData.costs.netTotalCost || 0
+                      : monthData.costs.totalCost
+                  ).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(
+                    monthData.costs.freeHoursSavings && monthData.costs.freeHoursSavings > 0
+                      ? monthData.costs.netTotalCost || 0
+                      : monthData.costs.totalCost
+                  ).amount}</span>
                 </td>
               ))}
               <td className={TABLE_STYLES.cellWithBorder}>
-                <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).symbol}</span>
-                <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0)).amount}</span>
+                <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
+                  const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
+                    ? m.costs.netTotalCost || 0
+                    : m.costs.totalCost;
+                  return sum + amount;
+                }, 0)).symbol}</span>
+                <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
+                  const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
+                    ? m.costs.netTotalCost || 0
+                    : m.costs.totalCost;
+                  return sum + amount;
+                }, 0)).amount}</span>
               </td>
             </tr>
           </tbody>
@@ -324,68 +395,124 @@ export function CostTrackerCard({
               <td className={TABLE_STYLES.cell}>Promotion</td>
               <td className={TABLE_STYLES.cellWithBorder}>$125/hr</td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.promotionalHours === 0 ? '-' : costData.promotionalHours.toFixed(2)}
-              </td>
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.promotionalCost === 0 ? (
-                  '-'
-                ) : (
+                {costData.promotionalHours === 0 ? '-' : (
                   <>
-                    <span>{formatCurrencyAccounting(costData.promotionalCost).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(costData.promotionalCost).amount}</span>
+                    {costData.promotionalHours.toFixed(2)}
+                    {costData.promotionalFreeHours && costData.promotionalFreeHours > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400 ml-1">
+                        (-{costData.promotionalFreeHours.toFixed(2)}h free)
+                      </span>
+                    )}
                   </>
                 )}
+              </td>
+              <td className={TABLE_STYLES.cellBoldWithBorder}>
+                {(() => {
+                  const amount = costData.promotionalNetCost !== undefined
+                    ? costData.promotionalNetCost
+                    : costData.promotionalCost;
+                  return amount === 0 ? (
+                    '-'
+                  ) : (
+                    <>
+                      <span>{formatCurrencyAccounting(amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                    </>
+                  );
+                })()}
               </td>
             </tr>
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>Low</td>
               <td className={TABLE_STYLES.cellWithBorder}>${PRICING_CONFIG.tiers[1].rate}/hr</td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.regularHours === 0 ? '-' : costData.regularHours.toFixed(2)}
-              </td>
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.regularCost === 0 ? (
-                  '-'
-                ) : (
+                {costData.regularHours === 0 ? '-' : (
                   <>
-                    <span>{formatCurrencyAccounting(costData.regularCost).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(costData.regularCost).amount}</span>
+                    {costData.regularHours.toFixed(2)}
+                    {costData.regularFreeHours && costData.regularFreeHours > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400 ml-1">
+                        (-{costData.regularFreeHours.toFixed(2)}h free)
+                      </span>
+                    )}
                   </>
                 )}
+              </td>
+              <td className={TABLE_STYLES.cellBoldWithBorder}>
+                {(() => {
+                  const amount = costData.regularNetCost !== undefined
+                    ? costData.regularNetCost
+                    : costData.regularCost;
+                  return amount === 0 ? (
+                    '-'
+                  ) : (
+                    <>
+                      <span>{formatCurrencyAccounting(amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                    </>
+                  );
+                })()}
               </td>
             </tr>
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>Medium</td>
               <td className={TABLE_STYLES.cellWithBorder}>${PRICING_CONFIG.tiers[2].rate}/hr</td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.sameDayHours === 0 ? '-' : costData.sameDayHours.toFixed(2)}
-              </td>
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.sameDayCost === 0 ? (
-                  '-'
-                ) : (
+                {costData.sameDayHours === 0 ? '-' : (
                   <>
-                    <span>{formatCurrencyAccounting(costData.sameDayCost).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(costData.sameDayCost).amount}</span>
+                    {costData.sameDayHours.toFixed(2)}
+                    {costData.sameDayFreeHours && costData.sameDayFreeHours > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400 ml-1">
+                        (-{costData.sameDayFreeHours.toFixed(2)}h free)
+                      </span>
+                    )}
                   </>
                 )}
+              </td>
+              <td className={TABLE_STYLES.cellBoldWithBorder}>
+                {(() => {
+                  const amount = costData.sameDayNetCost !== undefined
+                    ? costData.sameDayNetCost
+                    : costData.sameDayCost;
+                  return amount === 0 ? (
+                    '-'
+                  ) : (
+                    <>
+                      <span>{formatCurrencyAccounting(amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                    </>
+                  );
+                })()}
               </td>
             </tr>
             <tr className={TABLE_STYLES.row}>
               <td className={TABLE_STYLES.cell}>High</td>
               <td className={TABLE_STYLES.cellWithBorder}>${PRICING_CONFIG.tiers[3].rate}/hr</td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.emergencyHours === 0 ? '-' : costData.emergencyHours.toFixed(2)}
-              </td>
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {costData.emergencyCost === 0 ? (
-                  '-'
-                ) : (
+                {costData.emergencyHours === 0 ? '-' : (
                   <>
-                    <span>{formatCurrencyAccounting(costData.emergencyCost).symbol}</span>
-                    <span className="tabular-nums">{formatCurrencyAccounting(costData.emergencyCost).amount}</span>
+                    {costData.emergencyHours.toFixed(2)}
+                    {costData.emergencyFreeHours && costData.emergencyFreeHours > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400 ml-1">
+                        (-{costData.emergencyFreeHours.toFixed(2)}h free)
+                      </span>
+                    )}
                   </>
                 )}
+              </td>
+              <td className={TABLE_STYLES.cellBoldWithBorder}>
+                {(() => {
+                  const amount = costData.emergencyNetCost !== undefined
+                    ? costData.emergencyNetCost
+                    : costData.emergencyCost;
+                  return amount === 0 ? (
+                    '-'
+                  ) : (
+                    <>
+                      <span>{formatCurrencyAccounting(amount).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                    </>
+                  );
+                })()}
               </td>
             </tr>
             {/* Free Hours Deduction Row (if applicable) */}
@@ -429,10 +556,10 @@ export function CostTrackerCard({
 
     const chartData = monthlyCosts.map(month => ({
       month: month.month.substring(0, 3),
-      Promotion: month.costs.promotionalCost,
-      Low: month.costs.regularCost,
-      Medium: month.costs.sameDayCost,
-      High: month.costs.emergencyCost,
+      Promotion: month.costs.promotionalNetCost !== undefined ? month.costs.promotionalNetCost : month.costs.promotionalCost,
+      Low: month.costs.regularNetCost !== undefined ? month.costs.regularNetCost : month.costs.regularCost,
+      Medium: month.costs.sameDayNetCost !== undefined ? month.costs.sameDayNetCost : month.costs.sameDayCost,
+      High: month.costs.emergencyNetCost !== undefined ? month.costs.emergencyNetCost : month.costs.emergencyCost,
       totalCost: month.costs.grossTotalCost || month.costs.totalCost,
       netTotalCost: month.costs.netTotalCost || month.costs.totalCost,
       freeHoursApplied: month.costs.freeHoursApplied || 0,
@@ -610,10 +737,10 @@ export function CostTrackerCard({
     if (!costData) return null;
 
     const chartData = [
-      { name: 'Promotion', hours: costData.promotionalHours, cost: costData.promotionalCost, fill: visibleUrgencies.Promotion ? '#FFFFFF' : '#D1D5DB', stroke: visibleUrgencies.Promotion ? '#000000' : '#D1D5DB' },
-      { name: 'Low', hours: costData.regularHours, cost: costData.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB', stroke: 'none' },
-      { name: 'Medium', hours: costData.sameDayHours, cost: costData.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB', stroke: 'none' },
-      { name: 'High', hours: costData.emergencyHours, cost: costData.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB', stroke: 'none' },
+      { name: 'Promotion', hours: costData.promotionalHours, cost: costData.promotionalNetCost !== undefined ? costData.promotionalNetCost : costData.promotionalCost, fill: visibleUrgencies.Promotion ? '#FFFFFF' : '#D1D5DB', stroke: visibleUrgencies.Promotion ? '#000000' : '#D1D5DB' },
+      { name: 'Low', hours: costData.regularHours, cost: costData.regularNetCost !== undefined ? costData.regularNetCost : costData.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB', stroke: 'none' },
+      { name: 'Medium', hours: costData.sameDayHours, cost: costData.sameDayNetCost !== undefined ? costData.sameDayNetCost : costData.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB', stroke: 'none' },
+      { name: 'High', hours: costData.emergencyHours, cost: costData.emergencyNetCost !== undefined ? costData.emergencyNetCost : costData.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB', stroke: 'none' },
     ];
 
     return (
@@ -692,6 +819,7 @@ export function CostTrackerCard({
       renderTable={renderTable}
       renderChart={renderChart}
       initialViewType={initialViewType}
+      gridSpan={gridSpan}
     />
   );
 }
