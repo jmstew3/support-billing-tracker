@@ -6,6 +6,7 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -94,6 +95,10 @@ export function RevenueTrackerCard({
       projects: monthlyData.reduce((sum, m) => sum + m.projectsRevenue, 0),
       hosting: monthlyData.reduce((sum, m) => sum + m.hostingRevenue, 0),
       total: monthlyData.reduce((sum, m) => sum + m.totalRevenue, 0),
+      // Count totals
+      ticketsCount: monthlyData.reduce((sum, m) => sum + m.ticketsCount, 0),
+      projectsCount: monthlyData.reduce((sum, m) => sum + m.projectsCount, 0),
+      hostingCount: monthlyData.reduce((sum, m) => sum + m.hostingSitesCount, 0),
     };
   };
 
@@ -121,6 +126,7 @@ export function RevenueTrackerCard({
                   </th>
                 );
               })}
+              <th className={TABLE_STYLES.headerCellWithBorder}>Count</th>
               <th className={TABLE_STYLES.headerCellWithBorder}>Total</th>
             </tr>
           </thead>
@@ -140,6 +146,9 @@ export function RevenueTrackerCard({
                   )}
                 </td>
               ))}
+              <td className={TABLE_STYLES.cellWithBorder + ' text-center'}>
+                {totals.ticketsCount}
+              </td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {totals.tickets === 0 ? (
                   '-'
@@ -167,6 +176,9 @@ export function RevenueTrackerCard({
                   )}
                 </td>
               ))}
+              <td className={TABLE_STYLES.cellWithBorder + ' text-center'}>
+                {totals.projectsCount}
+              </td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {totals.projects === 0 ? (
                   '-'
@@ -194,6 +206,9 @@ export function RevenueTrackerCard({
                   )}
                 </td>
               ))}
+              <td className={TABLE_STYLES.cellWithBorder + ' text-center'}>
+                {totals.hostingCount}
+              </td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {totals.hosting === 0 ? (
                   '-'
@@ -215,6 +230,7 @@ export function RevenueTrackerCard({
                   <span className="tabular-nums">{formatCurrencyAccounting(month.totalRevenue).amount}</span>
                 </td>
               ))}
+              <td className={TABLE_STYLES.cellWithBorder}></td>
               <td className={TABLE_STYLES.cellWithBorder}>
                 <span>{formatCurrencyAccounting(totals.total).symbol}</span>
                 <span className="tabular-nums">{formatCurrencyAccounting(totals.total).amount}</span>
@@ -242,8 +258,16 @@ export function RevenueTrackerCard({
         Projects: month.projectsRevenue,
         Hosting: month.hostingRevenue,
         total: month.totalRevenue,
+        // Count data for line chart
+        ticketsCount: month.ticketsCount,
+        projectsCount: month.projectsCount,
+        hostingCount: month.hostingSitesCount,
+        totalCount: month.ticketsCount + month.projectsCount + month.hostingSitesCount,
       };
     });
+
+    // Only show count line when viewing all months
+    const showCountLine = monthlyData.length > 1;
 
     return (
       <ResponsiveContainer width="100%" height={400}>
@@ -251,9 +275,19 @@ export function RevenueTrackerCard({
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="month" {...CHART_STYLES.xAxis} />
           <YAxis
+            yAxisId="revenue"
             tickFormatter={(value) => `$${(value).toLocaleString()}`}
             {...CHART_STYLES.yAxis}
           />
+          {showCountLine && (
+            <YAxis
+              yAxisId="count"
+              orientation="right"
+              tickFormatter={(value) => value.toString()}
+              label={{ value: 'Count', angle: 90, position: 'insideRight' }}
+              {...CHART_STYLES.yAxisSecondary}
+            />
+          )}
           <Tooltip
             cursor={false}
             content={({ active, payload, label }) => {
@@ -267,7 +301,7 @@ export function RevenueTrackerCard({
                 };
 
                 const sortedPayload = payload
-                  .filter((entry: any) => entry.dataKey !== 'total')
+                  .filter((entry: any) => entry.dataKey !== 'total' && entry.dataKey !== 'totalCount' && !entry.dataKey.includes('Count'))
                   .sort((a: any, b: any) => {
                     return (orderMap[a.name] || 999) - (orderMap[b.name] || 999);
                   });
@@ -282,8 +316,13 @@ export function RevenueTrackerCard({
                     ))}
                     <div style={CHART_STYLES.tooltipDivider}>
                       <p style={{ color: '#111827', fontWeight: 'bold' }}>
-                        Total: {formatCurrency(data.total)}
+                        Total Revenue: {formatCurrency(data.total)}
                       </p>
+                      {showCountLine && (
+                        <p style={{ color: '#8B5CF6', fontWeight: 'bold' }}>
+                          Total Count: {data.totalCount}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -360,9 +399,9 @@ export function RevenueTrackerCard({
               );
             }}
           />
-          <Bar dataKey="Tickets" stackId="a" fill={visibleCategories.Tickets ? CHART_STYLES.barColors.tickets : CHART_STYLES.barColors.disabled} />
-          <Bar dataKey="Projects" stackId="a" fill={visibleCategories.Projects ? CHART_STYLES.barColors.projects : CHART_STYLES.barColors.disabled} />
-          <Bar dataKey="Hosting" stackId="a" fill={visibleCategories.Hosting ? CHART_STYLES.barColors.hosting : CHART_STYLES.barColors.disabled}>
+          <Bar yAxisId="revenue" dataKey="Tickets" stackId="a" fill={visibleCategories.Tickets ? CHART_STYLES.barColors.tickets : CHART_STYLES.barColors.disabled} />
+          <Bar yAxisId="revenue" dataKey="Projects" stackId="a" fill={visibleCategories.Projects ? CHART_STYLES.barColors.projects : CHART_STYLES.barColors.disabled} />
+          <Bar yAxisId="revenue" dataKey="Hosting" stackId="a" fill={visibleCategories.Hosting ? CHART_STYLES.barColors.hosting : CHART_STYLES.barColors.disabled}>
             <LabelList
               dataKey="total"
               position="top"
@@ -377,6 +416,18 @@ export function RevenueTrackerCard({
               }}
             />
           </Bar>
+          {showCountLine && (
+            <Line
+              yAxisId="count"
+              type="monotone"
+              dataKey="totalCount"
+              stroke="#8B5CF6"
+              strokeWidth={2}
+              dot={{ fill: '#8B5CF6', r: 4 }}
+              name="Total Count"
+              activeDot={{ r: 6 }}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     );

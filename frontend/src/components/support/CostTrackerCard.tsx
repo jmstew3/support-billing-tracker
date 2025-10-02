@@ -166,18 +166,26 @@ export function CostTrackerCard({
   const renderMonthlyTable = () => {
     if (!monthlyCosts || monthlyCosts.length === 0) return null;
 
+    // Check if we're showing a single month
+    const isSingleMonth = monthlyCosts.length === 1;
+
     return (
       <div className={TABLE_STYLES.container}>
         <table className={TABLE_STYLES.table}>
           <thead>
             <tr className={TABLE_STYLES.headerRow}>
               <th className={TABLE_STYLES.headerCell}>Urgency</th>
-              {monthlyCosts.map((monthData) => (
+              {!isSingleMonth && monthlyCosts.map((monthData) => (
                 <th key={`${monthData.year}-${monthData.month}`} className={TABLE_STYLES.headerCellWithBorder}>
                   {monthData.month.substring(0, 3)}
                 </th>
               ))}
-              <th className={TABLE_STYLES.headerCellWithBorder}>Total</th>
+              {isSingleMonth && (
+                <th className={TABLE_STYLES.headerCellWithBorder}>Amount</th>
+              )}
+              {!isSingleMonth && (
+                <th className={TABLE_STYLES.headerCellWithBorder}>Total</th>
+              )}
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -201,24 +209,26 @@ export function CostTrackerCard({
                   </td>
                 );
               })}
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.promotionalNetCost !== undefined
-                      ? m.costs.promotionalNetCost
-                      : m.costs.promotionalCost;
-                    return sum + amount;
-                  }, 0);
-                  return total === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(total).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                    </>
-                  );
-                })()}
-              </td>
+              {!isSingleMonth && (
+                <td className={TABLE_STYLES.cellBoldWithBorder}>
+                  {(() => {
+                    const total = monthlyCosts.reduce((sum, m) => {
+                      const amount = m.costs.promotionalNetCost !== undefined
+                        ? m.costs.promotionalNetCost
+                        : m.costs.promotionalCost;
+                      return sum + amount;
+                    }, 0);
+                    return total === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(total).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                      </>
+                    );
+                  })()}
+                </td>
+              )}
             </tr>
             {/* Low Row */}
             <tr className={TABLE_STYLES.row}>
@@ -240,24 +250,26 @@ export function CostTrackerCard({
                   </td>
                 );
               })}
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.regularNetCost !== undefined
-                      ? m.costs.regularNetCost
-                      : m.costs.regularCost;
-                    return sum + amount;
-                  }, 0);
-                  return total === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(total).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                    </>
-                  );
-                })()}
-              </td>
+              {!isSingleMonth && (
+                <td className={TABLE_STYLES.cellBoldWithBorder}>
+                  {(() => {
+                    const total = monthlyCosts.reduce((sum, m) => {
+                      const amount = m.costs.regularNetCost !== undefined
+                        ? m.costs.regularNetCost
+                        : m.costs.regularCost;
+                      return sum + amount;
+                    }, 0);
+                    return total === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(total).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                      </>
+                    );
+                  })()}
+                </td>
+              )}
             </tr>
             {/* Medium Row */}
             <tr className={TABLE_STYLES.row}>
@@ -279,24 +291,26 @@ export function CostTrackerCard({
                   </td>
                 );
               })}
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.sameDayNetCost !== undefined
-                      ? m.costs.sameDayNetCost
-                      : m.costs.sameDayCost;
-                    return sum + amount;
-                  }, 0);
-                  return total === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(total).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                    </>
-                  );
-                })()}
-              </td>
+              {!isSingleMonth && (
+                <td className={TABLE_STYLES.cellBoldWithBorder}>
+                  {(() => {
+                    const total = monthlyCosts.reduce((sum, m) => {
+                      const amount = m.costs.sameDayNetCost !== undefined
+                        ? m.costs.sameDayNetCost
+                        : m.costs.sameDayCost;
+                      return sum + amount;
+                    }, 0);
+                    return total === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(total).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                      </>
+                    );
+                  })()}
+                </td>
+              )}
             </tr>
             {/* High Row */}
             <tr className={TABLE_STYLES.row}>
@@ -318,24 +332,26 @@ export function CostTrackerCard({
                   </td>
                 );
               })}
-              <td className={TABLE_STYLES.cellBoldWithBorder}>
-                {(() => {
-                  const total = monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.emergencyNetCost !== undefined
-                      ? m.costs.emergencyNetCost
-                      : m.costs.emergencyCost;
-                    return sum + amount;
-                  }, 0);
-                  return total === 0 ? (
-                    '-'
-                  ) : (
-                    <>
-                      <span>{formatCurrencyAccounting(total).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                    </>
-                  );
-                })()}
-              </td>
+              {!isSingleMonth && (
+                <td className={TABLE_STYLES.cellBoldWithBorder}>
+                  {(() => {
+                    const total = monthlyCosts.reduce((sum, m) => {
+                      const amount = m.costs.emergencyNetCost !== undefined
+                        ? m.costs.emergencyNetCost
+                        : m.costs.emergencyCost;
+                      return sum + amount;
+                    }, 0);
+                    return total === 0 ? (
+                      '-'
+                    ) : (
+                      <>
+                        <span>{formatCurrencyAccounting(total).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
+                      </>
+                    );
+                  })()}
+                </td>
+              )}
             </tr>
             {/* Total Row */}
             <tr className={TABLE_STYLES.rowHighlight}>
@@ -354,20 +370,22 @@ export function CostTrackerCard({
                   ).amount}</span>
                 </td>
               ))}
-              <td className={TABLE_STYLES.cellWithBorder}>
-                <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
-                  const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
-                    ? m.costs.netTotalCost || 0
-                    : m.costs.totalCost;
-                  return sum + amount;
-                }, 0)).symbol}</span>
-                <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
-                  const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
-                    ? m.costs.netTotalCost || 0
-                    : m.costs.totalCost;
-                  return sum + amount;
-                }, 0)).amount}</span>
-              </td>
+              {!isSingleMonth && (
+                <td className={TABLE_STYLES.cellWithBorder}>
+                  <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
+                      ? m.costs.netTotalCost || 0
+                      : m.costs.totalCost;
+                    return sum + amount;
+                  }, 0)).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
+                    const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
+                      ? m.costs.netTotalCost || 0
+                      : m.costs.totalCost;
+                    return sum + amount;
+                  }, 0)).amount}</span>
+                </td>
+              )}
             </tr>
           </tbody>
         </table>
