@@ -833,6 +833,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const busiestDayOfWeek = getBusiestDayOfWeek(billableFilteredRequests);
   const topCategory = getTopCategory(billableFilteredRequests);
 
+
   // Scroll position preservation effect
   useEffect(() => {
     if (shouldPreserveScrollRef.current) {
