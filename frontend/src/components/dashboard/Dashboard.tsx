@@ -3,6 +3,7 @@ import { Scorecard } from '../ui/Scorecard';
 import { LoadingState } from '../ui/LoadingState';
 import { SiteFavicon } from '../ui/SiteFavicon';
 import { PageHeader } from '../shared/PageHeader';
+import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { generateComprehensiveBilling } from '../../services/billingApi';
@@ -14,7 +15,6 @@ import {
   TABLE_REVENUE_FONT_WEIGHT,
 } from '../../config/uiConstants';
 import type { BillingSummary, MonthlyBillingSummary } from '../../types/billing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardProps {
   onToggleMobileMenu?: () => void;
@@ -255,160 +255,15 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
             />
           </div>
 
-          {/* Monthly Revenue Chart */}
-          <div className="border bg-card p-6">
-            <h3 className="text-xl font-semibold mb-4">
-              {currentMonthString === 'all' ? 'Monthly Revenue by Category' : `${formatMonthLabel(currentMonthString)} Revenue Breakdown`}
-            </h3>
-
-            {/* Desktop: Always show bar chart */}
-            <div className="hidden md:block">
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart
-                  data={filteredData.map((month) => ({
-                    month: formatMonthLabel(month.month),
-                    Tickets: month.ticketsRevenue,
-                    Projects: month.projectsRevenue,
-                    Hosting: month.hostingRevenue,
-                  }))}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12 }}
-                    angle={currentMonthString === 'all' ? -45 : 0}
-                    textAnchor={currentMonthString === 'all' ? 'end' : 'middle'}
-                    height={currentMonthString === 'all' ? 80 : 60}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip
-                    cursor={false}
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px',
-                    }}
-                  />
-                  <Legend
-                    wrapperStyle={{ paddingTop: '20px' }}
-                    iconType="rect"
-                  />
-                  <Bar dataKey="Tickets" stackId="a" fill={CATEGORY_COLORS.tickets.primary} name="Support Tickets" />
-                  <Bar dataKey="Projects" stackId="a" fill={CATEGORY_COLORS.projects.primary} name="Projects" />
-                  <Bar dataKey="Hosting" stackId="a" fill={CATEGORY_COLORS.hosting.primary} name="Hosting">
-                    <LabelList
-                      dataKey={(entry: any) => entry.Tickets + entry.Projects + entry.Hosting}
-                      position="top"
-                      content={(props: any) => {
-                        const { x, y, width, value } = props;
-                        return (
-                          <text x={x + width / 2} y={y - 4} fontSize="11" fontWeight="bold" fill="#374151" textAnchor="middle">
-                            {formatCurrency(value)}
-                          </text>
-                        );
-                      }}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Mobile: Pie chart for single month, bar chart for all months */}
-            <div className="md:hidden">
-              {currentMonthString === 'all' ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart
-                    data={filteredData.map((month) => ({
-                      month: formatMonthLabel(month.month),
-                      Tickets: month.ticketsRevenue,
-                      Projects: month.projectsRevenue,
-                      Hosting: month.hostingRevenue,
-                    }))}
-                    margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 10 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 10 }}
-                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      cursor={false}
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{ paddingTop: '20px', fontSize: '11px' }}
-                      iconType="rect"
-                      iconSize={10}
-                    />
-                    <Bar dataKey="Tickets" stackId="a" fill={CATEGORY_COLORS.tickets.primary} name="Tickets" />
-                    <Bar dataKey="Projects" stackId="a" fill={CATEGORY_COLORS.projects.primary} name="Projects" />
-                    <Bar dataKey="Hosting" stackId="a" fill={CATEGORY_COLORS.hosting.primary} name="Hosting" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <ResponsiveContainer width="100%" height={350}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Support Tickets', value: filteredData[0]?.ticketsRevenue || 0, color: CATEGORY_COLORS.tickets.primary },
-                        { name: 'Projects', value: filteredData[0]?.projectsRevenue || 0, color: CATEGORY_COLORS.projects.primary },
-                        { name: 'Hosting', value: filteredData[0]?.hostingRevenue || 0, color: CATEGORY_COLORS.hosting.primary },
-                      ].filter(item => item.value > 0)}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={(entry) => ({
-                        content: `${entry.name}: ${formatCurrency(entry.value)}`,
-                        style: { fontSize: '11px', fill: '#374151' }
-                      })}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {[
-                        { name: 'Support Tickets', value: filteredData[0]?.ticketsRevenue || 0, color: CATEGORY_COLORS.tickets.primary },
-                        { name: 'Projects', value: filteredData[0]?.projectsRevenue || 0, color: CATEGORY_COLORS.projects.primary },
-                        { name: 'Hosting', value: filteredData[0]?.hostingRevenue || 0, color: CATEGORY_COLORS.hosting.primary },
-                      ].filter(item => item.value > 0).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{ fontSize: '12px' }}
-                      iconType="circle"
-                      iconSize={10}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+          {/* Monthly Revenue by Category - RevenueTrackerCard */}
+          <div className="w-full">
+            <RevenueTrackerCard
+              monthlyData={filteredData}
+              selectedYear={selectedYear}
+              title={currentMonthString === 'all' ? 'Monthly Revenue by Category' : `${formatMonthLabel(currentMonthString)} Revenue Breakdown`}
+              initialViewType="chart"
+              gridSpan=""
+            />
           </div>
 
           {/* Monthly Breakdown - Desktop Table */}

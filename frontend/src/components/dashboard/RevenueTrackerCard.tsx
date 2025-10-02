@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
-import { formatCurrency, formatCurrencyAccounting } from '../../utils/currency';
+import { formatCurrency, formatCurrencyAccounting } from '../../utils/formatting';
 import type { MonthlyBillingSummary } from '../../types/billing';
 import {
   ResponsiveContainer,
@@ -96,6 +96,10 @@ export function RevenueTrackerCard({
 
   // Render table
   const renderTable = (): ReactNode => {
+    if (!monthlyData || monthlyData.length === 0) {
+      return <div className="text-center text-muted-foreground py-8">No data available</div>;
+    }
+
     const totals = calculateTotals();
 
     return (
@@ -216,6 +220,10 @@ export function RevenueTrackerCard({
 
   // Render chart
   const renderChart = (): ReactNode => {
+    if (!monthlyData || monthlyData.length === 0) {
+      return <div className="text-center text-muted-foreground py-8">No data available</div>;
+    }
+
     const chartData = monthlyData.map(month => ({
       month: new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
       Tickets: month.ticketsRevenue,
