@@ -283,25 +283,25 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
             <Scorecard
               title="Avg Ticket Cost"
               value={formatCurrency(averageTicketCost)}
-              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              icon={<Ticket className="h-4 w-4 text-muted-foreground" />}
               description="Per support ticket"
             />
             <Scorecard
               title="Avg Project Cost"
               value={formatCurrency(averageProjectCost)}
-              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
               description="Per project"
             />
             <Scorecard
               title="Avg Hosting Cost"
               value={formatCurrency(averageHostingCost)}
-              icon={<Calculator className="h-4 w-4 text-muted-foreground" />}
+              icon={<Server className="h-4 w-4 text-muted-foreground" />}
               description="Per site per month"
             />
             <Scorecard
               title="Total Discounts"
               value={formatCurrency(totalDiscounts)}
-              icon={<Gift className="h-4 w-4 text-muted-foreground" />}
+              icon={<Zap className="h-4 w-4 text-muted-foreground" />}
               description="All free credits applied"
             />
           </div>
