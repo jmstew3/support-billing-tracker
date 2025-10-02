@@ -52,11 +52,19 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
     monthlyMap.forEach((monthData, month) => {
       if (month >= FREE_HOURS_START_DATE && monthData.ticketDetails.length > 0) {
         applyFreeHours(monthData);
-      } else {
+      } else if (monthData.ticketDetails.length > 0) {
         // For months before free hours policy, net = gross
         monthData.ticketsRevenue = monthData.ticketsGrossRevenue;
         monthData.ticketsFreeHoursApplied = 0;
         monthData.ticketsFreeHoursSavings = 0;
+
+        // Still sort tickets chronologically for consistent display
+        monthData.ticketDetails.sort((a, b) => {
+          if (a.date !== b.date) {
+            return a.date.localeCompare(b.date);
+          }
+          return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
+        });
       }
     });
 
@@ -80,7 +88,7 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
         applyFreeLandingPage(monthData);
         applyFreeMultiForm(monthData);
         applyFreeBasicForms(monthData);
-      } else {
+      } else if (monthData.projectDetails.length > 0) {
         // For months before free landing page policy, net = gross
         monthData.projectsRevenue = monthData.projectsGrossRevenue;
         monthData.projectsLandingPageCredit = 0;
@@ -89,6 +97,13 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
         monthData.projectsMultiFormSavings = 0;
         monthData.projectsBasicFormCredit = 0;
         monthData.projectsBasicFormSavings = 0;
+      }
+
+      // Sort projects chronologically by completion date (earliest to latest)
+      if (monthData.projectDetails.length > 0) {
+        monthData.projectDetails.sort((a, b) =>
+          a.completionDate.localeCompare(b.completionDate)
+        );
       }
     });
 
@@ -104,6 +119,13 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       monthData.hostingFreeCredits = hostingMonth.freeCredits;
       monthData.hostingCreditsApplied = hostingMonth.creditsApplied;
       monthData.hostingDetails = hostingMonth.charges;
+
+      // Sort hosting details alphabetically by site name
+      if (monthData.hostingDetails.length > 0) {
+        monthData.hostingDetails.sort((a, b) =>
+          a.siteName.localeCompare(b.siteName)
+        );
+      }
     });
 
     // Calculate totals for each month
@@ -196,12 +218,46 @@ function transformProjectsToBillable(projects: Project[]): BillableProject[] {
 }
 
 /**
+ * Helper function to parse time string to minutes since midnight
+ * Converts "8:47 AM" or "11:30 PM" format to comparable numeric value
+ * Used for chronological sorting of tickets within the same day
+ */
+function parseTimeToMinutes(time: string): number {
+  const [timePart, period] = time.split(' ');
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  let totalMinutes = 0;
+  if (period === 'PM' && hours !== 12) {
+    totalMinutes = (hours + 12) * 60 + minutes;
+  } else if (period === 'AM' && hours === 12) {
+    totalMinutes = minutes; // 12 AM is midnight (0:00)
+  } else {
+    totalMinutes = hours * 60 + minutes;
+  }
+
+  return totalMinutes;
+}
+
+/**
  * Apply free hours to tickets in a month
- * Distributes up to 10 free hours across tickets, prioritizing lower rates to maximize savings
+ * FREE HOURS ALLOCATION STRATEGY (as of January 2025):
+ * - Distributes up to 10 free hours per month (June 2025 onwards)
+ * - Hours are applied CHRONOLOGICALLY from the 1st of the month
+ * - Tickets are sorted by date (earliest first), then by time (earliest first)
+ * - Free hours are consumed sequentially until the 10-hour pool is exhausted
+ * - This ensures the first work done in the month receives the credit
+ * - Rate/urgency does NOT affect allocation - purely time-based
  */
 function applyFreeHours(monthData: MonthlyBillingSummary): void {
-  // Sort tickets by rate (lowest first) to maximize savings
-  const sortedTickets = [...monthData.ticketDetails].sort((a, b) => a.rate - b.rate);
+  // Sort tickets chronologically: by date first, then by time
+  const sortedTickets = [...monthData.ticketDetails].sort((a, b) => {
+    // First, compare dates (YYYY-MM-DD format sorts correctly as strings)
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date);
+    }
+    // If same date, compare times (convert to minutes for accurate comparison)
+    return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
+  });
 
   let remainingFreeHours = FREE_HOURS_PER_MONTH;
   let totalSavings = 0;
@@ -232,6 +288,9 @@ function applyFreeHours(monthData: MonthlyBillingSummary): void {
   monthData.ticketsFreeHoursApplied = FREE_HOURS_PER_MONTH - remainingFreeHours;
   monthData.ticketsFreeHoursSavings = totalSavings;
   monthData.ticketsRevenue = monthData.ticketsGrossRevenue - totalSavings;
+
+  // Persist chronological sort order (earliest to latest) for display in BillingOverview
+  monthData.ticketDetails = sortedTickets;
 }
 
 /**

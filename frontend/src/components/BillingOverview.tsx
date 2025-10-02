@@ -706,15 +706,14 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                     onClick={() => toggleTicketDescription(ticket.id)}
                   >
                     {ticket.description}
-                    {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 && (
-                      <span className="ml-2">
-                        <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
-                      </span>
-                    )}
                   </div>
                 </td>
                 <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
-                  {ticket.hours.toFixed(2)}h
+                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
+                    <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
+                  ) : (
+                    `${ticket.hours.toFixed(2)}h`
+                  )}
                 </td>
                 <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
                   {formatCurrency(ticket.rate)}/hr
@@ -741,6 +740,22 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
               </tr>
             );
           })}
+
+          {/* Total Hours Summary Row */}
+          <tr className="bg-muted/30 border-b border-t-2">
+            <td colSpan={2} className="py-2 px-12 text-xs font-semibold">
+              Total Hours
+            </td>
+            <td className="py-2 px-4 text-xs text-right font-semibold">
+              {monthData.ticketDetails.reduce((sum, ticket) => sum + ticket.hours, 0).toFixed(2)}h
+            </td>
+            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+              {/* Empty cell for rate column */}
+            </td>
+            <td className="py-2 px-4 text-right text-xs font-semibold">
+              {formatCurrency(monthData.ticketsGrossRevenue)}
+            </td>
+          </tr>
 
           {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
           {hasFreeHours && (
