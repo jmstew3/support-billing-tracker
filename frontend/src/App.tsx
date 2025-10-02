@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Dashboard } from './components/Dashboard';
-import { Sidebar } from './components/Sidebar';
-import { Projects } from './components/Projects';
-import { HostingBilling } from './components/HostingBilling';
-import { BillingOverview } from './components/BillingOverview';
+import { SupportTickets } from './components/support/SupportTickets';
+import { Sidebar } from './components/shared/Sidebar';
+import { Projects } from './components/projects/Projects';
+import { TurboHosting } from './components/hosting/TurboHosting';
+import { Dashboard } from './components/dashboard/Dashboard';
 import { PeriodProvider } from './contexts/PeriodContext';
 
 function App() {
@@ -20,10 +20,10 @@ function App() {
           setIsMobileOpen={setIsMobileMenuOpen}
         />
         <main className="flex-1 overflow-auto">
-          {currentView === 'home' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'home' && <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
           {currentView === 'projects' && <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'overview' && <BillingOverview onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'billing' && <HostingBilling onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'overview' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'billing' && <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
         </main>
       </div>
     </PeriodProvider>

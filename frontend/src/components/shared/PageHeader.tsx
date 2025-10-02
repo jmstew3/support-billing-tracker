@@ -1,8 +1,8 @@
 import { Menu } from 'lucide-react';
 import { PeriodSelector } from './PeriodSelector';
 import { ViewModeToggle } from './ViewModeToggle';
-import type { ViewMode } from '../contexts/PeriodContext';
-import velocityLogo from '../assets/velocity-logo.png';
+import type { ViewMode } from '../../contexts/PeriodContext';
+import velocityLogo from '../../assets/velocity-logo.png';
 
 export interface PageHeaderProps {
   /**
@@ -17,8 +17,8 @@ export interface PageHeaderProps {
 
   /**
    * Type of period selector:
-   * - 'full': Arrows + date picker (like Dashboard)
-   * - 'simple': Just a dropdown (like BillingOverview/HostingBilling)
+   * - 'full': Arrows + date picker (like SupportTickets)
+   * - 'simple': Just a dropdown (like Dashboard/TurboHosting)
    */
   periodSelectorType?: 'full' | 'simple';
 

@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Scorecard } from './ui/Scorecard';
-import { LoadingState } from './ui/LoadingState';
-import { CumulativeBillingChart } from './CumulativeBillingChart';
-import { HostingTypeChart } from './HostingTypeChart';
+import { Scorecard } from '../ui/Scorecard';
+import { LoadingState } from '../ui/LoadingState';
+import { CumulativeBillingChart } from '../charts/CumulativeBillingChart';
+import { HostingTypeChart } from '../charts/HostingTypeChart';
 import { Server, DollarSign, Gift, Zap } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
-import { formatCurrency, formatMonthLabel } from '../utils/formatting';
+import { formatCurrency, formatMonthLabel } from '../../utils/formatting';
 import {
   fetchWebsiteProperties,
   generateMonthlyBreakdown,
   calculateCreditProgress,
-} from '../services/hostingApi';
-import type { WebsiteProperty, MonthlyHostingSummary } from '../types/websiteProperty';
+} from '../../services/hostingApi';
+import type { WebsiteProperty, MonthlyHostingSummary } from '../../types/websiteProperty';
 
-export function HostingBilling() {
+interface TurboHostingProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
   const [properties, setProperties] = useState<WebsiteProperty[]>([]);
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyHostingSummary[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -92,7 +96,7 @@ export function HostingBilling() {
       {/* Header - Responsive */}
       <header className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl font-bold">Hosting</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Turbo Hosting</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             {/* Month Filter */}
             <div className="flex items-center gap-2">
@@ -173,7 +177,7 @@ export function HostingBilling() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold">{currentSummary.freeCredits}</p>
+                  <p className="text-lg font-bold">{currentfSummary.freeCredits}</p>
                   <p className="text-xs text-muted-foreground">Credits Available</p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
-import type { CategoryCount } from '../types/request';
+import type { CategoryCount } from '../../types/request';
 
 interface CategoryPieChartProps {
   data: CategoryCount[];

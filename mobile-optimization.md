@@ -34,7 +34,7 @@ This document defines the workflow to refactor the React/Tailwind business-intel
   {/* 6 scorecards */}
 </div>
 ```
-**Files**: Dashboard.tsx, BillingOverview.tsx, Projects.tsx, HostingBilling.tsx
+**Files**: Dashboard.tsx, SupportTickets.tsx, Projects.tsx, TurboHosting.tsx
 
 ### 2. Page Header Typography (MEDIUM PRIORITY)
 **Problem**: Title at `text-3xl` is too large for 375px screens
@@ -148,7 +148,7 @@ className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5
 
 ### Medium Priority
 6. `frontend/src/components/Projects.tsx` - Layout optimization
-7. `frontend/src/components/HostingBilling.tsx` - Layout optimization
+7. `frontend/src/components/TurboHosting.tsx` - Layout optimization
 8. `frontend/src/components/RequestBarChart.tsx` - Chart responsiveness
 9. `frontend/src/components/CategoryPieChart.tsx` - Legend optimization
 
@@ -196,7 +196,7 @@ className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5
 3. **Padding**: Responsive padding `px-4 sm:px-6 lg:px-8 py-3 sm:py-4`
 4. **Controls Stack**: Vertical on mobile with `gap-3 sm:gap-0`
 
-### HostingBilling.tsx
+### TurboHosting.tsx
 1. **Header Responsiveness**: Applied same responsive patterns as PageHeader
 2. **Title Sizing**: Changed to `text-xl sm:text-2xl`
 3. **Controls Layout**: Stack vertically on mobile

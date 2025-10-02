@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Calendar as CalendarIcon, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO, isValid } from "date-fns";
-import { Calendar } from "./ui/calendar";
+import { Calendar } from "../ui/calendar";
 import { clsx } from "clsx";
 
 interface DatePickerPopoverProps {

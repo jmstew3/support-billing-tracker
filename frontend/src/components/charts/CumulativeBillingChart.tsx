@@ -1,5 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { formatCurrency } from '../services/projectsApi';
+import { formatCurrency } from '../../services/projectsApi';
 
 interface CumulativeBillingChartProps {
   data: Array<{

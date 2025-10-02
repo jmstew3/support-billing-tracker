@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
-import type { Project } from '../types/project';
+import type { Project } from '../../types/project';
 
 interface ProjectCategoryPieChartProps {
   projects: Project[];

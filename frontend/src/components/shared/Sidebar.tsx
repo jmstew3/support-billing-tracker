@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
-import velocityLogo from '../assets/velocity-logo.png';
+import velocityLogo from '../../assets/velocity-logo.png';
 
 interface SidebarProps {
   currentView?: 'home' | 'projects' | 'overview' | 'billing';

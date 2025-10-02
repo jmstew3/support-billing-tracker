@@ -289,7 +289,7 @@ function applyFreeHours(monthData: MonthlyBillingSummary): void {
   monthData.ticketsFreeHoursSavings = totalSavings;
   monthData.ticketsRevenue = monthData.ticketsGrossRevenue - totalSavings;
 
-  // Persist chronological sort order (earliest to latest) for display in BillingOverview
+  // Persist chronological sort order (earliest to latest) for display in Dashboard
   monthData.ticketDetails = sortedTickets;
 }
 
