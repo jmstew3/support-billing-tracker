@@ -135,6 +135,36 @@ export const TABLE_STYLES = {
  * Use these in your renderChart() functions to ensure consistency
  */
 export const CHART_STYLES = {
+  // Standardized color palettes
+  barColors: {
+    // Revenue categories (RevenueTrackerCard)
+    tickets: '#3B82F6',     // Blue
+    projects: '#F59E0B',    // Orange
+    hosting: '#10B981',     // Green
+
+    // Urgency levels (CostTrackerCard)
+    promotion: '#8B5CF6',   // Purple - special promotional rate
+    low: '#3B82F6',        // Blue - low urgency
+    medium: '#F59E0B',     // Orange - medium urgency
+    high: '#EF4444',       // Red - high urgency
+
+    // State colors
+    disabled: '#D1D5DB',    // Gray for disabled/filtered items
+
+    // Alternative palettes for future use
+    primary: ['#3B82F6', '#60A5FA', '#93BBFC'],   // Blues
+    secondary: ['#F59E0B', '#FBBF24', '#FCD34D'],  // Oranges
+    tertiary: ['#10B981', '#34D399', '#6EE7B7'],   // Greens
+    quaternary: ['#8B5CF6', '#A78BFA', '#C4B5FD'], // Purples
+    danger: ['#EF4444', '#F87171', '#FCA5A5'],     // Reds
+  },
+
+  // Bar chart configuration
+  barChart: {
+    barCategoryGap: '20%',
+    maxBarSize: 100,
+  },
+
   // Recharts styling
   cartesianGrid: {
     strokeDasharray: '3 3',

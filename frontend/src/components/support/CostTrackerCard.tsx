@@ -567,6 +567,10 @@ export function CostTrackerCard({
       totalHours: month.costs.promotionalHours + month.costs.regularHours + month.costs.sameDayHours + month.costs.emergencyHours,
     }));
 
+    // Calculate max value for Y-axis domain (add $250 padding for labels)
+    const maxValue = Math.max(...chartData.map(d => d.netTotalCost || d.totalCost));
+    const yAxisMax = maxValue + 250;
+
     return (
       <ResponsiveContainer width="100%" height={400}>
         <ComposedChart data={chartData}>
@@ -574,6 +578,7 @@ export function CostTrackerCard({
           <XAxis dataKey="month" {...CHART_STYLES.xAxis} />
           <YAxis
             yAxisId="cost"
+            domain={[0, yAxisMax]}
             tickFormatter={(value) => `$${(value).toLocaleString()}`}
             {...CHART_STYLES.yAxis}
           />
@@ -660,8 +665,7 @@ export function CostTrackerCard({
                       >
                         <span style={{
                           ...CHART_STYLES.legendIcon(visibleUrgencies[entry.value || '']),
-                          backgroundColor: entry.value === 'Promotion' ? '#FFFFFF' : entry.color,
-                          border: entry.value === 'Promotion' ? '2px solid #000000' : 'none',
+                          backgroundColor: entry.color,
                         }} />
                         <span style={CHART_STYLES.legendText(visibleUrgencies[entry.value || ''])}>
                           {entry.value}
@@ -706,10 +710,10 @@ export function CostTrackerCard({
               );
             }}
           />
-          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#000000" : "#D1D5DB"} />
-          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#374151" : "#D1D5DB"} />
-          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#6B7280" : "#D1D5DB"} />
-          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "#FFFFFF" : "#D1D5DB"} stroke={visibleUrgencies.Promotion ? "#000000" : "#D1D5DB"} strokeWidth={2}>
+          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? CHART_STYLES.barColors.high : CHART_STYLES.barColors.disabled} />
+          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? CHART_STYLES.barColors.medium : CHART_STYLES.barColors.disabled} />
+          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? CHART_STYLES.barColors.low : CHART_STYLES.barColors.disabled} />
+          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? CHART_STYLES.barColors.promotion : CHART_STYLES.barColors.disabled}>
             <LabelList
               dataKey="netTotalCost"
               position="top"
@@ -737,11 +741,15 @@ export function CostTrackerCard({
     if (!costData) return null;
 
     const chartData = [
-      { name: 'Promotion', hours: costData.promotionalHours, cost: costData.promotionalNetCost !== undefined ? costData.promotionalNetCost : costData.promotionalCost, fill: visibleUrgencies.Promotion ? '#FFFFFF' : '#D1D5DB', stroke: visibleUrgencies.Promotion ? '#000000' : '#D1D5DB' },
-      { name: 'Low', hours: costData.regularHours, cost: costData.regularNetCost !== undefined ? costData.regularNetCost : costData.regularCost, fill: visibleUrgencies.Low ? '#6B7280' : '#D1D5DB', stroke: 'none' },
-      { name: 'Medium', hours: costData.sameDayHours, cost: costData.sameDayNetCost !== undefined ? costData.sameDayNetCost : costData.sameDayCost, fill: visibleUrgencies.Medium ? '#374151' : '#D1D5DB', stroke: 'none' },
-      { name: 'High', hours: costData.emergencyHours, cost: costData.emergencyNetCost !== undefined ? costData.emergencyNetCost : costData.emergencyCost, fill: visibleUrgencies.High ? '#000000' : '#D1D5DB', stroke: 'none' },
+      { name: 'Promotion', hours: costData.promotionalHours, cost: costData.promotionalNetCost !== undefined ? costData.promotionalNetCost : costData.promotionalCost, fill: visibleUrgencies.Promotion ? CHART_STYLES.barColors.promotion : CHART_STYLES.barColors.disabled },
+      { name: 'Low', hours: costData.regularHours, cost: costData.regularNetCost !== undefined ? costData.regularNetCost : costData.regularCost, fill: visibleUrgencies.Low ? CHART_STYLES.barColors.low : CHART_STYLES.barColors.disabled },
+      { name: 'Medium', hours: costData.sameDayHours, cost: costData.sameDayNetCost !== undefined ? costData.sameDayNetCost : costData.sameDayCost, fill: visibleUrgencies.Medium ? CHART_STYLES.barColors.medium : CHART_STYLES.barColors.disabled },
+      { name: 'High', hours: costData.emergencyHours, cost: costData.emergencyNetCost !== undefined ? costData.emergencyNetCost : costData.emergencyCost, fill: visibleUrgencies.High ? CHART_STYLES.barColors.high : CHART_STYLES.barColors.disabled },
     ];
+
+    // Calculate max value for Y-axis domain (add $250 padding for labels)
+    const maxValue = Math.max(...chartData.map(d => d.cost));
+    const yAxisMax = maxValue + 250;
 
     return (
       <ResponsiveContainer width="100%" height={400}>
@@ -749,6 +757,7 @@ export function CostTrackerCard({
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
           <YAxis
+            domain={[0, yAxisMax]}
             tickFormatter={(value) => `$${(value).toLocaleString()}`}
             {...CHART_STYLES.yAxis}
           />
@@ -783,8 +792,7 @@ export function CostTrackerCard({
           />
           <Bar dataKey="cost" name="Cost" shape={(props: any) => {
             const { fill, x, y, width, height } = props;
-            const { stroke } = props.payload;
-            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} stroke={stroke} strokeWidth={stroke && stroke !== 'none' ? 2 : 0} />;
+            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
           }}>
             <LabelList
               dataKey="cost"
