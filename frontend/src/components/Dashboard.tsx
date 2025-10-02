@@ -1917,7 +1917,7 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">Low</td>
-                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[0].rate}/hr</td>
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[1].rate}/hr</td>
                         <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
                         </td>
@@ -1934,7 +1934,7 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">Medium</td>
-                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[1].rate}/hr</td>
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[2].rate}/hr</td>
                         <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
                         </td>
@@ -1951,7 +1951,7 @@ export function Dashboard() {
                       </tr>
                       <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                         <td className="py-5 px-4">High</td>
-                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[2].rate}/hr</td>
+                        <td className="text-left py-5 px-4 border-l border-border/40">${PRICING_CONFIG.tiers[3].rate}/hr</td>
                         <td className="text-left py-5 px-4 font-semibold border-l border-border/40">
                           {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
                         </td>

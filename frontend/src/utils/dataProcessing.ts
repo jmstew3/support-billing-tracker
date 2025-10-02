@@ -76,17 +76,36 @@ export function processDailyRequests(requests: ChatRequest[]): DailyRequestCount
   return result;
 }
 
+// Helper function to parse time string to minutes since midnight
+// Converts "8:47 AM" or "11:30 PM" format to comparable numeric value
+// Used for chronological sorting of requests within the same day
+function parseTimeToMinutes(time: string): number {
+  const [timePart, period] = time.split(' ');
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  let totalMinutes = 0;
+  if (period === 'PM' && hours !== 12) {
+    totalMinutes = (hours + 12) * 60 + minutes;
+  } else if (period === 'AM' && hours === 12) {
+    totalMinutes = minutes; // 12 AM is midnight (0:00)
+  } else {
+    totalMinutes = hours * 60 + minutes;
+  }
+
+  return totalMinutes;
+}
+
 // Process category counts for pie chart
 export function processCategoryData(requests: ChatRequest[]): CategoryCount[] {
   const categoryCounts = new Map<string, number>();
-  
+
   requests.forEach(request => {
     const category = request.Category || categorizeRequest(request.Request_Summary);
     categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
   });
-  
+
   const total = requests.length;
-  
+
   return Array.from(categoryCounts.entries())
     .map(([name, value]) => ({
       name,
@@ -137,18 +156,16 @@ export function calculateCosts(requests: ChatRequest[], month?: string): CostCal
   let freeHoursSavings = 0;
 
   if (applyFreeHours && requests.length > 0) {
-    // Sort requests by rate (lowest first) to maximize savings
-    // Rate priority: PROMOTION ($125) → LOW ($150) → MEDIUM ($175) → HIGH ($250)
+    // Sort requests chronologically: by date first, then by time
+    // This ensures the first 10 hours of work each month receive the free hours credit
+    // Matches the BillingOverview calculation for consistency
     const sortedRequests = [...requests].sort((a, b) => {
-      const rateA = a.Urgency === 'PROMOTION' ? RATES.promotion :
-                    a.Urgency === 'LOW' ? RATES.regular :
-                    a.Urgency === 'MEDIUM' ? RATES.sameDay :
-                    RATES.emergency;
-      const rateB = b.Urgency === 'PROMOTION' ? RATES.promotion :
-                    b.Urgency === 'LOW' ? RATES.regular :
-                    b.Urgency === 'MEDIUM' ? RATES.sameDay :
-                    RATES.emergency;
-      return rateA - rateB;
+      // First, compare dates (YYYY-MM-DD format sorts correctly as strings)
+      if (a.Date !== b.Date) {
+        return a.Date.localeCompare(b.Date);
+      }
+      // If same date, compare times (convert to minutes for accurate comparison)
+      return parseTimeToMinutes(a.Time) - parseTimeToMinutes(b.Time);
     });
 
     let remainingFreeHours = FREE_HOURS_PER_MONTH;

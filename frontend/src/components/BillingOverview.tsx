@@ -1056,7 +1056,7 @@ function MobileMonthCard({
                       <div className="flex-1 pr-2">
                         <div className="font-medium">{ticket.summary}</div>
                         <div className="text-muted-foreground mt-0.5">
-                          {ticket.hours}h × ${ticket.hourlyRate}/hr
+                          {ticket.hours}h × ${ticket.rate}/hr
                         </div>
                       </div>
                       <div className="text-right font-semibold whitespace-nowrap">
