@@ -745,15 +745,12 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           })}
 
           {/* Total Hours Summary Row */}
-          <tr className="bg-muted/30 border-b border-t-2">
-            <td colSpan={4} className="py-2 px-12 text-xs font-semibold">
+          <tr className="bg-black text-white dark:bg-black dark:text-white border-b border-t-2">
+            <td colSpan={5} className="py-2 px-12 text-xs font-semibold">
               Total Hours
             </td>
-            <td className="py-2 px-4 text-xs text-left font-semibold">
+            <td className="py-2 px-4 text-xs text-right font-semibold">
               {monthData.ticketDetails.reduce((sum, ticket) => sum + ticket.hours, 0).toFixed(2)}h
-            </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-              {/* Empty cell for rate column */}
             </td>
             <td className="py-2 px-4 text-right text-xs font-semibold">
               {formatCurrency(monthData.ticketsGrossRevenue)}
