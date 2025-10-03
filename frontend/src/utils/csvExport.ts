@@ -327,19 +327,21 @@ export function exportMonthlyBreakdownData(data: MonthlyBreakdownExportData, sel
  * Export detailed monthly breakdown data to CSV with all line items
  */
 export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportData, selectedPeriod: string = 'all'): void {
-  const headers = ['Type', 'Date', 'Description', 'Category', 'Hours', 'Rate', 'Amount'];
+  const headers = ['Month', 'Section', 'Item #', 'Date', 'Description', 'Category', 'Hours', 'Rate', 'Amount'];
   const rows: (string | number)[][] = [];
 
   // Process each month
-  data.months.forEach(month => {
+  data.months.forEach((month, monthIndex) => {
     const [year, monthNum] = month.month.split('-');
     const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1)
       .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
-    // Add month header row
+    // Add month summary row
     rows.push([
-      'MONTH',
       monthName,
+      'MONTH SUMMARY',
+      '',
+      '',
       '',
       '',
       '',
@@ -347,12 +349,18 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       formatCurrencyForCSV(month.totalRevenue)
     ]);
 
+    // Add separator row
+    rows.push(['', '', '', '', '', '', '', '', '']);
+
     // Add Tickets section if there are tickets
     if (month.ticketsCount && month.ticketsCount > 0) {
+      // Section header
       rows.push([
-        'SECTION',
+        monthName,
+        'TICKETS',
+        `${month.ticketsCount} items`,
         '',
-        `Tickets (${month.ticketsCount})`,
+        '',
         '',
         '',
         '',
@@ -363,7 +371,9 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       if (month.ticketDetails) {
         month.ticketDetails.forEach((ticket, idx) => {
           rows.push([
-            'DETAIL',
+            monthName,
+            'TICKET',
+            idx + 1,
             ticket.date,
             ticket.description,
             'Support',
@@ -376,11 +386,13 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         // Add tickets subtotal
         const totalHours = month.ticketDetails.reduce((sum, t) => sum + t.hours, 0);
         rows.push([
-          'SUBTOTAL',
+          monthName,
+          'TICKETS SUBTOTAL',
           '',
-          'Total Ticket Hours',
           '',
-          totalHours.toFixed(2),
+          '',
+          `Total Hours: ${totalHours.toFixed(2)}`,
+          '',
           '',
           formatCurrencyForCSV(month.ticketsGrossRevenue || month.ticketsRevenue)
         ]);
@@ -388,7 +400,9 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         // Add free hours credit if applicable
         if (month.ticketsFreeHoursSavings && month.ticketsFreeHoursSavings > 0) {
           rows.push([
-            'CREDIT',
+            monthName,
+            'TICKETS CREDIT',
+            '',
             '',
             `Free Support Hours (${month.ticketsFreeHoursApplied}h)`,
             '',
@@ -398,14 +412,20 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
           ]);
         }
       }
+
+      // Add separator
+      rows.push(['', '', '', '', '', '', '', '', '']);
     }
 
     // Add Projects section if there are projects
     if (month.projectsCount && month.projectsCount > 0) {
+      // Section header
       rows.push([
-        'SECTION',
+        monthName,
+        'PROJECTS',
+        `${month.projectsCount} ${month.projectsCount === 1 ? 'item' : 'items'}`,
         '',
-        `Projects (${month.projectsCount})`,
+        '',
         '',
         '',
         '',
@@ -417,7 +437,9 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         month.projectDetails.forEach((project, idx) => {
           const displayAmount = project.isFreeCredit ? 0 : project.amount;
           rows.push([
-            'DETAIL',
+            monthName,
+            'PROJECT',
+            idx + 1,
             project.completionDate,
             project.name,
             project.category,
@@ -429,9 +451,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
 
         // Add projects subtotal
         rows.push([
-          'SUBTOTAL',
+          monthName,
+          'PROJECTS SUBTOTAL',
           '',
-          'Total Projects',
+          '',
+          '',
           '',
           '',
           '',
@@ -441,9 +465,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         // Add project credits if applicable
         if (month.projectsLandingPageSavings && month.projectsLandingPageSavings > 0) {
           rows.push([
-            'CREDIT',
+            monthName,
+            'PROJECTS CREDIT',
             '',
-            `Free Landing Page Credit (${month.projectsLandingPageCredit})`,
+            '',
+            `Free Landing Page (${month.projectsLandingPageCredit})`,
             '',
             '',
             '',
@@ -452,9 +478,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         }
         if (month.projectsMultiFormSavings && month.projectsMultiFormSavings > 0) {
           rows.push([
-            'CREDIT',
+            monthName,
+            'PROJECTS CREDIT',
             '',
-            `Free Multi-Form Credit (${month.projectsMultiFormCredit})`,
+            '',
+            `Free Multi-Form (${month.projectsMultiFormCredit})`,
             '',
             '',
             '',
@@ -463,9 +491,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         }
         if (month.projectsBasicFormSavings && month.projectsBasicFormSavings > 0) {
           rows.push([
-            'CREDIT',
+            monthName,
+            'PROJECTS CREDIT',
             '',
-            `Free Basic Form Credit (${month.projectsBasicFormCredit})`,
+            '',
+            `Free Basic Forms (${month.projectsBasicFormCredit})`,
             '',
             '',
             '',
@@ -473,14 +503,20 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
           ]);
         }
       }
+
+      // Add separator
+      rows.push(['', '', '', '', '', '', '', '', '']);
     }
 
     // Add Hosting section if there are hosting sites
     if (month.hostingSitesCount && month.hostingSitesCount > 0) {
+      // Section header
       rows.push([
-        'SECTION',
+        monthName,
+        'HOSTING',
+        `${month.hostingSitesCount} sites`,
         '',
-        `Hosting (${month.hostingSitesCount} sites)`,
+        '',
         '',
         '',
         '',
@@ -491,7 +527,9 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       if (month.hostingDetails) {
         month.hostingDetails.forEach((site, idx) => {
           rows.push([
-            'DETAIL',
+            monthName,
+            'HOSTING',
+            idx + 1,
             '',
             site.name,
             site.billingType,
@@ -503,9 +541,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
 
         // Add hosting subtotal
         rows.push([
-          'SUBTOTAL',
+          monthName,
+          'HOSTING SUBTOTAL',
           '',
-          'Total Hosting',
+          '',
+          '',
           '',
           '',
           '',
@@ -516,9 +556,11 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         if (month.hostingCreditsApplied && month.hostingCreditsApplied > 0) {
           const creditAmount = (month.hostingGross || month.hostingRevenue) - month.hostingRevenue;
           rows.push([
-            'CREDIT',
+            monthName,
+            'HOSTING CREDIT',
             '',
-            `Free Hosting Credits (${month.hostingCreditsApplied} sites)`,
+            '',
+            `Free Hosting (${month.hostingCreditsApplied} sites)`,
             '',
             '',
             '',
@@ -526,14 +568,20 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
           ]);
         }
       }
+
+      // Add separator
+      rows.push(['', '', '', '', '', '', '', '', '']);
     }
 
-    // Add blank row between months
-    rows.push(['', '', '', '', '', '', '']);
+    // Add double separator between months (unless it's the last month)
+    if (monthIndex < data.months.length - 1) {
+      rows.push(['', '', '', '', '', '', '', '', '']);
+    }
   });
 
   // Add grand total row if there are multiple months and totals are provided
   if (data.months.length > 1 && data.totals) {
+    rows.push(['', '', '', '', '', '', '', '', '']);
     rows.push([
       'GRAND TOTAL',
       '',
@@ -541,7 +589,44 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       '',
       '',
       '',
+      '',
+      '',
       formatCurrencyForCSV(data.totals.total)
+    ]);
+
+    // Add breakdown of grand total
+    rows.push([
+      '',
+      'Tickets Total',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      formatCurrencyForCSV(data.totals.tickets)
+    ]);
+    rows.push([
+      '',
+      'Projects Total',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      formatCurrencyForCSV(data.totals.projects)
+    ]);
+    rows.push([
+      '',
+      'Hosting Total',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      formatCurrencyForCSV(data.totals.hosting)
     ]);
   }
 

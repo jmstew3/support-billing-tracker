@@ -679,9 +679,9 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {monthData.ticketDetails.map((ticket, idx) => {
             const isTicketExpanded = expandedTickets.has(ticket.id);
             return (
-              <tr key={ticket.id} className="border-b hover:bg-muted/30">
-                <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
-                  {idx + 1}.
+              <tr key={ticket.id} className="border-b divide-x hover:bg-muted/30">
+                <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+                  {idx + 1}
                 </td>
                 <td className="py-2 px-4 text-xs text-muted-foreground w-32">{ticket.date}</td>
                 <td className="py-2 px-4 text-xs">
@@ -824,9 +824,9 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
       {isExpanded &&
         monthData.projectDetails.map((project, idx) => (
-          <tr key={project.id} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
-              {idx + 1}.
+          <tr key={project.id} className="border-b divide-x hover:bg-muted/30">
+            <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+              {idx + 1}
             </td>
             <td className="py-2 px-4 text-xs text-muted-foreground w-32">{project.completionDate}</td>
             <td className="py-2 px-4 text-xs">
@@ -906,9 +906,9 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
       {isExpanded &&
         monthData.hostingDetails.map((hosting, idx) => (
-          <tr key={hosting.websitePropertyId} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
-              {idx + 1}.
+          <tr key={hosting.websitePropertyId} className="border-b divide-x hover:bg-muted/30">
+            <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+              {idx + 1}
             </td>
             <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
