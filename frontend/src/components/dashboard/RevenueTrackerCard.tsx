@@ -105,12 +105,24 @@ export function RevenueTrackerCard({
 
   // Calculate hosting billing type breakdown
   const calculateHostingBreakdown = () => {
-    const breakdown = { FULL: 0, PRORATED_START: 0, PRORATED_END: 0 };
+    const breakdown = {
+      FULL: { count: 0, revenue: 0 },
+      PRORATED_START: { count: 0, revenue: 0 },
+      PRORATED_END: { count: 0, revenue: 0 }
+    };
+
     monthlyData.forEach(month => {
       month.hostingDetails.forEach(hosting => {
-        if (hosting.billingType === 'FULL') breakdown.FULL++;
-        else if (hosting.billingType === 'PRORATED_START') breakdown.PRORATED_START++;
-        else if (hosting.billingType === 'PRORATED_END') breakdown.PRORATED_END++;
+        if (hosting.billingType === 'FULL') {
+          breakdown.FULL.count++;
+          breakdown.FULL.revenue += hosting.netAmount;
+        } else if (hosting.billingType === 'PRORATED_START') {
+          breakdown.PRORATED_START.count++;
+          breakdown.PRORATED_START.revenue += hosting.netAmount;
+        } else if (hosting.billingType === 'PRORATED_END') {
+          breakdown.PRORATED_END.count++;
+          breakdown.PRORATED_END.revenue += hosting.netAmount;
+        }
       });
     });
     return breakdown;
@@ -231,9 +243,9 @@ export function RevenueTrackerCard({
                     </TooltipTrigger>
                     <TooltipContent>
                       <div className="text-xs space-y-1">
-                        <div>Full Month: {hostingBreakdown.FULL}</div>
-                        <div>Prorated Start: {hostingBreakdown.PRORATED_START}</div>
-                        <div>Prorated End: {hostingBreakdown.PRORATED_END}</div>
+                        <div>Full Month: {hostingBreakdown.FULL.count} sites ({formatCurrency(hostingBreakdown.FULL.revenue)})</div>
+                        <div>Prorated Start: {hostingBreakdown.PRORATED_START.count} sites ({formatCurrency(hostingBreakdown.PRORATED_START.revenue)})</div>
+                        <div>Prorated End: {hostingBreakdown.PRORATED_END.count} sites ({formatCurrency(hostingBreakdown.PRORATED_END.revenue)})</div>
                       </div>
                     </TooltipContent>
                   </UITooltip>
