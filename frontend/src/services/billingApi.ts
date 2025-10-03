@@ -120,11 +120,21 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       monthData.hostingCreditsApplied = hostingMonth.creditsApplied;
       monthData.hostingDetails = hostingMonth.charges;
 
-      // Sort hosting details alphabetically by site name
+      // Sort hosting details by start date (1st to end of month), then by site name
       if (monthData.hostingDetails.length > 0) {
-        monthData.hostingDetails.sort((a, b) =>
-          a.siteName.localeCompare(b.siteName)
-        );
+        monthData.hostingDetails.sort((a, b) => {
+          // Extract day from start date (YYYY-MM-DD -> DD)
+          const dayA = a.hostingStart ? parseInt(a.hostingStart.split('-')[2]) : 0;
+          const dayB = b.hostingStart ? parseInt(b.hostingStart.split('-')[2]) : 0;
+
+          // Sort by day first
+          if (dayA !== dayB) {
+            return dayA - dayB;
+          }
+
+          // If same day, sort alphabetically by site name
+          return a.siteName.localeCompare(b.siteName);
+        });
       }
     });
 
