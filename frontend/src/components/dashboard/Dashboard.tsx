@@ -204,6 +204,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
         ticketDetails: m.ticketDetails?.map(t => ({
           date: t.date,
           description: t.description,
+          urgency: t.urgency,
           hours: t.hours,
           rate: t.rate,
           amount: t.amount,
@@ -455,20 +456,20 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
                     <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
-                      <td className="py-4 px-6 text-right text-base">GRAND TOTALS</td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-base whitespace-nowrap">GRAND TOTALS</td>
+                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg">
+                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
@@ -555,10 +556,10 @@ function MonthRow({
     <>
       {/* Month Header Row */}
       <tr
-        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors divide-x"
+        className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
         onClick={() => onToggleMonth(monthData.month)}
       >
-        <td className="py-3 px-4">
+        <td colSpan={3} className="py-3 px-4">
           <div className="flex items-center gap-2">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             <span className="font-bold text-base">{formatMonthLabel(monthData.month)}</span>
@@ -667,7 +668,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={6} className="py-2 px-8">
+        <td colSpan={7} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -697,7 +698,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             const isTicketExpanded = expandedTickets.has(ticket.id);
             return (
               <tr key={ticket.id} className="border-b divide-x hover:bg-muted/30">
-                <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+                <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
                   {idx + 1}
                 </td>
                 <td className="py-2 px-4 text-xs text-muted-foreground w-32">{ticket.date}</td>
@@ -709,28 +710,28 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                     {ticket.description}
                   </div>
                 </td>
-                <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
-                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
-                    <CreditBadge text={`${ticket.freeHoursApplied}h free`} size="xs" />
-                  ) : (
-                    `${ticket.hours.toFixed(2)}h`
-                  )}
+                <td className="py-2 px-4 text-xs text-left text-muted-foreground w-24">
+                  {ticket.urgency}
                 </td>
                 <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
                   {formatCurrency(ticket.rate)}/hr
                 </td>
+                <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
+                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <Zap className="w-3 h-3 text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" />
+                      <span className="text-green-600 dark:text-green-400 font-semibold text-xs">{ticket.freeHoursApplied}h free</span>
+                    </div>
+                  ) : (
+                    `${ticket.hours.toFixed(2)}h`
+                  )}
+                </td>
                 <td className="py-2 px-4 text-right text-sm w-32">
                   {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
-                    <div className="flex flex-col items-end">
-                      <span className="text-muted-foreground line-through text-xs">
-                        <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
-                      </span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">
-                        <span>{formatCurrencyAccounting(ticket.netAmount || ticket.amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(ticket.netAmount || ticket.amount).amount}</span>
-                      </span>
-                    </div>
+                    <span className="font-semibold text-green-600 dark:text-green-400">
+                      <span>{formatCurrencyAccounting(0).symbol}</span>
+                      <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
+                    </span>
                   ) : (
                     <span className="font-semibold">
                       <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
@@ -744,10 +745,10 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
           {/* Total Hours Summary Row */}
           <tr className="bg-muted/30 border-b border-t-2">
-            <td colSpan={3} className="py-2 px-12 text-xs font-semibold">
+            <td colSpan={4} className="py-2 px-12 text-xs font-semibold">
               Total Hours
             </td>
-            <td className="py-2 px-4 text-xs text-right font-semibold">
+            <td className="py-2 px-4 text-xs text-left font-semibold">
               {monthData.ticketDetails.reduce((sum, ticket) => sum + ticket.hours, 0).toFixed(2)}h
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground">
@@ -761,11 +762,14 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
           {hasFreeHours && (
             <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
+              <td colSpan={4} className="py-2 px-12 text-xs font-medium">
                 <Zap className="h-3 w-3 inline mr-1" />
                 Free Support Hours Benefit
               </td>
-              <td colSpan={2} className="py-2 px-4 text-xs text-right text-muted-foreground">
+              <td className="py-2 px-4 text-xs text-left text-muted-foreground">
+                {/* Empty hours column */}
+              </td>
+              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
                 Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
               </td>
               <td className="py-2 px-4 text-right text-xs">
@@ -842,7 +846,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded &&
         monthData.projectDetails.map((project, idx) => (
           <tr key={project.id} className="border-b divide-x hover:bg-muted/30">
-            <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+            <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
               {idx + 1}
             </td>
             <td className="py-2 px-4 text-xs text-muted-foreground w-32">{project.completionDate}</td>
@@ -853,7 +857,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                 {project.isFreeCredit && <Zap className="h-4 w-4 inline text-green-600 dark:text-green-400" />}
               </div>
             </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
+            <td className="py-2 px-4 text-xs text-left text-muted-foreground w-28">
               {formatCategory(project.category)}
             </td>
             <td className="py-2 px-4 text-xs text-right text-muted-foreground w-28">
@@ -889,6 +893,21 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
 // Hosting Section Component
 function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
+  // Helper function to get effective billing period start date for display
+  const getEffectiveBillingDate = (hosting: typeof monthData.hostingDetails[0], currentMonth: string): string => {
+    const hostingStartMonth = hosting.hostingStart?.substring(0, 7) || '';
+
+    // If this is the first month (prorated start), show actual start date
+    if (hostingStartMonth === currentMonth) {
+      // Extract just the date portion (YYYY-MM-DD) from potential ISO timestamp
+      return hosting.hostingStart?.substring(0, 10) || `${currentMonth}-01`;
+    }
+
+    // For all subsequent months (FULL billing), show 1st of current month
+    const [targetYear, targetMonth] = currentMonth.split('-');
+    return `${targetYear}-${targetMonth}-01`;
+  };
+
   return (
     <>
       <tr
@@ -924,14 +943,11 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded &&
         monthData.hostingDetails.map((hosting, idx) => (
           <tr key={hosting.websitePropertyId} className="border-b divide-x hover:bg-muted/30">
-            <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
+            <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
               {idx + 1}
             </td>
             <td className="py-2 px-4 text-xs text-muted-foreground">
-              {formatDate(hosting.hostingStart)}
-            </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-              {hosting.daysActive}/{hosting.daysInMonth} days
+              {getEffectiveBillingDate(hosting, monthData.month)}
             </td>
             <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
@@ -941,6 +957,9 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             </td>
             <td className="py-2 px-4 text-xs">
               <BillingTypeBadge billingType={hosting.billingType} size="xs" />
+            </td>
+            <td className="py-2 px-4 text-xs text-left text-muted-foreground">
+              {hosting.daysActive}/{hosting.daysInMonth} days
             </td>
             <td className="py-2 px-4 text-xs text-center text-muted-foreground">
               {hosting.creditApplied && (
@@ -953,7 +972,8 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <td className="py-2 px-4 text-right text-sm font-semibold">
               {hosting.creditApplied ? (
                 <span className="text-green-600 dark:text-green-400">
-                  -
+                  <span>{formatCurrencyAccounting(0).symbol}</span>
+                  <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
                 </span>
               ) : (
                 <>
