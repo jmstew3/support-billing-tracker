@@ -196,15 +196,27 @@ export function CostTrackerCard({
                 const amount = monthData.costs.promotionalNetCost !== undefined
                   ? monthData.costs.promotionalNetCost
                   : monthData.costs.promotionalCost;
+                const hours = monthData.costs.promotionalHours;
+                const freeHours = monthData.costs.promotionalFreeHours || 0;
                 return (
                   <td key={`promotion-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                    {amount === 0 ? (
+                    {amount === 0 && hours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(amount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {hours.toFixed(2)}h
+                          {freeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{freeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </td>
                 );
@@ -212,19 +224,31 @@ export function CostTrackerCard({
               {!isSingleMonth && (
                 <td className={TABLE_STYLES.cellBoldWithBorder}>
                   {(() => {
-                    const total = monthlyCosts.reduce((sum, m) => {
+                    const totalAmount = monthlyCosts.reduce((sum, m) => {
                       const amount = m.costs.promotionalNetCost !== undefined
                         ? m.costs.promotionalNetCost
                         : m.costs.promotionalCost;
                       return sum + amount;
                     }, 0);
-                    return total === 0 ? (
+                    const totalHours = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalHours, 0);
+                    const totalFreeHours = monthlyCosts.reduce((sum, m) => sum + (m.costs.promotionalFreeHours || 0), 0);
+                    return totalAmount === 0 && totalHours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(total).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(totalAmount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(totalAmount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {totalHours.toFixed(2)}h
+                          {totalFreeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{totalFreeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </td>
@@ -237,15 +261,27 @@ export function CostTrackerCard({
                 const amount = monthData.costs.regularNetCost !== undefined
                   ? monthData.costs.regularNetCost
                   : monthData.costs.regularCost;
+                const hours = monthData.costs.regularHours;
+                const freeHours = monthData.costs.regularFreeHours || 0;
                 return (
                   <td key={`low-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                    {amount === 0 ? (
+                    {amount === 0 && hours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(amount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {hours.toFixed(2)}h
+                          {freeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{freeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </td>
                 );
@@ -253,19 +289,31 @@ export function CostTrackerCard({
               {!isSingleMonth && (
                 <td className={TABLE_STYLES.cellBoldWithBorder}>
                   {(() => {
-                    const total = monthlyCosts.reduce((sum, m) => {
+                    const totalAmount = monthlyCosts.reduce((sum, m) => {
                       const amount = m.costs.regularNetCost !== undefined
                         ? m.costs.regularNetCost
                         : m.costs.regularCost;
                       return sum + amount;
                     }, 0);
-                    return total === 0 ? (
+                    const totalHours = monthlyCosts.reduce((sum, m) => sum + m.costs.regularHours, 0);
+                    const totalFreeHours = monthlyCosts.reduce((sum, m) => sum + (m.costs.regularFreeHours || 0), 0);
+                    return totalAmount === 0 && totalHours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(total).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(totalAmount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(totalAmount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {totalHours.toFixed(2)}h
+                          {totalFreeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{totalFreeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </td>
@@ -278,15 +326,27 @@ export function CostTrackerCard({
                 const amount = monthData.costs.sameDayNetCost !== undefined
                   ? monthData.costs.sameDayNetCost
                   : monthData.costs.sameDayCost;
+                const hours = monthData.costs.sameDayHours;
+                const freeHours = monthData.costs.sameDayFreeHours || 0;
                 return (
                   <td key={`medium-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                    {amount === 0 ? (
+                    {amount === 0 && hours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(amount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {hours.toFixed(2)}h
+                          {freeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{freeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </td>
                 );
@@ -294,19 +354,31 @@ export function CostTrackerCard({
               {!isSingleMonth && (
                 <td className={TABLE_STYLES.cellBoldWithBorder}>
                   {(() => {
-                    const total = monthlyCosts.reduce((sum, m) => {
+                    const totalAmount = monthlyCosts.reduce((sum, m) => {
                       const amount = m.costs.sameDayNetCost !== undefined
                         ? m.costs.sameDayNetCost
                         : m.costs.sameDayCost;
                       return sum + amount;
                     }, 0);
-                    return total === 0 ? (
+                    const totalHours = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayHours, 0);
+                    const totalFreeHours = monthlyCosts.reduce((sum, m) => sum + (m.costs.sameDayFreeHours || 0), 0);
+                    return totalAmount === 0 && totalHours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(total).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(totalAmount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(totalAmount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {totalHours.toFixed(2)}h
+                          {totalFreeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{totalFreeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </td>
@@ -319,15 +391,27 @@ export function CostTrackerCard({
                 const amount = monthData.costs.emergencyNetCost !== undefined
                   ? monthData.costs.emergencyNetCost
                   : monthData.costs.emergencyCost;
+                const hours = monthData.costs.emergencyHours;
+                const freeHours = monthData.costs.emergencyFreeHours || 0;
                 return (
                   <td key={`high-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                    {amount === 0 ? (
+                    {amount === 0 && hours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(amount).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(amount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(amount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {hours.toFixed(2)}h
+                          {freeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{freeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </td>
                 );
@@ -335,19 +419,31 @@ export function CostTrackerCard({
               {!isSingleMonth && (
                 <td className={TABLE_STYLES.cellBoldWithBorder}>
                   {(() => {
-                    const total = monthlyCosts.reduce((sum, m) => {
+                    const totalAmount = monthlyCosts.reduce((sum, m) => {
                       const amount = m.costs.emergencyNetCost !== undefined
                         ? m.costs.emergencyNetCost
                         : m.costs.emergencyCost;
                       return sum + amount;
                     }, 0);
-                    return total === 0 ? (
+                    const totalHours = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyHours, 0);
+                    const totalFreeHours = monthlyCosts.reduce((sum, m) => sum + (m.costs.emergencyFreeHours || 0), 0);
+                    return totalAmount === 0 && totalHours === 0 ? (
                       '-'
                     ) : (
-                      <>
-                        <span>{formatCurrencyAccounting(total).symbol}</span>
-                        <span className="tabular-nums">{formatCurrencyAccounting(total).amount}</span>
-                      </>
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(totalAmount).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(totalAmount).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {totalHours.toFixed(2)}h
+                          {totalFreeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{totalFreeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </td>
@@ -356,34 +452,67 @@ export function CostTrackerCard({
             {/* Total Row */}
             <tr className={TABLE_STYLES.rowHighlight}>
               <td className={TABLE_STYLES.cell}>Total</td>
-              {monthlyCosts.map((monthData) => (
-                <td key={`total-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
-                  <span>{formatCurrencyAccounting(
-                    monthData.costs.freeHoursSavings && monthData.costs.freeHoursSavings > 0
-                      ? monthData.costs.netTotalCost || 0
-                      : monthData.costs.totalCost
-                  ).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(
-                    monthData.costs.freeHoursSavings && monthData.costs.freeHoursSavings > 0
-                      ? monthData.costs.netTotalCost || 0
-                      : monthData.costs.totalCost
-                  ).amount}</span>
-                </td>
-              ))}
+              {monthlyCosts.map((monthData) => {
+                const totalCost = monthData.costs.freeHoursSavings && monthData.costs.freeHoursSavings > 0
+                  ? monthData.costs.netTotalCost || 0
+                  : monthData.costs.totalCost;
+                const totalHours = monthData.costs.promotionalHours + monthData.costs.regularHours +
+                  monthData.costs.sameDayHours + monthData.costs.emergencyHours;
+                const totalFreeHours = (monthData.costs.promotionalFreeHours || 0) +
+                  (monthData.costs.regularFreeHours || 0) +
+                  (monthData.costs.sameDayFreeHours || 0) +
+                  (monthData.costs.emergencyFreeHours || 0);
+                return (
+                  <td key={`total-${monthData.year}-${monthData.month}`} className={TABLE_STYLES.cellWithBorder}>
+                    <div className="flex flex-col">
+                      <div>
+                        <span>{formatCurrencyAccounting(totalCost).symbol}</span>
+                        <span className="tabular-nums">{formatCurrencyAccounting(totalCost).amount}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {totalHours.toFixed(2)}h
+                        {totalFreeHours > 0 && (
+                          <span className="text-green-600 dark:text-green-400 ml-1">
+                            (-{totalFreeHours.toFixed(2)}h free)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                );
+              })}
               {!isSingleMonth && (
                 <td className={TABLE_STYLES.cellWithBorder}>
-                  <span>{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
-                      ? m.costs.netTotalCost || 0
-                      : m.costs.totalCost;
-                    return sum + amount;
-                  }, 0)).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(monthlyCosts.reduce((sum, m) => {
-                    const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
-                      ? m.costs.netTotalCost || 0
-                      : m.costs.totalCost;
-                    return sum + amount;
-                  }, 0)).amount}</span>
+                  {(() => {
+                    const grandTotalCost = monthlyCosts.reduce((sum, m) => {
+                      const amount = m.costs.freeHoursSavings && m.costs.freeHoursSavings > 0
+                        ? m.costs.netTotalCost || 0
+                        : m.costs.totalCost;
+                      return sum + amount;
+                    }, 0);
+                    const grandTotalHours = monthlyCosts.reduce((sum, m) =>
+                      sum + m.costs.promotionalHours + m.costs.regularHours +
+                      m.costs.sameDayHours + m.costs.emergencyHours, 0);
+                    const grandTotalFreeHours = monthlyCosts.reduce((sum, m) =>
+                      sum + (m.costs.promotionalFreeHours || 0) + (m.costs.regularFreeHours || 0) +
+                      (m.costs.sameDayFreeHours || 0) + (m.costs.emergencyFreeHours || 0), 0);
+                    return (
+                      <div className="flex flex-col">
+                        <div>
+                          <span>{formatCurrencyAccounting(grandTotalCost).symbol}</span>
+                          <span className="tabular-nums">{formatCurrencyAccounting(grandTotalCost).amount}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {grandTotalHours.toFixed(2)}h
+                          {grandTotalFreeHours > 0 && (
+                            <span className="text-green-600 dark:text-green-400 ml-1">
+                              (-{grandTotalFreeHours.toFixed(2)}h free)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </td>
               )}
             </tr>
