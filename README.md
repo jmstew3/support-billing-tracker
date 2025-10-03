@@ -78,9 +78,18 @@ thad-chat/
 ├── frontend/               # React dashboard
 │   ├── src/
 │   │   ├── components/            # UI components
-│   │   │   └── Dashboard.tsx      # Main dashboard with API integration
-│   │   └── utils/
-│   │       └── api.ts             # API client for backend
+│   │   │   ├── base/              # Base components (DataTrackerCard)
+│   │   │   ├── shared/            # Shared components (Sidebar, PageHeader, etc.)
+│   │   │   ├── charts/            # Chart components (Bar, Pie, Radar, Heatmap)
+│   │   │   ├── dashboard/         # Dashboard page (Billing Overview - main landing)
+│   │   │   ├── support/           # Support page (SupportTickets)
+│   │   │   ├── projects/          # Projects page components
+│   │   │   ├── hosting/           # Turbo Hosting page components
+│   │   │   └── ui/                # Primitive UI components (shadcn/ui)
+│   │   ├── services/              # API services (Twenty CRM, billing, projects, hosting)
+│   │   ├── utils/                 # Utilities (csvExport, dataProcessing, etc.)
+│   │   │   └── api.ts             # API client for backend
+│   │   └── types/                 # TypeScript interfaces
 │   └── public/                    # Static assets
 ├── src/                    # Python ETL pipeline
 │   ├── data_preprocessor.py       # Data cleaning
@@ -108,16 +117,43 @@ thad-chat/
 
 ### Analysis & Reports
 - **CSV Export**: Detailed request data with timestamps
+- **Monthly Breakdown CSV Export**: Comprehensive billing export with totals for tickets, projects, and hosting
 - **Excel Workbook**: Multiple sheets with summaries
 - **JSON Summary**: Statistics for API/frontend consumption
-- **Interactive Dashboard**: React-based visualization
+- **Interactive Dashboard**: Multi-page React application with 4 main views
 
 ### Dashboard Features
+
+#### Billing Overview (Main Landing Page)
+- 💰 Unified revenue view combining tickets, projects, and hosting
+- 📊 Monthly breakdown with nested collapsible sections
+- 📈 Average cost calculations per category
+- 🎁 Total discounts tracking across all free credit policies
+- 💾 CSV export with detailed monthly breakdown
+- 📉 RevenueTrackerCard with visual breakdown by categories
+
+#### Support Tickets Page
 - 📊 Request volume trends (daily/hourly views)
 - 🥧 Enhanced category distribution with modern pie chart
 - 🎯 Category performance radar chart visualization
 - 💰 Tiered cost calculation with interactive urgency filtering
-- 📋 Real-time searchable request table
+- 🎫 CostTrackerCard showing costs by urgency levels
+
+#### Projects Page
+- 📁 Project revenue tracking with monthly breakdown
+- 📊 Cumulative billing chart
+- 🥧 Project category distribution pie chart
+- 💼 Status-based filtering (Not Ready, Ready, Invoiced, Paid)
+
+#### Turbo Hosting Page
+- ⚡ Monthly recurring revenue (MRR) tracking
+- 📊 Proration calculations for partial-month hosting
+- 🎁 Free hosting credits system
+- 📈 Cumulative MRR growth chart
+- 📊 Billing type distribution chart
+
+#### Shared Features Across All Pages
+- 📋 Real-time searchable tables
 - ✅ Status-based management (active/deleted/ignored)
 - 🔄 Bulk selection and editing
 - ⏱️ Hours tracking with enforced 0.25 increments
@@ -126,6 +162,7 @@ thad-chat/
 - 📅 Modern calendar date picker with month selection capability
 - 📱 Source indicators to distinguish Text vs Ticket System requests
 - 🎫 Twenty CRM integration for live ticket data
+- 🎨 Responsive design with mobile hamburger menu
 
 ### Database Persistence & CRUD Operations
 
@@ -206,7 +243,34 @@ npm install
 npm run dev
 ```
 
-The frontend automatically loads data from `/public/thad_requests_table.csv`
+### Application Structure
+
+The application is a multi-page React dashboard with 4 main views accessible via sidebar navigation:
+
+1. **Dashboard (Billing Overview)** - Main landing page
+   - Route: `'overview'`
+   - Component: `dashboard/Dashboard.tsx`
+   - Purpose: Comprehensive billing rollup combining all revenue sources
+
+2. **Support (Support Tickets)**
+   - Route: `'home'`
+   - Component: `support/SupportTickets.tsx`
+   - Purpose: Support ticket tracking and analysis
+
+3. **Projects**
+   - Route: `'projects'`
+   - Component: `projects/Projects.tsx`
+   - Purpose: Project revenue tracking and management
+
+4. **Turbo Hosting**
+   - Route: `'billing'`
+   - Component: `hosting/TurboHosting.tsx`
+   - Purpose: Website hosting MRR tracking with proration
+
+### Navigation
+- **Sidebar**: Fixed left navigation with collapsible functionality
+- **Mobile**: Hamburger menu for responsive mobile navigation
+- **Default View**: Dashboard (Billing Overview)
 
 ## 📈 Current Statistics
 
@@ -310,6 +374,49 @@ docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.s
 - **Workflow Management**: Bulk operations for efficient request processing
 
 ## 📝 Recent Updates
+
+### October 3, 2025 - Enhanced Billing Export & Analytics
+- **Monthly Breakdown CSV Export**: Comprehensive export functionality with detailed sections
+  - Totals row showing combined revenue from tickets, projects, and hosting
+  - Item counts for each category (e.g., "5 tickets", "3 projects", "12 sites")
+  - Detailed line items with credit labels and billing types
+  - Section headers for clear organization
+  - Ready for QuickBooks import and reconciliation
+- **Average Cost Calculations**: New scorecards displaying average costs per category
+  - Average cost per ticket across all urgency levels
+  - Average project revenue by category
+  - Average hosting MRR per site
+- **Total Discounts Tracking**: Comprehensive savings display
+  - Combined total from all free credit policies
+  - Breakdown by credit type (landing pages, forms, support hours, hosting)
+  - Visual representation of total savings impact
+
+### October 2, 2025 - Component Architecture Refactoring & Mobile Responsiveness
+- **Base Component Pattern**: Introduced DataTrackerCard as single source of truth
+  - Render props pattern for maximum reusability
+  - Shared TABLE_STYLES and CHART_STYLES constants
+  - Zero style duplication across tracker components
+- **New Specialized Trackers**:
+  - **RevenueTrackerCard**: Visual revenue breakdown by categories (Tickets, Projects, Hosting)
+  - **CostTrackerCard**: Cost tracking by urgency levels (Promotion, Low, Medium, High)
+- **Mobile Responsiveness Enhancements**:
+  - Hamburger menu navigation for mobile devices
+  - Responsive grid layouts across all components
+  - Touch-friendly tap targets (44px minimum)
+  - Optimized spacing and typography for small screens
+  - Collapsible sidebar with mobile overlay
+- **Folder Structure Reorganization**: Improved semantic organization
+  - `components/base/` - Reusable base components
+  - `components/shared/` - Cross-page shared components (Sidebar, PageHeader, etc.)
+  - `components/charts/` - All visualization components
+  - `components/dashboard/` - Dashboard/Billing Overview page
+  - `components/support/` - Support Tickets page
+  - `components/projects/` - Projects page
+  - `components/hosting/` - Turbo Hosting page
+- **Component Renaming for Clarity**:
+  - Dashboard.tsx now refers to Billing Overview (main landing page)
+  - SupportTickets.tsx for Support page
+  - TurboHosting.tsx for Turbo Hosting page
 
 ### January 23, 2025 - Twenty CRM Integration
 - **Twenty CRM API Integration**: Connected to live Twenty CRM instance for real-time ticket data
