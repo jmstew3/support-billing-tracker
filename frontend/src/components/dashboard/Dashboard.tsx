@@ -5,9 +5,10 @@ import { SiteFavicon } from '../ui/SiteFavicon';
 import { PageHeader } from '../shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../contexts/PeriodContext';
-import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Calculator, Gift } from 'lucide-react';
+import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Calculator, Gift, Download } from 'lucide-react';
 import { generateComprehensiveBilling } from '../../services/billingApi';
 import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../../utils/formatting';
+import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../utils/csvExport';
 import { CountBadge, CreditBadge, BillingTypeBadge } from '../ui/BillingBadge';
 import {
   CATEGORY_COLORS,
@@ -182,6 +183,77 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     (m.hostingCreditsApplied || 0),
   0) || 0;
 
+  // Handle Monthly Breakdown export
+  const handleExportMonthlyBreakdown = () => {
+    if (!filteredData || filteredData.length === 0) return;
+
+    const exportData: MonthlyBreakdownExportData = {
+      months: filteredData.map(m => ({
+        month: m.month,
+        ticketsRevenue: m.ticketsRevenue,
+        projectsRevenue: m.projectsRevenue,
+        hostingRevenue: m.hostingRevenue,
+        totalRevenue: m.totalRevenue,
+        // Include all detailed line items
+        ticketsCount: m.ticketsCount,
+        ticketDetails: m.ticketDetails?.map(t => ({
+          date: t.date,
+          description: t.description,
+          hours: t.hours,
+          rate: t.rate,
+          amount: t.amount,
+          netAmount: t.netAmount,
+          freeHoursApplied: t.freeHoursApplied,
+        })),
+        ticketsGrossRevenue: m.ticketsGrossRevenue,
+        ticketsFreeHoursApplied: m.ticketsFreeHoursApplied,
+        ticketsFreeHoursSavings: m.ticketsFreeHoursSavings,
+        projectsCount: m.projectsCount,
+        projectDetails: m.projectDetails?.map(p => ({
+          name: p.name,
+          completionDate: p.completionDate,
+          category: p.category,
+          amount: p.amount,
+          originalAmount: p.originalAmount,
+          isFreeCredit: p.isFreeCredit,
+        })),
+        projectsGrossRevenue: m.projectsGrossRevenue,
+        projectsLandingPageCredit: m.projectsLandingPageCredit,
+        projectsLandingPageSavings: m.projectsLandingPageSavings,
+        projectsMultiFormCredit: m.projectsMultiFormCredit,
+        projectsMultiFormSavings: m.projectsMultiFormSavings,
+        projectsBasicFormCredit: m.projectsBasicFormCredit,
+        projectsBasicFormSavings: m.projectsBasicFormSavings,
+        hostingSitesCount: m.hostingSitesCount,
+        hostingDetails: m.hostingDetails?.map(h => ({
+          name: h.name,
+          billingType: h.billingType,
+          grossAmount: h.grossAmount,
+          creditAmount: h.creditAmount,
+          netAmount: h.netAmount,
+          hostingStart: h.hostingStart,
+          hostingEnd: h.hostingEnd,
+        })),
+        hostingGross: m.hostingGross,
+        hostingCreditsApplied: m.hostingCreditsApplied,
+      })),
+    };
+
+    // Add totals if viewing multiple months
+    if (filteredData.length > 1 && displayTotals) {
+      exportData.totals = {
+        tickets: displayTotals.totalTicketsRevenue || 0,
+        projects: displayTotals.totalProjectsRevenue || 0,
+        hosting: displayTotals.totalHostingRevenue || 0,
+        total: displayTotals.totalRevenue || 0,
+      };
+    }
+
+    // Determine period for filename
+    const selectedPeriod = currentMonthString === 'all' ? 'all' : currentMonthString;
+    exportMonthlyBreakdownDetailedData(exportData, selectedPeriod);
+  };
+
   if (loading) {
     return <LoadingState variant="overview" />;
   }
@@ -319,15 +391,18 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
 
           {/* Monthly Breakdown - Desktop Table */}
           <div className="hidden md:block border bg-card">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-semibold text-base">Monthly Breakdown</h3>
+              <button
+                onClick={handleExportMonthlyBreakdown}
+                className="px-3 py-1.5 text-sm border border-input bg-background hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
             <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm table-fixed">
-                <colgroup>
-                  <col style={{ width: '25%' }} />
-                  <col style={{ width: '18.75%' }} />
-                  <col style={{ width: '18.75%' }} />
-                  <col style={{ width: '18.75%' }} />
-                  <col style={{ width: '18.75%' }} />
-                </colgroup>
+              <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
                   <tr className="border-b">
                     <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
@@ -575,7 +650,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={5} className="py-2 px-8">
+        <td colSpan={6} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -601,11 +676,14 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
       {isExpanded && (
         <>
           {/* Individual Ticket Rows */}
-          {monthData.ticketDetails.map((ticket) => {
+          {monthData.ticketDetails.map((ticket, idx) => {
             const isTicketExpanded = expandedTickets.has(ticket.id);
             return (
               <tr key={ticket.id} className="border-b hover:bg-muted/30">
-                <td className="py-2 px-12 text-xs text-muted-foreground w-32">{ticket.date}</td>
+                <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
+                  {idx + 1}.
+                </td>
+                <td className="py-2 px-4 text-xs text-muted-foreground w-32">{ticket.date}</td>
                 <td className="py-2 px-4 text-xs">
                   <div
                     className={`cursor-pointer ${!isTicketExpanded ? 'line-clamp-2' : ''}`}
@@ -649,7 +727,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
 
           {/* Total Hours Summary Row */}
           <tr className="bg-muted/30 border-b border-t-2">
-            <td colSpan={2} className="py-2 px-12 text-xs font-semibold">
+            <td colSpan={3} className="py-2 px-12 text-xs font-semibold">
               Total Hours
             </td>
             <td className="py-2 px-4 text-xs text-right font-semibold">
@@ -666,7 +744,7 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
           {hasFreeHours && (
             <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-              <td colSpan={2} className="py-2 px-12 text-xs font-medium">
+              <td colSpan={3} className="py-2 px-12 text-xs font-medium">
                 <Zap className="h-3 w-3 inline mr-1" />
                 Free Support Hours Benefit
               </td>
@@ -709,7 +787,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={5} className="py-2 px-8">
+        <td colSpan={6} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -745,9 +823,12 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
       </tr>
 
       {isExpanded &&
-        monthData.projectDetails.map((project) => (
+        monthData.projectDetails.map((project, idx) => (
           <tr key={project.id} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-12 text-xs text-muted-foreground w-32">{project.completionDate}</td>
+            <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
+              {idx + 1}.
+            </td>
+            <td className="py-2 px-4 text-xs text-muted-foreground w-32">{project.completionDate}</td>
             <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={project.websiteUrl} size={14} />
@@ -800,7 +881,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={5} className="py-2 px-8">
+        <td colSpan={6} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -824,9 +905,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
       </tr>
 
       {isExpanded &&
-        monthData.hostingDetails.map((hosting) => (
+        monthData.hostingDetails.map((hosting, idx) => (
           <tr key={hosting.websitePropertyId} className="border-b hover:bg-muted/30">
-            <td className="py-2 px-12 text-xs">
+            <td className="py-2 px-2 text-xs text-muted-foreground text-center w-8">
+              {idx + 1}.
+            </td>
+            <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={hosting.websiteUrl} size={14} />
                 <span>{hosting.siteName}</span>
@@ -960,8 +1044,11 @@ function MobileMonthCard({
                   {monthData.tickets?.map((ticket, idx) => (
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
-                        <div className="font-medium">{ticket.summary}</div>
-                        <div className="text-muted-foreground mt-0.5">
+                        <div className="font-medium flex items-center gap-2">
+                          <span className="text-muted-foreground w-6 text-center">{idx + 1}.</span>
+                          <span>{ticket.summary}</span>
+                        </div>
+                        <div className="text-muted-foreground mt-0.5 ml-8">
                           {ticket.hours}h × ${ticket.rate}/hr
                         </div>
                       </div>
@@ -1018,6 +1105,7 @@ function MobileMonthCard({
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
                         <div className="font-medium flex items-center gap-2">
+                          <span className="text-muted-foreground w-6 text-center">{idx + 1}.</span>
                           {project.name}
                           {project.isFreeCredit && (
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-200 dark:ring-green-800">
@@ -1025,7 +1113,7 @@ function MobileMonthCard({
                             </span>
                           )}
                         </div>
-                        <div className="text-muted-foreground mt-0.5">{project.category}</div>
+                        <div className="text-muted-foreground mt-0.5 ml-8">{project.category}</div>
                       </div>
                       <div className="text-right font-semibold whitespace-nowrap">
                         {project.isFreeCredit && project.originalAmount ? (
@@ -1087,6 +1175,7 @@ function MobileMonthCard({
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
                         <div className="font-medium flex items-center gap-2">
+                          <span className="text-muted-foreground w-6 text-center">{idx + 1}.</span>
                           <SiteFavicon url={hosting.url} size="xs" />
                           {hosting.name}
                           {hosting.creditApplied && (
@@ -1095,7 +1184,7 @@ function MobileMonthCard({
                             </span>
                           )}
                         </div>
-                        <div className="text-muted-foreground mt-0.5">
+                        <div className="text-muted-foreground mt-0.5 ml-8">
                           {hosting.billingType === 'FULL' ? 'Full Month' :
                            hosting.billingType === 'PRORATED_START' ? 'Prorated Start' :
                            hosting.billingType === 'PRORATED_END' ? 'Prorated End' : 'Inactive'}
