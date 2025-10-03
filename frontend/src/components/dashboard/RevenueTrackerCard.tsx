@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import { formatCurrency, formatCurrencyAccounting } from '../../utils/formatting';
 import type { MonthlyBillingSummary } from '../../types/billing';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -102,6 +103,19 @@ export function RevenueTrackerCard({
     };
   };
 
+  // Calculate hosting billing type breakdown
+  const calculateHostingBreakdown = () => {
+    const breakdown = { FULL: 0, PRORATED_START: 0, PRORATED_END: 0 };
+    monthlyData.forEach(month => {
+      month.hostingDetails.forEach(hosting => {
+        if (hosting.billingType === 'FULL') breakdown.FULL++;
+        else if (hosting.billingType === 'PRORATED_START') breakdown.PRORATED_START++;
+        else if (hosting.billingType === 'PRORATED_END') breakdown.PRORATED_END++;
+      });
+    });
+    return breakdown;
+  };
+
   // Render table
   const renderTable = (): ReactNode => {
     if (!monthlyData || monthlyData.length === 0) {
@@ -109,6 +123,7 @@ export function RevenueTrackerCard({
     }
 
     const totals = calculateTotals();
+    const hostingBreakdown = calculateHostingBreakdown();
 
     return (
       <div className={TABLE_STYLES.container}>
@@ -207,7 +222,22 @@ export function RevenueTrackerCard({
                 </td>
               ))}
               <td className={TABLE_STYLES.cellWithBorder + ' text-center'}>
-                {totals.hostingCount}
+                <TooltipProvider>
+                  <UITooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help underline decoration-dotted">
+                        {totals.hostingCount}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-xs space-y-1">
+                        <div>Full Month: {hostingBreakdown.FULL}</div>
+                        <div>Prorated Start: {hostingBreakdown.PRORATED_START}</div>
+                        <div>Prorated End: {hostingBreakdown.PRORATED_END}</div>
+                      </div>
+                    </TooltipContent>
+                  </UITooltip>
+                </TooltipProvider>
               </td>
               <td className={TABLE_STYLES.cellBoldWithBorder}>
                 {totals.hosting === 0 ? (
