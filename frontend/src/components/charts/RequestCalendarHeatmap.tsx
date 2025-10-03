@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import type { DailyRequestCount } from '../types/request';
+import type { DailyRequestCount } from '../../types/request';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface RequestCalendarHeatmapProps {
   data: DailyRequestCount[];
@@ -14,6 +14,12 @@ interface RequestCalendarHeatmapProps {
 
 export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, selectedDate, onBackToCalendar, isSingleMonth }: RequestCalendarHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+
+  // Months per page for responsive design
+  const MONTHS_PER_PAGE_DESKTOP = 3;
+  const MONTHS_PER_PAGE_TABLET = 2;
+  const MONTHS_PER_PAGE_MOBILE = 1;
 
   // Group data by month
   const monthlyData = useMemo(() => {
@@ -102,17 +108,17 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     if (count === 0) return 'bg-gray-100 hover:bg-gray-200';
     const intensity = Math.min(count / maxCount, 1);
 
-    if (intensity <= 0.25) return 'bg-blue-200 hover:bg-blue-300';
-    if (intensity <= 0.5) return 'bg-blue-400 hover:bg-blue-500';
-    if (intensity <= 0.75) return 'bg-blue-600 hover:bg-blue-700';
-    return 'bg-blue-800 hover:bg-blue-900';
+    if (intensity <= 0.25) return 'bg-gray-400 hover:bg-gray-500';
+    if (intensity <= 0.5) return 'bg-gray-600 hover:bg-gray-700';
+    if (intensity <= 0.75) return 'bg-gray-800 hover:bg-gray-900';
+    return 'bg-black hover:bg-black';
   };
 
   // Get text color for better contrast
   const getTextColor = (count: number) => {
     if (count === 0) return 'text-gray-600';
     const intensity = Math.min(count / maxCount, 1);
-    return intensity > 0.5 ? 'text-white' : 'text-gray-700';
+    return intensity > 0.2 ? 'text-white' : 'text-gray-900';
   };
 
   if (isHourlyView) {
@@ -122,10 +128,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
     // Function to get bar color based on urgency
     const getBarColor = (item: DailyRequestCount) => {
       if (item.count === 0) return 'bg-gray-300'; // Gray for no data
-      if (item.high > 0) return 'bg-red-500';
-      if (item.medium > 0) return 'bg-yellow-500';
-      if (item.low > 0) return 'bg-green-500';
-      return 'bg-blue-500'; // Default color
+      if (item.high > 0) return 'bg-black';
+      if (item.medium > 0) return 'bg-gray-700';
+      if (item.low > 0) return 'bg-gray-500';
+      return 'bg-gray-600'; // Default color
     };
 
     return (
@@ -235,15 +241,15 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded" />
+              <div className="w-3 h-3 bg-black rounded" />
               <span className="text-xs text-gray-600">High Priority</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded" />
+              <div className="w-3 h-3 bg-gray-700 rounded" />
               <span className="text-xs text-gray-600">Medium Priority</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded" />
+              <div className="w-3 h-3 bg-gray-500 rounded" />
               <span className="text-xs text-gray-600">Low Priority</span>
             </div>
           </div>
@@ -255,11 +261,12 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   // Determine box size based on whether single month is selected
-  const boxSize = isSingleMonth ? 'w-16 h-16' : 'w-8 h-8';
-  const textSize = isSingleMonth ? 'text-sm' : 'text-xs';
-  const headerHeight = isSingleMonth ? 'h-6' : 'h-4';
+  // Make single month view responsive
+  const boxSize = isSingleMonth ? 'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20' : 'w-6 h-6 sm:w-8 sm:h-8';
+  const textSize = isSingleMonth ? 'text-xs sm:text-sm md:text-base' : 'text-[10px] sm:text-xs';
+  const headerHeight = isSingleMonth ? 'h-6 sm:h-7 md:h-8' : 'h-4 sm:h-5';
 
-  // Filter to show only the selected month when isSingleMonth is true
+  // Filter to show only the selected month when isSingleMonth is true, or paginate when showing all
   const displayData = isSingleMonth && monthlyData.length > 0
     ? monthlyData.filter(month => {
         // Show the month that contains the most data points from the current filtered data
@@ -268,19 +275,81 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         );
         return data.some(d => monthDates.includes(d.date));
       }).slice(0, 1) // Ensure only one month is shown
-    : monthlyData;
+    : monthlyData.slice(currentMonthIndex, currentMonthIndex + MONTHS_PER_PAGE_DESKTOP);
+
+  // Navigation helpers
+  const totalMonths = monthlyData.length;
+  const canGoBack = currentMonthIndex > 0;
+  const canGoForward = currentMonthIndex + MONTHS_PER_PAGE_DESKTOP < totalMonths;
+
+  const handlePrevious = () => {
+    setCurrentMonthIndex(Math.max(0, currentMonthIndex - MONTHS_PER_PAGE_DESKTOP));
+  };
+
+  const handleNext = () => {
+    setCurrentMonthIndex(Math.min(totalMonths - MONTHS_PER_PAGE_DESKTOP, currentMonthIndex + MONTHS_PER_PAGE_DESKTOP));
+  };
+
+  // Get month range text for indicator
+  const getMonthRangeText = () => {
+    if (displayData.length === 0) return '';
+    const startMonth = displayData[0].monthName;
+    const endMonth = displayData[displayData.length - 1].monthName;
+    const startIndex = currentMonthIndex + 1;
+    const endIndex = Math.min(currentMonthIndex + MONTHS_PER_PAGE_DESKTOP, totalMonths);
+
+    if (startMonth === endMonth) {
+      return `Showing ${startMonth} (${startIndex} of ${totalMonths})`;
+    }
+    return `Showing ${startMonth} - ${endMonth} (${startIndex}-${endIndex} of ${totalMonths})`;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Container - no horizontal scroll when single month */}
-      <div className={isSingleMonth ? '' : 'overflow-x-auto pb-4'}>
-        <div className={isSingleMonth ? 'flex justify-center' : 'flex gap-6 min-w-fit'}>
+      {/* Navigation Controls - Only show when not in single month view */}
+      {!isSingleMonth && totalMonths > MONTHS_PER_PAGE_DESKTOP && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={handlePrevious}
+            disabled={!canGoBack}
+            className={`p-2 rounded-md transition-colors ${
+              canGoBack
+                ? 'hover:bg-gray-100 text-gray-700'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title={canGoBack ? 'Previous months' : 'At beginning'}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <span className="text-sm text-gray-600 font-medium min-w-[280px] text-center">
+            {getMonthRangeText()}
+          </span>
+
+          <button
+            onClick={handleNext}
+            disabled={!canGoForward}
+            className={`p-2 rounded-md transition-colors ${
+              canGoForward
+                ? 'hover:bg-gray-100 text-gray-700'
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title={canGoForward ? 'Next months' : 'At end'}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Calendar Container - No horizontal scroll, centered */}
+      <div>
+        <div className={isSingleMonth ? 'flex justify-center w-full' : 'flex gap-8 justify-center'}>
           {displayData.map((monthData) => (
             <div key={monthData.month} className="flex-shrink-0">
-              <h3 className="text-sm font-medium text-gray-700 mb-2 text-center">{monthData.monthName}</h3>
+              <h3 className="text-sm font-bold text-muted-foreground mb-4 text-center">{monthData.monthName}</h3>
               <div className="inline-block">
                 {/* Weekday headers */}
-                <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-2' : 'gap-1'} mb-2`}>
+                <div className={`grid grid-cols-7 ${isSingleMonth ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-1 sm:gap-1.5'} mb-2`}>
                   {weekDays.map((day, index) => (
                     <div
                       key={index}
@@ -292,9 +361,9 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
                 </div>
 
                 {/* Calendar grid */}
-                <div className={isSingleMonth ? 'space-y-2' : 'space-y-1'}>
+                <div className={isSingleMonth ? 'space-y-1.5 sm:space-y-2 md:space-y-3' : 'space-y-1 sm:space-y-1.5'}>
                   {monthData.weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className={`grid grid-cols-7 ${isSingleMonth ? 'gap-2' : 'gap-1'}`}>
+                    <div key={weekIndex} className={`grid grid-cols-7 ${isSingleMonth ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-1 sm:gap-1.5'}`}>
                     {week.map((day, dayIndex) => {
                       if (!day.date) {
                         return <div key={dayIndex} className={boxSize} />;
@@ -319,8 +388,8 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
                               transition-all cursor-pointer hover:scale-110
                               ${getColorIntensity(count)}
                               ${getTextColor(count)}
-                              ${isCurrentDay ? 'ring-2 ring-orange-400' : ''}
-                              ${isSelected ? 'ring-2 ring-blue-600 ring-offset-1' : ''}
+                              ${isCurrentDay ? 'ring-2 ring-gray-900' : ''}
+                              ${isSelected ? 'ring-2 ring-black ring-offset-1' : ''}
                             `}
                           >
                             {isSingleMonth ? (
@@ -391,10 +460,10 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         <span className="text-xs text-gray-500">Less</span>
         <div className="flex space-x-1">
           <div className="w-4 h-4 bg-gray-100 rounded" title="No requests" />
-          <div className="w-4 h-4 bg-blue-200 rounded" title="Low activity" />
-          <div className="w-4 h-4 bg-blue-400 rounded" title="Moderate activity" />
-          <div className="w-4 h-4 bg-blue-600 rounded" title="High activity" />
-          <div className="w-4 h-4 bg-blue-800 rounded" title="Very high activity" />
+          <div className="w-4 h-4 bg-gray-400 rounded" title="Low activity" />
+          <div className="w-4 h-4 bg-gray-600 rounded" title="Moderate activity" />
+          <div className="w-4 h-4 bg-gray-800 rounded" title="High activity" />
+          <div className="w-4 h-4 bg-black rounded" title="Very high activity" />
         </div>
         <span className="text-xs text-gray-500">More</span>
       </div>

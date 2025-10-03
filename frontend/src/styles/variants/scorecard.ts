@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 // Scorecard container variants
 export const scorecardVariants = cva(
-  'rounded-lg border shadow-sm transition-all duration-200',
+  'rounded-lg border transition-all duration-200',
   {
     variants: {
       variant: {
@@ -18,7 +18,7 @@ export const scorecardVariants = cva(
         lg: '',
       },
       hover: {
-        true: 'hover:shadow-md',
+        true: 'hover:bg-muted/50',
         false: '',
       },
     },

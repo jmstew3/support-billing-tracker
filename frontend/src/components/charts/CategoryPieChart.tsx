@@ -1,6 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
-import type { CategoryCount } from '../types/request';
+import type { CategoryCount } from '../../types/request';
 
 interface CategoryPieChartProps {
   data: CategoryCount[];
@@ -12,17 +12,17 @@ const getCSSVariableValue = (variableName: string) => {
   return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
 };
 
-// Get colors from CSS variables (theme-aware)
+// Get colors - using black/grey shades for monochrome design
 const getCategoryColors = (): Record<string, string> => ({
-  'Support': getCSSVariableValue('--chart-color-support') || '#8884d8',
-  'Hosting': getCSSVariableValue('--chart-color-hosting') || '#82ca9d',
-  'Forms': getCSSVariableValue('--chart-color-forms') || '#ffc658',
-  'Billing': getCSSVariableValue('--chart-color-billing') || '#ff7c7c',
-  'Email': getCSSVariableValue('--chart-color-email') || '#8dd1e1',
-  'Migration': getCSSVariableValue('--chart-color-migration') || '#d084d0',
-  'Non-billable': getCSSVariableValue('--chart-color-non-billable') || '#ffb347',
-  'Advisory': getCSSVariableValue('--chart-color-advisory') || '#87ceeb',
-  'Website': getCSSVariableValue('--chart-color-website') || '#a78bfa'
+  'Support': '#000000',      // Black (darkest)
+  'Hosting': '#1f2937',      // Gray-800
+  'Forms': '#374151',        // Gray-700
+  'Billing': '#4b5563',      // Gray-600
+  'Email': '#6b7280',        // Gray-500
+  'Migration': '#9ca3af',    // Gray-400
+  'Non-billable': '#d1d5db', // Gray-300
+  'Advisory': '#e5e7eb',     // Gray-200
+  'Website': '#f3f4f6'       // Gray-100 (lightest)
 });
 
 // All possible categories in order
@@ -77,36 +77,38 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   };
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <PieChart>
-        <Pie
-          data={completeData}
-          cx="50%"
-          cy="50%"
-          labelLine={{
-            stroke: '#94a3b8',
-            strokeWidth: 1,
-            strokeDasharray: '0',
-          }}
-          label={renderCustomizedLabel}
-          outerRadius={100}
-          fill="#8884d8"
-          dataKey="value"
-        >
-          {completeData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || '#cccccc'} />
-          ))}
-        </Pie>
-        <Tooltip
-          formatter={(value: number, name: string) => [`${value} requests`, name]}
-          contentStyle={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            border: '1px solid #e5e7eb',
-            borderRadius: '6px',
-            padding: '8px 12px'
-          }}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="w-full min-h-[300px] h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={completeData as any}
+            cx="50%"
+            cy="50%"
+            labelLine={{
+              stroke: '#94a3b8',
+              strokeWidth: 1,
+              strokeDasharray: '0',
+            }}
+            label={renderCustomizedLabel}
+            outerRadius={100}
+            fill="#8884d8"
+            dataKey="value"
+          >
+            {completeData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || '#cccccc'} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value: number, name: string) => [`${value} requests`, name]}
+            contentStyle={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              padding: '8px 12px'
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

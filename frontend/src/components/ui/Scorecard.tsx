@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card';
 interface ScorecardProps extends ScorecardVariants, ScorecardValueVariants {
   title: string;
   value: string | number | React.ReactNode;
-  description?: string;
+  description?: string | React.ReactNode;
   icon?: React.ReactNode;
   className?: string;
   valueClassName?: string;
@@ -46,19 +46,19 @@ export const Scorecard = React.forwardRef<HTMLDivElement, ScorecardProps>(
     };
 
     return (
-      <Card ref={ref} className={cn(scorecardVariants({ variant, size, hover }), className)}>
+      <Card ref={ref} className={cn(scorecardVariants({ variant, size, hover }), "transition-all duration-200", className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2">
-          <CardTitle className={cn(scorecardTitleVariants({ size }), titleClassName)}>
+          <CardTitle className={cn(scorecardTitleVariants({ size }), "text-sm font-medium text-muted-foreground", titleClassName)}>
             {title}
           </CardTitle>
-          {icon && <div className="text-muted-foreground">{icon}</div>}
+          {icon && <div className="text-muted-foreground opacity-70">{icon}</div>}
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className={cn(scorecardValueVariants({ size: valueSizeMap[size] }), valueClassName)}>
+          <div className={cn(scorecardValueVariants({ size: valueSizeMap[size] }), "text-lg font-semibold text-foreground", valueClassName)}>
             {value}
           </div>
           {description && (
-            <p className={cn(scorecardDescriptionVariants({ size }), 'text-muted-foreground mt-1', descriptionClassName)}>
+            <p className={cn(scorecardDescriptionVariants({ size }), 'text-xs text-muted-foreground mt-1.5', descriptionClassName)}>
               {description}
             </p>
           )}

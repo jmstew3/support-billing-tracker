@@ -1,7 +1,33 @@
-import { Dashboard } from './components/Dashboard'
+import { useState } from 'react';
+import { SupportTickets } from './components/support/SupportTickets';
+import { Sidebar } from './components/shared/Sidebar';
+import { Projects } from './components/projects/Projects';
+import { TurboHosting } from './components/hosting/TurboHosting';
+import { Dashboard } from './components/dashboard/Dashboard';
+import { PeriodProvider } from './contexts/PeriodContext';
 
 function App() {
-  return <Dashboard />
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  return (
+    <PeriodProvider>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          isMobileOpen={isMobileMenuOpen}
+          setIsMobileOpen={setIsMobileMenuOpen}
+        />
+        <main className="flex-1 overflow-auto">
+          {currentView === 'home' && <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'projects' && <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'overview' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'billing' && <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+        </main>
+      </div>
+    </PeriodProvider>
+  );
 }
 
-export default App
+export default App;
