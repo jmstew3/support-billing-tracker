@@ -103,14 +103,15 @@ export function BillingBadge({ variant, className = '', size = 'xs' }: BillingBa
     md: 'px-2 py-1 text-sm',
   };
 
-  // Credit badges don't use ring borders (they have no border)
-  const ringClass = (variant.type === 'credit' || variant.type === 'free')
-    ? ''
-    : 'ring-1 ring-inset';
+  // All badges use ring borders
+  const ringClass = 'ring-1 ring-inset';
+
+  // Count badges use rounded-full, all others use global BADGE_BORDER_RADIUS
+  const borderRadiusClass = variant.type === 'count' ? 'rounded-full' : BADGE_BORDER_RADIUS;
 
   return (
     <span
-      className={`inline-flex items-center font-medium whitespace-nowrap ${sizeClasses[size]} ${ringClass} ${BADGE_BORDER_RADIUS} ${badgeStyle} ${className}`}
+      className={`inline-flex items-center font-medium whitespace-nowrap ${sizeClasses[size]} ${ringClass} ${borderRadiusClass} ${badgeStyle} ${className}`}
     >
       {icon}
       {label}

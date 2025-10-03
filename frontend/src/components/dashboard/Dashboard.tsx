@@ -232,7 +232,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
         projectsBasicFormSavings: m.projectsBasicFormSavings,
         hostingSitesCount: m.hostingSitesCount,
         hostingDetails: m.hostingDetails?.map(h => ({
-          name: h.name,
+          name: h.siteName,
           billingType: h.billingType,
           grossAmount: h.grossAmount,
           creditAmount: h.creditAmount,
@@ -423,7 +423,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
               <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
                   <tr className="border-b">
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
+                    <th colSpan={3} className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                       Month
                     </th>
                     <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground">
@@ -456,20 +456,20 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
                     <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
-                      <td colSpan={3} className="py-4 px-4 text-right text-base whitespace-nowrap">GRAND TOTALS</td>
-                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
+                      <td colSpan={3} className="py-4 px-4 text-left text-xl whitespace-nowrap">GRAND TOTALS</td>
+                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
@@ -595,7 +595,7 @@ function MonthRow({
             </>
           )}
         </td>
-        <td className={`py-3 px-4 text-right ${TABLE_REVENUE_TEXT_SIZE} ${TABLE_REVENUE_FONT_WEIGHT}`}>
+        <td className="py-3 px-4 text-right text-base font-bold">
           <span>{formatCurrencyAccounting(monthData.totalRevenue).symbol}</span>
           <span className="tabular-nums">{formatCurrencyAccounting(monthData.totalRevenue).amount}</span>
         </td>
@@ -673,8 +673,9 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Ticket className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Tickets</span>
               <CountBadge
-                text={`${monthData.ticketsCount} ${monthData.ticketsCount === 1 ? 'Ticket' : 'Tickets'}`}
+                text={`${monthData.ticketsCount}`}
                 size="xs"
               />
               {hasFreeHours && (
@@ -813,8 +814,9 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <FolderKanban className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Projects</span>
               <CountBadge
-                text={`${monthData.projectsCount} ${monthData.projectsCount === 1 ? 'Project' : 'Projects'}`}
+                text={`${monthData.projectsCount}`}
                 size="xs"
               />
               {monthData.projectsLandingPageCredit > 0 && (
@@ -908,6 +910,20 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
     return `${targetYear}-${targetMonth}-01`;
   };
 
+  // Sort hosting details by effective billing date, then alphabetically by site name
+  const sortedHostingDetails = [...monthData.hostingDetails].sort((a, b) => {
+    const dateA = getEffectiveBillingDate(a, monthData.month);
+    const dateB = getEffectiveBillingDate(b, monthData.month);
+
+    // Sort by date first
+    if (dateA !== dateB) {
+      return dateA.localeCompare(dateB);
+    }
+
+    // If same date, sort alphabetically by site name
+    return a.siteName.localeCompare(b.siteName);
+  });
+
   return (
     <>
       <tr
@@ -922,8 +938,9 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               <Server className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Sites Hosted</span>
               <CountBadge
-                text={`${monthData.hostingSitesCount} ${monthData.hostingSitesCount === 1 ? 'Site' : 'Sites'}`}
+                text={`${monthData.hostingSitesCount}`}
                 size="xs"
               />
               {monthData.hostingCreditsApplied > 0 && (
@@ -941,7 +958,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
       </tr>
 
       {isExpanded &&
-        monthData.hostingDetails.map((hosting, idx) => (
+        sortedHostingDetails.map((hosting, idx) => (
           <tr key={hosting.websitePropertyId} className="border-b divide-x hover:bg-muted/30">
             <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
               {idx + 1}

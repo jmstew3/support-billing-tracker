@@ -567,11 +567,28 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       // Add individual hosting details
       if (month.hostingDetails) {
         month.hostingDetails.forEach((site, idx) => {
+          // Calculate effective billing date (same logic as Dashboard UI)
+          let effectiveBillingDate = '';
+          if (site.hostingStart) {
+            const hostingStartMonth = site.hostingStart.substring(0, 7); // Extract YYYY-MM
+
+            // If this is the first month (prorated start), show actual start date
+            if (hostingStartMonth === month.month) {
+              effectiveBillingDate = site.hostingStart.substring(0, 10); // YYYY-MM-DD
+            } else {
+              // For all subsequent months (FULL billing), show 1st of current month
+              effectiveBillingDate = `${month.month}-01`;
+            }
+          } else {
+            // Default to 1st of month if no start date
+            effectiveBillingDate = `${month.month}-01`;
+          }
+
           rows.push([
             monthName,
             'HOSTING',
             idx + 1,
-            '',
+            effectiveBillingDate,
             site.name,
             '',
             site.billingType,
@@ -647,7 +664,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       'GRAND TOTAL',
       '',
       '',
-      'Total Revenue (All Sections)',
+      'Total Charges (All Sections)',
       '',
       '',
       '',
@@ -661,7 +678,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
       'GRAND TOTAL',
       '',
       '',
-      'Total Revenue (All Sections)',
+      'Total Charges (All Sections)',
       '',
       '',
       '',
