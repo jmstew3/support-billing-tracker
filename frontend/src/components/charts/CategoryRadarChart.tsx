@@ -23,22 +23,44 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
   );
 
   // Memoize data transformation
-  const { radarData, maxValue, total, domainMax, ticks } = useMemo(() => {
+  const { radarData, total, domainMax, ticks } = useMemo(() => {
     const max = Math.max(...data.map(d => d.value), 1);
     const totalRequests = data.reduce((acc, item) => acc + item.value, 0);
 
-    // Calculate domain max rounded up to nearest 50
-    const calculateDomainMax = (value: number) => {
-      if (value <= 0) return 50;
-      const remainder = value % 50;
-      return remainder === 0 ? value : value + (50 - remainder);
+    // Calculate domain max and tick increment based on data size
+    const calculateDomainAndTicks = (value: number) => {
+      if (value <= 0) return { domainMax: 50, tickIncrement: 10 };
+
+      // Determine appropriate increment based on max value
+      let tickIncrement: number;
+      let domainMax: number;
+
+      if (value <= 10) {
+        tickIncrement = 2;
+        domainMax = Math.ceil(value / 2) * 2;
+      } else if (value <= 25) {
+        tickIncrement = 5;
+        domainMax = Math.ceil(value / 5) * 5;
+      } else if (value <= 50) {
+        tickIncrement = 10;
+        domainMax = Math.ceil(value / 10) * 10;
+      } else if (value <= 100) {
+        tickIncrement = 20;
+        domainMax = Math.ceil(value / 20) * 20;
+      } else {
+        tickIncrement = 50;
+        const remainder = value % 50;
+        domainMax = remainder === 0 ? value : value + (50 - remainder);
+      }
+
+      return { domainMax, tickIncrement };
     };
 
-    const calculatedDomainMax = calculateDomainMax(max);
+    const { domainMax: calculatedDomainMax, tickIncrement } = calculateDomainAndTicks(max);
 
-    // Generate tick values (0, 50, 100, 150, etc.)
+    // Generate tick values with appropriate increment
     const tickValues = [];
-    for (let i = 0; i <= calculatedDomainMax; i += 50) {
+    for (let i = 0; i <= calculatedDomainMax; i += tickIncrement) {
       tickValues.push(i);
     }
 
@@ -63,7 +85,6 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
 
     return {
       radarData: transformed,
-      maxValue: max,
       total: totalRequests,
       domainMax: calculatedDomainMax,
       ticks: tickValues
@@ -125,27 +146,27 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
             <Radar
               name="Volume"
               dataKey="volume"
-              stroke="#3b82f6"
+              stroke="#000000"
               strokeWidth={2}
-              fill="#3b82f6"
+              fill="#000000"
               fillOpacity={0.2}
               animationDuration={800}
             />
             <Radar
               name="Urgency"
               dataKey="urgencyScore"
-              stroke="#ef4444"
+              stroke="#374151"
               strokeWidth={2}
-              fill="#ef4444"
+              fill="#374151"
               fillOpacity={0.2}
               animationDuration={800}
             />
             <Radar
               name="Complexity"
               dataKey="complexity"
-              stroke="#10b981"
+              stroke="#6B7280"
               strokeWidth={2}
-              fill="#10b981"
+              fill="#6B7280"
               fillOpacity={0.2}
               animationDuration={800}
             />
@@ -182,15 +203,15 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
             angle={90}
             domain={[0, domainMax]}
             tick={{ fontSize: 10 }}
-            ticks={ticks}
+            ticks={ticks as any}
             axisLine={false}
           />
           <Radar
             name="Requests"
             dataKey="value"
-            stroke="#3b82f6"
+            stroke="#374151"
             strokeWidth={2}
-            fill="#3b82f6"
+            fill="#374151"
             fillOpacity={0.35}
             animationDuration={800}
             animationEasing="ease-in-out"

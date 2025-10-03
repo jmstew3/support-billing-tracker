@@ -1,25 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Scorecard } from './ui/Scorecard';
-import { ThemeToggle } from './ui/ThemeToggle';
-import { useTheme } from '../hooks/useTheme';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { RequestCalendarHeatmap } from './RequestCalendarHeatmap';
-import CategoryRadarChart from './CategoryRadarChart';
-import { CategoryPieChart } from './CategoryPieChart';
-import { Pagination } from './Pagination';
-import { EditableCell } from './EditableCell';
-import { EditableNumberCell } from './EditableNumberCell';
-import { ConfirmDialog } from './ConfirmDialog';
-import { DatePickerPopover } from './DatePickerPopover';
-import type { ChatRequest } from '../types/request';
-import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../utils/dataProcessing';
-import { formatTime } from '../utils/timeUtils';
-import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest, getTwentySyncStatus, triggerTwentySync, type TwentySyncResponse } from '../utils/api';
-import { DollarSign, Clock, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, Eye, EyeOff, MessageCircle, Ticket, Mail, Phone } from 'lucide-react';
-import { PRICING_CONFIG } from '../config/pricing';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, LineChart, LabelList, Cell } from 'recharts';
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Scorecard } from '../ui/Scorecard';
+import { ThemeToggle } from '../ui/ThemeToggle';
+import { useTheme } from '../../hooks/useTheme';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { RequestCalendarHeatmap } from '../charts/RequestCalendarHeatmap';
+import CategoryRadarChart from '../charts/CategoryRadarChart';
+import { CategoryPieChart } from '../charts/CategoryPieChart';
+import { CostTrackerCard } from './CostTrackerCard';
+import { Pagination } from '../shared/Pagination';
+import { EditableCell } from '../shared/EditableCell';
+import { EditableNumberCell } from '../shared/EditableNumberCell';
+import { ConfirmDialog } from '../shared/ConfirmDialog';
+import { DatePickerPopover } from '../shared/DatePickerPopover';
+import type { ChatRequest } from '../../types/request';
+import { processDailyRequests, processCategoryData, calculateCosts, categorizeRequest } from '../../utils/dataProcessing';
+import { formatTime } from '../../utils/timeUtils';
+import { fetchRequests, updateRequest as updateRequestAPI, bulkUpdateRequests, checkAPIHealth, deleteRequest } from '../../utils/api';
+import { DollarSign, AlertCircle, Download, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Info, Filter, Search, X, Trash2, RotateCcw, Archive, Calendar, TrendingUp, BarChart3, Tag, MessageCircle, Ticket, Mail, Phone, Zap } from 'lucide-react';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { LoadingState } from '../ui/LoadingState';
+import { ToggleGroup } from '../ui/toggle-group';
+import { formatCurrency } from '../../utils/currency';
 
 
 // Safe date parsing function that avoids timezone conversion issues
@@ -29,16 +31,12 @@ function parseLocalDate(dateString: string): Date {
   return new Date(year, month - 1, day); // month is 0-indexed in JavaScript
 }
 
-// Format currency with exactly 2 decimal places
-function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+interface SupportTicketsProps {
+  onToggleMobileMenu?: () => void;
 }
 
-export function Dashboard() {
-  console.log('Dashboard component mounting...');
+export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
+  console.log('SupportTickets component mounting...');
   const { theme, toggleTheme } = useTheme();
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,13 +96,6 @@ export function Dashboard() {
 
   // Chart type toggle
   const [chartType, setChartType] = useState<'pie' | 'radar'>('radar');
-  const [costViewType, setCostViewType] = useState<'table' | 'chart'>('table');
-  const [visibleUrgencies, setVisibleUrgencies] = useState<Record<string, boolean>>({
-    Promotion: true,
-    Low: true,
-    Medium: true,
-    High: true
-  });
 
   // Non-billable items visibility toggle
   const [hideNonBillable, setHideNonBillable] = useState<boolean>(() => {
@@ -124,9 +115,6 @@ export function Dashboard() {
   // Archive section visibility
   const [showArchived, setShowArchived] = useState(false);
 
-  // Twenty sync status
-  const [syncStatus, setSyncStatus] = useState<TwentySyncResponse | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Row expansion removed - request summaries now always wrap
 
@@ -407,13 +395,15 @@ export function Dashboard() {
 
   // Get billable and non-billable requests (based on Category instead of Status)
   // IMPORTANT: Only include 'active' status requests in calculations
+  // Migration items are billed at $0.00, so they're excluded from billable calculations
   const billableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    request.Category !== 'Non-billable'
+    request.Category !== 'Non-billable' &&
+    request.Category !== 'Migration'
   );
   const nonBillableRequests = requests.filter(request =>
     request.Status === 'active' &&
-    request.Category === 'Non-billable'
+    (request.Category === 'Non-billable' || request.Category === 'Migration')
   );
 
   // Get archived requests - sorted chronologically
@@ -460,9 +450,7 @@ export function Dashboard() {
   )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()); // Sort chronologically (oldest first)
 
   useEffect(() => {
-    // Load data and sync status
     loadData();
-    loadSyncStatus();
   }, []);
 
   // Save hideNonBillable preference to localStorage
@@ -539,36 +527,6 @@ export function Dashboard() {
     }
   };
 
-  // Load Twenty sync status
-  const loadSyncStatus = async () => {
-    try {
-      const status = await getTwentySyncStatus();
-      setSyncStatus(status);
-    } catch (error) {
-      console.error('Failed to load sync status:', error);
-    }
-  };
-
-  // Handle Twenty sync
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await triggerTwentySync();
-      console.log('Sync completed:', result);
-
-      // Reload sync status and data after successful sync
-      await loadSyncStatus();
-      await loadData();
-
-      // Show success message (you could add a toast notification here)
-      console.log(`✅ Sync successful: ${result.ticketsAdded} added, ${result.ticketsUpdated} updated`);
-    } catch (error) {
-      console.error('Sync failed:', error);
-      // Show error message (you could add a toast notification here)
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   // Filter and sort requests by selected year, month, day, column filters, and search query
   const filteredAndSortedRequests = (() => {
@@ -582,9 +540,9 @@ export function Dashboard() {
       const requestMonth = requestDate.getMonth() + 1; // JavaScript months are 0-indexed
       const requestDayOfWeek = getDayOfWeek(request.Date);
 
-      // Apply non-billable filter if toggle is on
+      // Apply non-billable filter if toggle is on (includes Migration which is billed at $0)
       if (hideNonBillable) {
-        const isNonBillable = request.Category === 'Non-billable';
+        const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
         if (isNonBillable) return false;
       }
 
@@ -781,7 +739,49 @@ export function Dashboard() {
     return true;
   });
   const allCategoryDataForCharts = processCategoryData(allRequestsForCharts);
-  const filteredCosts = calculateCosts(billableFilteredRequests);
+
+  // Create filtered dataset for calendar heatmap - includes ALL active requests (billable + non-billable)
+  // This shows the full rhythm and cadence of communication, excluding only archived requests
+  const activeRequestsForCalendar = requests.filter(request => {
+    // Only include active requests (exclude archived)
+    if (request.Status !== 'active') return false;
+
+    const requestDate = parseLocalDate(request.Date);
+    const requestYear = requestDate.getFullYear();
+    const requestMonth = requestDate.getMonth() + 1;
+
+    if (requestYear !== selectedYear) return false;
+    if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false;
+
+    return true;
+  });
+
+  // Generate calendar-specific data that includes ALL active requests
+  const getCalendarData = () => {
+    try {
+      if (timeViewMode === 'day' && selectedDay !== 'all') {
+        // For day view, use active requests filtered to the selected day
+        const dayActiveRequests = activeRequestsForCalendar.filter(r => r.Date === selectedDay);
+        return processHourlyRequests(dayActiveRequests, selectedDay);
+      } else {
+        // For month/all views, use all active requests for the calendar
+        return processDailyRequests(activeRequestsForCalendar);
+      }
+    } catch (error) {
+      console.error('Error getting calendar data:', error);
+      return [];
+    }
+  };
+
+  const calendarData = getCalendarData();
+
+  // Calculate current month string for free hours policy (YYYY-MM format)
+  const getCurrentMonthString = () => {
+    if (selectedMonth === 'all') return undefined;
+    return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+  };
+
+  const filteredCosts = calculateCosts(billableFilteredRequests, getCurrentMonthString());
 
   // Calculate monthly costs when viewing all months
   const calculateMonthlyCosts = () => {
@@ -807,13 +807,13 @@ export function Dashboard() {
       }
     });
 
-    // Sort months and calculate costs for each
+    // Sort months and calculate costs for each (with month string for free hours)
     Array.from(requestsByMonth.keys())
       .sort()
       .forEach(key => {
         const [year, month] = key.split('-').map(Number);
         const monthRequests = requestsByMonth.get(key)!;
-        const costs = calculateCosts(monthRequests);
+        const costs = calculateCosts(monthRequests, key); // Pass YYYY-MM format
 
         monthlyCosts.push({
           month: monthNames[month - 1],
@@ -832,6 +832,7 @@ export function Dashboard() {
   const mostActiveTimeRange = getMostActiveTimeRange(billableFilteredRequests);
   const busiestDayOfWeek = getBusiestDayOfWeek(billableFilteredRequests);
   const topCategory = getTopCategory(billableFilteredRequests);
+
 
   // Scroll position preservation effect
   useEffect(() => {
@@ -1483,42 +1484,18 @@ export function Dashboard() {
 
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <LoadingState variant="dashboard" />;
   }
 
   return (
-    <div>
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Sticky Header with Title and Controls - Full Width */}
-      <div className="sticky top-0 z-40 bg-background border-b border-border">
-        <div className="container mx-auto py-4">
+      <div className="flex-shrink-0 bg-background border-b border-border">
+        <div className="px-6 py-3">
           <div className="flex items-start justify-between">
-            {/* Left side - Title and Database Status */}
+            {/* Left side - Title */}
             <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold tracking-tight">Request Analysis Dashboard</h1>
-              {apiAvailable && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs">
-                  <Info className="w-3 h-3" />
-                  <span>Connected to Database</span>
-                </div>
-              )}
-              {/* Twenty Sync Status */}
-              {syncStatus?.syncStatus && (
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs ${
-                  syncStatus.syncStatus.last_sync_status === 'success'
-                    ? 'bg-blue-100 text-blue-800'
-                    : syncStatus.syncStatus.last_sync_status === 'failed'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  <Ticket className="w-3 h-3" />
-                  <span>
-                    {syncStatus.totalTickets} tickets
-                    {syncStatus.syncStatus.last_sync_at && (
-                      ` (${new Date(syncStatus.syncStatus.last_sync_at).toLocaleDateString()})`
-                    )}
-                  </span>
-                </div>
-              )}
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Support</h1>
             </div>
 
             {/* Right side - Controls */}
@@ -1576,50 +1553,17 @@ export function Dashboard() {
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-muted-foreground">View:</span>
-              <div className="inline-flex rounded-md" role="group">
-                {[
-                  { mode: 'all' as const, label: 'All' },
-                  { mode: 'month' as const, label: 'Month' },
-                  { mode: 'day' as const, label: 'Day' }
-                ].map((item, index, array) => (
-                  <button
-                    key={item.mode}
-                    onClick={() => handleTimeViewModeChange(item.mode)}
-                    className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                      timeViewMode === item.mode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
-                    } ${
-                      index === 0 ? 'rounded-l-md' :
-                      index === array.length - 1 ? 'rounded-r-md' : ''
-                    } border ${
-                      index > 0 ? 'border-l-0' : ''
-                    } ${
-                      timeViewMode === item.mode ? 'border-blue-600' : 'border-border'
-                    }`}
-                    title={`View by ${item.label.toLowerCase()}`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <ToggleGroup
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'month', label: 'Month' },
+                  { value: 'day', label: 'Day' }
+                ]}
+                value={timeViewMode}
+                onValueChange={(value) => handleTimeViewModeChange(value as 'all' | 'month' | 'day')}
+                size="sm"
+              />
             </div>
-
-            {/* Twenty Sync Button */}
-            {apiAvailable && (
-              <button
-                onClick={handleSync}
-                disabled={isSyncing}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isSyncing
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                }`}
-              >
-                <Ticket className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
-                <span>{isSyncing ? 'Syncing...' : 'Sync Tickets'}</span>
-              </button>
-            )}
 
             {/* Theme Toggle */}
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -1629,102 +1573,52 @@ export function Dashboard() {
       </div>
 
       {/* Main Content Container */}
-      <div className="container mx-auto py-8 space-y-6">
-        {/* Info section - Not sticky */}
-        <div className="space-y-2">
-        <p className="text-muted-foreground">
-          {hideNonBillable ? (
-            <>
-              Showing <span className="font-medium">{billableFilteredRequests.length}</span> billable requests
-              <span className="text-orange-600 dark:text-orange-400 ml-2">
-                ({nonBillableRequests.length} non-billable hidden)
-              </span>
-            </>
-          ) : (
-            <>
-              Showing <span className="font-medium">{billableFilteredRequests.length + nonBillableRequests.length}</span> total requests
-              {nonBillableRequests.length > 0 && (
-                <span className="text-muted-foreground ml-2">
-                  ({billableRequests.length} billable, {nonBillableRequests.length} non-billable)
-                </span>
-              )}
-            </>
-          )}
-        </p>
-        <div className="flex items-center space-x-3">
-          {false ? (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-md text-xs">
-              <Info className="w-3 h-3" />
-              <span>Working Version (CSV)</span>
-            </div>
-          ) : null}
-          {false && (
-            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-md text-xs">
-              <Clock className="w-3 h-3" />
-              <span>Unsaved changes - click Save button</span>
-            </div>
-          )}
-          {!apiAvailable && (
-            <span className="text-xs text-muted-foreground">
-              Manual save required • Original data protected
-            </span>
-          )}
-        </div>
-      </div>
+      <div className="flex-1 overflow-auto">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* All Scorecards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <Scorecard
-          title="Total Requests"
+          title="Billable Requests"
           value={billableFilteredRequests.length}
           description={(() => {
-            const smsCount = billableFilteredRequests.filter(r => (r.source || 'sms') === 'sms').length;
-            const ticketCount = billableFilteredRequests.filter(r => r.source === 'ticket').length;
-            const otherCount = billableFilteredRequests.filter(r => r.source && r.source !== 'sms' && r.source !== 'ticket').length;
-
-            const parts = [];
-            if (smsCount > 0) parts.push(`${smsCount} Text`);
-            if (ticketCount > 0) parts.push(`${ticketCount} Ticket`);
-            if (otherCount > 0) parts.push(`${otherCount} Other`);
-
-            return parts.length > 0 ? parts.join(', ') : (
-              timeViewMode === 'day' && selectedDay !== 'all'
-                ? `Across ${chartData.length} hours`
-                : `Across ${chartData.length} days`
-            );
+            const totalActive = requests.filter(r => r.Status === 'active').length;
+            const billablePercentage = totalActive > 0
+              ? Math.round((billableFilteredRequests.length / totalActive) * 100)
+              : 0;
+            return `${billablePercentage}% billable`;
           })()}
           icon={<AlertCircle className="h-4 w-4 text-muted-foreground" />}
         />
 
         <Scorecard
-          title="Total Hours"
-          value={billableFilteredRequests.reduce((sum, request) => sum + (request.EstimatedHours || 0), 0).toFixed(2)}
-          description="Actual hours recorded"
-          icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-        />
-
-        <Scorecard
           title="Total Cost"
-          value={`$${formatCurrency(filteredCosts?.totalCost || 0)}`}
-          description="Tiered pricing"
+          value={
+            filteredCosts?.freeHoursSavings > 0 ? (
+              <div className="flex items-center gap-2">
+                <span>{formatCurrency(filteredCosts.netTotalCost)}</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
+                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />
+                  {filteredCosts.freeHoursApplied}h
+                </span>
+              </div>
+            ) : (
+              formatCurrency(filteredCosts?.totalCost || 0)
+            )
+          }
+          description={
+            filteredCosts?.freeHoursSavings > 0
+              ? `Saved ${formatCurrency(filteredCosts.freeHoursSavings)} in free hours`
+              : "Tiered pricing"
+          }
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
 
         <Scorecard
-          title="High Priority"
-          value={billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length}
-          description={`${billableFilteredRequests.length > 0 ? Math.round((billableFilteredRequests.filter(r => r.Urgency === 'HIGH').length / billableFilteredRequests.length) * 100) : 0}% of billable`}
-          icon={<AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
-        />
-      </div>
-
-      {/* Activity Insights Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Scorecard
           title="Most Active Day"
           value={
             <div>
-              <div className="text-2xl font-bold">
+              <div>
                 {mostActiveDay.displayText}
               </div>
               {mostActiveDay.subtitle && (
@@ -1761,677 +1655,76 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Requests Over Time - Full Width */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {timeViewMode === 'day' && selectedDay !== 'all'
-              ? (() => {
-                  try {
-                    return `Requests by Hour - ${parseLocalDate(selectedDay).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric'
-                    })}`;
-                  } catch (error) {
-                    return `Requests by Hour - ${selectedDay}`;
-                  }
-                })()
-              : timeViewMode === 'month' && selectedMonth !== 'all'
-              ? `Request Calendar - ${monthNames[selectedMonth - 1]} ${selectedYear}`
-              : 'Request Calendar Overview'
-            }
-          </CardTitle>
-          <CardDescription>
-            {timeViewMode === 'day' && selectedDay !== 'all'
-              ? 'Hourly view not available in calendar format'
-              : 'Daily request intensity shown as color-coded calendar grid'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RequestCalendarHeatmap
-            data={chartData}
-            isHourlyView={timeViewMode === 'day' && selectedDay !== 'all'}
-            onDateClick={handleCalendarDateClick}
-            selectedDate={selectedDay === 'all' ? undefined : selectedDay}
-            onBackToCalendar={handleBackToCalendar}
-            isSingleMonth={selectedMonth !== 'all'}
+      {/* Cost Tracker - Full Width */}
+      {filteredCosts && (
+        <div className="w-full">
+          <CostTrackerCard
+            costData={filteredCosts}
+            monthlyCosts={monthlyCosts || undefined}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            gridSpan=""
           />
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Charts and Cost Breakdown Side by Side */}
-      <div className="grid gap-8 md:grid-cols-5">
-        {filteredCosts && (
-          <Card className="flex flex-col h-full md:col-span-3">
-            <CardHeader>
-              <CardTitle>Cost Calculation</CardTitle>
-              <CardDescription>
-                {selectedMonth === 'all'
-                  ? `Monthly breakdown for ${selectedYear}`
-                  : 'Cost breakdown by service tier (0.5 hour increments)'}
-              </CardDescription>
-              <div className="flex gap-1 mt-2">
-                <button
-                  className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
-                    costViewType === 'table'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  onClick={() => setCostViewType('table')}
-                >
-                  Table
-                </button>
-                <button
-                  className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
-                    costViewType === 'chart'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                  onClick={() => setCostViewType('chart')}
-                >
-                  Chart
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              {costViewType === 'table' ? (
-                // Table view
-                selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? (
-                  // Monthly breakdown view - Urgency by Month
-                  <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Urgency</th>
-                        {monthlyCosts.map((monthData) => (
-                          <th key={`${monthData.year}-${monthData.month}`} className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">
-                            {monthData.month.substring(0, 3)}
-                          </th>
-                        ))}
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Promotion Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Promotion</td>
-                        {monthlyCosts.map((monthData) => (
-                          <td key={`promotion-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            {monthData.costs.promotionalCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.promotionalCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                        ))}
-                        <td className="py-3 px-4 font-semibold">
-                          {(() => {
-                            const total = monthlyCosts.reduce((sum, m) => sum + m.costs.promotionalCost, 0);
-                            return total === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(total)}</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                      {/* Low Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Low</td>
-                        {monthlyCosts.map((monthData) => (
-                          <td key={`low-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            {monthData.costs.regularCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.regularCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                        ))}
-                        <td className="py-3 px-4 font-semibold">
-                          {(() => {
-                            const total = monthlyCosts.reduce((sum, m) => sum + m.costs.regularCost, 0);
-                            return total === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(total)}</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                      {/* Medium Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">Medium</td>
-                        {monthlyCosts.map((monthData) => (
-                          <td key={`medium-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            {monthData.costs.sameDayCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.sameDayCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                        ))}
-                        <td className="py-3 px-4 font-semibold">
-                          {(() => {
-                            const total = monthlyCosts.reduce((sum, m) => sum + m.costs.sameDayCost, 0);
-                            return total === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(total)}</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                      {/* High Row */}
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4 font-medium">High</td>
-                        {monthlyCosts.map((monthData) => (
-                          <td key={`high-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            {monthData.costs.emergencyCost === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(monthData.costs.emergencyCost)}</span>
-                              </div>
-                            )}
-                          </td>
-                        ))}
-                        <td className="py-3 px-4 font-semibold">
-                          {(() => {
-                            const total = monthlyCosts.reduce((sum, m) => sum + m.costs.emergencyCost, 0);
-                            return total === 0 ? (
-                              <div className="text-center">-</div>
-                            ) : (
-                              <div className="flex justify-between items-center">
-                                <span>$</span>
-                                <span>{formatCurrency(total)}</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                      {/* Total Row */}
-                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-3 px-4">Total</td>
-                        {monthlyCosts.map((monthData) => (
-                          <td key={`total-${monthData.year}-${monthData.month}`} className="py-3 px-4">
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(monthData.costs.totalCost)}</span>
-                            </div>
-                          </td>
-                        ))}
-                        <td className="py-3 px-4">
-                          <div className="flex justify-between items-center">
-                            <span>$</span>
-                            <span>{formatCurrency(monthlyCosts.reduce((sum, m) => sum + m.costs.totalCost, 0))}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                // Regular tier breakdown view
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-sm text-muted-foreground">Service Type</th>
-                        <th className="text-center py-3 px-4 font-medium text-sm text-muted-foreground">Rate</th>
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Hours</th>
-                        <th className="text-right py-3 px-4 font-medium text-sm text-muted-foreground">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Promotion</td>
-                        <td className="text-center py-3 px-4">$125/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {filteredCosts.promotionalHours === 0 ? '-' : filteredCosts.promotionalHours.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 font-semibold">
-                          {filteredCosts.promotionalCost === 0 ? (
-                            <div className="text-center">-</div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(filteredCosts.promotionalCost)}</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Low</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[0].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {filteredCosts.regularHours === 0 ? '-' : filteredCosts.regularHours.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 font-semibold">
-                          {filteredCosts.regularCost === 0 ? (
-                            <div className="text-center">-</div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(filteredCosts.regularCost)}</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">Medium</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[1].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {filteredCosts.sameDayHours === 0 ? '-' : filteredCosts.sameDayHours.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 font-semibold">
-                          {filteredCosts.sameDayCost === 0 ? (
-                            <div className="text-center">-</div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(filteredCosts.sameDayCost)}</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="border-b hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="py-3 px-4">High</td>
-                        <td className="text-center py-3 px-4">${PRICING_CONFIG.tiers[2].rate}/hr</td>
-                        <td className="text-right py-3 px-4 font-semibold">
-                          {filteredCosts.emergencyHours === 0 ? '-' : filteredCosts.emergencyHours.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 font-semibold">
-                          {filteredCosts.emergencyCost === 0 ? (
-                            <div className="text-center">-</div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <span>$</span>
-                              <span>{formatCurrency(filteredCosts.emergencyCost)}</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="bg-gray-50 dark:bg-gray-800/50 font-bold">
-                        <td className="py-3 px-4">Total</td>
-                        <td className="text-center py-3 px-4">-</td>
-                        <td className="text-right py-3 px-4">{(filteredCosts.regularHours + filteredCosts.sameDayHours + filteredCosts.emergencyHours + filteredCosts.promotionalHours).toFixed(2)}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex justify-between items-center">
-                            <span>$</span>
-                            <span>{formatCurrency(filteredCosts.totalCost)}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                )
-              ) : (
-                // Chart view
-                (() => {
-                  // Prepare data for stacked bar chart
-                  if (selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0) {
-                    // Transform data for monthly view
-                    const chartData = monthlyCosts.map(month => ({
-                      month: month.month.substring(0, 3),
-                      Promotion: month.costs.promotionalCost,
-                      Low: month.costs.regularCost,
-                      Medium: month.costs.sameDayCost,
-                      High: month.costs.emergencyCost,
-                      totalCost: month.costs.promotionalCost + month.costs.regularCost + month.costs.sameDayCost + month.costs.emergencyCost,
-                      totalHours: month.costs.promotionalHours + month.costs.regularHours + month.costs.sameDayHours + month.costs.emergencyHours,
-                    }));
+      {/* Request Calendar and Categories - Side by Side on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4 sm:gap-6">
+        {/* Request Calendar - 3fr on desktop */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {timeViewMode === 'day' && selectedDay !== 'all'
+                ? (() => {
+                    try {
+                      return `Requests by Hour - ${parseLocalDate(selectedDay).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric'
+                      })}`;
+                    } catch (error) {
+                      return `Requests by Hour - ${selectedDay}`;
+                    }
+                  })()
+                : timeViewMode === 'month' && selectedMonth !== 'all'
+                ? `Request Calendar - ${monthNames[selectedMonth - 1]} ${selectedYear}`
+                : 'Request Calendar Overview'
+              }
+            </CardTitle>
+            <CardDescription>
+              {timeViewMode === 'day' && selectedDay !== 'all'
+                ? 'Hourly view not available in calendar format'
+                : 'Daily request intensity shown as color-coded calendar grid'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RequestCalendarHeatmap
+              data={calendarData}
+              isHourlyView={timeViewMode === 'day' && selectedDay !== 'all'}
+              onDateClick={handleCalendarDateClick}
+              selectedDate={selectedDay === 'all' ? undefined : selectedDay}
+              onBackToCalendar={handleBackToCalendar}
+              isSingleMonth={selectedMonth !== 'all'}
+            />
+          </CardContent>
+        </Card>
 
-                    return (
-                      <ResponsiveContainer width="100%" height={400}>
-                        <ComposedChart data={chartData}>
-                          <defs>
-                            <pattern id="diagonalStripesMonthly" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                            </pattern>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
-                          <XAxis
-                            dataKey="month"
-                            tick={{ fill: '#374151' }}
-                            className="dark:[&_text]:fill-gray-300"
-                          />
-                          <YAxis
-                            yAxisId="cost"
-                            tickFormatter={(value) => `$${(value).toLocaleString()}`}
-                            tick={{ fill: '#374151' }}
-                            className="dark:[&_text]:fill-gray-300"
-                          />
-                          <YAxis
-                            yAxisId="hours"
-                            orientation="right"
-                            tickFormatter={(value) => `${value}h`}
-                            tick={{ fill: '#6B7280' }}
-                            className="dark:[&_text]:fill-gray-400"
-                          />
-                          <Tooltip
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                const totalCost = data.totalCost || 0;
-
-                                // Define the correct order
-                                const orderMap: Record<string, number> = {
-                                  'Promotion': 1,
-                                  'Low': 2,
-                                  'Medium': 3,
-                                  'High': 4
-                                };
-
-                                // Sort payload according to the defined order
-                                const sortedPayload = payload
-                                  .filter((entry: any) => entry.dataKey !== 'totalHours' && entry.dataKey !== 'totalCost')
-                                  .sort((a: any, b: any) => {
-                                    return (orderMap[a.name] || 999) - (orderMap[b.name] || 999);
-                                  });
-
-                                return (
-                                  <div style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                    border: '1px solid #E5E7EB',
-                                    borderRadius: '6px',
-                                    padding: '10px'
-                                  }}>
-                                    <p style={{ color: '#111827', fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
-                                    {sortedPayload.map((entry: any, index: number) => (
-                                      <p key={`item-${index}`} style={{ color: entry.color, margin: '4px 0' }}>
-                                        {entry.name}: ${formatCurrency(entry.value)}
-                                      </p>
-                                    ))}
-                                    <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
-                                      <p style={{ color: '#111827', fontWeight: 'bold' }}>
-                                        Total Cost: ${formatCurrency(totalCost)}
-                                      </p>
-                                      <p style={{ color: '#DC2626', marginTop: '4px' }}>
-                                        Total Hours: {data.totalHours.toFixed(1)}h
-                                      </p>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Legend
-                            wrapperStyle={{ paddingTop: '20px' }}
-                            iconType="rect"
-                            content={(props) => {
-                              const { payload } = props;
-                              const customOrder = ['Promotion', 'Low', 'Medium', 'High'];
-                              const orderedPayload = customOrder.map(key =>
-                                payload?.find(item => item.value === key)
-                              ).filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined);
-
-                              const toggleUrgency = (urgency: string) => {
-                                setVisibleUrgencies(prev => ({
-                                  ...prev,
-                                  [urgency]: !prev[urgency]
-                                }));
-                              };
-
-                              const resetFilters = () => {
-                                setVisibleUrgencies({
-                                  Promotion: true,
-                                  Low: true,
-                                  Medium: true,
-                                  High: true
-                                });
-                              };
-
-                              // Check if filters have been modified from default (all true)
-                              const isModified = Object.values(visibleUrgencies).some(value => !value);
-
-                              return (
-                                <div>
-                                  {/* Interactive legend items */}
-                                  <ul style={{
-                                    listStyle: 'none',
-                                    margin: 0,
-                                    padding: 0,
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    gap: '20px'
-                                  }}>
-                                    {orderedPayload.map((entry, index) => entry ? (
-                                      <li
-                                        key={`item-${index}`}
-                                        onClick={() => toggleUrgency(entry.value || '')}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '8px',
-                                          cursor: 'pointer',
-                                          opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.35,
-                                          transition: 'all 0.2s ease',
-                                          userSelect: 'none'
-                                        }}
-                                      >
-                                        <span style={{
-                                          display: 'inline-block',
-                                          width: '14px',
-                                          height: '14px',
-                                          borderRadius: '4px',
-                                          backgroundColor: entry.value === 'Promotion' ? '#60A5FA' : entry.color,
-                                          backgroundImage: entry.value === 'Promotion' && visibleUrgencies[entry.value || '']
-                                            ? 'repeating-linear-gradient(45deg, #60A5FA, #60A5FA 2px, #1E40AF 2px, #1E40AF 4px)'
-                                            : entry.value === 'Promotion'
-                                            ? 'repeating-linear-gradient(45deg, #D1D5DB, #D1D5DB 2px, #9CA3AF 2px, #9CA3AF 4px)'
-                                            : 'none',
-                                          opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.5
-                                        }} />
-                                        <span style={{ color: visibleUrgencies[entry.value || ''] ? '#374151' : '#9CA3AF' }}>
-                                          {entry.value}
-                                        </span>
-                                      </li>
-                                    ) : null)}
-
-                                    {/* Reset button - only shows when filters are modified */}
-                                    {isModified && (
-                                      <>
-                                        <li style={{
-                                          width: '1px',
-                                          height: '20px',
-                                          backgroundColor: '#E5E7EB',
-                                          margin: '0 10px'
-                                        }} />
-                                        <li
-                                          onClick={resetFilters}
-                                          style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            cursor: 'pointer',
-                                            padding: '2px 10px',
-                                            borderRadius: '4px',
-                                            fontSize: '13px',
-                                            color: '#6B7280',
-                                            backgroundColor: 'transparent',
-                                            transition: 'all 0.2s ease',
-                                            userSelect: 'none',
-                                            border: '1px solid transparent'
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.style.color = '#3B82F6';
-                                            e.currentTarget.style.backgroundColor = '#EFF6FF';
-                                            e.currentTarget.style.borderColor = '#BFDBFE';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.style.color = '#6B7280';
-                                            e.currentTarget.style.backgroundColor = 'transparent';
-                                            e.currentTarget.style.borderColor = 'transparent';
-                                          }}
-                                        >
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                                            <path d="M21 3v5h-5" />
-                                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                                            <path d="M8 21H3v-5" />
-                                          </svg>
-                                          Reset
-                                        </li>
-                                      </>
-                                    )}
-                                  </ul>
-                                </div>
-                              );
-                            }}
-                          />
-                          <Bar yAxisId="cost" dataKey="High" stackId="a" fill={visibleUrgencies.High ? "#1E40AF" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Medium" stackId="a" fill={visibleUrgencies.Medium ? "#3B82F6" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Low" stackId="a" fill={visibleUrgencies.Low ? "#93C5FD" : "#D1D5DB"} />
-                          <Bar yAxisId="cost" dataKey="Promotion" stackId="a" fill={visibleUrgencies.Promotion ? "url(#diagonalStripesMonthly)" : "#D1D5DB"}>
-                            <LabelList
-                              dataKey="totalCost"
-                              position="top"
-                              formatter={(value: number) => value > 0 ? `$${formatCurrency(value)}` : ''}
-                              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
-                            />
-                          </Bar>
-                          <Line yAxisId="hours" dataKey="totalHours" stroke="#DC2626" strokeWidth={3} dot={{ fill: '#DC2626', r: 5 }} />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    );
-                  } else if (filteredCosts) {
-                    // Transform data for service tier view
-                    const chartData = [
-                      { name: 'Promotion', hours: filteredCosts.promotionalHours, cost: filteredCosts.promotionalCost, fill: visibleUrgencies.Promotion ? 'url(#diagonalStripesTier)' : '#D1D5DB' },
-                      { name: 'Low', hours: filteredCosts.regularHours, cost: filteredCosts.regularCost, fill: visibleUrgencies.Low ? '#93C5FD' : '#D1D5DB' },
-                      { name: 'Medium', hours: filteredCosts.sameDayHours, cost: filteredCosts.sameDayCost, fill: visibleUrgencies.Medium ? '#3B82F6' : '#D1D5DB' },
-                      { name: 'High', hours: filteredCosts.emergencyHours, cost: filteredCosts.emergencyCost, fill: visibleUrgencies.High ? '#1E40AF' : '#D1D5DB' },
-                    ];
-
-                    return (
-                      <ResponsiveContainer width="100%" height={400}>
-                        <BarChart data={chartData}>
-                          <defs>
-                            <pattern id="diagonalStripesTier" patternUnits="userSpaceOnUse" width="8" height="8">
-                              <rect width="8" height="8" fill="#60A5FA" className="dark:fill-slate-300" />
-                              <path d="M0,8 L8,0" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M-2,2 L2,-2" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                              <path d="M6,10 L10,6" stroke="#1E40AF" strokeWidth="2" className="dark:stroke-slate-600" />
-                            </pattern>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
-                          <XAxis
-                            dataKey="name"
-                            tick={{ fill: '#374151' }}
-                            className="dark:[&_text]:fill-gray-300"
-                          />
-                          <YAxis
-                            tickFormatter={(value) => `$${(value).toLocaleString()}`}
-                            tick={{ fill: '#374151' }}
-                            className="dark:[&_text]:fill-gray-300"
-                          />
-                          <Tooltip
-                            content={({ active, payload, label }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                const allData = chartData;
-                                const totalCost = allData.reduce((sum, item) => sum + item.cost, 0);
-                                const totalHours = allData.reduce((sum, item) => sum + item.hours, 0);
-
-                                return (
-                                  <div style={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                    border: '1px solid #E5E7EB',
-                                    borderRadius: '6px',
-                                    padding: '10px'
-                                  }}>
-                                    <p style={{ color: '#111827', fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
-                                    <p style={{ color: '#374151', margin: '4px 0' }}>
-                                      Cost: ${formatCurrency(data.cost)}
-                                    </p>
-                                    <p style={{ color: '#374151', margin: '4px 0' }}>
-                                      Hours: {data.hours.toFixed(2)}
-                                    </p>
-                                    <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '8px', paddingTop: '8px' }}>
-                                      <p style={{ color: '#111827', fontSize: '12px' }}>
-                                        Total: ${formatCurrency(totalCost)} ({totalHours.toFixed(2)}h)
-                                      </p>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Bar dataKey="cost" name="Cost" shape={(props: any) => {
-                            const { fill, x, y, width, height } = props;
-                            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
-                          }}>
-                            <LabelList
-                              dataKey="cost"
-                              position="top"
-                              formatter={(value: number) => `$${formatCurrency(value)}`}
-                              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
-                            />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    );
-                  }
-                  return null;
-                })()
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="md:col-span-2">
+        {/* Request Categories Chart - 1fr on desktop */}
+        <Card>
           <CardHeader>
             <CardTitle>Request Categories</CardTitle>
             <CardDescription>Distribution of request types</CardDescription>
-            <div className="flex gap-1 mt-2">
-              <button
-                className={`px-3 py-1 text-xs rounded-l-md transition-colors ${
-                  chartType === 'pie'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('pie')}
-              >
-                Pie
-              </button>
-              <button
-                className={`px-3 py-1 text-xs rounded-r-md transition-colors ${
-                  chartType === 'radar'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-                onClick={() => setChartType('radar')}
-              >
-                Radar
-              </button>
+            <div className="mt-2">
+              <ToggleGroup
+                options={[
+                  { value: 'pie', label: 'Pie' },
+                  { value: 'radar', label: 'Radar' }
+                ]}
+                value={chartType}
+                onValueChange={(value) => setChartType(value as 'pie' | 'radar')}
+                size="sm"
+              />
             </div>
           </CardHeader>
           <CardContent>
@@ -2447,7 +1740,7 @@ export function Dashboard() {
       {/* Request Table */}
       <Card>
         {/* Sticky Header for Billable Requests */}
-        <CardHeader className="sticky top-16 z-30 bg-card border-b border-border rounded-t-lg">
+        <CardHeader className="sticky top-0 z-30 bg-card border-b border-border rounded-t-lg">
           <div className="space-y-3">
             {/* Title Row */}
             <div className="flex justify-between items-start">
@@ -2478,24 +1771,18 @@ export function Dashboard() {
                       />
                       <div className={`block w-12 h-7 rounded-full transition-all duration-300 ${
                         hideNonBillable
-                          ? 'bg-blue-600 dark:bg-blue-500'
+                          ? 'bg-black dark:bg-black'
                           : 'bg-gray-300 dark:bg-gray-600'
                       }`}>
-                        <div className={`absolute left-0.5 top-0.5 bg-white dark:bg-gray-200 w-6 h-6 rounded-full transition-transform duration-300 flex items-center justify-center ${
+                        <div className={`absolute left-0.5 top-0.5 bg-white dark:bg-gray-200 w-6 h-6 rounded-full transition-transform duration-300 ${
                           hideNonBillable ? 'transform translate-x-5' : ''
                         }`}>
-                          {/* Eye icon that changes based on state */}
-                          {hideNonBillable ? (
-                            <Eye className="w-3 h-3 text-blue-600 dark:text-blue-500" />
-                          ) : (
-                            <EyeOff className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                          )}
                         </div>
                       </div>
                     </div>
 
                     {/* ON indicator */}
-                    <span className={`text-xs font-medium ml-2 mr-3 transition-opacity ${hideNonBillable ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-muted-foreground/50'}`}>
+                    <span className={`text-xs font-medium ml-2 mr-3 transition-opacity ${hideNonBillable ? 'text-black dark:text-white font-semibold' : 'text-muted-foreground/50'}`}>
                       ON
                     </span>
 
@@ -2670,8 +1957,104 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="overflow-visible" style={{position: 'static'}}>
-            <Table>
+          {/* Active Filters Display */}
+          {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Category Filters */}
+              {categoryFilter.map(category => (
+                <div key={`category-${category}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Category:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{category}</span>
+                  <button
+                    onClick={() => {
+                      setCategoryFilter(categoryFilter.filter(c => c !== category));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Urgency Filters */}
+              {urgencyFilter.map(urgency => (
+                <div key={`urgency-${urgency}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Urgency:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{urgency}</span>
+                  <button
+                    onClick={() => {
+                      setUrgencyFilter(urgencyFilter.filter(u => u !== urgency));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Source Filters */}
+              {sourceFilter.map(source => (
+                <div key={`source-${source}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Source:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{source === 'sms' ? 'Text' : source}</span>
+                  <button
+                    onClick={() => {
+                      setSourceFilter(sourceFilter.filter(s => s !== source));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Day Filters */}
+              {dayFilter.map(day => (
+                <div key={`day-${day}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Day:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{day}</span>
+                  <button
+                    onClick={() => {
+                      setDayFilter(dayFilter.filter(d => d !== day));
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Date Filter */}
+              {dateFilter !== 'all' && (
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+                  <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{dateFilter}</span>
+                  <button
+                    onClick={() => {
+                      setDateFilter('all');
+                      setCurrentPage(1);
+                    }}
+                    className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="overflow-x-auto -mx-4 sm:-mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <Table>
               <TableHeader>
                 <TableRow>
                 <TableHead className="w-12">
@@ -2976,10 +2359,10 @@ export function Dashboard() {
                   r.Time === request.Time && 
                   r.Request_Summary === request.Request_Summary
                 );
-                const isNonBillable = request.Category === 'Non-billable';
+                const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration';
                 return (
-                  <TableRow 
-                    key={filteredIndex} 
+                  <TableRow
+                    key={filteredIndex}
                     className={`cursor-pointer transition-colors ${
                       isNonBillable ? 'opacity-50 bg-gray-50' : ''
                     } ${
@@ -3001,13 +2384,13 @@ export function Dashboard() {
                           <TooltipTrigger asChild>
                             <div className="inline-flex items-center justify-center">
                               {request.source === 'ticket' ? (
-                                <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                                <Ticket className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Ticket System" />
                               ) : request.source === 'email' ? (
-                                <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                                <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Email" />
                               ) : request.source === 'phone' ? (
-                                <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                                <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Phone" />
                               ) : (
-                                <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                                <MessageCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Text" />
                               )}
                             </div>
                           </TooltipTrigger>
@@ -3017,7 +2400,9 @@ export function Dashboard() {
                         </UITooltip>
                       </TooltipProvider>
                     </TableCell>
-                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{request.Date}</TableCell>
+                    <TableCell className={isNonBillable ? 'text-gray-400' : ''}>
+                      {request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}
+                    </TableCell>
                     <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>{getDayOfWeek(request.Date)}</TableCell>
                     <TableCell className={isNonBillable ? 'text-gray-400' : ''}>{formatTime(request.Time)}</TableCell>
                     <TableCell className="min-w-[200px] max-w-md">
@@ -3099,6 +2484,7 @@ export function Dashboard() {
               })}
               </TableBody>
             </Table>
+            </div>
           </div>
           
           <Pagination
@@ -3123,7 +2509,7 @@ export function Dashboard() {
               <div className="flex items-center space-x-2">
                 <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
                 <Archive className="w-4 h-4 text-muted-foreground" />
-                <h3 className="font-semibold text-muted-foreground">
+                <h3 className="text-sm font-semibold text-muted-foreground">
                   Archived Requests ({archivedRequests.length})
                 </h3>
               </div>
@@ -3157,13 +2543,13 @@ export function Dashboard() {
                                 <TooltipTrigger asChild>
                                   <div className="inline-flex items-center justify-center">
                                     {request.source === 'ticket' ? (
-                                      <Ticket className="h-4 w-4 text-green-500" aria-label="Request via Ticket System" />
+                                      <Ticket className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Ticket System" />
                                     ) : request.source === 'email' ? (
-                                      <Mail className="h-4 w-4 text-purple-500" aria-label="Request via Email" />
+                                      <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Email" />
                                     ) : request.source === 'phone' ? (
-                                      <Phone className="h-4 w-4 text-orange-500" aria-label="Request via Phone" />
+                                      <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Phone" />
                                     ) : (
-                                      <MessageCircle className="h-4 w-4 text-blue-500" aria-label="Request via Text" />
+                                      <MessageCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Text" />
                                     )}
                                   </div>
                                 </TooltipTrigger>
@@ -3190,12 +2576,12 @@ export function Dashboard() {
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               request.Urgency === 'HIGH'
-                                ? 'bg-red-100 text-red-800'
+                                ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900'
                                 : request.Urgency === 'MEDIUM'
-                                ? 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-gray-600 text-white dark:bg-gray-400 dark:text-gray-900'
                                 : request.Urgency === 'PROMOTION'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-green-100 text-green-800'
+                                ? 'bg-gray-500 text-white dark:bg-gray-500 dark:text-white'
+                                : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                             }`}>
                               {request.Urgency}
                             </span>
@@ -3203,7 +2589,7 @@ export function Dashboard() {
                           <TableCell>
                             <button
                               onClick={() => handleRestoreRequest(request.id, originalIndex)}
-                              className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-all duration-200"
+                              className="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all duration-200"
                               title="Restore request"
                             >
                               <RotateCcw className="w-4 h-4" />
@@ -3239,6 +2625,7 @@ The request will be completely removed and cannot be recovered.`}
         onCancel={cancelDelete}
         isDestructive={!apiAvailable}
       />
+        </div>
       </div>
     </div>
   );
