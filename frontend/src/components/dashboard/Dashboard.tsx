@@ -456,7 +456,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
                     <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
-                      <td className="py-4 px-4 text-right text-base whitespace-nowrap">GRAND TOTALS</td>
+                      <td colSpan={3} className="py-4 px-4 text-right text-base whitespace-nowrap">GRAND TOTALS</td>
                       <td className="py-4 px-4 text-right text-lg whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
@@ -808,7 +808,7 @@ function ProjectsSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={6} className="py-2 px-8">
+        <td colSpan={7} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -917,7 +917,7 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
           onToggle();
         }}
       >
-        <td colSpan={6} className="py-2 px-8">
+        <td colSpan={7} className="py-2 px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
