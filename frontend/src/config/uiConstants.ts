@@ -88,19 +88,19 @@ export const PROJECT_CATEGORY_BADGE_STYLES: Record<ProjectCategory, string> = {
 // ============================================================================
 
 // Compact style matching the "1 Free Multi-Form" design from screenshot
-// Uses lighter green background with sharp edges and no ring
+// Uses lighter green background with sharp edges
 export const CREDIT_BADGE_STYLE =
-  'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400';
+  'bg-green-100 text-green-800 ring-1 ring-green-800 dark:bg-green-950/20 dark:text-green-400 dark:ring-green-400';
 
 export const FREE_BADGE_STYLE =
-  'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400';
+  'bg-green-100 text-green-800 ring-1 ring-green-800 dark:bg-green-950/20 dark:text-green-400 dark:ring-green-400';
 
 // ============================================================================
 // COUNT BADGE CONFIGURATION (for "X sites", "X tickets", etc.)
 // ============================================================================
 
 export const COUNT_BADGE_STYLE =
-  'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:ring-slate-700';
+  'bg-white text-black ring-1 ring-black dark:bg-white dark:text-black dark:ring-black min-w-[2rem] justify-center';
 
 // ============================================================================
 // TOTAL REVENUE BADGE (prominent black pill for totals)
@@ -119,8 +119,8 @@ export const TOTAL_REVENUE_BADGE_STYLE =
  */
 
 // Monthly row totals (standard emphasis)
-export const TABLE_REVENUE_TEXT_SIZE = 'text-base';
-export const TABLE_REVENUE_FONT_WEIGHT = 'font-semibold';
+export const TABLE_REVENUE_TEXT_SIZE = 'text-sm';
+export const TABLE_REVENUE_FONT_WEIGHT = 'font-normal';
 
 // Grand total row (maximum emphasis)
 export const GRAND_TOTAL_TEXT_SIZE = 'text-lg';
@@ -133,17 +133,17 @@ export const GRAND_TOTAL_FONT_WEIGHT = 'font-bold';
 export const CATEGORY_COLORS = {
   tickets: {
     primary: '#000000',      // pure black (darkest for charts)
-    light: 'text-gray-700',
-    dark: 'dark:text-gray-300',
+    light: 'text-gray-500',
+    dark: 'dark:text-gray-400',
   },
   projects: {
     primary: '#374151',      // gray-700 (medium for charts)
-    light: 'text-gray-700',
-    dark: 'dark:text-gray-300',
+    light: 'text-gray-500',
+    dark: 'dark:text-gray-400',
   },
   hosting: {
     primary: '#9ca3af',      // gray-400 (lighter for charts)
-    light: 'text-gray-700',
-    dark: 'dark:text-gray-300',
+    light: 'text-gray-500',
+    dark: 'dark:text-gray-400',
   },
 } as const;
