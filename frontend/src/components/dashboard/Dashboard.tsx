@@ -7,7 +7,7 @@ import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../contexts/PeriodContext';
 import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Calculator, Gift, Download } from 'lucide-react';
 import { generateComprehensiveBilling } from '../../services/billingApi';
-import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../../utils/formatting';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate } from '../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../utils/csvExport';
 import { CountBadge, CreditBadge, BillingTypeBadge } from '../ui/BillingBadge';
 import {
@@ -386,7 +386,12 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
               title="Total Discounts"
               value={formatCurrency(totalDiscounts)}
               icon={<Zap className="h-4 w-4 text-muted-foreground" />}
-              description="All free credits applied"
+              description={
+                <span className="flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  After all Turbo credits applied
+                </span>
+              }
             />
           </div>
 
@@ -922,6 +927,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <td className="py-3 px-2 text-center text-muted-foreground text-xs w-8">
               {idx + 1}
             </td>
+            <td className="py-2 px-4 text-xs text-muted-foreground">
+              {formatDate(hosting.hostingStart)}
+            </td>
+            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+              {hosting.daysActive}/{hosting.daysInMonth} days
+            </td>
             <td className="py-2 px-4 text-xs">
               <div className="flex items-center gap-2">
                 <SiteFavicon websiteUrl={hosting.websiteUrl} size={14} />
@@ -931,12 +942,12 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
             <td className="py-2 px-4 text-xs">
               <BillingTypeBadge billingType={hosting.billingType} size="xs" />
             </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-              {hosting.daysActive}/{hosting.daysInMonth} days
-            </td>
-            <td className="py-2 px-4 text-xs text-right text-muted-foreground">
+            <td className="py-2 px-4 text-xs text-center text-muted-foreground">
               {hosting.creditApplied && (
-                <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
+                <div className="flex items-center justify-center gap-1">
+                  <Zap className="w-3 h-3 text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" />
+                  <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
+                </div>
               )}
             </td>
             <td className="py-2 px-4 text-right text-sm font-semibold">
