@@ -456,20 +456,20 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   {/* Grand Total Row */}
                   {filteredData.length > 1 && (
                     <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 font-bold divide-x divide-white/20 dark:divide-white/20">
-                      <td colSpan={3} className="py-4 px-4 text-left text-xl whitespace-nowrap">GRAND TOTALS</td>
-                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
+                      <td colSpan={3} className="py-4 px-4 text-left text-lg whitespace-nowrap">GRAND TOTALS</td>
+                      <td className="py-4 px-4 text-right text-lg font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalTicketsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-lg font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalProjectsRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-lg font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalHostingRevenue || 0).amount}</span>
                       </td>
-                      <td className="py-4 px-4 text-right text-xl font-bold whitespace-nowrap">
+                      <td className="py-4 px-4 text-right text-lg font-bold whitespace-nowrap">
                         <span>{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).symbol}</span>
                         <span className="tabular-nums">{formatCurrencyAccounting(displayTotals?.totalRevenue || 0).amount}</span>
                       </td>
