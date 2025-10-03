@@ -112,10 +112,10 @@ export function RevenueTrackerCard({
 
     return (
       <div className={TABLE_STYLES.container}>
-        <table className={TABLE_STYLES.table}>
-          <thead>
-            <tr className={TABLE_STYLES.headerRow}>
-              <th className={TABLE_STYLES.headerCell}>Category</th>
+          <table className={TABLE_STYLES.table}>
+            <thead>
+              <tr className={TABLE_STYLES.headerRow}>
+                <th className={TABLE_STYLES.headerCell}>Category</th>
               {monthlyData.map((month) => {
                 // Parse date manually to avoid timezone issues
                 const [year, monthNum] = month.month.split('-').map(Number);
@@ -236,8 +236,8 @@ export function RevenueTrackerCard({
                 <span className="tabular-nums">{formatCurrencyAccounting(totals.total).amount}</span>
               </td>
             </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
       </div>
     );
   };

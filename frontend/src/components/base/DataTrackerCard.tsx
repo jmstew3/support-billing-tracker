@@ -128,6 +128,10 @@ export const TABLE_STYLES = {
   totalRow: 'bg-gray-50 dark:bg-gray-800/50 font-bold',
   badge: 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black dark:bg-white text-white dark:text-black',
   successText: 'text-green-600 dark:text-green-400 font-semibold text-sm',
+
+  // Row number column
+  headerCellNumber: 'text-center py-4 px-2 font-semibold text-sm w-8',
+  cellNumber: 'text-center py-5 px-2 text-muted-foreground w-8',
 } as const;
 
 /**

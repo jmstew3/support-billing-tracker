@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap, Download } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate, formatCount } from '../../utils/formatting';
+import { exportHostingData, type HostingExportData } from '../../utils/csvExport';
 import { BillingTypeBadge, CountBadge, CreditBadge } from '../ui/BillingBadge';
 import { SiteFavicon } from '../ui/SiteFavicon';
-import { BADGE_BORDER_RADIUS, TOTAL_REVENUE_BADGE_STYLE } from '../../config/uiConstants';
 import type { MonthlyHostingSummary, BillingType } from '../../types/websiteProperty';
 
 interface MonthlyHostingCalculatorProps {
@@ -61,6 +61,31 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
   const grandTotalNet = monthlyBreakdown.reduce((sum, month) => sum + month.netMrr, 0);
   const grandTotalCredits = monthlyBreakdown.reduce((sum, month) => sum + (month.grossMrr - month.netMrr), 0);
 
+  // Handle CSV export for a specific month
+  const handleExportCSV = (monthData: MonthlyHostingSummary) => {
+    const exportData: HostingExportData = {
+      month: monthData.month,
+      sites: monthData.charges.map(charge => ({
+        name: charge.siteName,
+        websiteUrl: charge.websiteUrl,
+        hostingStart: charge.hostingStart,
+        hostingEnd: charge.hostingEnd,
+        billingType: charge.billingType,
+        daysActive: charge.daysActive,
+        grossAmount: charge.grossAmount,
+        creditAmount: charge.creditApplied ? charge.grossAmount : 0,
+        netAmount: charge.netAmount,
+      })),
+      totals: {
+        gross: monthData.grossMrr,
+        credits: monthData.grossMrr - monthData.netMrr,
+        net: monthData.netMrr,
+      },
+    };
+
+    exportHostingData(exportData);
+  };
+
   // Note: formatMonthLabel, formatDate now imported from utils/formatting
   // Note: Badge formatting now handled by BillingBadge component
 
@@ -98,6 +123,9 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
             {/* Main Table Header */}
             <thead className="[&_tr]:border-b" style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
               <tr className="border-b divide-x">
+                <th className="h-10 px-2 text-center align-middle font-medium text-muted-foreground w-8">
+                  #
+                </th>
                 <th
                   onClick={() => handleHeaderClick('name')}
                   className="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[250px] cursor-pointer hover:bg-muted/30 transition-colors"
@@ -199,9 +227,16 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                     <tr
                       key={`month-${monthData.month}`}
                       className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
-                      onClick={() => toggleMonth(monthData.month)}
+                      onClick={(e) => {
+                        // Prevent toggle when clicking export button
+                        if ((e.target as HTMLElement).closest('button')) {
+                          e.stopPropagation();
+                          return;
+                        }
+                        toggleMonth(monthData.month);
+                      }}
                     >
-                      <td colSpan={8} className="py-3 px-6">
+                      <td colSpan={9} className="py-3 px-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {isExpanded ? (
@@ -216,6 +251,15 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                                 text={formatCount(monthData.freeCredits, 'free credit')}
                                 size="sm"
                               />
+                            )}
+                            {isExpanded && (
+                              <button
+                                onClick={() => handleExportCSV(monthData)}
+                                className="ml-2 px-2 py-1 text-xs border border-input bg-background hover:bg-accent hover:text-accent-foreground flex items-center gap-1 transition-colors"
+                              >
+                                <Download className="w-3 h-3" />
+                                Export
+                              </button>
                             )}
                           </div>
                           <div className="font-bold text-base tabular-nums">{formatCurrency(monthData.netMrr)}</div>
@@ -288,12 +332,16 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
 
                             return sortDirection === 'asc' ? comparison : -comparison;
                           })
-                          .map((charge) => {
+                          .map((charge, index) => {
                           return (
                             <tr
                               key={charge.websitePropertyId}
                               className="border-b divide-x transition-colors hover:bg-muted/50"
                             >
+                              {/* Row Number */}
+                              <td className="py-3 px-2 text-center text-muted-foreground text-xs">
+                                {index + 1}
+                              </td>
                               {/* Website Name - with left indent */}
                               <td className="py-3 pl-12 pr-4 align-middle">
                                 <div className="flex items-center gap-2">
@@ -359,7 +407,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
 
                         {/* Month Subtotal Row */}
                         <tr className="bg-muted/30 border-b divide-x font-semibold">
-                          <td colSpan={5} className="py-3 px-6 text-right text-sm">
+                          <td colSpan={6} className="py-3 px-6 text-right text-sm">
                             <div className="flex items-center justify-end gap-2">
                               <span>{formatMonthLabel(monthData.month)} Subtotal</span>
                               <CountBadge text={formatCount(monthData.activeSites, 'site')} size="xs" />
@@ -391,7 +439,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
               {/* Grand Total Row */}
               {monthlyBreakdown.length > 1 && (
                 <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 divide-x divide-white/20 dark:divide-white/20 font-bold">
-                  <td colSpan={5} className="py-4 px-6 text-right text-base">
+                  <td colSpan={6} className="py-4 px-6 text-right text-base">
                     GRAND TOTAL
                   </td>
                   <td className="py-4 px-4 text-right text-lg">
