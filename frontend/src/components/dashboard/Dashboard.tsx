@@ -173,6 +173,11 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   const totalHostingRevenue = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingRevenue, 0) || 0;
   const averageHostingCost = totalHostingSiteMonths > 0 ? totalHostingRevenue / totalHostingSiteMonths : 0;
 
+  // Calculate total hosting credits savings (credits applied × $99 per site)
+  const totalHostingCreditsSavings = billingSummary?.monthlyBreakdown.reduce((sum, m) =>
+    sum + ((m.hostingCreditsApplied || 0) * 99),
+  0) || 0;
+
   // Calculate total discounts
   const totalDiscounts = billingSummary?.monthlyBreakdown.reduce((sum, m) =>
     sum +
@@ -180,7 +185,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     (m.projectsLandingPageSavings || 0) +
     (m.projectsMultiFormSavings || 0) +
     (m.projectsBasicFormSavings || 0) +
-    (m.hostingCreditsApplied || 0),
+    ((m.hostingCreditsApplied || 0) * 99), // Fixed: multiply count by $99
   0) || 0;
 
   // Handle Monthly Breakdown export
@@ -311,7 +316,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   ? (
                     <span className="flex items-center gap-1">
                       <Zap className="h-3 w-3 inline" />
-                      After {formatCurrency(totalFreeHoursSavings)} free hours credit
+                      After {formatCurrency(totalFreeHoursSavings)} in Turbo hours credits
                     </span>
                   )
                   : currentMonthString !== 'all' && currentMonthString < '2025-06'
@@ -328,7 +333,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
                   ? (
                     <span className="flex items-center gap-1">
                       <Zap className="h-3 w-3 inline" />
-                      After {formatCurrency(totalProjectCredits)} in Turbo credits
+                      After {formatCurrency(totalProjectCredits)} in Turbo project credits
                     </span>
                   )
                   : 'Ready to invoice projects'
@@ -343,7 +348,14 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
               )}
               icon={<Server className="h-4 w-4 text-muted-foreground" />}
               description={
-                currentMonthString === 'all' && billingSummary?.monthlyBreakdown.length
+                totalHostingCreditsSavings > 0
+                  ? (
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 inline" />
+                      After {formatCurrency(totalHostingCreditsSavings)} in Turbo hosting credits
+                    </span>
+                  )
+                  : currentMonthString === 'all' && billingSummary?.monthlyBreakdown.length
                   ? `As of ${formatMonthLabel(billingSummary.monthlyBreakdown[billingSummary.monthlyBreakdown.length - 1].month)}`
                   : 'Net hosting revenue'
               }

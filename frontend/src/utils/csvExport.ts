@@ -401,7 +401,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         if (month.ticketsFreeHoursSavings && month.ticketsFreeHoursSavings > 0) {
           rows.push([
             monthName,
-            'TICKETS CREDIT',
+            'TICKETS CREDIT - TURBO',
             '',
             '',
             `Free Support Hours (${month.ticketsFreeHoursApplied}h)`,
@@ -411,6 +411,19 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
             `-${formatCurrencyForCSV(month.ticketsFreeHoursSavings)}`
           ]);
         }
+
+        // Add tickets total (net amount after credits)
+        rows.push([
+          monthName,
+          'TICKETS TOTAL',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          formatCurrencyForCSV(month.ticketsRevenue)
+        ]);
       }
 
       // Add separator
@@ -466,7 +479,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         if (month.projectsLandingPageSavings && month.projectsLandingPageSavings > 0) {
           rows.push([
             monthName,
-            'PROJECTS CREDIT',
+            'PROJECTS CREDIT - TURBO',
             '',
             '',
             `Free Landing Page (${month.projectsLandingPageCredit})`,
@@ -479,7 +492,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         if (month.projectsMultiFormSavings && month.projectsMultiFormSavings > 0) {
           rows.push([
             monthName,
-            'PROJECTS CREDIT',
+            'PROJECTS CREDIT - TURBO',
             '',
             '',
             `Free Multi-Form (${month.projectsMultiFormCredit})`,
@@ -492,7 +505,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
         if (month.projectsBasicFormSavings && month.projectsBasicFormSavings > 0) {
           rows.push([
             monthName,
-            'PROJECTS CREDIT',
+            'PROJECTS CREDIT - TURBO',
             '',
             '',
             `Free Basic Forms (${month.projectsBasicFormCredit})`,
@@ -502,6 +515,19 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
             `-${formatCurrencyForCSV(month.projectsBasicFormSavings)}`
           ]);
         }
+
+        // Add projects total (net amount after credits)
+        rows.push([
+          monthName,
+          'PROJECTS TOTAL',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          formatCurrencyForCSV(month.projectsRevenue)
+        ]);
       }
 
       // Add separator
@@ -557,7 +583,7 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
           const creditAmount = (month.hostingGross || month.hostingRevenue) - month.hostingRevenue;
           rows.push([
             monthName,
-            'HOSTING CREDIT',
+            'HOSTING CREDIT - TURBO',
             '',
             '',
             `Free Hosting (${month.hostingCreditsApplied} sites)`,
@@ -567,6 +593,19 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
             `-${formatCurrencyForCSV(creditAmount)}`
           ]);
         }
+
+        // Add hosting total (net amount after credits)
+        rows.push([
+          monthName,
+          'HOSTING TOTAL',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          formatCurrencyForCSV(month.hostingRevenue)
+        ]);
       }
 
       // Add separator
@@ -579,61 +618,45 @@ export function exportMonthlyBreakdownDetailedData(data: MonthlyBreakdownExportD
     }
   });
 
-  // Add grand total row if there are multiple months and totals are provided
+  // Add grand total row at the end
+  rows.push(['', '', '', '', '', '', '', '', '']);
+
   if (data.months.length > 1 && data.totals) {
-    rows.push(['', '', '', '', '', '', '', '', '']);
+    // For multiple months, show the grand total from totals object
     rows.push([
+      '',
       'GRAND TOTAL',
       '',
       '',
-      '',
-      '',
+      'Total Revenue (All Sections)',
       '',
       '',
       '',
       formatCurrencyForCSV(data.totals.total)
     ]);
-
-    // Add breakdown of grand total
+  } else if (data.months.length === 1) {
+    // For single month, show grand total from the month's total revenue
     rows.push([
       '',
-      'Tickets Total',
+      'GRAND TOTAL',
+      '',
+      '',
+      'Total Revenue (All Sections)',
       '',
       '',
       '',
-      '',
-      '',
-      '',
-      formatCurrencyForCSV(data.totals.tickets)
-    ]);
-    rows.push([
-      '',
-      'Projects Total',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      formatCurrencyForCSV(data.totals.projects)
-    ]);
-    rows.push([
-      '',
-      'Hosting Total',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      formatCurrencyForCSV(data.totals.hosting)
+      formatCurrencyForCSV(data.months[0].totalRevenue)
     ]);
   }
 
   const csv = generateCSV(headers, rows);
+
+  // Format period for filename (replace hyphens with underscores)
+  const periodFormatted = selectedPeriod === 'all' ? 'all' : selectedPeriod.replace(/-/g, '_');
+
   const filename = selectedPeriod === 'all'
-    ? 'monthly_breakdown_detailed_all.csv'
-    : `monthly_breakdown_detailed_${selectedPeriod}.csv`;
+    ? 'velocity_monthly_breakdown_detailed_all.csv'
+    : `velocity_monthly_breakdown_detailed_${periodFormatted}.csv`;
 
   downloadCSV(filename, csv);
 }
