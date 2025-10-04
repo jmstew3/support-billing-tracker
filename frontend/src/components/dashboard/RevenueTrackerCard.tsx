@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   LabelList,
 } from 'recharts';
@@ -115,13 +115,13 @@ export function RevenueTrackerCard({
       month.hostingDetails.forEach(hosting => {
         if (hosting.billingType === 'FULL') {
           breakdown.FULL.count++;
-          breakdown.FULL.revenue += hosting.netAmount;
+          breakdown.FULL.revenue += hosting.grossAmount;
         } else if (hosting.billingType === 'PRORATED_START') {
           breakdown.PRORATED_START.count++;
-          breakdown.PRORATED_START.revenue += hosting.netAmount;
+          breakdown.PRORATED_START.revenue += hosting.grossAmount;
         } else if (hosting.billingType === 'PRORATED_END') {
           breakdown.PRORATED_END.count++;
-          breakdown.PRORATED_END.revenue += hosting.netAmount;
+          breakdown.PRORATED_END.revenue += hosting.grossAmount;
         }
       });
     });
@@ -330,7 +330,7 @@ export function RevenueTrackerCard({
               {...CHART_STYLES.yAxisSecondary}
             />
           )}
-          <Tooltip
+          <RechartsTooltip
             cursor={false}
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {

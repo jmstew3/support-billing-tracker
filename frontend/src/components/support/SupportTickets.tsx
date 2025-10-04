@@ -8,6 +8,7 @@ import { RequestCalendarHeatmap } from '../charts/RequestCalendarHeatmap';
 import CategoryRadarChart from '../charts/CategoryRadarChart';
 import { CategoryPieChart } from '../charts/CategoryPieChart';
 import { CostTrackerCard } from './CostTrackerCard';
+import { CategoryTrackerCard, type CategoryData, type MonthlyCategoryData } from './CategoryTrackerCard';
 import { Pagination } from '../shared/Pagination';
 import { EditableCell } from '../shared/EditableCell';
 import { EditableNumberCell } from '../shared/EditableNumberCell';
@@ -826,6 +827,107 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   };
 
   const monthlyCosts = calculateMonthlyCosts();
+
+  // Calculate category breakdown for single period
+  const calculateCategoryData = (requests: ChatRequest[]): CategoryData => {
+    const categories: CategoryData = {
+      support: 0,
+      hosting: 0,
+      forms: 0,
+      email: 0,
+      migration: 0,
+      advisory: 0,
+      nonBillable: 0,
+      website: 0,
+      total: 0,
+    };
+
+    requests.forEach(request => {
+      const category = request.Category || 'Support';
+      categories.total++;
+
+      switch (category.toLowerCase()) {
+        case 'support':
+          categories.support++;
+          break;
+        case 'hosting':
+          categories.hosting++;
+          break;
+        case 'forms':
+          categories.forms++;
+          break;
+        case 'email':
+          categories.email++;
+          break;
+        case 'migration':
+          categories.migration++;
+          break;
+        case 'advisory':
+          categories.advisory++;
+          break;
+        case 'non-billable':
+          categories.nonBillable++;
+          break;
+        case 'website':
+          categories.website++;
+          break;
+        default:
+          // Default unrecognized categories to support
+          categories.support++;
+          break;
+      }
+    });
+
+    return categories;
+  };
+
+  // Calculate monthly category breakdown when viewing all months
+  const calculateMonthlyCategoryData = (): MonthlyCategoryData[] | null => {
+    if (selectedMonth !== 'all') return null;
+
+    const monthlyCategoryData: MonthlyCategoryData[] = [];
+
+    // Group requests by month (using billableFilteredRequests to respect filters)
+    const requestsByMonth = new Map<string, ChatRequest[]>();
+
+    billableFilteredRequests.forEach(request => {
+      const requestDate = parseLocalDate(request.Date);
+      const year = requestDate.getFullYear();
+      const month = requestDate.getMonth() + 1;
+
+      // Only include months from the selected year
+      if (year === selectedYear) {
+        const key = `${year}-${String(month).padStart(2, '0')}`;
+        if (!requestsByMonth.has(key)) {
+          requestsByMonth.set(key, []);
+        }
+        requestsByMonth.get(key)!.push(request);
+      }
+    });
+
+    // Sort months and calculate category data for each
+    Array.from(requestsByMonth.keys())
+      .sort()
+      .forEach(key => {
+        const [year, month] = key.split('-').map(Number);
+        const monthRequests = requestsByMonth.get(key)!;
+        const categories = calculateCategoryData(monthRequests);
+
+        monthlyCategoryData.push({
+          month: monthNames[month - 1],
+          year,
+          categories,
+        });
+      });
+
+    return monthlyCategoryData.length > 0 ? monthlyCategoryData : null;
+  };
+
+  // Get category data based on view mode
+  const categoryBreakdownData = selectedMonth === 'all'
+    ? null
+    : calculateCategoryData(billableFilteredRequests);
+  const monthlyCategoryData = calculateMonthlyCategoryData();
 
   // Calculate activity metrics based on filtered billable requests
   const mostActiveDay = getMostActiveDay(billableFilteredRequests);
@@ -1661,6 +1763,19 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           <CostTrackerCard
             costData={filteredCosts}
             monthlyCosts={monthlyCosts || undefined}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            gridSpan=""
+          />
+        </div>
+      )}
+
+      {/* Category Breakdown Tracker - Full Width */}
+      {(categoryBreakdownData || monthlyCategoryData) && (
+        <div className="w-full">
+          <CategoryTrackerCard
+            categoryData={categoryBreakdownData || undefined}
+            monthlyCategoryData={monthlyCategoryData || undefined}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
             gridSpan=""
