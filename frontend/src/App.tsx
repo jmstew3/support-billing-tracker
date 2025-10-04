@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { SupportTickets } from './components/support/SupportTickets';
+import { SupportTickets } from './components/Support/SupportTickets';
 import { Sidebar } from './components/shared/Sidebar';
-import { Projects } from './components/projects/Projects';
-import { TurboHosting } from './components/hosting/TurboHosting';
-import { Dashboard } from './components/dashboard/Dashboard';
+import { Projects } from './components/Projects/Projects';
+import { TurboHosting } from './components/Hosting/TurboHosting';
+import { Dashboard } from './components/Dashboard/Dashboard';
 import { PeriodProvider } from './contexts/PeriodContext';
 
 function App() {
