@@ -260,7 +260,7 @@ export function calculateMonthlyHosting(
     }
   });
 
-  const netMrr = charges.reduce((sum, charge) => sum + charge.netAmount, 0);
+  const netMrr = sortedCharges.reduce((sum, charge) => sum + charge.netAmount, 0);
   const creditsApplied = freeCredits - creditsRemaining;
 
   return {
@@ -270,7 +270,7 @@ export function calculateMonthlyHosting(
     freeCredits,
     creditsApplied,
     netMrr: Math.round(netMrr * 100) / 100,
-    charges: charges.sort((a, b) => a.siteName.localeCompare(b.siteName)),
+    charges: sortedCharges.sort((a, b) => a.siteName.localeCompare(b.siteName)),
   };
 }
 

@@ -718,36 +718,22 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
                   {formatCurrency(ticket.rate)}/hr
                 </td>
                 <td className="py-2 px-4 text-xs text-right text-muted-foreground w-20">
-                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
-                    <div className="flex items-center justify-end gap-1">
-                      <Zap className="w-3 h-3 text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" />
-                      <span className="text-green-600 dark:text-green-400 font-semibold text-xs">{ticket.freeHoursApplied}h free</span>
-                    </div>
-                  ) : (
-                    `${ticket.hours.toFixed(2)}h`
-                  )}
+                  {ticket.hours.toFixed(2)}h
                 </td>
                 <td className="py-2 px-4 text-right text-sm w-32">
-                  {ticket.freeHoursApplied && ticket.freeHoursApplied > 0 ? (
-                    <span className="font-semibold text-green-600 dark:text-green-400">
-                      <span>{formatCurrencyAccounting(0).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
-                    </span>
-                  ) : (
-                    <span className="font-semibold">
-                      <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
-                      <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
-                    </span>
-                  )}
+                  <span className="font-semibold">
+                    <span>{formatCurrencyAccounting(ticket.amount).symbol}</span>
+                    <span className="tabular-nums">{formatCurrencyAccounting(ticket.amount).amount}</span>
+                  </span>
                 </td>
               </tr>
             );
           })}
 
-          {/* Total Hours Summary Row */}
+          {/* Gross Total Row */}
           <tr className="bg-black text-white dark:bg-black dark:text-white border-b border-t-2">
             <td colSpan={5} className="py-2 px-12 text-xs font-semibold">
-              Total Hours
+              Gross Total
             </td>
             <td className="py-2 px-4 text-xs text-right font-semibold">
               {monthData.ticketDetails.reduce((sum, ticket) => sum + ticket.hours, 0).toFixed(2)}h
@@ -757,29 +743,35 @@ function TicketsSection({ monthData, isExpanded, onToggle }: SectionProps) {
             </td>
           </tr>
 
-          {/* Free Hours Summary Row (if applicable) - shown after all tickets as a tally */}
+          {/* Free Hours Offset Row (if applicable) - shown as negative line item */}
           {hasFreeHours && (
-            <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-              <td colSpan={4} className="py-2 px-12 text-xs font-medium">
-                <Zap className="h-3 w-3 inline mr-1" />
-                Free Support Hours Benefit
-              </td>
-              <td className="py-2 px-4 text-xs text-left text-muted-foreground">
-                {/* Empty hours column */}
-              </td>
-              <td className="py-2 px-4 text-xs text-right text-muted-foreground">
-                Gross: {formatCurrency(monthData.ticketsGrossRevenue)}
-              </td>
-              <td className="py-2 px-4 text-right text-xs">
-                <div className="text-green-600 dark:text-green-400 font-semibold">
-                  <Zap className="h-3 w-3 inline mr-0.5" />
+            <>
+              <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+                <td colSpan={5} className="py-2 px-12 text-xs font-medium text-green-700 dark:text-green-400">
+                  <Zap className="h-3 w-3 inline mr-1 fill-green-600 dark:fill-green-400" />
+                  Free Support Hours Benefit
+                </td>
+                <td className="py-2 px-4 text-xs text-right font-semibold text-green-700 dark:text-green-400">
+                  -{monthData.ticketsFreeHoursApplied.toFixed(2)}h
+                </td>
+                <td className="py-2 px-4 text-right text-xs font-semibold text-green-700 dark:text-green-400">
                   -{formatCurrency(monthData.ticketsFreeHoursSavings)}
-                </div>
-                <div className="text-muted-foreground text-[10px]">
-                  {monthData.ticketsFreeHoursApplied}h free
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
+
+              {/* Net Billable Row - shows final amount client pays */}
+              <tr className="bg-blue-50 dark:bg-blue-950/20 border-b border-t">
+                <td colSpan={5} className="py-2 px-12 text-xs font-semibold text-blue-700 dark:text-blue-400">
+                  Net Billable
+                </td>
+                <td className="py-2 px-4 text-xs text-right font-semibold text-blue-700 dark:text-blue-400">
+                  {(monthData.ticketDetails.reduce((sum, ticket) => sum + ticket.hours, 0) - monthData.ticketsFreeHoursApplied).toFixed(2)}h
+                </td>
+                <td className="py-2 px-4 text-right text-xs font-semibold text-blue-700 dark:text-blue-400">
+                  {formatCurrency(monthData.ticketsRevenue)}
+                </td>
+              </tr>
+            </>
           )}
         </>
       )}
@@ -954,50 +946,79 @@ function HostingSection({ monthData, isExpanded, onToggle }: SectionProps) {
         </td>
       </tr>
 
-      {isExpanded &&
-        sortedHostingDetails.map((hosting, idx) => (
-          <tr key={hosting.websitePropertyId} className="border-b divide-x hover:bg-muted/30">
-            <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
-              {idx + 1}
-            </td>
-            <td className="py-2 px-4 text-xs text-muted-foreground">
-              {getEffectiveBillingDate(hosting, monthData.month)}
-            </td>
-            <td className="py-2 px-4 text-xs">
-              <div className="flex items-center gap-2">
-                <SiteFavicon websiteUrl={hosting.websiteUrl} size={14} />
-                <span>{hosting.siteName}</span>
-              </div>
-            </td>
-            <td className="py-2 px-4 text-xs">
-              <BillingTypeBadge billingType={hosting.billingType} size="xs" />
-            </td>
-            <td className="py-2 px-4 text-xs text-left text-muted-foreground">
-              {hosting.daysActive}/{hosting.daysInMonth} days
-            </td>
-            <td className="py-2 px-4 text-xs text-center text-muted-foreground">
-              {hosting.creditApplied && (
-                <div className="flex items-center justify-center gap-1">
-                  <Zap className="w-3 h-3 text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" />
-                  <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
+      {isExpanded && (
+        <>
+          {sortedHostingDetails.map((hosting, idx) => (
+            <tr key={hosting.websitePropertyId} className="border-b divide-x hover:bg-muted/30">
+              <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
+                {idx + 1}
+              </td>
+              <td className="py-2 px-4 text-xs text-muted-foreground">
+                {getEffectiveBillingDate(hosting, monthData.month)}
+              </td>
+              <td className="py-2 px-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <SiteFavicon websiteUrl={hosting.websiteUrl} size={14} />
+                  <span>{hosting.siteName}</span>
                 </div>
-              )}
+              </td>
+              <td className="py-2 px-4 text-xs">
+                <BillingTypeBadge billingType={hosting.billingType} size="xs" />
+              </td>
+              <td className="py-2 px-4 text-xs text-left text-muted-foreground">
+                {hosting.daysActive}/{hosting.daysInMonth} days
+              </td>
+              <td className="py-2 px-4 text-xs text-center text-muted-foreground">
+                {hosting.creditApplied && (
+                  <div className="flex items-center justify-center gap-1">
+                    <Zap className="w-3 h-3 text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" />
+                    <span className="text-green-600 dark:text-green-400 font-semibold">FREE</span>
+                  </div>
+                )}
+              </td>
+              <td className="py-2 px-4 text-right text-sm font-semibold">
+                <span>{formatCurrencyAccounting(hosting.netAmount).symbol}</span>
+                <span className="tabular-nums">{formatCurrencyAccounting(hosting.netAmount).amount}</span>
+              </td>
+            </tr>
+          ))}
+
+          {/* Gross Total Row */}
+          <tr className="bg-black text-white dark:bg-black dark:text-white border-b border-t-2">
+            <td colSpan={6} className="py-2 px-12 text-xs font-semibold">
+              Gross Total
             </td>
-            <td className="py-2 px-4 text-right text-sm font-semibold">
-              {hosting.creditApplied ? (
-                <span className="text-green-600 dark:text-green-400">
-                  <span>{formatCurrencyAccounting(0).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(0).amount}</span>
-                </span>
-              ) : (
-                <>
-                  <span>{formatCurrencyAccounting(hosting.netAmount).symbol}</span>
-                  <span className="tabular-nums">{formatCurrencyAccounting(hosting.netAmount).amount}</span>
-                </>
-              )}
+            <td className="py-2 px-4 text-right text-xs font-semibold">
+              {formatCurrency(monthData.hostingGross)}
             </td>
           </tr>
-        ))}
+
+          {/* Free Hosting Credit Row (if applicable) */}
+          {monthData.hostingCreditsApplied > 0 && (
+            <>
+              <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+                <td colSpan={6} className="py-2 px-12 text-xs font-medium text-green-700 dark:text-green-400">
+                  <Zap className="h-3 w-3 inline mr-1 fill-green-600 dark:fill-green-400" />
+                  Free Hosting Credit ({monthData.hostingCreditsApplied} site{monthData.hostingCreditsApplied !== 1 ? 's' : ''})
+                </td>
+                <td className="py-2 px-4 text-right text-xs font-semibold text-green-700 dark:text-green-400">
+                  -{formatCurrency(monthData.hostingGross - monthData.hostingRevenue)}
+                </td>
+              </tr>
+
+              {/* Net Billable Row */}
+              <tr className="bg-blue-50 dark:bg-blue-950/20 border-b border-t">
+                <td colSpan={6} className="py-2 px-12 text-xs font-semibold text-blue-700 dark:text-blue-400">
+                  Net Billable
+                </td>
+                <td className="py-2 px-4 text-right text-xs font-semibold text-blue-700 dark:text-blue-400">
+                  {formatCurrency(monthData.hostingRevenue)}
+                </td>
+              </tr>
+            </>
+          )}
+        </>
+      )}
     </>
   );
 }
