@@ -26,27 +26,19 @@ console.warn = (...args: unknown[]) => {
 
 // Mock Recharts to avoid canvas/SVG issues in jsdom
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  BarChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="bar-chart">{children}</div>
-  ),
-  PieChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="pie-chart">{children}</div>
-  ),
-  LineChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="line-chart">{children}</div>
-  ),
-  Bar: () => <div data-testid="bar" />,
-  Pie: () => <div data-testid="pie" />,
-  Line: () => <div data-testid="line" />,
-  XAxis: () => <div data-testid="x-axis" />,
-  YAxis: () => <div data-testid="y-axis" />,
-  CartesianGrid: () => <div data-testid="cartesian-grid" />,
-  Tooltip: () => <div data-testid="tooltip" />,
-  Legend: () => <div data-testid="legend" />,
-  Cell: () => <div data-testid="cell" />
+  ResponsiveContainer: vi.fn(({ children }) => children),
+  BarChart: vi.fn(() => null),
+  PieChart: vi.fn(() => null),
+  LineChart: vi.fn(() => null),
+  Bar: vi.fn(() => null),
+  Pie: vi.fn(() => null),
+  Line: vi.fn(() => null),
+  XAxis: vi.fn(() => null),
+  YAxis: vi.fn(() => null),
+  CartesianGrid: vi.fn(() => null),
+  Tooltip: vi.fn(() => null),
+  Legend: vi.fn(() => null),
+  Cell: vi.fn(() => null)
 }))
 
 // Mock window.matchMedia for responsive tests
