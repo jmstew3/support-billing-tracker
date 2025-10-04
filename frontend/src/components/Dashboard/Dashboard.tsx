@@ -5,9 +5,10 @@ import { SiteFavicon } from '../ui/SiteFavicon';
 import { PageHeader } from '../shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../contexts/PeriodContext';
-import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Calculator, Gift, Download } from 'lucide-react';
+import { useBillingCalculations } from './hooks/useBillingCalculations';
+import { DollarSign, Ticket, FolderKanban, Server, ChevronDown, ChevronUp, Zap, Download } from 'lucide-react';
 import { generateComprehensiveBilling } from '../../services/billingApi';
-import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate } from '../../utils/formatting';
+import { formatCurrency, formatCurrencyAccounting, formatMonthLabel } from '../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../utils/csvExport';
 import { CountBadge, CreditBadge, BillingTypeBadge } from '../ui/BillingBadge';
 import {
@@ -114,79 +115,21 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       ? billingSummary.monthlyBreakdown.filter((m) => m.month === currentMonthString)
       : billingSummary?.monthlyBreakdown || [];
 
-  // Calculate totals for filtered data
-  const displayTotals =
-    currentMonthString === 'all'
-      ? {
-          ...billingSummary,
-          // Override totalHostingRevenue to sum all months for table display
-          // (billingSummary.totalHostingRevenue is MRR = latest month only)
-          totalHostingRevenue: billingSummary?.monthlyBreakdown.reduce(
-            (sum, m) => sum + m.hostingRevenue,
-            0
-          ) || 0,
-        }
-      : {
-          totalRevenue: filteredData.reduce((sum, m) => sum + m.totalRevenue, 0),
-          totalTicketsRevenue: filteredData.reduce((sum, m) => sum + m.ticketsRevenue, 0),
-          totalProjectsRevenue: filteredData.reduce((sum, m) => sum + m.projectsRevenue, 0),
-          totalHostingRevenue: filteredData.reduce((sum, m) => sum + m.hostingRevenue, 0),
-        };
-
-  // Calculate free hours savings for display
-  const totalFreeHoursSavings =
-    currentMonthString === 'all'
-      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0) || 0
-      : filteredData.reduce((sum, m) => sum + m.ticketsFreeHoursSavings, 0);
-
-  // Calculate free landing page savings for display
-  const totalLandingPageSavings =
-    currentMonthString === 'all'
-      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0) || 0
-      : filteredData.reduce((sum, m) => sum + m.projectsLandingPageSavings, 0);
-
-  // Calculate free multi-form savings for display
-  const totalMultiFormSavings =
-    currentMonthString === 'all'
-      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsMultiFormSavings, 0) || 0
-      : filteredData.reduce((sum, m) => sum + m.projectsMultiFormSavings, 0);
-
-  // Calculate free basic form savings for display
-  const totalBasicFormSavings =
-    currentMonthString === 'all'
-      ? billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsBasicFormSavings, 0) || 0
-      : filteredData.reduce((sum, m) => sum + m.projectsBasicFormSavings, 0);
-
-  // Calculate total project credits
-  const totalProjectCredits = totalLandingPageSavings + totalMultiFormSavings + totalBasicFormSavings;
-
-  // Calculate average costs
-  const totalTicketsCount = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.ticketsCount, 0) || 0;
-  const totalTicketsRevenue = billingSummary?.totalTicketsRevenue || 0;
-  const averageTicketCost = totalTicketsCount > 0 ? totalTicketsRevenue / totalTicketsCount : 0;
-
-  const totalProjectsCount = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.projectsCount, 0) || 0;
-  const totalProjectsRevenue = billingSummary?.totalProjectsRevenue || 0;
-  const averageProjectCost = totalProjectsCount > 0 ? totalProjectsRevenue / totalProjectsCount : 0;
-
-  const totalHostingSiteMonths = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingSitesCount, 0) || 0;
-  const totalHostingRevenue = billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingRevenue, 0) || 0;
-  const averageHostingCost = totalHostingSiteMonths > 0 ? totalHostingRevenue / totalHostingSiteMonths : 0;
-
-  // Calculate total hosting credits savings (credits applied × $99 per site)
-  const totalHostingCreditsSavings = billingSummary?.monthlyBreakdown.reduce((sum, m) =>
-    sum + ((m.hostingCreditsApplied || 0) * 99),
-  0) || 0;
-
-  // Calculate total discounts
-  const totalDiscounts = billingSummary?.monthlyBreakdown.reduce((sum, m) =>
-    sum +
-    (m.ticketsFreeHoursSavings || 0) +
-    (m.projectsLandingPageSavings || 0) +
-    (m.projectsMultiFormSavings || 0) +
-    (m.projectsBasicFormSavings || 0) +
-    ((m.hostingCreditsApplied || 0) * 99), // Fixed: multiply count by $99
-  0) || 0;
+  // Calculate all billing metrics using custom hook
+  const {
+    displayTotals,
+    totalFreeHoursSavings,
+    totalProjectCredits,
+    averageTicketCost,
+    averageProjectCost,
+    averageHostingCost,
+    totalHostingCreditsSavings,
+    totalDiscounts
+  } = useBillingCalculations({
+    billingSummary,
+    filteredData,
+    currentMonthString
+  });
 
   // Handle Monthly Breakdown export
   const handleExportMonthlyBreakdown = () => {
