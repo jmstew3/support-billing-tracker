@@ -13,7 +13,7 @@
 
 import { TableHead, TableHeader, TableRow } from '../../ui/table'
 import { Filter, ArrowUp, ArrowDown, ChevronDown, Info } from 'lucide-react'
-import { ChatRequest } from '../../../types/request'
+import type { ChatRequest } from '../../../types/request'
 import { parseLocalDate } from '../../../utils/supportHelpers'
 
 export interface SupportTableHeaderProps {
@@ -61,7 +61,7 @@ export interface SupportTableHeaderProps {
   selectedDay: string | 'all'
 
   // Utilities
-  formatUrgencyDisplay: (urgency: string) => void
+  formatUrgencyDisplay: (urgency: string) => string
   preserveScrollPosition: () => void
 }
 

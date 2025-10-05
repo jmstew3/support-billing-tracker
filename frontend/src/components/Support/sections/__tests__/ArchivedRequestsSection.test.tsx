@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ArchivedRequestsSection } from '../ArchivedRequestsSection'
-import { ChatRequest } from '../../../../types/request'
+import type { ChatRequest } from '../../../../types/request'
 
 describe('ArchivedRequestsSection', () => {
   const mockArchivedRequests: ChatRequest[] = [
@@ -17,7 +17,6 @@ describe('ArchivedRequestsSection', () => {
       Category: 'Support',
       Request_Summary: 'Archived request 1',
       Urgency: 'HIGH',
-      EstimatedEffort: 'Medium',
       EstimatedHours: 0.5,
       Status: 'deleted',
       source: 'sms',
@@ -31,7 +30,6 @@ describe('ArchivedRequestsSection', () => {
       Category: 'Hosting',
       Request_Summary: 'Archived request 2',
       Urgency: 'MEDIUM',
-      EstimatedEffort: 'Large',
       EstimatedHours: 1.0,
       Status: 'deleted',
       source: 'ticket',

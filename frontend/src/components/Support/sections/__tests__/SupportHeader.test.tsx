@@ -16,7 +16,7 @@ describe('SupportHeader', () => {
     availableMonths: [5, 6, 7],
     availableDates: ['2025-06-23', '2025-06-24', '2025-06-25'],
     timeViewMode: 'month' as 'all' | 'month' | 'day',
-    theme: 'light',
+    theme: 'light' as 'light' | 'dark',
     canNavigatePrevious: true,
     canNavigateNext: true,
     previousMonthTooltip: 'Go to May 2025',

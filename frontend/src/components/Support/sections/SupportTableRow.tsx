@@ -16,7 +16,7 @@ import { EditableCell } from '../../shared/EditableCell'
 import { EditableNumberCell } from '../../shared/EditableNumberCell'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../ui/tooltip'
 import { Trash2, MessageCircle, Ticket, Mail, Phone } from 'lucide-react'
-import { ChatRequest } from '../../../types/request'
+import type { ChatRequest } from '../../../types/request'
 import { getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
 

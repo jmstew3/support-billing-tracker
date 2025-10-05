@@ -17,7 +17,7 @@ import { Card, CardContent } from '../../ui/card'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../ui/table'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../ui/tooltip'
 import { ChevronRight, Archive, RotateCcw, MessageCircle, Ticket, Mail, Phone } from 'lucide-react'
-import { ChatRequest } from '../../../types/request'
+import type { ChatRequest } from '../../../types/request'
 import { parseLocalDate } from '../../../utils/supportHelpers'
 
 export interface ArchivedRequestsSectionProps {

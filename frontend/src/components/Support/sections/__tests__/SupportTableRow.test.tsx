@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SupportTableRow } from '../SupportTableRow'
-import { ChatRequest } from '../../../../types/request'
+import type { ChatRequest } from '../../../../types/request'
 
 // Mock the editable cell components
 vi.mock('../../../shared/EditableCell', () => ({
@@ -33,7 +33,6 @@ describe('SupportTableRow', () => {
     Category: 'Support',
     Request_Summary: 'Test request summary',
     Urgency: 'MEDIUM',
-    EstimatedEffort: 'Medium',
     EstimatedHours: 0.5,
     Status: 'active',
     source: 'sms',

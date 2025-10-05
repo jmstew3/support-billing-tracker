@@ -31,7 +31,7 @@ export interface SupportHeaderProps {
   timeViewMode: 'all' | 'month' | 'day'
 
   // Theme
-  theme: string
+  theme: 'light' | 'dark'
 
   // Navigation
   canNavigatePrevious: boolean

@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SupportTableSection } from '../SupportTableSection'
-import { ChatRequest } from '../../../../types/request'
+import type { ChatRequest } from '../../../../types/request'
 
 // Mock child components
 vi.mock('../SupportTableHeader', () => ({
@@ -32,7 +32,6 @@ describe('SupportTableSection', () => {
       Category: 'Support',
       Request_Summary: 'Test request 1',
       Urgency: 'MEDIUM',
-      EstimatedEffort: 'Medium',
       EstimatedHours: 0.5,
       Status: 'active',
       source: 'sms',
@@ -46,7 +45,6 @@ describe('SupportTableSection', () => {
       Category: 'Hosting',
       Request_Summary: 'Test request 2',
       Urgency: 'HIGH',
-      EstimatedEffort: 'Large',
       EstimatedHours: 1.0,
       Status: 'active',
       source: 'ticket',

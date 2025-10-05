@@ -20,7 +20,7 @@ import { SupportTableHeader } from './SupportTableHeader'
 import { SupportTableRow } from './SupportTableRow'
 import { Pagination } from '../../shared/Pagination'
 import { Search, X, ArrowUp } from 'lucide-react'
-import { ChatRequest } from '../../../types/request'
+import type { ChatRequest } from '../../../types/request'
 
 export interface SupportTableSectionProps {
   // Data
@@ -95,7 +95,7 @@ export interface SupportTableSectionProps {
   totalPages: number
   pageSize: number
   onPageChange: (page: number) => void
-  onPageSizeChange: (size: number) => void
+  onPageSizeChange: (size: number | 'all') => void
 
   // Request actions
   onUpdateRequest: (index: number, field: string, value: any) => void

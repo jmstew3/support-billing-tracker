@@ -26,8 +26,8 @@ import { useSupportMetrics } from './hooks/useSupportMetrics'
 
 // Utils
 import { formatTime } from '../../utils/timeUtils'
-import { parseLocalDate } from '../../utils/supportHelpers'
-import { processDailyRequests, processCategoryData, calculateCosts } from '../../utils/dataProcessing'
+import { parseLocalDate, getDayOfWeek } from '../../utils/supportHelpers'
+import { processDailyRequests, processCategoryData, categorizeRequest } from '../../utils/dataProcessing'
 import { updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest } from '../../utils/api'
 
 // Types
@@ -112,11 +112,15 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     apiAvailable,
     filteredAndSortedRequests,
     paginatedRequests,
+    billableRequests,
     nonBillableRequests,
     archivedRequests,
     startIndex,
     endIndex,
-    totalPages
+    totalPages,
+    availableYears,
+    availableMonthsForYear,
+    availableDates
   } = useSupportData({
     selectedYear,
     selectedMonth,
@@ -140,40 +144,36 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
 
   const {
     billableFilteredRequests
-  } = useSupportFiltering(
+  } = useSupportFiltering({
     requests,
-    {
-      selectedYear,
-      selectedMonth,
-      selectedDay,
-      categoryFilter,
-      urgencyFilter,
-      sourceFilter,
-      dateFilter,
-      dayFilter,
-      searchQuery,
-      hideNonBillable,
-      sortColumn,
-      sortDirection
-    }
-  )
+    selectedYear,
+    selectedMonth,
+    selectedDay,
+    hideNonBillable
+  })
 
   // ============================================================
   // METRICS HOOK - Calculations and analytics
   // ============================================================
 
   const {
-    activityMetrics,
+    filteredCosts,
     monthlyCosts,
     categoryBreakdownData,
-    monthlyCategoryData
-  } = useSupportMetrics(
-    billableFilteredRequests,
+    monthlyCategoryData,
+    calendarData,
+    categoryData,
+    mostActiveDay,
+    mostActiveTimeRange,
+    busiestDayOfWeek,
+    topCategory
+  } = useSupportMetrics({
+    requests: billableFilteredRequests,
     selectedYear,
-    selectedMonth
-  )
-
-  // Activity metrics are passed directly to SupportScorecards component
+    selectedMonth,
+    selectedDay,
+    timeViewMode
+  })
 
   // ============================================================
   // DERIVED STATE
@@ -197,47 +197,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
-
-  // Calculate available years from requests
-  const availableYears = Array.from(new Set(
-    requests.map(request => parseLocalDate(request.Date).getFullYear())
-  )).sort((a, b) => b - a) // Sort descending (newest first)
-
-  // Calculate available months for selected year
-  const availableMonthsForYear = Array.from(new Set(
-    requests
-      .filter(request => parseLocalDate(request.Date).getFullYear() === selectedYear)
-      .map(request => parseLocalDate(request.Date).getMonth() + 1)
-  )).sort((a, b) => a - b) // Sort ascending (Jan to Dec)
-
-  // Calculate available dates for selected year/month
-  const availableDates = Array.from(new Set(
-    requests
-      .filter(request => {
-        const requestDate = parseLocalDate(request.Date)
-        const requestYear = requestDate.getFullYear()
-        const requestMonth = requestDate.getMonth() + 1
-
-        if (requestYear !== selectedYear) return false
-        if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false
-
-        return true
-      })
-      .map(request => request.Date)
-  )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-
-  // Calculate filtered costs
-  const getCurrentMonthString = () => {
-    if (selectedMonth === 'all') return undefined
-    return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
-  }
-  const filteredCosts = calculateCosts(billableFilteredRequests, getCurrentMonthString())
-
-  // Calculate calendar data
-  const calendarData = processDailyRequests(billableFilteredRequests)
-
-  // Calculate category data
-  const categoryData = processCategoryData(billableFilteredRequests)
 
   // ============================================================
   // PERSISTENCE - Save hideNonBillable preference
@@ -420,8 +379,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     setSelectAll(false)
   }
 
-  const handlePageSizeChange = (size: number | 'all') => {
-    setPageSize(typeof size === 'number' ? size : 999999)
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size)
     setCurrentPage(1)
     setSelectedRequestIds(new Set())
     setSelectAll(false)
@@ -492,36 +451,41 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const applyBulkChanges = async () => {
     if (selectedRequestIds.size === 0) return
 
-    // Build the update object (same for all selected requests)
-    const requestUpdates: Partial<ChatRequest> = {}
+    const updates: Array<{ index: number; updates: Partial<ChatRequest> }> = []
 
-    if (stagedBulkCategory) {
-      requestUpdates.Category = stagedBulkCategory
-    }
-    if (stagedBulkUrgency) {
-      requestUpdates.Urgency = stagedBulkUrgency as 'HIGH' | 'MEDIUM' | 'LOW' | 'PROMOTION'
-    }
-    if (stagedBulkHours !== null) {
-      requestUpdates.EstimatedHours = stagedBulkHours
-    }
+    selectedRequestIds.forEach(index => {
+      const requestUpdates: Partial<ChatRequest> = {}
 
-    if (Object.keys(requestUpdates).length === 0) return
+      if (stagedBulkCategory) {
+        requestUpdates.Category = stagedBulkCategory
+      }
+      if (stagedBulkUrgency) {
+        requestUpdates.Urgency = stagedBulkUrgency
+      }
+      if (stagedBulkHours !== null) {
+        requestUpdates.EstimatedHours = stagedBulkHours
+      }
+
+      if (Object.keys(requestUpdates).length > 0) {
+        updates.push({ index, updates: requestUpdates })
+      }
+    })
+
+    if (updates.length === 0) return
 
     if (apiAvailable) {
       try {
-        // Get the IDs of all selected requests
-        const ids = Array.from(selectedRequestIds)
-          .map(index => requests[index].id)
-          .filter((id): id is number => id !== undefined)
+        const requestsToUpdate = updates.map(({ index, updates: updateData }) => ({
+          id: requests[index].id!,
+          ...updateData
+        }))
 
-        // Apply the same updates to all selected requests
-        await bulkUpdateRequests(ids, requestUpdates)
+        await bulkUpdateRequests(requestsToUpdate)
 
-        // Update local state
         setRequests(prevRequests => {
           const newRequests = [...prevRequests]
-          selectedRequestIds.forEach(index => {
-            newRequests[index] = { ...newRequests[index], ...requestUpdates }
+          updates.forEach(({ index, updates: updateData }) => {
+            newRequests[index] = { ...newRequests[index], ...updateData }
           })
           return newRequests
         })
@@ -529,11 +493,10 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         console.error('Failed to bulk update requests:', error)
       }
     } else {
-      // Local-only mode: apply updates directly
       setRequests(prevRequests => {
         const newRequests = [...prevRequests]
-        selectedRequestIds.forEach(index => {
-          newRequests[index] = { ...newRequests[index], ...requestUpdates }
+        updates.forEach(({ index, updates: updateData }) => {
+          newRequests[index] = { ...newRequests[index], ...updateData }
         })
         return newRequests
       })
@@ -593,7 +556,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
 
     if (apiAvailable && request.id) {
       try {
-        await deleteRequest(request.id, false) // false = soft delete (archived)
+        await deleteRequest(request.id)
 
         setRequests(prevRequests =>
           prevRequests.map((r, i) =>
@@ -679,10 +642,13 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
 
           {/* Scorecards Section */}
           <SupportScorecards
-            billableCount={billableFilteredRequests.length}
-            totalActiveCount={requests.filter(r => r.Status === 'active').length}
-            costs={filteredCosts}
-            activityMetrics={activityMetrics}
+            billableRequestsCount={billableFilteredRequests.length}
+            totalActiveRequests={requests.filter(r => r.Status === 'active').length}
+            filteredCosts={filteredCosts}
+            mostActiveDay={mostActiveDay}
+            mostActiveTimeRange={mostActiveTimeRange}
+            busiestDayOfWeek={busiestDayOfWeek}
+            topCategory={topCategory}
           />
 
           {/* Cost Tracker */}
