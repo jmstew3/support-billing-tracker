@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SupportTableHeader } from '../SupportTableHeader'
-import { ChatRequest } from '../../../../types/request'
+import type { ChatRequest } from '../../../../types/request'
 
 describe('SupportTableHeader', () => {
   const mockRequests: ChatRequest[] = [
@@ -17,7 +17,6 @@ describe('SupportTableHeader', () => {
       Category: 'Support',
       Request_Summary: 'Test 1',
       Urgency: 'MEDIUM',
-      EstimatedEffort: 'Medium',
       EstimatedHours: 0.5,
       Status: 'active',
       source: 'sms',
@@ -31,7 +30,6 @@ describe('SupportTableHeader', () => {
       Category: 'Hosting',
       Request_Summary: 'Test 2',
       Urgency: 'HIGH',
-      EstimatedEffort: 'Large',
       EstimatedHours: 1.0,
       Status: 'active',
       source: 'ticket',
