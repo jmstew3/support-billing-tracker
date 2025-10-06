@@ -57,7 +57,7 @@ export function CumulativeBillingChart({ data }: CumulativeBillingChartProps) {
   return (
     <div className="border bg-card p-6">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold mb-1">Cumulative Billing</h3>
+        <h3 className="text-md font-semibold mb-1">Cumulative Billing</h3>
         <p className="text-xs text-muted-foreground">
           Total billing accumulation over time
         </p>

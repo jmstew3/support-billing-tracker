@@ -256,7 +256,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
             {/* Category Pie Chart - Takes 1 column */}
             <div className="col-span-1">
               <div className="bg-card border border-border p-6 h-full flex flex-col">
-                <h3 className="text-sm font-semibold mb-4">Category Breakdown</h3>
+                <h3 className="text-md font-semibold mb-4">Category Breakdown</h3>
                 <div className="flex-1 min-h-[300px]">
                   <ProjectCategoryPieChart projects={readyProjects} />
                 </div>

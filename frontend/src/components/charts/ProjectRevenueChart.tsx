@@ -151,7 +151,7 @@ export function ProjectRevenueChart({ monthlyBreakdown }: ProjectRevenueChartPro
     <div className="border bg-card p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold mb-1">
+          <h3 className="text-md font-semibold mb-1">
             {viewMode === 'category' ? 'Revenue by Category' : 'Monthly Revenue'}
           </h3>
           <p className="text-xs text-muted-foreground">
