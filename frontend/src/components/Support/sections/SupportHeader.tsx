@@ -5,63 +5,28 @@
  *
  * Features:
  * - Page title
- * - Date range selector with navigation arrows
+ * - Period selector with navigation arrows (from PeriodContext)
  * - View mode toggle (All/Month/Day)
  */
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { DatePickerPopover } from '../../shared/DatePickerPopover'
+import { PeriodSelector } from '../../shared/PeriodSelector'
 import { ToggleGroup } from '../../ui/toggle-group'
 
 export interface SupportHeaderProps {
   // Title
   title?: string
 
-  // Date selection
-  selectedYear: number
-  selectedMonth: number | 'all'
-  selectedDay: string | 'all'
-  availableYears: number[]
-  availableMonths: number[]
-  availableDates: string[]
-
   // View mode
   timeViewMode: 'all' | 'month' | 'day'
 
-  // Navigation
-  canNavigatePrevious: boolean
-  canNavigateNext: boolean
-  previousMonthTooltip: string
-  nextMonthTooltip: string
-
   // Event handlers
-  onYearChange: (year: number) => void
-  onMonthChange: (month: number | 'all') => void
-  onDayChange: (day: string | 'all') => void
   onTimeViewModeChange: (mode: 'all' | 'month' | 'day') => void
-  onPreviousMonth: () => void
-  onNextMonth: () => void
 }
 
 export function SupportHeader({
   title = 'Support',
-  selectedYear,
-  selectedMonth,
-  selectedDay,
-  availableYears,
-  availableMonths,
-  availableDates,
   timeViewMode,
-  canNavigatePrevious,
-  canNavigateNext,
-  previousMonthTooltip,
-  nextMonthTooltip,
-  onYearChange,
-  onMonthChange,
-  onDayChange,
-  onTimeViewModeChange,
-  onPreviousMonth,
-  onNextMonth
+  onTimeViewModeChange
 }: SupportHeaderProps) {
   return (
     <div className="flex-shrink-0 bg-background border-b border-border">
@@ -76,55 +41,8 @@ export function SupportHeader({
 
           {/* Right side - Controls */}
           <div className="flex items-center space-x-6">
-            {/* Date Range Selector */}
-            <div className="flex items-center space-x-3">
-              <span className="text-sm font-medium text-muted-foreground">Period:</span>
-
-              {/* Navigation arrows and date picker */}
-              <div className="flex items-center space-x-1">
-                {/* Previous Month Arrow */}
-                <button
-                  onClick={onPreviousMonth}
-                  disabled={!canNavigatePrevious}
-                  className={`p-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors ${
-                    !canNavigatePrevious
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'cursor-pointer'
-                  }`}
-                  title={canNavigatePrevious ? previousMonthTooltip : 'No previous data'}
-                  aria-label="Navigate to previous month"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <DatePickerPopover
-                  selectedYear={selectedYear}
-                  selectedMonth={selectedMonth}
-                  selectedDay={selectedDay}
-                  availableYears={availableYears}
-                  availableMonths={availableMonths}
-                  availableDates={availableDates}
-                  onYearChange={onYearChange}
-                  onMonthChange={onMonthChange}
-                  onDayChange={onDayChange}
-                />
-
-                {/* Next Month Arrow */}
-                <button
-                  onClick={onNextMonth}
-                  disabled={!canNavigateNext}
-                  className={`p-1.5 rounded hover:bg-accent hover:text-accent-foreground transition-colors ${
-                    !canNavigateNext
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'cursor-pointer'
-                  }`}
-                  title={canNavigateNext ? nextMonthTooltip : 'No future data'}
-                  aria-label="Navigate to next month"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            {/* Period Selector - uses PeriodContext */}
+            <PeriodSelector type="full" label="Period:" />
 
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-2">
