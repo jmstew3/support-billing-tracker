@@ -52,11 +52,11 @@ export function ArchivedRequestsSection({
           <div className="flex items-center space-x-2">
             <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
             <Archive className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-muted-foreground">
+            <h3 className="text-xs font-semibold text-muted-foreground">
               Archived Requests ({archivedRequests.length})
             </h3>
           </div>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             Click to {showArchived ? 'hide' : 'show'}
           </span>
         </div>
@@ -102,17 +102,17 @@ export function ArchivedRequestsSection({
                           </UITooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-xs">
                         {parseLocalDate(request.Date).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-sm">{request.Time}</TableCell>
+                      <TableCell className="text-xs">{request.Time}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           {request.Category || 'Support'}
                         </span>
                       </TableCell>
                       <TableCell className="max-w-md">
-                        <div className="text-sm text-muted-foreground whitespace-normal break-words">
+                        <div className="text-xs text-muted-foreground whitespace-normal break-words">
                           {request.Request_Summary}
                         </div>
                       </TableCell>

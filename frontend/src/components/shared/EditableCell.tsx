@@ -110,7 +110,7 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
         ref={buttonRef}
         onClick={handleToggleOpen}
         onKeyDown={handleKeyDown}
-        className={`flex items-center justify-between w-full px-3 py-2 text-left text-foreground border border-border rounded-md bg-card hover:border-border hover:bg-accent transition-colors ${className} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+        className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left text-foreground border border-border rounded-md bg-card hover:border-border hover:bg-accent transition-colors ${className} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
         title="Click to edit"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -136,7 +136,7 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
             <button
               key={option}
               onClick={() => handleOptionClick(option)}
-              className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
+              className={`w-full px-3 py-1 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
                 option === value ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-400 font-medium' : 'text-gray-900 dark:text-gray-100'
               }`}
               role="option"
