@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { FolderKanban, Loader2, AlertCircle, Search, DollarSign } from 'lucide-react';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
-import { CumulativeBillingChart } from '../charts/CumulativeBillingChart';
+import { ProjectRevenueChart } from '../charts/ProjectRevenueChart';
 import { ProjectCategoryPieChart } from '../charts/ProjectCategoryPieChart';
 import { Scorecard } from '../ui/Scorecard';
 import { LoadingState } from '../ui/LoadingState';
@@ -246,13 +246,10 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
         {/* Charts Section - Cumulative Billing (2/3) and Category Breakdown (1/3) */}
         {billingSummary.monthlyBreakdown.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Cumulative Billing Chart - Takes 2 columns on desktop */}
+            {/* Project Revenue Chart - Takes 2 columns on desktop */}
             <div className="lg:col-span-2">
-              <CumulativeBillingChart
-                data={billingSummary.monthlyBreakdown.map((m) => ({
-                  month: m.month,
-                  revenue: m.revenue,
-                }))}
+              <ProjectRevenueChart
+                monthlyBreakdown={billingSummary.monthlyBreakdown}
               />
             </div>
 
