@@ -659,7 +659,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         availableMonths={availableMonthsForYear}
         availableDates={availableDates}
         timeViewMode={timeViewMode}
-        theme={theme}
         canNavigatePrevious={canNavigatePrevious()}
         canNavigateNext={canNavigateNext()}
         previousMonthTooltip={getPreviousMonthTooltip()}
@@ -668,7 +667,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         onMonthChange={handleMonthChange}
         onDayChange={handleDayChange}
         onTimeViewModeChange={handleTimeViewModeChange}
-        onToggleTheme={toggleTheme}
         onPreviousMonth={handlePreviousMonth}
         onNextMonth={handleNextMonth}
       />

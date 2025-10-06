@@ -33,6 +33,7 @@ export interface HostingCharge {
   daysInMonth: number;
   grossAmount: number; // Dollar amount before credits
   creditApplied: boolean;
+  creditAmount?: number; // Dollar amount of credit applied (if creditApplied is true)
   netAmount: number; // Dollar amount after credits
 }
 

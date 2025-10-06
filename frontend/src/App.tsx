@@ -5,10 +5,12 @@ import { Projects } from './components/Projects/Projects';
 import { TurboHosting } from './components/Hosting/TurboHosting';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { PeriodProvider } from './contexts/PeriodContext';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
   const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <PeriodProvider>
@@ -18,6 +20,8 @@ function App() {
           onNavigate={setCurrentView}
           isMobileOpen={isMobileMenuOpen}
           setIsMobileOpen={setIsMobileMenuOpen}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <main className="flex-1 overflow-auto">
           {currentView === 'home' && <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}

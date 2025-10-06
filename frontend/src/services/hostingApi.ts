@@ -198,9 +198,12 @@ function calculateGrossAmount(daysActive: number, daysInMonth: number): number {
  *
  * NOTE: Free credits do NOT apply to May 2025
  */
-function calculateFreeCredits(activeSites: number, targetMonth: string): number {
+function calculateFreeCredits(activeSites: number, targetMonth?: string): number {
+  // If no month specified, use current month
+  const month = targetMonth || new Date().toISOString().slice(0, 7); // YYYY-MM format
+
   // No free credits for May 2025
-  if (targetMonth === '2025-05') {
+  if (month === '2025-05') {
     return 0;
   }
   return Math.floor(activeSites / 20);

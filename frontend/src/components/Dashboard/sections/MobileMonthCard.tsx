@@ -107,7 +107,7 @@ export function MobileMonthCard({
               </div>
               {isSectionExpanded(monthData.month, 'tickets') && (
                 <div className="p-3 space-y-2 text-xs bg-background">
-                  {monthData.tickets?.map((ticket, idx) => (
+                  {monthData.ticketDetails?.map((ticket, idx) => (
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
                         <div className="font-medium flex items-center gap-2">
@@ -167,7 +167,7 @@ export function MobileMonthCard({
               </div>
               {isSectionExpanded(monthData.month, 'projects') && (
                 <div className="p-3 space-y-2 text-xs bg-background">
-                  {monthData.projects?.map((project, idx) => (
+                  {monthData.projectDetails?.map((project, idx) => (
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
                         <div className="font-medium flex items-center gap-2">
@@ -237,7 +237,7 @@ export function MobileMonthCard({
               </div>
               {isSectionExpanded(monthData.month, 'hosting') && (
                 <div className="p-3 space-y-2 text-xs bg-background">
-                  {monthData.hosting?.map((hosting, idx) => (
+                  {monthData.hostingDetails?.map((hosting, idx) => (
                     <div key={idx} className="flex justify-between items-start py-1 border-b last:border-b-0">
                       <div className="flex-1 pr-2">
                         <div className="font-medium flex items-center gap-2">
