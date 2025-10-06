@@ -17,7 +17,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
-  const { selectedYear, selectedMonth, setAvailableData } = usePeriod();
+  const { selectedYear, selectedMonth, selectedMonths, getMonthStrings, setAvailableData } = usePeriod();
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,15 +98,13 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
 
   // Note: formatMonthLabel now imported from utils/formatting
 
-  // Filter data based on selected month from context
+  // Filter data based on selected month(s) from context
   // Convert context values to month string format (YYYY-MM)
-  const currentMonthString = selectedMonth === 'all'
-    ? 'all'
-    : `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+  const selectedMonthStrings = getMonthStrings();
 
   const filteredData =
-    billingSummary && currentMonthString !== 'all'
-      ? billingSummary.monthlyBreakdown.filter((m) => m.month === currentMonthString)
+    billingSummary && selectedMonthStrings !== 'all'
+      ? billingSummary.monthlyBreakdown.filter((m) => selectedMonthStrings.includes(m.month))
       : billingSummary?.monthlyBreakdown || [];
 
   // Calculate all billing metrics using custom hook
@@ -122,7 +120,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   } = useBillingCalculations({
     billingSummary,
     filteredData,
-    currentMonthString
+    currentMonthString: selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : 'multi')
   });
 
   // Handle Monthly Breakdown export
@@ -193,7 +191,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     }
 
     // Determine period for filename
-    const selectedPeriod = currentMonthString === 'all' ? 'all' : currentMonthString;
+    const selectedPeriod = selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : `${selectedMonthStrings[0]}-to-${selectedMonthStrings[selectedMonthStrings.length - 1]}`);
     exportMonthlyBreakdownDetailedData(exportData, selectedPeriod);
   };
 
@@ -247,7 +245,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
             averageTicketCost={averageTicketCost}
             averageProjectCost={averageProjectCost}
             averageHostingCost={averageHostingCost}
-            currentMonthString={currentMonthString}
+            currentMonthString={selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : 'multi')}
             billingSummary={billingSummary}
           />
 
@@ -256,7 +254,13 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
             <RevenueTrackerCard
               monthlyData={filteredData}
               selectedYear={selectedYear}
-              title={currentMonthString === 'all' ? 'Monthly Revenue by Category' : `${formatMonthLabel(currentMonthString)} Revenue Breakdown`}
+              title={
+                selectedMonthStrings === 'all'
+                  ? 'Monthly Revenue by Category'
+                  : selectedMonths.length === 1
+                    ? `${formatMonthLabel(selectedMonthStrings[0])} Revenue Breakdown`
+                    : `${formatMonthLabel(selectedMonthStrings[0])} - ${formatMonthLabel(selectedMonthStrings[selectedMonthStrings.length - 1])} Revenue Breakdown`
+              }
               initialViewType="table"
               gridSpan=""
             />
