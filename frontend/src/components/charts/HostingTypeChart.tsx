@@ -53,7 +53,7 @@ export function HostingTypeChart({ data }: HostingTypeChartProps) {
   return (
     <div className="border bg-card p-6">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold mb-1">Hosting Type Distribution</h3>
+        <h3 className="text-md font-semibold mb-1">Hosting Type Distribution</h3>
         <p className="text-xs text-muted-foreground">
           Total websites vs landing pages
         </p>

@@ -439,14 +439,14 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
               {/* Grand Total Row */}
               {monthlyBreakdown.length > 1 && (
                 <tr className="bg-black text-white dark:bg-black dark:text-white border-t-2 divide-x divide-white/20 dark:divide-white/20 font-bold">
-                  <td colSpan={6} className="py-4 px-6 text-right text-base">
+                  <td colSpan={6} className="py-4 px-6 text-right text-md">
                     GRAND TOTAL
                   </td>
-                  <td className="py-4 px-4 text-right text-lg">
+                  <td className="py-4 px-4 text-right text-md">
                     <span>{formatCurrencyAccounting(grandTotalGross).symbol}</span>
                     <span className="tabular-nums">{formatCurrencyAccounting(grandTotalGross).amount}</span>
                   </td>
-                  <td className="py-4 px-4 text-right text-lg">
+                  <td className="py-4 px-4 text-right text-md">
                     {grandTotalCredits > 0 && (
                       <>
                         <span>-{formatCurrencyAccounting(grandTotalCredits).symbol}</span>
@@ -454,7 +454,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                       </>
                     )}
                   </td>
-                  <td className="py-4 px-4 text-right text-lg">
+                  <td className="py-4 px-4 text-right text-md">
                     <span>{formatCurrencyAccounting(grandTotalNet).symbol}</span>
                     <span className="tabular-nums">{formatCurrencyAccounting(grandTotalNet).amount}</span>
                   </td>
