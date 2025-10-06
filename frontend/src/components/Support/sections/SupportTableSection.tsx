@@ -230,7 +230,7 @@ export function SupportTableSection({
                   </span>
 
                   {/* Label with count */}
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-xs font-medium text-foreground">
                     Show only billable
                     {nonBillableRequests.length > 0 && (
                       <span className="text-muted-foreground ml-1">
@@ -255,7 +255,7 @@ export function SupportTableSection({
           {/* Bulk Selection UI */}
           {selectedRequestIds.size > 0 && (
             <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <span className="text-sm font-medium text-blue-900">
+              <span className="text-xs font-medium text-blue-900">
                 {selectedRequestIds.size} selected{selectedRequestIds.size === paginatedRequests.length && paginatedRequests.length < filteredAndSortedRequests.length ? ' (current page)' : ''}:
               </span>
 
@@ -353,7 +353,7 @@ export function SupportTableSection({
                 placeholder="Search requests..."
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full pl-9 pr-8 py-2 text-xs border border-border rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {searchQuery && (
                 <button
@@ -368,14 +368,14 @@ export function SupportTableSection({
             {hasActiveFilters && (
               <button
                 onClick={onResetFilters}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
                 Reset Filters
               </button>
             )}
           </div>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <span>Showing {filteredAndSortedRequests.length} requests</span>
           </div>
         </div>
@@ -385,7 +385,7 @@ export function SupportTableSection({
           <div className="flex flex-wrap gap-2 mb-4">
             {/* Category Filters */}
             {categoryFilter.map(category => (
-              <div key={`category-${category}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+              <div key={`category-${category}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
                 <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Category:</span>
                 <span className="font-medium text-blue-600 dark:text-blue-400">{category}</span>
@@ -402,7 +402,7 @@ export function SupportTableSection({
 
             {/* Urgency Filters */}
             {urgencyFilter.map(urgency => (
-              <div key={`urgency-${urgency}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+              <div key={`urgency-${urgency}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
                 <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Urgency:</span>
                 <span className="font-medium text-blue-600 dark:text-blue-400">{urgency}</span>
@@ -419,7 +419,7 @@ export function SupportTableSection({
 
             {/* Source Filters */}
             {sourceFilter.map(source => (
-              <div key={`source-${source}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+              <div key={`source-${source}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
                 <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Source:</span>
                 <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{source === 'sms' ? 'Text' : source}</span>
@@ -436,7 +436,7 @@ export function SupportTableSection({
 
             {/* Day Filters */}
             {dayFilter.map(day => (
-              <div key={`day-${day}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+              <div key={`day-${day}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
                 <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Day:</span>
                 <span className="font-medium text-blue-600 dark:text-blue-400">{day}</span>
@@ -453,7 +453,7 @@ export function SupportTableSection({
 
             {/* Date Filter */}
             {dateFilter !== 'all' && (
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs sm:text-sm">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
                 <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Date:</span>
                 <span className="font-medium text-blue-600 dark:text-blue-400">{dateFilter}</span>

@@ -93,17 +93,17 @@ export function SupportTableRow({
           </UITooltip>
         </TooltipProvider>
       </TableCell>
-      <TableCell className={isNonBillable ? 'text-gray-400' : ''}>
+      <TableCell className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}>
         {request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}
       </TableCell>
-      <TableCell className={`text-sm ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>
+      <TableCell className={`text-xs ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>
         {getDayOfWeek(request.Date)}
       </TableCell>
-      <TableCell className={isNonBillable ? 'text-gray-400' : ''}>
+      <TableCell className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}>
         {formatTime(request.Time)}
       </TableCell>
       <TableCell className="min-w-[200px] max-w-md">
-        <div className={`whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
+        <div className={`text-xs whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
           {request.Request_Summary}
         </div>
       </TableCell>

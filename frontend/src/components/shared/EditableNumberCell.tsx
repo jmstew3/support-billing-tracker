@@ -105,7 +105,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
         min={min}
         max={max}
         step={step}
-        className="w-20 px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-20 px-2 py-1 text-xs border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         onClick={(e) => e.stopPropagation()}
       />
     );
@@ -117,7 +117,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
         e.stopPropagation();
         handleEdit();
       }}
-      className="w-20 px-2 py-1 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-20 px-2 py-1 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
       title="Click to edit hours"
     >
       {roundedInitialValue.toFixed(2)}
