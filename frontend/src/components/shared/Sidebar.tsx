@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
 import velocityLogo from '../../assets/velocity-logo.png';
-import peakOneLogo from '../../assets/peakone-logo-white.png';
+import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
   currentView?: 'home' | 'projects' | 'overview' | 'billing';
   onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing') => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen }: SidebarProps) {
+export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Close mobile menu when view changes
@@ -126,10 +129,23 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
         </ul>
       </nav>
 
-      {/* Footer - Powered by PeakOne */}
-      <div className="border-t border-border/50 flex items-center justify-center bg-background/30 py-3">
+      {/* Footer - Theme Toggle & Powered by PeakOne */}
+      <div className="border-t border-border/50 bg-background/30">
+        {/* Theme Toggle */}
+        <div className="flex items-center py-2 px-4">
+          {isCollapsed ? (
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} className="w-10 h-10 mx-auto" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Theme:</span>
+              <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+            </div>
+          )}
+        </div>
+
+        {/* Powered by PeakOne */}
         {!isCollapsed && (
-          <div className="text-center px-4 pb-2.5">
+          <div className="px-4 pb-3 border-t border-border/50 pt-2">
             <p className="text-xs text-muted-foreground/70 mb-2">Powered by</p>
             <a
               href="https://peakonedigital.com"
@@ -140,7 +156,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
               <img
                 src={peakOneLogo}
                 alt="PeakOne Digital"
-                className="h-4 w-auto mx-auto opacity-70 hover:opacity-100 transition-opacity invert dark:invert-0"
+                className="h-5 w-auto opacity-80 hover:opacity-100 transition-opacity dark:invert"
               />
             </a>
           </div>

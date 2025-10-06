@@ -7,11 +7,9 @@
  * - Page title
  * - Date range selector with navigation arrows
  * - View mode toggle (All/Month/Day)
- * - Theme toggle
  */
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { ThemeToggle } from '../../ui/ThemeToggle'
 import { DatePickerPopover } from '../../shared/DatePickerPopover'
 import { ToggleGroup } from '../../ui/toggle-group'
 
@@ -30,9 +28,6 @@ export interface SupportHeaderProps {
   // View mode
   timeViewMode: 'all' | 'month' | 'day'
 
-  // Theme
-  theme: 'light' | 'dark'
-
   // Navigation
   canNavigatePrevious: boolean
   canNavigateNext: boolean
@@ -44,7 +39,6 @@ export interface SupportHeaderProps {
   onMonthChange: (month: number | 'all') => void
   onDayChange: (day: string | 'all') => void
   onTimeViewModeChange: (mode: 'all' | 'month' | 'day') => void
-  onToggleTheme: () => void
   onPreviousMonth: () => void
   onNextMonth: () => void
 }
@@ -58,7 +52,6 @@ export function SupportHeader({
   availableMonths,
   availableDates,
   timeViewMode,
-  theme,
   canNavigatePrevious,
   canNavigateNext,
   previousMonthTooltip,
@@ -67,7 +60,6 @@ export function SupportHeader({
   onMonthChange,
   onDayChange,
   onTimeViewModeChange,
-  onToggleTheme,
   onPreviousMonth,
   onNextMonth
 }: SupportHeaderProps) {
@@ -148,9 +140,6 @@ export function SupportHeader({
                 size="sm"
               />
             </div>
-
-            {/* Theme Toggle */}
-            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           </div>
         </div>
       </div>

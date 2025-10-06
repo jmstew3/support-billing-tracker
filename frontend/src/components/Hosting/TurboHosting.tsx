@@ -177,7 +177,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold">{currentfSummary.freeCredits}</p>
+                  <p className="text-lg font-bold">{currentSummary.freeCredits}</p>
                   <p className="text-xs text-muted-foreground">Credits Available</p>
                 </div>
               </div>
