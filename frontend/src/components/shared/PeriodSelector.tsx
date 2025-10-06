@@ -20,12 +20,14 @@ export function PeriodSelector({ type = 'full', label = 'Period:' }: PeriodSelec
   const {
     selectedYear,
     selectedMonth,
+    selectedMonths,
     selectedDay,
     availableYears,
     availableMonths,
     availableDates,
     setYear: onYearChange,
     setMonth: onMonthChange,
+    setMonths: onMonthsChange,
     setDay: onDayChange,
     navigatePrevious,
     navigateNext,
@@ -166,13 +168,16 @@ export function PeriodSelector({ type = 'full', label = 'Period:' }: PeriodSelec
         <DatePickerPopover
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
+          selectedMonths={selectedMonths}
           selectedDay={selectedDay}
           availableYears={availableYears}
           availableMonths={availableMonths}
           availableDates={availableDates}
           onYearChange={onYearChange}
           onMonthChange={onMonthChange}
+          onMonthsChange={onMonthsChange}
           onDayChange={onDayChange}
+          enableRangeMode={true}
         />
 
         {/* Next Navigation Arrow */}
