@@ -54,7 +54,8 @@ export interface MonthlyCosts {
 export function useSupportMetrics(
   requests: ChatRequest[],
   selectedYear: number,
-  selectedMonth: number | 'all'
+  selectedMonth: number | 'all',
+  selectedMonths: number[] | 'all'
 ) {
   // Activity metrics
   const activityMetrics = useMemo((): ActivityMetrics => {
@@ -263,7 +264,11 @@ export function useSupportMetrics(
 
   // Monthly costs calculation
   const monthlyCosts = useMemo((): MonthlyCosts[] | null => {
-    if (selectedMonth !== 'all') return null;
+    // Show monthly breakdown when 'all' selected OR when multiple months selected
+    const shouldShowMonthly = selectedMonths === 'all' ||
+      (Array.isArray(selectedMonths) && selectedMonths.length > 1);
+
+    if (!shouldShowMonthly) return null;
 
     const costs: MonthlyCosts[] = [];
     const requestsByMonth = new Map<string, ChatRequest[]>();
@@ -281,6 +286,11 @@ export function useSupportMetrics(
       const month = requestDate.getMonth() + 1;
 
       if (year === selectedYear) {
+        // If specific months selected, only include those
+        if (Array.isArray(selectedMonths) && selectedMonths.length > 0) {
+          if (!selectedMonths.includes(month)) return;
+        }
+
         const key = `${year}-${String(month).padStart(2, '0')}`;
         if (!requestsByMonth.has(key)) {
           requestsByMonth.set(key, []);
@@ -303,12 +313,16 @@ export function useSupportMetrics(
         });
       });
 
-    return costs;
-  }, [requests, selectedYear, selectedMonth]);
+    return costs.length > 0 ? costs : null;
+  }, [requests, selectedYear, selectedMonth, selectedMonths]);
 
   // Monthly category data
   const monthlyCategoryData = useMemo((): MonthlyCategoryData[] | null => {
-    if (selectedMonth !== 'all') return null;
+    // Show monthly breakdown when 'all' selected OR when multiple months selected
+    const shouldShowMonthly = selectedMonths === 'all' ||
+      (Array.isArray(selectedMonths) && selectedMonths.length > 1);
+
+    if (!shouldShowMonthly) return null;
 
     const data: MonthlyCategoryData[] = [];
     const requestsByMonth = new Map<string, ChatRequest[]>();
@@ -319,6 +333,11 @@ export function useSupportMetrics(
       const month = requestDate.getMonth() + 1;
 
       if (year === selectedYear) {
+        // If specific months selected, only include those
+        if (Array.isArray(selectedMonths) && selectedMonths.length > 0) {
+          if (!selectedMonths.includes(month)) return;
+        }
+
         const key = `${year}-${String(month).padStart(2, '0')}`;
         if (!requestsByMonth.has(key)) {
           requestsByMonth.set(key, []);
@@ -342,13 +361,16 @@ export function useSupportMetrics(
       });
 
     return data.length > 0 ? data : null;
-  }, [requests, selectedYear, selectedMonth]);
+  }, [requests, selectedYear, selectedMonth, selectedMonths]);
 
-  // Single period category data
+  // Single period category data (for single month view)
   const categoryBreakdownData = useMemo(() => {
-    if (selectedMonth === 'all') return null;
+    // Only show single period breakdown for single month selection
+    if (selectedMonths === 'all' || (Array.isArray(selectedMonths) && selectedMonths.length !== 1)) {
+      return null;
+    }
     return calculateCategoryData(requests);
-  }, [requests, selectedMonth]);
+  }, [requests, selectedMonth, selectedMonths]);
 
   return {
     activityMetrics,

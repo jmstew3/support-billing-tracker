@@ -20,6 +20,7 @@ import { SupportTableSection } from './sections/SupportTableSection'
 import { ArchivedRequestsSection } from './sections/ArchivedRequestsSection'
 
 // Hooks
+import { usePeriod } from '../../contexts/PeriodContext'
 import { useSupportData } from './hooks/useSupportData'
 import { useSupportFiltering } from './hooks/useSupportFiltering'
 import { useSupportMetrics } from './hooks/useSupportMetrics'
@@ -46,10 +47,26 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // STATE MANAGEMENT
   // ============================================================
 
-  // Date filtering state
-  const [selectedYear, setSelectedYear] = useState<number>(2025)
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all')
-  const [selectedDay, setSelectedDay] = useState<string | 'all'>('all')
+  // Date filtering state from PeriodContext
+  const {
+    selectedYear,
+    selectedMonth,
+    selectedMonths,
+    selectedDay,
+    setYear,
+    setMonth,
+    setMonths,
+    setDay,
+    setAvailableData,
+    navigatePrevious,
+    navigateNext,
+    canNavigatePrevious: canNavigatePreviousContext,
+    canNavigateNext: canNavigateNextContext,
+    getMonthStrings,
+    viewMode,
+    setViewMode
+  } = usePeriod()
+
   const [timeViewMode, setTimeViewMode] = useState<'all' | 'month' | 'day'>('all')
 
   // Pagination state
@@ -170,7 +187,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   } = useSupportMetrics(
     billableFilteredRequests,
     selectedYear,
-    selectedMonth
+    selectedMonth,
+    selectedMonths
   )
 
   // Activity metrics are passed directly to SupportScorecards component
@@ -248,6 +266,14 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   }, [hideNonBillable])
 
   // ============================================================
+  // REGISTER AVAILABLE DATA WITH PERIOD CONTEXT
+  // ============================================================
+
+  useEffect(() => {
+    setAvailableData(availableYears, availableMonthsForYear, availableDates)
+  }, [availableYears, availableMonthsForYear, availableDates, setAvailableData])
+
+  // ============================================================
   // SCROLL POSITION PRESERVATION
   // ============================================================
 
@@ -264,103 +290,34 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   }
 
   // ============================================================
-  // EVENT HANDLERS - Year/Month/Day Navigation
+  // EVENT HANDLERS - View Mode (Local state)
   // ============================================================
-
-  const handleYearChange = (year: number) => {
-    setSelectedYear(year)
-    setSelectedMonth('all')
-    setSelectedDay('all')
-    setCurrentPage(1)
-  }
-
-  const handleMonthChange = (month: number | 'all') => {
-    setSelectedMonth(month)
-    setSelectedDay('all')
-    setCurrentPage(1)
-
-    if (month !== 'all') {
-      setTimeViewMode('month')
-    }
-  }
-
-  const handleDayChange = (day: string | 'all') => {
-    setSelectedDay(day)
-    setCurrentPage(1)
-
-    if (day !== 'all') {
-      setTimeViewMode('day')
-    }
-  }
 
   const handleTimeViewModeChange = (mode: 'all' | 'month' | 'day') => {
     setTimeViewMode(mode)
 
     if (mode === 'all') {
-      setSelectedMonth('all')
-      setSelectedDay('all')
+      setMonth('all')
+      setDay('all')
     } else if (mode === 'month') {
-      setSelectedDay('all')
+      setDay('all')
       if (selectedMonth === 'all') {
         const latestMonth = availableMonthsForYear[0]
         if (latestMonth) {
-          setSelectedMonth(latestMonth)
+          setMonth(latestMonth)
         }
       }
     } else if (mode === 'day') {
       if (selectedMonth === 'all') {
         const latestMonth = availableMonthsForYear[0]
         if (latestMonth) {
-          setSelectedMonth(latestMonth)
+          setMonth(latestMonth)
         }
       }
       if (selectedDay === 'all' && availableDates.length > 0) {
-        setSelectedDay(availableDates[0])
+        setDay(availableDates[0])
       }
     }
-  }
-
-  // Month navigation with arrow buttons
-  const canNavigatePrevious = () => {
-    if (selectedMonth === 'all') return false
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    return currentMonthIndex < availableMonthsForYear.length - 1
-  }
-
-  const canNavigateNext = () => {
-    if (selectedMonth === 'all') return false
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    return currentMonthIndex > 0
-  }
-
-  const getPreviousMonthTooltip = () => {
-    if (!canNavigatePrevious() || selectedMonth === 'all') return ''
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    const previousMonth = availableMonthsForYear[currentMonthIndex + 1]
-    return `Go to ${monthNames[previousMonth - 1]} ${selectedYear}`
-  }
-
-  const getNextMonthTooltip = () => {
-    if (!canNavigateNext() || selectedMonth === 'all') return ''
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    const nextMonth = availableMonthsForYear[currentMonthIndex - 1]
-    return `Go to ${monthNames[nextMonth - 1]} ${selectedYear}`
-  }
-
-  const handlePreviousMonth = () => {
-    if (!canNavigatePrevious() || selectedMonth === 'all') return
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    const previousMonth = availableMonthsForYear[currentMonthIndex + 1]
-    setSelectedMonth(previousMonth)
-    setSelectedDay('all')
-  }
-
-  const handleNextMonth = () => {
-    if (!canNavigateNext() || selectedMonth === 'all') return
-    const currentMonthIndex = availableMonthsForYear.indexOf(selectedMonth as number)
-    const nextMonth = availableMonthsForYear[currentMonthIndex - 1]
-    setSelectedMonth(nextMonth)
-    setSelectedDay('all')
   }
 
   // ============================================================
@@ -652,23 +609,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header Section */}
       <SupportHeader
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-        selectedDay={selectedDay}
-        availableYears={availableYears}
-        availableMonths={availableMonthsForYear}
-        availableDates={availableDates}
         timeViewMode={timeViewMode}
-        canNavigatePrevious={canNavigatePrevious()}
-        canNavigateNext={canNavigateNext()}
-        previousMonthTooltip={getPreviousMonthTooltip()}
-        nextMonthTooltip={getNextMonthTooltip()}
-        onYearChange={handleYearChange}
-        onMonthChange={handleMonthChange}
-        onDayChange={handleDayChange}
         onTimeViewModeChange={handleTimeViewModeChange}
-        onPreviousMonth={handlePreviousMonth}
-        onNextMonth={handleNextMonth}
       />
 
       {/* Main Content Container */}
