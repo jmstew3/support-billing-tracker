@@ -719,8 +719,9 @@ export function CostTrackerCard({
     const yAxisMax = maxValue + 250;
 
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <ComposedChart data={chartData}>
+      <div style={{ width: '100%', minHeight: 400 }}>
+        <ResponsiveContainer width="100%" height={400}>
+          <ComposedChart data={chartData}>
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="month" {...CHART_STYLES.xAxis} />
           <YAxis
@@ -880,7 +881,8 @@ export function CostTrackerCard({
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>
-    );
+    </div>
+  );
   };
 
   // Render single period chart
@@ -899,8 +901,9 @@ export function CostTrackerCard({
     const yAxisMax = maxValue + 250;
 
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={chartData}>
+      <div style={{ width: '100%', minHeight: 400 }}>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={chartData}>
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
           <YAxis
@@ -950,7 +953,8 @@ export function CostTrackerCard({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    );
+    </div>
+  );
   };
 
   // Main render logic

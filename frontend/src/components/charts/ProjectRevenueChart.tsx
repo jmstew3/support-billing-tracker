@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { formatCurrency, convertMicrosToDollars } from '../../services/projectsApi';
+import { BaseBarChart } from './BaseBarChart';
+import { ProjectRevenueTooltip } from './tooltips/ProjectRevenueTooltip';
+import { CATEGORY_COLORS } from '../../config/chartConfig';
+import { useChartData, calculateYAxisDomain } from '../../utils/chartHelpers';
+import { convertMicrosToDollars } from '../../services/projectsApi';
 import type { Project } from '../../types/project';
 
 interface ProjectRevenueChartProps {
@@ -23,129 +26,69 @@ const CATEGORY_LABELS: Record<string, string> = {
   BASIC_FORM: 'Basic Form',
 };
 
-// Category colors using CSS variables
-const CATEGORY_COLORS: Record<string, string> = {
-  MIGRATION: 'hsl(217, 91%, 60%)',      // Blue
-  LANDING_PAGE: 'hsl(142, 76%, 36%)',   // Green
-  WEBSITE: 'hsl(45, 93%, 47%)',         // Yellow
-  MULTI_FORM: 'hsl(27, 87%, 67%)',      // Orange
-  BASIC_FORM: 'hsl(262, 52%, 47%)',     // Purple
-};
-
+/**
+ * ProjectRevenueChart - Displays project revenue with category breakdown
+ *
+ * Supports two view modes:
+ * - Category: Stacked bars showing revenue by project category
+ * - Monthly: Simple bars showing total revenue per month
+ *
+ * Uses BaseBarChart with custom ProjectRevenueTooltip for both views.
+ */
 export function ProjectRevenueChart({ monthlyBreakdown }: ProjectRevenueChartProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('category');
 
-  // Sort data chronologically (oldest first)
-  const sortedData = [...monthlyBreakdown].sort((a, b) => a.month.localeCompare(b.month));
-
   // Format month for display (e.g., "Jun 2025")
-  function formatMonthLabel(monthStr: string) {
+  const formatMonthLabel = (monthStr: string) => {
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1);
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  }
+  };
 
   // Transform data for category view (stacked bars)
-  const categoryData = sortedData.map((monthData) => {
-    const categories: Record<string, any> = {
-      month: formatMonthLabel(monthData.month),
-      monthKey: monthData.month,
-    };
+  const categoryData = useChartData(monthlyBreakdown, (data) => {
+    // Sort chronologically
+    const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
 
-    // Initialize all categories to 0
-    Object.keys(CATEGORY_LABELS).forEach((cat) => {
-      categories[cat] = 0;
+    return sorted.map((monthData) => {
+      const categories: Record<string, any> = {
+        month: formatMonthLabel(monthData.month),
+        monthKey: monthData.month,
+      };
+
+      // Initialize all categories to 0
+      Object.keys(CATEGORY_LABELS).forEach((cat) => {
+        categories[cat] = 0;
+      });
+
+      // Sum revenue by category
+      monthData.projects.forEach((project) => {
+        const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
+        categories[project.projectCategory] = (categories[project.projectCategory] || 0) + revenue;
+      });
+
+      // Add total for tooltip
+      categories.total = monthData.revenue;
+
+      return categories;
     });
-
-    // Sum revenue by category
-    monthData.projects.forEach((project) => {
-      const revenue = convertMicrosToDollars(project.revenueAmount.amountMicros);
-      categories[project.projectCategory] = (categories[project.projectCategory] || 0) + revenue;
-    });
-
-    // Add total for reference
-    categories.total = monthData.revenue;
-
-    return categories;
   });
 
   // Transform data for monthly view (simple bars)
-  const monthlyData = sortedData.map((monthData) => ({
-    month: formatMonthLabel(monthData.month),
-    monthKey: monthData.month,
-    revenue: monthData.revenue,
-    projectCount: monthData.projectCount,
-  }));
+  const monthlyData = useChartData(monthlyBreakdown, (data) => {
+    const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
 
-  // Calculate max Y-axis value (round up to nearest $5k)
-  const maxRevenue = Math.max(...sortedData.map((m) => m.revenue));
-  const maxYAxis = Math.ceil(maxRevenue / 5000) * 5000;
+    return sorted.map((monthData) => ({
+      month: formatMonthLabel(monthData.month),
+      monthKey: monthData.month,
+      revenue: monthData.revenue,
+      projectCount: monthData.projectCount,
+    }));
+  });
 
-  // Custom tooltip for category view
-  const CategoryTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-
-      // Filter out categories with 0 value
-      const nonZeroCategories = payload.filter((entry: any) => entry.value > 0);
-
-      return (
-        <div className="border bg-card p-3 text-sm">
-          <p className="font-semibold mb-2">{data.month}</p>
-          {nonZeroCategories.map((entry: any) => (
-            <div key={entry.dataKey} className="flex items-center justify-between gap-4 mb-1">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3"
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="text-xs text-muted-foreground">
-                  {CATEGORY_LABELS[entry.dataKey]}:
-                </span>
-              </div>
-              <span className="text-xs font-medium text-foreground">
-                {formatCurrency(entry.value)}
-              </span>
-            </div>
-          ))}
-          <div className="mt-2 pt-2 border-t">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground">Total:</span>
-              <span className="text-xs font-semibold text-foreground">
-                {formatCurrency(data.total)}
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Custom tooltip for monthly view
-  const MonthlyTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="border bg-card p-3 text-sm">
-          <p className="font-semibold mb-2">{data.month}</p>
-          <div className="flex items-center justify-between gap-4 mb-1">
-            <span className="text-xs text-muted-foreground">Revenue:</span>
-            <span className="text-xs font-medium text-foreground">
-              {formatCurrency(data.revenue)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-muted-foreground">Projects:</span>
-            <span className="text-xs font-medium text-foreground">
-              {data.projectCount}
-            </span>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
+  // Calculate Y-axis domain (round to nearest $5k)
+  const maxRevenue = Math.max(...monthlyBreakdown.map((m) => m.revenue));
+  const [, yMax] = calculateYAxisDomain([maxRevenue], 5000);
 
   return (
     <div className="border bg-card p-6">
@@ -186,75 +129,50 @@ export function ProjectRevenueChart({ monthlyBreakdown }: ProjectRevenueChartPro
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      <div style={{ width: '100%', height: 300 }}>
         {viewMode === 'category' ? (
-          <BarChart data={categoryData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis
-              dataKey="month"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-              domain={[0, maxYAxis]}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              content={<CategoryTooltip />}
-              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
-            />
-            <Legend
-              wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-              iconType="square"
-              iconSize={10}
-              formatter={(value) => CATEGORY_LABELS[value] || value}
-            />
-            {Object.keys(CATEGORY_LABELS).map((category) => (
-              <Bar
-                key={category}
-                dataKey={category}
-                stackId="revenue"
-                fill={CATEGORY_COLORS[category]}
-                name={category}
-              />
-            ))}
-          </BarChart>
+          <BaseBarChart
+            data={categoryData}
+            bars={Object.keys(CATEGORY_LABELS).map((category) => ({
+              dataKey: category,
+              name: category,
+              fill: CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS],
+              stackId: 'revenue',
+            }))}
+            xAxisKey="month"
+            yAxisConfig={{
+              domain: [0, yMax],
+              formatter: (value) => `$${(value / 1000).toFixed(0)}k`,
+            }}
+            height={300}
+            margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+            showLegend={true}
+            customTooltip={(props) => (
+              <ProjectRevenueTooltip {...props} categoryLabels={CATEGORY_LABELS} />
+            )}
+          />
         ) : (
-          <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis
-              dataKey="month"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-              domain={[0, maxYAxis]}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              content={<MonthlyTooltip />}
-              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
-            />
-            <Bar
-              dataKey="revenue"
-              fill="hsl(var(--foreground))"
-              name="Revenue"
-            />
-          </BarChart>
+          <BaseBarChart
+            data={monthlyData}
+            bars={[
+              {
+                dataKey: 'revenue',
+                name: 'Revenue',
+                fill: 'hsl(var(--foreground))',
+              },
+            ]}
+            xAxisKey="month"
+            yAxisConfig={{
+              domain: [0, yMax],
+              formatter: (value) => `$${(value / 1000).toFixed(0)}k`,
+            }}
+            height={300}
+            margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+            showLegend={false}
+            customTooltip={ProjectRevenueTooltip}
+          />
         )}
-      </ResponsiveContainer>
+      </div>
     </div>
   );
 }

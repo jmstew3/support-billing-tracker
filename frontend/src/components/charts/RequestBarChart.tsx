@@ -1,73 +1,74 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { DailyRequestCount } from '../../types/request';
+import { useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
+import { BaseBarChart } from './BaseBarChart';
+import { URGENCY_COLORS } from '../../config/chartConfig';
+import type { DailyRequestCount } from '../../types/request';
 
 interface RequestBarChartProps {
   data: DailyRequestCount[];
   isHourlyView?: boolean;
 }
 
+/**
+ * RequestBarChart - Displays request counts by urgency level
+ *
+ * Uses BaseBarChart with urgency color palette. Supports both daily and hourly views
+ * with appropriate date formatting.
+ *
+ * @param data - Daily or hourly request counts with urgency breakdown
+ * @param isHourlyView - True for hourly format, false for daily format
+ */
 export function RequestBarChart({ data, isHourlyView = false }: RequestBarChartProps) {
-  const formattedData = data.map(item => {
-    if (isHourlyView) {
-      // For hourly data, item.date is already in format "07:00"
-      return {
-        ...item,
-        date: item.date
-      };
-    } else {
-      // For daily data, format the date
-      try {
-        return {
-          ...item,
-          date: format(parseISO(item.date), 'EEE, MMM dd')
-        };
-      } catch (error) {
-        // If date parsing fails, use original
+  // Format dates based on view mode
+  const formattedData = useMemo(() => {
+    return data.map(item => {
+      if (isHourlyView) {
+        // Hourly data already in format "07:00"
         return {
           ...item,
           date: item.date
         };
+      } else {
+        // Format daily dates as "Wed, Jan 15"
+        try {
+          return {
+            ...item,
+            date: format(parseISO(item.date), 'EEE, MMM dd')
+          };
+        } catch (error) {
+          // If date parsing fails, use original
+          return {
+            ...item,
+            date: item.date
+          };
+        }
       }
-    }
-  });
+    });
+  }, [data, isHourlyView]);
 
   return (
     <div className="w-full min-h-[300px] sm:min-h-[350px] h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={formattedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis
-            dataKey="date"
-            angle={-45}
-            textAnchor="end"
-            height={80}
-            interval={0}
-            tick={{ fontSize: 10 }}
-            className="text-xs sm:text-sm"
-          />
-          <YAxis
-            allowDecimals={false}
-            tickCount={6}
-            tick={{ fontSize: 10 }}
-            className="text-xs sm:text-sm"
-          />
-          <Tooltip
-            contentStyle={{
-              fontSize: '0.875rem',
-              padding: '8px 12px',
-              borderRadius: '6px'
-            }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: '0.75rem' }}
-            iconSize={12}
-          />
-          <Bar dataKey="low" fill="#10b981" name="Low Priority" />
-          <Bar dataKey="medium" fill="#f59e0b" name="Medium Priority" />
-          <Bar dataKey="high" fill="#ef4444" name="High Priority" />
-        </BarChart>
-      </ResponsiveContainer>
+      <BaseBarChart
+        data={formattedData}
+        bars={[
+          { dataKey: 'low', name: 'Low Priority', fill: URGENCY_COLORS.low, stackId: 'urgency' },
+          { dataKey: 'medium', name: 'Medium Priority', fill: URGENCY_COLORS.medium, stackId: 'urgency' },
+          { dataKey: 'high', name: 'High Priority', fill: URGENCY_COLORS.high, stackId: 'urgency' },
+        ]}
+        xAxisKey="date"
+        xAxisConfig={{
+          angle: -45,
+          height: 80,
+          interval: 0,
+        }}
+        yAxisConfig={{
+          allowDecimals: false,
+          tickCount: 6,
+        }}
+        height="standard"
+        margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+        showLegend={true}
+      />
     </div>
   );
 }

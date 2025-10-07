@@ -4,11 +4,12 @@ import { Sidebar } from './components/shared/Sidebar';
 import { Projects } from './components/Projects/Projects';
 import { TurboHosting } from './components/Hosting/TurboHosting';
 import { Dashboard } from './components/Dashboard/Dashboard';
+import { ChartInfrastructureTest } from './components/charts/__tests__/BaseBarChart.test';
 import { PeriodProvider } from './contexts/PeriodContext';
 import { useTheme } from './hooks/useTheme';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing' | 'test'>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -28,6 +29,7 @@ function App() {
           {currentView === 'projects' && <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
           {currentView === 'overview' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
           {currentView === 'billing' && <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
+          {currentView === 'test' && <ChartInfrastructureTest />}
         </main>
       </div>
     </PeriodProvider>
