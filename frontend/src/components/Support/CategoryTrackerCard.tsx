@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import {
   ResponsiveContainer,
@@ -294,8 +294,9 @@ export function CategoryTrackerCard({
     const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding
 
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <ComposedChart data={chartData}>
+      <div style={{ width: '100%', minHeight: 400 }}>
+        <ResponsiveContainer width="100%" height={400}>
+          <ComposedChart data={chartData}>
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="month" {...CHART_STYLES.xAxis} />
           <YAxis
@@ -429,7 +430,8 @@ export function CategoryTrackerCard({
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>
-    );
+    </div>
+  );
   };
 
   // Render single period chart (bar chart showing category distribution)
@@ -450,8 +452,9 @@ export function CategoryTrackerCard({
     const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding
 
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <ComposedChart data={chartData} layout="horizontal">
+      <div style={{ width: '100%', minHeight: 400 }}>
+        <ResponsiveContainer width="100%" height={400}>
+          <ComposedChart data={chartData} layout="horizontal">
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
           <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
           <YAxis
@@ -500,7 +503,8 @@ export function CategoryTrackerCard({
           </Bar>
         </ComposedChart>
       </ResponsiveContainer>
-    );
+    </div>
+  );
   };
 
   // Main render logic

@@ -5,8 +5,8 @@ import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
-  currentView?: 'home' | 'projects' | 'overview' | 'billing';
-  onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing') => void;
+  currentView?: 'home' | 'projects' | 'overview' | 'billing' | 'test';
+  onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing' | 'test') => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
@@ -40,7 +40,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     { id: 'billing' as const, label: 'Turbo Hosting', icon: Zap },
   ];
 
-  const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing') => {
+  const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing' | 'test') => {
     if (onNavigate) {
       onNavigate(view);
     }

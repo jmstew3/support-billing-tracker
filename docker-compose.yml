@@ -5,6 +5,7 @@ services:
     image: mysql:8.0
     container_name: thad-chat-mysql
     restart: unless-stopped
+    env_file: .env.docker
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: thad_chat
@@ -30,6 +31,7 @@ services:
       dockerfile: Dockerfile
     container_name: thad-chat-backend
     restart: unless-stopped
+    env_file: .env.docker
     depends_on:
       mysql:
         condition: service_healthy
@@ -76,6 +78,7 @@ services:
       target: development
     container_name: thad-chat-frontend
     restart: unless-stopped
+    env_file: .env.docker
     depends_on:
       - backend
     environment:
