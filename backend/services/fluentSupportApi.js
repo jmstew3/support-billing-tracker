@@ -151,12 +151,45 @@ export async function fetchFluentTicket(ticketId) {
 }
 
 /**
- * Parse FluentSupport HTML content to extract clean subject and description
+ * Extract URLs from text content
+ * @param {string} text - Text to extract URLs from
+ * @returns {Array} Array of URLs found
+ */
+function extractURLs(text) {
+  if (!text) return [];
+
+  // URL regex pattern
+  const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
+  const urls = text.match(urlRegex) || [];
+
+  return [...new Set(urls)]; // Remove duplicates
+}
+
+/**
+ * Get primary website URL (prioritize client websites over tools like Loom)
+ * @param {Array} urls - Array of URLs
+ * @returns {string|null} Primary website URL or null
+ */
+function getPrimaryWebsiteURL(urls) {
+  if (!urls || urls.length === 0) return null;
+
+  // Filter out common tool URLs (Loom, etc.)
+  const toolDomains = ['loom.com', 'youtube.com', 'youtu.be', 'drive.google.com'];
+  const clientUrls = urls.filter(url => {
+    return !toolDomains.some(domain => url.includes(domain));
+  });
+
+  // Return first client URL, or first URL if no client URLs found
+  return clientUrls[0] || urls[0] || null;
+}
+
+/**
+ * Parse FluentSupport HTML content to extract clean subject, description, and URLs
  * @param {string} htmlContent - HTML table content from FluentSupport
- * @returns {Object} Parsed subject and description
+ * @returns {Object} Parsed subject, description, urls, and primaryUrl
  */
 function parseFluentSupportHTML(htmlContent) {
-  if (!htmlContent) return { subject: '', description: '' };
+  if (!htmlContent) return { subject: '', description: '', urls: [], primaryUrl: null };
 
   let subject = '';
   let description = '';
@@ -193,7 +226,12 @@ function parseFluentSupportHTML(htmlContent) {
     console.error('[FluentSupport] Error parsing HTML:', error.message);
   }
 
-  return { subject, description };
+  // Extract URLs from both subject and description
+  const combinedText = `${subject} ${description}`;
+  const urls = extractURLs(combinedText);
+  const primaryUrl = getPrimaryWebsiteURL(urls);
+
+  return { subject, description, urls, primaryUrl };
 }
 
 /**
@@ -241,8 +279,15 @@ export function transformFluentTicket(ticket) {
   const subject = parsed.subject || ticket.title || ticket.subject || 'No subject';
   const cleanDescription = parsed.description || '';
 
+  // Extract URLs from title as well (some tickets have URLs only in title)
+  const titleUrls = extractURLs(ticket.title || '');
+  const allUrls = [...new Set([...parsed.urls, ...titleUrls])];
+  const websiteUrl = parsed.primaryUrl || getPrimaryWebsiteURL(titleUrls) || null;
+
   // Build final description
   const description = cleanDescription ? `${subject}: ${cleanDescription}` : subject;
+
+  console.log(`[FluentSupport] Ticket ${ticket.id}: Found ${allUrls.length} URLs, primary: ${websiteUrl}`);
 
   return {
     date,
@@ -255,6 +300,7 @@ export function transformFluentTicket(ticket) {
     status: 'active',
     source: 'fluent',
     fluent_id: ticket.id?.toString() || ticket.ticket_id?.toString(),
+    website_url: websiteUrl, // Primary website URL extracted from ticket
 
     // Additional FluentSupport metadata
     fluent_metadata: {
