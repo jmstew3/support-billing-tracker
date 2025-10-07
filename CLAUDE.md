@@ -137,7 +137,43 @@ python3 main.py
 - Disabled states with reduced opacity
 
 ##### Layout Standards
-- **Sticky Headers**: Navigation controls remain visible while scrolling (`sticky top-0 z-10`)
+
+**Header Bar Architecture**
+- **Definition**: The header bar is the sticky top section containing the page title and period/filter controls
+- **Component**: `PageHeader` component in `shared/PageHeader.tsx` is the unified solution
+- **Key Features**:
+  - Sticky positioning (`sticky top-0 z-10`) keeps title and controls visible while scrolling
+  - Left-aligned page title
+  - Right-aligned controls (period selector, filters, etc.)
+  - Full-width border separator
+  - Mobile-responsive with hamburger menu integration
+  - Configurable: Can show/hide period selector, view toggle, and custom controls
+
+**Period Selector Modes**
+- **Component**: `PeriodSelector` in `shared/PeriodSelector.tsx`
+- **Two Modes**:
+  1. **`'full'`**: Navigation arrows + DatePickerPopover (used in Dashboard, Support)
+     - Left/right arrow buttons for quick month/year navigation
+     - Clickable formatted period display opens date picker
+     - Smart navigation that skips months without data
+     - Tooltips show target period on hover
+  2. **`'simple'`**: Dropdown select only (used in TurboHosting)
+     - Compact month/year dropdown
+     - "All Months" option available
+     - Better for pages with simpler filtering needs
+
+**Current Implementation Status** *(as of January 2025)*
+
+| Page | Header Implementation | Uses PageHeader? | Period Selector Mode |
+|------|----------------------|------------------|---------------------|
+| Dashboard (Billing Overview) | ✅ PageHeader | ✅ Yes | `'full'` |
+| Support | ⚠️ Custom `SupportHeader` | ❌ No | `'full'` (standalone) |
+| Projects | ⚠️ Inline `<h1>` | ❌ No | ❌ None |
+| Turbo Hosting | ⚠️ Inline `<header>` | ❌ No | ⚠️ Custom controls |
+
+**Technical Debt**: Support, Projects, and Turbo Hosting pages should be migrated to use the unified `PageHeader` component for consistency.
+
+**General Layout**
 - **Full-Width Borders**: Edge-to-edge separator lines extending to browser edges
 - **Responsive Spacing**: Consistent padding (p-4, p-6, p-8) and gaps
 - **Filter Controls**: Top-right positioning with clear labels and dropdowns
@@ -576,7 +612,9 @@ thad-chat/
     │   │   ├── base/                  # Reusable base components
     │   │   │   └── DataTrackerCard.tsx # Base tracker with render props pattern
     │   │   ├── shared/                # Cross-page shared components
-    │   │   │   ├── PageHeader.tsx     # Page title and controls
+    │   │   │   ├── PageHeader.tsx     # Unified page header with title and controls
+    │   │   │   ├── PeriodSelector.tsx # Period/month selector (full & simple modes)
+    │   │   │   ├── ViewModeToggle.tsx # View mode toggle (All/Month/Day)
     │   │   │   ├── Sidebar.tsx        # Navigation sidebar
     │   │   │   ├── Pagination.tsx     # Table pagination
     │   │   │   ├── EditableCell.tsx   # In-line editing (text)
@@ -595,7 +633,10 @@ thad-chat/
     │   │   │   └── ProjectCategoryPieChart.tsx # Project category distribution
     │   │   ├── support/               # Support page components
     │   │   │   ├── SupportTickets.tsx # Support ticket tracking (MAIN PAGE)
-    │   │   │   └── CostTrackerCard.tsx # Cost tracking by urgency levels
+    │   │   │   ├── sections/
+    │   │   │   │   └── SupportHeader.tsx # Custom header (legacy - should migrate to PageHeader)
+    │   │   │   ├── CostTrackerCard.tsx # Cost tracking by urgency levels
+    │   │   │   └── CategoryTrackerCard.tsx # Category tracking
     │   │   ├── dashboard/             # Dashboard page components
     │   │   │   ├── Dashboard.tsx      # Billing Overview (MAIN LANDING PAGE)
     │   │   │   └── RevenueTrackerCard.tsx # Revenue tracking by categories
