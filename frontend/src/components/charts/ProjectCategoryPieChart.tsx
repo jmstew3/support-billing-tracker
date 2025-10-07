@@ -6,13 +6,13 @@ interface ProjectCategoryPieChartProps {
   projects: Project[];
 }
 
-// Project category colors (monochrome grayscale theme - 0% saturation, sharp edges)
+// Project category colors (vibrant muted theme matching revenue chart)
 const CATEGORY_COLORS: Record<string, string> = {
-  'MIGRATION': '#000000',   // pure black (darkest)
-  'LANDING_PAGE': '#1f2937', // gray-800 (very dark)
-  'WEBSITE': '#4b5563',     // gray-600 (medium)
-  'MULTI_FORM': '#6b7280',  // gray-500 (medium-light)
-  'BASIC_FORM': '#9ca3af',  // gray-400 (lighter)
+  'MIGRATION': 'hsl(217, 91%, 60%)',      // Blue
+  'LANDING_PAGE': 'hsl(142, 76%, 36%)',   // Green
+  'WEBSITE': 'hsl(45, 93%, 47%)',         // Yellow
+  'MULTI_FORM': 'hsl(27, 87%, 67%)',      // Orange
+  'BASIC_FORM': 'hsl(262, 52%, 47%)',     // Purple
 };
 
 export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartProps) {

@@ -186,7 +186,7 @@ export function ProjectRevenueChart({ monthlyBreakdown }: ProjectRevenueChartPro
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={300}>
         {viewMode === 'category' ? (
           <BarChart data={categoryData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
