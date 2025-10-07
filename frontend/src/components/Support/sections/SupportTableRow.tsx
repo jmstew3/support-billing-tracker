@@ -15,7 +15,7 @@ import { TableCell, TableRow } from '../../ui/table'
 import { EditableCell } from '../../shared/EditableCell'
 import { EditableNumberCell } from '../../shared/EditableNumberCell'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../ui/tooltip'
-import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard } from 'lucide-react'
+import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard, ExternalLink } from 'lucide-react'
 import type { ChatRequest } from '../../../types/request'
 import { getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
@@ -94,6 +94,30 @@ export function SupportTableRow({
             </TooltipContent>
           </UITooltip>
         </TooltipProvider>
+      </TableCell>
+      <TableCell className="text-center">
+        {request.website_url ? (
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={request.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{request.website_url}</p>
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
+        ) : (
+          <span className="text-gray-400 text-xs">-</span>
+        )}
       </TableCell>
       <TableCell className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}>
         {request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}

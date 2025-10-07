@@ -187,7 +187,7 @@ export function SupportTableHeader({
             </div>
             {showFilters.source && (
               <div className="w-full text-xs border border-border rounded p-2 bg-card">
-                {['sms', 'ticket', 'email', 'phone'].map(source => (
+                {['sms', 'ticket', 'email', 'phone', 'fluent'].map(source => (
                   <label key={source} className="flex items-center space-x-1 mb-1 cursor-pointer hover:bg-muted/50 rounded px-1">
                     <input
                       type="checkbox"
@@ -196,13 +196,18 @@ export function SupportTableHeader({
                       className="rounded border-border text-blue-600 dark:text-blue-400 focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="capitalize">
-                      {source === 'sms' ? 'Text' : source === 'email' ? 'Email' : source === 'phone' ? 'Phone' : 'Ticket'}
+                      {source === 'sms' ? 'Text' : source === 'ticket' ? 'Twenty CRM' : source === 'fluent' ? 'FluentSupport' : source === 'email' ? 'Email' : 'Phone'}
                     </span>
                   </label>
                 ))}
               </div>
             )}
           </div>
+        </TableHead>
+
+        {/* Website URL Column */}
+        <TableHead className="w-16 text-center">
+          <span className="text-xs">URL</span>
         </TableHead>
 
         {/* Date Column with Sort and Filter */}

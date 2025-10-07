@@ -68,7 +68,7 @@ router.post('/sync', async (req, res) => {
             await connection.query(
               `UPDATE requests
                SET date = ?, time = ?, category = ?, description = ?,
-                   urgency = ?, effort = ?, source = ?
+                   urgency = ?, effort = ?, source = ?, website_url = ?
                WHERE id = ?`,
               [
                 requestData.date,
@@ -78,6 +78,7 @@ router.post('/sync', async (req, res) => {
                 requestData.urgency,
                 requestData.effort,
                 requestData.source,
+                requestData.website_url,
                 requestId
               ]
             );
@@ -123,8 +124,8 @@ router.post('/sync', async (req, res) => {
 
           const [result] = await connection.query(
             `INSERT INTO requests (date, time, request_type, category, description,
-                                  urgency, effort, status, source)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                  urgency, effort, status, source, website_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               requestData.date,
               requestData.time,
@@ -134,7 +135,8 @@ router.post('/sync', async (req, res) => {
               requestData.urgency,
               requestData.effort,
               requestData.status,
-              requestData.source
+              requestData.source,
+              requestData.website_url
             ]
           );
 

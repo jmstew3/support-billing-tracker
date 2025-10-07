@@ -16,7 +16,7 @@
 import { Card, CardContent } from '../../ui/card'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '../../ui/table'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../ui/tooltip'
-import { ChevronRight, Archive, RotateCcw, MessageCircle, Ticket, Mail, Phone, Clipboard } from 'lucide-react'
+import { ChevronRight, Archive, RotateCcw, MessageCircle, Ticket, Mail, Phone, Clipboard, ExternalLink } from 'lucide-react'
 import type { ChatRequest } from '../../../types/request'
 import { parseLocalDate } from '../../../utils/supportHelpers'
 
@@ -67,6 +67,7 @@ export function ArchivedRequestsSection({
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead>Source</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Category</TableHead>
@@ -103,6 +104,30 @@ export function ArchivedRequestsSection({
                             </TooltipContent>
                           </UITooltip>
                         </TooltipProvider>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {request.website_url ? (
+                          <TooltipProvider>
+                            <UITooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={request.website_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors opacity-60"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{request.website_url}</p>
+                              </TooltipContent>
+                            </UITooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         {parseLocalDate(request.Date).toLocaleDateString()}
