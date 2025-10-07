@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from '../shared/PageHeader';
+import { usePeriod } from '../../contexts/PeriodContext';
 import { Scorecard } from '../ui/Scorecard';
 import { LoadingState } from '../ui/LoadingState';
 import { CumulativeBillingChart } from '../charts/CumulativeBillingChart';
@@ -18,11 +20,18 @@ interface TurboHostingProps {
 }
 
 export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
-  const [properties, setProperties] = useState<WebsiteProperty[]>([]);
+  // Use PeriodContext for month selection
+  const { selectedYear, selectedMonth: contextMonth } = usePeriod();
+
+  const [, setProperties] = useState<WebsiteProperty[]>([]);
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyHostingSummary[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Convert PeriodContext month format to TurboHosting format (YYYY-MM or 'all')
+  const selectedMonthStr = contextMonth === 'all'
+    ? 'all'
+    : `${selectedYear}-${String(contextMonth).padStart(2, '0')}`;
 
   // Load website properties on mount
   useEffect(() => {
@@ -47,14 +56,14 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
   }
 
   // Calculate metrics for selected month or all months
-  const currentSummary = selectedMonth === 'all'
+  const currentSummary = selectedMonthStr === 'all'
     ? {
         activeSites: monthlyBreakdown.reduce((sum, m) => Math.max(sum, m.activeSites), 0),
         grossMrr: monthlyBreakdown.reduce((sum, m) => sum + m.grossMrr, 0),
         netMrr: monthlyBreakdown.reduce((sum, m) => sum + m.netMrr, 0),
         freeCredits: monthlyBreakdown.reduce((sum, m) => Math.max(sum, m.freeCredits), 0),
       }
-    : monthlyBreakdown.find((m) => m.month === selectedMonth) || {
+    : monthlyBreakdown.find((m) => m.month === selectedMonthStr) || {
         activeSites: 0,
         grossMrr: 0,
         netMrr: 0,
@@ -62,9 +71,6 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
       };
 
   const creditProgress = calculateCreditProgress(currentSummary.activeSites);
-
-  // Available months for filter
-  const availableMonths = monthlyBreakdown.map((m) => m.month);
 
   // Note: formatMonthLabel now imported from utils/formatting
 
@@ -93,33 +99,14 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header - Responsive */}
-      <header className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl font-bold">Turbo Hosting</h1>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            {/* Month Filter */}
-            <div className="flex items-center gap-2">
-              <label htmlFor="month-select" className="text-sm font-medium">
-                Period:
-              </label>
-              <select
-                id="month-select"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-3 py-1.5 border border-input bg-background text-sm"
-              >
-                <option value="all">All Months</option>
-                {availableMonths.map((month) => (
-                  <option key={month} value={month}>
-                    {formatMonthLabel(month)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header */}
+      <PageHeader
+        title="Turbo Hosting"
+        showPeriodSelector={true}
+        periodSelectorType="simple"
+        showViewToggle={false}
+        onToggleMobileMenu={onToggleMobileMenu}
+      />
 
       {/* Main Content - Scrollable */}
       <main className="flex-1 overflow-auto">
@@ -130,9 +117,9 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
               title="Active Sites"
               value={currentSummary.activeSites}
               description={
-                selectedMonth === 'all'
+                selectedMonthStr === 'all'
                   ? 'Peak active sites across all months'
-                  : `Sites with active hosting in ${formatMonthLabel(selectedMonth)}`
+                  : `Sites with active hosting in ${formatMonthLabel(selectedMonthStr)}`
               }
               icon={<Server className="h-4 w-4" />}
             />
@@ -140,7 +127,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
               title="Gross MRR"
               value={formatCurrency(currentSummary.grossMrr)}
               description={
-                selectedMonth === 'all'
+                selectedMonthStr === 'all'
                   ? 'Total gross revenue all months'
                   : 'Before free credits applied'
               }
@@ -150,7 +137,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
               title="Net MRR"
               value={formatCurrency(currentSummary.netMrr)}
               description={
-                selectedMonth === 'all'
+                selectedMonthStr === 'all'
                   ? 'Total net revenue all months'
                   : (
                     <span className="flex items-center gap-1">
@@ -164,7 +151,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
           </div>
 
           {/* Credit Progress - Only show for single month view */}
-          {selectedMonth !== 'all' && currentSummary.freeCredits > 0 && (
+          {selectedMonthStr !== 'all' && currentSummary.freeCredits > 0 && (
             <div className="border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -192,7 +179,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
           )}
 
           {/* Charts Section - Show when viewing all months */}
-          {selectedMonth === 'all' && monthlyBreakdown.length > 0 && (
+          {selectedMonthStr === 'all' && monthlyBreakdown.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Cumulative Billing Chart - 2/3 width on desktop */}
               <div className="lg:col-span-2">
@@ -248,7 +235,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
 
           {/* Monthly Breakdown Table */}
           <MonthlyHostingCalculator
-            monthlyBreakdown={selectedMonth === 'all' ? monthlyBreakdown : monthlyBreakdown.filter((m) => m.month === selectedMonth)}
+            monthlyBreakdown={selectedMonthStr === 'all' ? monthlyBreakdown : monthlyBreakdown.filter((m) => m.month === selectedMonthStr)}
           />
         </div>
       </main>

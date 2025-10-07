@@ -228,7 +228,8 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       <PageHeader
         title="Dashboard"
         periodSelectorType="full"
-        showViewToggle={false}
+        showViewToggle={true}
+        viewOptions={['all', 'month', 'day']}
         onToggleMobileMenu={onToggleMobileMenu}
       />
 
