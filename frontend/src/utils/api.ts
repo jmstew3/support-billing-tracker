@@ -3,7 +3,7 @@ import type { ChatRequest } from '../types/request';
 // Use the public API URL when accessing from the domain, otherwise use local
 const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
   ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
 
 console.log('API Configuration:', {
   hostname: window.location.hostname,
