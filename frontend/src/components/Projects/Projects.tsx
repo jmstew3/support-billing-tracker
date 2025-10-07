@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { FolderKanban, Loader2, AlertCircle, Search, DollarSign } from 'lucide-react';
+import { AlertCircle, Search, DollarSign, FolderKanban } from 'lucide-react';
+import { PageHeader } from '../shared/PageHeader';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
 import { ProjectRevenueChart } from '../charts/ProjectRevenueChart';
 import { ProjectCategoryPieChart } from '../charts/ProjectCategoryPieChart';
@@ -200,14 +201,12 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
   return (
     <div className="h-full flex flex-col bg-background overflow-auto">
       {/* Header */}
-      <div className="border-b">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center gap-2">
-            <FolderKanban className="h-5 w-5" />
-            <h1 className="text-xl font-semibold">Projects</h1>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Projects"
+        showPeriodSelector={false}
+        showViewToggle={false}
+        onToggleMobileMenu={onToggleMobileMenu}
+      />
 
       {/* Main Content */}
       <div className="flex-1 space-y-4 p-6">

@@ -6,12 +6,11 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { useTheme } from '../../hooks/useTheme'
 import { LoadingState } from '../ui/LoadingState'
 import { ConfirmDialog } from '../shared/ConfirmDialog'
 
 // Extracted sections
-import { SupportHeader } from './sections/SupportHeader'
+import { PageHeader } from '../shared/PageHeader'
 import { SupportScorecards } from './sections/SupportScorecards'
 import { CostTrackerCard } from './CostTrackerCard'
 import { CategoryTrackerCard } from './CategoryTrackerCard'
@@ -41,8 +40,6 @@ interface SupportTicketsProps {
 export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   console.log('SupportTickets component mounting...')
 
-  const { theme, toggleTheme } = useTheme()
-
   // ============================================================
   // STATE MANAGEMENT
   // ============================================================
@@ -53,21 +50,13 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     selectedMonth,
     selectedMonths,
     selectedDay,
-    setYear,
-    setMonth,
-    setMonths,
     setDay,
     setAvailableData,
-    navigatePrevious,
-    navigateNext,
-    canNavigatePrevious: canNavigatePreviousContext,
-    canNavigateNext: canNavigateNextContext,
-    getMonthStrings,
     viewMode,
     setViewMode
   } = usePeriod()
 
-  const [timeViewMode, setTimeViewMode] = useState<'all' | 'month' | 'day'>('all')
+  // Note: viewMode is now managed by PeriodContext (accessed via usePeriod hook)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -290,49 +279,24 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   }
 
   // ============================================================
-  // EVENT HANDLERS - View Mode (Local state)
+  // EVENT HANDLERS - View Mode (Now uses PeriodContext)
   // ============================================================
-
-  const handleTimeViewModeChange = (mode: 'all' | 'month' | 'day') => {
-    setTimeViewMode(mode)
-
-    if (mode === 'all') {
-      setMonth('all')
-      setDay('all')
-    } else if (mode === 'month') {
-      setDay('all')
-      if (selectedMonth === 'all') {
-        const latestMonth = availableMonthsForYear[0]
-        if (latestMonth) {
-          setMonth(latestMonth)
-        }
-      }
-    } else if (mode === 'day') {
-      if (selectedMonth === 'all') {
-        const latestMonth = availableMonthsForYear[0]
-        if (latestMonth) {
-          setMonth(latestMonth)
-        }
-      }
-      if (selectedDay === 'all' && availableDates.length > 0) {
-        setDay(availableDates[0])
-      }
-    }
-  }
+  // Note: This function is no longer needed as ViewModeToggle handles this via PeriodContext
+  // Keeping for backward compatibility during migration, but can be removed later
 
   // ============================================================
   // EVENT HANDLERS - Calendar interactions
   // ============================================================
 
   const handleCalendarDateClick = (date: string) => {
-    setSelectedDay(date)
-    setTimeViewMode('day')
+    setDay(date)
+    setViewMode('day')
     setCurrentPage(1)
   }
 
   const handleBackToCalendar = () => {
-    setSelectedDay('all')
-    setTimeViewMode('month')
+    setDay('all')
+    setViewMode('month')
   }
 
   // ============================================================
@@ -608,9 +572,13 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header Section */}
-      <SupportHeader
-        timeViewMode={timeViewMode}
-        onTimeViewModeChange={handleTimeViewModeChange}
+      <PageHeader
+        title="Support"
+        showPeriodSelector={true}
+        periodSelectorType="full"
+        showViewToggle={true}
+        viewOptions={['all', 'month', 'day']}
+        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       {/* Main Content Container */}
@@ -654,7 +622,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           {/* Charts Section */}
           <SupportChartsSection
             calendarData={calendarData}
-            timeViewMode={timeViewMode}
+            timeViewMode={viewMode}
             selectedDay={selectedDay}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
