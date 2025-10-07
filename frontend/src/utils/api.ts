@@ -326,3 +326,77 @@ export async function triggerTwentySync(): Promise<TwentySyncResult> {
     throw error;
   }
 }
+
+// FluentSupport sync interfaces
+export interface FluentSyncStatus {
+  id: number;
+  last_sync_at: string | null;
+  last_sync_status: 'success' | 'failed' | 'in_progress' | null;
+  tickets_fetched: number;
+  tickets_added: number;
+  tickets_updated: number;
+  tickets_skipped: number;
+  error_message: string | null;
+  sync_duration_ms: number;
+  date_filter: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FluentSyncResponse {
+  syncStatus: FluentSyncStatus | null;
+  totalTickets: number;
+  statusBreakdown: Array<{ ticket_status: string; count: number }>;
+}
+
+export interface FluentSyncResult {
+  success: boolean;
+  ticketsFetched?: number;
+  ticketsAdded?: number;
+  ticketsUpdated?: number;
+  ticketsSkipped?: number;
+  syncDuration?: number;
+  dateFilter?: string;
+  error?: string;
+}
+
+// Get FluentSupport sync status
+export async function getFluentSyncStatus(): Promise<FluentSyncResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/fluent/status`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sync status: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching FluentSupport sync status:', error);
+    throw error;
+  }
+}
+
+// Trigger FluentSupport sync
+export async function triggerFluentSync(dateFilter?: string): Promise<FluentSyncResult> {
+  try {
+    const body = dateFilter ? JSON.stringify({ dateFilter }) : undefined;
+
+    const response = await fetch(`${API_BASE_URL}/fluent/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Sync failed: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error triggering FluentSupport sync:', error);
+    throw error;
+  }
+}

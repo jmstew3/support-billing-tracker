@@ -15,7 +15,7 @@ import { TableCell, TableRow } from '../../ui/table'
 import { EditableCell } from '../../shared/EditableCell'
 import { EditableNumberCell } from '../../shared/EditableNumberCell'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../ui/tooltip'
-import { Trash2, MessageCircle, Ticket, Mail, Phone } from 'lucide-react'
+import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard } from 'lucide-react'
 import type { ChatRequest } from '../../../types/request'
 import { getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
@@ -77,18 +77,20 @@ export function SupportTableRow({
             <TooltipTrigger asChild>
               <div className="inline-flex items-center justify-center">
                 {request.source === 'ticket' ? (
-                  <Ticket className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Ticket System" />
+                  <Ticket className="h-4 w-4 text-green-600 dark:text-green-400" aria-label="Request via Twenty CRM" />
+                ) : request.source === 'fluent' ? (
+                  <Clipboard className="h-4 w-4 text-purple-600 dark:text-purple-400" aria-label="Request via FluentSupport" />
                 ) : request.source === 'email' ? (
-                  <Mail className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Email" />
+                  <Mail className="h-4 w-4 text-orange-600 dark:text-orange-400" aria-label="Request via Email" />
                 ) : request.source === 'phone' ? (
-                  <Phone className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Phone" />
+                  <Phone className="h-4 w-4 text-red-600 dark:text-red-400" aria-label="Request via Phone" />
                 ) : (
-                  <MessageCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" aria-label="Request via Text" />
+                  <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-label="Request via Text" />
                 )}
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Via {request.source === 'sms' ? 'Text' : request.source === 'ticket' ? 'Ticket System' : request.source === 'email' ? 'Email' : request.source === 'phone' ? 'Phone' : 'Text'}</p>
+              <p>Via {request.source === 'sms' ? 'Text' : request.source === 'ticket' ? 'Twenty CRM' : request.source === 'fluent' ? 'FluentSupport' : request.source === 'email' ? 'Email' : request.source === 'phone' ? 'Phone' : 'Text'}</p>
             </TooltipContent>
           </UITooltip>
         </TooltipProvider>
