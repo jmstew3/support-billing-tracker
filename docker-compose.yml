@@ -68,7 +68,8 @@ services:
       - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"
       - "traefik.docker.network=traefik-general"
       - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
-      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
+      # Apply both BasicAuth and strip prefix middlewares to API
+      - "traefik.http.routers.billing-overview-api.middlewares=billing-auth,billing-overview-api-strip"
     command: npm start
 
   frontend:
@@ -107,6 +108,11 @@ services:
       - "traefik.http.routers.billing-overview.entrypoints=web"
       - "traefik.http.services.billing-overview.loadbalancer.server.port=${VITE_PORT:-5173}"
       - "traefik.docker.network=traefik-general"
+      # BasicAuth Middleware
+      - "traefik.http.middlewares.billing-auth.basicauth.users=${BASIC_AUTH_USERS}"
+      - "traefik.http.middlewares.billing-auth.basicauth.realm=Billing Dashboard"
+      # Apply BasicAuth middleware to frontend
+      - "traefik.http.routers.billing-overview.middlewares=billing-auth"
     command: npm run dev:docker
 
 networks:

@@ -4,6 +4,68 @@
 
 This is a comprehensive business intelligence dashboard that processes iMessage conversation data to extract, categorize, and analyze support requests. The application transforms raw chat messages into structured business insights through an ETL pipeline and provides an interactive React dashboard for data visualization and management.
 
+## Security
+
+### Authentication (Phase 1 - Active)
+
+**Current Implementation:** Traefik BasicAuth Middleware
+
+The application is protected by HTTP Basic Authentication at the reverse proxy level using Traefik middleware. This provides immediate security without requiring code changes to the application itself.
+
+#### How It Works
+1. All requests to `velocity.peakonedigital.com/billing-overview` and `/billing-overview-api` are intercepted by Traefik
+2. Browser presents authentication dialog requesting username and password
+3. Credentials are sent as Base64-encoded `Authorization` header
+4. Traefik validates credentials against bcrypt hash stored in environment variable
+5. If valid, request is forwarded to application; if invalid, 401 Unauthorized returned
+
+#### Access Credentials
+- **Username:** `admin`
+- **Password:** `PeakonBilling2025`
+- **Storage:** `.env.docker` file (not committed to Git)
+- **Hash Algorithm:** Apache APR1 (MD5-based bcrypt variant)
+
+#### Changing Credentials
+To generate new credentials:
+```bash
+docker run --rm httpd:2.4-alpine htpasswd -nb username newpassword
+```
+Then update `BASIC_AUTH_USERS` in `.env.docker`, escaping `$` as `$$`.
+
+#### Security Considerations
+- ✅ **Adequate for:** Internal team access (5-10 users), trusted networks
+- ⚠️ **Limitations:** Single shared credential, no per-user tracking, no session management
+- 🔒 **Requires HTTPS:** Must use TLS in production (credentials transmitted in headers)
+- 📝 **Audit Trail:** Limited - Traefik access logs only show successful/failed auth attempts
+
+#### Future Enhancements (Phase 2)
+See `docs/authentication-plan.md` for detailed roadmap:
+- JWT-based authentication with per-user accounts
+- Role-based access control (admin, viewer, editor)
+- Login/logout interface
+- User management dashboard
+- Audit logging and session tracking
+
+### Data Protection
+
+**Sensitive Data:**
+- Client billing information and revenue calculations
+- Support ticket details and request summaries
+- Website URLs and hosting property data
+- API credentials for Twenty CRM and FluentSupport
+
+**Storage Security:**
+- MySQL database with credentials stored in `.env.docker`
+- API tokens stored as environment variables (not in code)
+- All containers on isolated Docker network (`velocity-network`)
+- Production access only via Traefik reverse proxy with authentication
+
+**Best Practices:**
+- Never commit `.env.docker` or `.env` files to Git
+- Rotate API tokens periodically
+- Use strong passwords for MySQL and BasicAuth
+- Keep Docker images and dependencies updated
+
 ## Architecture & Components
 
 ### 1. Data Processing Pipeline (ETL)
@@ -784,6 +846,51 @@ Routes are managed in `App.tsx`:
 ## Development History & Updates
 
 ### Recent Major Updates
+
+#### BasicAuth Authentication Implementation (October 8, 2025) 🔒
+- **Security Enhancement - Phase 1 Complete**:
+  - Implemented Traefik BasicAuth middleware to protect application
+  - Added HTTP Basic Authentication at reverse proxy level
+  - No code changes required - purely infrastructure configuration
+
+- **Configuration Details**:
+  - Generated htpasswd hash with bcrypt algorithm (apr1)
+  - Added `BASIC_AUTH_USERS` environment variable to `.env.docker`
+  - Configured Traefik middleware in `docker-compose.yml` with two labels:
+    - `traefik.http.middlewares.billing-auth.basicauth.users` - Stores hashed credentials
+    - `traefik.http.middlewares.billing-auth.basicauth.realm` - Sets browser dialog title
+  - Applied middleware to both frontend and backend routes
+
+- **Protected Routes**:
+  - Frontend: `https://velocity.peakonedigital.com/billing-overview` (with `billing-auth` middleware)
+  - Backend API: `https://velocity.peakonedigital.com/billing-overview-api` (with `billing-auth,billing-overview-api-strip` middlewares)
+
+- **Files Modified**:
+  - `docker-compose.yml` - Added BasicAuth middleware labels to frontend and backend services
+  - `.env.docker` - Added `BASIC_AUTH_USERS` variable with hashed credentials
+  - `backend/.env.local.example` - Documented authentication configuration
+  - `docs/authentication-plan.md` - Created comprehensive authentication strategy document
+
+- **Credentials**:
+  - Username: `admin`
+  - Password: `PeakonBilling2025`
+  - Hash: `$apr1$js8l0b5d$sc6lHrdNpX.DVHhyBFtbI.` (escaped as `$$` in docker-compose)
+
+- **Testing**:
+  - Verified environment variable set in containers
+  - Verified Traefik labels applied correctly to both services
+  - Local access (localhost:3011, localhost:5173) bypasses auth as expected
+  - Production access via Traefik requires authentication
+
+- **Next Steps (Phase 2)**:
+  - JWT-based authentication with per-user accounts
+  - Role-based access control (admin, viewer, editor)
+  - User management interface
+  - See `docs/authentication-plan.md` for detailed roadmap
+
+- **Security Level**: Medium - Adequate for internal team use (5-10 users)
+
+---
 
 #### Unified Header Bar Migration (January 2025) 🎯
 - **Unified PageHeader Implementation**:
