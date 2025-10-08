@@ -50,12 +50,21 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     // For BasicAuth, we need to send invalid credentials to force re-authentication
     // This redirects to a URL with 'logout' as username, which will fail authentication
     // and prompt the browser to show the login dialog again
+
+    // Note: This only works when BasicAuth is active (production with Traefik)
+    // On localhost without auth, this will just reload the page
     const currentHost = window.location.hostname;
     const currentPath = window.location.pathname;
     const protocol = window.location.protocol;
 
-    // Construct logout URL that forces 401 Unauthorized
-    window.location.href = `${protocol}//logout@${currentHost}${currentPath}`;
+    // Check if we're on production domain
+    if (currentHost === 'velocity.peakonedigital.com') {
+      // Construct logout URL that forces 401 Unauthorized
+      window.location.href = `${protocol}//logout:logout@${currentHost}${currentPath}`;
+    } else {
+      // On localhost, show alert since BasicAuth is not active
+      alert('Logout is only available in production.\n\nOn localhost, authentication is bypassed.\n\nTo test logout, access the app via:\nhttps://velocity.peakonedigital.com/billing-overview');
+    }
   };
 
   return (
