@@ -12,6 +12,53 @@ console.log('API Configuration:', {
   env: import.meta.env
 });
 
+/**
+ * Get authorization headers with JWT token
+ */
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem('accessToken');
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+/**
+ * Enhanced fetch with JWT authentication and 401 handling
+ * Automatically includes JWT token and handles token expiration
+ */
+export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  // Merge auth headers with provided headers
+  const headers = {
+    ...getAuthHeaders(),
+    ...(options.headers || {})
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers
+  });
+
+  // Handle 401 Unauthorized - token expired or invalid
+  if (response.status === 401) {
+    console.warn('Received 401 Unauthorized - clearing auth state');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+
+    // Reload page to trigger login screen
+    window.location.reload();
+
+    throw new Error('Session expired. Please login again.');
+  }
+
+  return response;
+}
+
 // Transform database row to ChatRequest format
 function transformDbRow(row: any): ChatRequest {
   return {
@@ -49,7 +96,7 @@ export async function fetchRequests(filters?: {
 
     const url = `${API_BASE_URL}/requests?${params.toString()}`;
     console.log('Fetching requests from:', url);
-    const response = await fetch(url);
+    const response = await authenticatedFetch(url);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch requests: ${response.statusText}`);
@@ -80,11 +127,8 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
 
     console.log(`API updateRequest - Sending update for ID ${id}:`, payload);
 
-    const response = await fetch(`${API_BASE_URL}/requests/${id}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/requests/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(payload)
     });
 
@@ -104,11 +148,8 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
 // Bulk update multiple requests
 export async function bulkUpdateRequests(ids: number[], updates: Partial<ChatRequest>): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/requests/bulk-update`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/requests/bulk-update`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         ids,
         updates: {
@@ -133,7 +174,7 @@ export async function bulkUpdateRequests(ids: number[], updates: Partial<ChatReq
 export async function deleteRequest(id: number, permanent = false): Promise<void> {
   try {
     const url = `${API_BASE_URL}/requests/${id}${permanent ? '?permanent=true' : ''}`;
-    const response = await fetch(url, {
+    const response = await authenticatedFetch(url, {
       method: 'DELETE'
     });
 
@@ -149,11 +190,8 @@ export async function deleteRequest(id: number, permanent = false): Promise<void
 // Create a new request
 export async function createRequest(request: Omit<ChatRequest, 'id'>): Promise<number> {
   try {
-    const response = await fetch(`${API_BASE_URL}/requests`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/requests`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         date: request.Date,
         time: request.Time,
@@ -181,7 +219,7 @@ export async function createRequest(request: Omit<ChatRequest, 'id'>): Promise<n
 // Get request statistics
 export async function fetchStatistics(): Promise<any> {
   try {
-    const response = await fetch(`${API_BASE_URL}/statistics`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/statistics`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch statistics: ${response.statusText}`);
@@ -197,7 +235,7 @@ export async function fetchStatistics(): Promise<any> {
 // Export data as CSV
 export async function exportToCSV(): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/export-csv`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/export-csv`);
 
     if (!response.ok) {
       throw new Error(`Failed to export CSV: ${response.statusText}`);
@@ -225,11 +263,8 @@ export async function importCSV(csvData: any[]): Promise<{
   errors: any[];
 }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/import-csv`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/import-csv`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ csvData })
     });
 
@@ -247,8 +282,10 @@ export async function importCSV(csvData: any[]): Promise<{
 // Check if API is available
 export async function checkAPIHealth(): Promise<boolean> {
   try {
-    console.log('Checking API health at:', `${API_BASE_URL}/health`);
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    // Use public /health endpoint (not /api/health which requires JWT)
+    const healthUrl = API_BASE_URL.replace('/api', '') + '/health';
+    console.log('Checking API health at:', healthUrl);
+    const response = await fetch(healthUrl, {
       method: 'GET',
       mode: 'cors',
     });
@@ -292,7 +329,7 @@ export interface TwentySyncResult {
 // Get Twenty sync status
 export async function getTwentySyncStatus(): Promise<TwentySyncResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/twenty/status`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/twenty/status`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch sync status: ${response.statusText}`);
@@ -308,11 +345,8 @@ export async function getTwentySyncStatus(): Promise<TwentySyncResponse> {
 // Trigger Twenty sync
 export async function triggerTwentySync(): Promise<TwentySyncResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}/twenty/sync`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/twenty/sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -363,7 +397,7 @@ export interface FluentSyncResult {
 // Get FluentSupport sync status
 export async function getFluentSyncStatus(): Promise<FluentSyncResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/fluent/status`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/fluent/status`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch sync status: ${response.statusText}`);
@@ -381,11 +415,8 @@ export async function triggerFluentSync(dateFilter?: string): Promise<FluentSync
   try {
     const body = dateFilter ? JSON.stringify({ dateFilter }) : undefined;
 
-    const response = await fetch(`${API_BASE_URL}/fluent/sync`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/fluent/sync`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body,
     });
 

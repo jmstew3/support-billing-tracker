@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useAuth } from '../../contexts/AuthContext';
 import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
@@ -15,6 +16,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { logout, user } = useAuth();
 
   // Close mobile menu when view changes
   useEffect(() => {
@@ -47,36 +49,11 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
   };
 
   const handleLogout = async () => {
-    // Check if we're on production domain
-    if (window.location.hostname === 'velocity.peakonedigital.com') {
-      try {
-        // Send fetch request to logout endpoint with invalid credentials
-        // This endpoint returns 401 Unauthorized to force browser to clear cached credentials
-        // The endpoint is intentionally not protected by BasicAuth middleware
-        await fetch('/billing-overview-api/api/auth/logout', {
-          method: 'GET',
-          credentials: 'include',  // Important: include credentials
-          headers: {
-            // Send fake credentials to overwrite the cached ones
-            'Authorization': 'Basic ' + btoa('logout:logout')
-          }
-        });
-
-        // Wait a moment for browser to process the 401 response
-        // This gives the browser time to clear its cached credentials
-        setTimeout(() => {
-          // Redirect to app, which will trigger fresh authentication prompt
-          window.location.href = '/billing-overview';
-        }, 100);
-
-      } catch (error) {
-        console.error('Logout error:', error);
-        // Even on error, try to reload to trigger auth
-        window.location.href = '/billing-overview';
-      }
-    } else {
-      // On localhost, show alert since BasicAuth is not active
-      alert('Logout is only available in production.\n\nOn localhost, authentication is bypassed.\n\nTo test logout, access the app via:\nhttps://velocity.peakonedigital.com/billing-overview');
+    try {
+      await logout();
+      // Logout function in AuthContext will clear tokens and trigger re-render to login screen
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 

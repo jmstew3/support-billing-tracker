@@ -9,6 +9,7 @@ import twentySyncRoutes from './routes/twenty-sync.js';
 import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
+import { authenticateToken } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,12 +46,14 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
-// Auth routes MUST come first to ensure logout endpoint is accessible without BasicAuth
+// Auth routes MUST come first and are NOT protected (to allow login)
 app.use('/api/auth', authRoutes);
-app.use('/api', requestRoutes);
-app.use('/api/twenty', twentySyncRoutes);
-app.use('/api/fluent', fluentSyncRoutes);
-app.use('/api/twenty-proxy', twentyProxyRoutes);
+
+// All other API routes require JWT authentication
+app.use('/api', authenticateToken, requestRoutes);
+app.use('/api/twenty', authenticateToken, twentySyncRoutes);
+app.use('/api/fluent', authenticateToken, fluentSyncRoutes);
+app.use('/api/twenty-proxy', authenticateToken, twentyProxyRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

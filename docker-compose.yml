@@ -45,6 +45,14 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       DATA_PATH: ${DATA_PATH:-./data}
+      # JWT Authentication
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@peakonedigital.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-PeakonBilling2025}
+      # External APIs
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
@@ -63,19 +71,14 @@ services:
       - traefik-general
     labels:
       - "traefik.enable=true"
-      # Logout route - NO AUTH (must have higher priority to match first)
-      - "traefik.http.routers.billing-logout.rule=Host(`velocity.peakonedigital.com`) && Path(`/billing-overview-api/api/auth/logout`)"
-      - "traefik.http.routers.billing-logout.entrypoints=web"
-      - "traefik.http.routers.billing-logout.middlewares=billing-overview-api-strip"
-      - "traefik.http.routers.billing-logout.priority=100"
-      # Main API route - WITH AUTH (lower priority, matches after logout route)
+      # Main API route
       - "traefik.http.routers.billing-overview-api.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview-api`)"
       - "traefik.http.routers.billing-overview-api.entrypoints=web"
       - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"
       - "traefik.docker.network=traefik-general"
       - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
-      # Apply both BasicAuth and strip prefix middlewares to API
-      - "traefik.http.routers.billing-overview-api.middlewares=billing-auth,billing-overview-api-strip"
+      # Apply strip prefix middleware only (JWT auth handled by backend)
+      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
     command: npm start
 
   frontend:
@@ -114,11 +117,7 @@ services:
       - "traefik.http.routers.billing-overview.entrypoints=web"
       - "traefik.http.services.billing-overview.loadbalancer.server.port=${VITE_PORT:-5173}"
       - "traefik.docker.network=traefik-general"
-      # BasicAuth Middleware
-      - "traefik.http.middlewares.billing-auth.basicauth.users=${BASIC_AUTH_USERS}"
-      - "traefik.http.middlewares.billing-auth.basicauth.realm=Billing Dashboard"
-      # Apply BasicAuth middleware to frontend
-      - "traefik.http.routers.billing-overview.middlewares=billing-auth"
+      # No middleware - JWT auth handled by backend, login screen by frontend
     command: npm run dev:docker
 
 networks:
