@@ -9,6 +9,11 @@ binlog.*
 ib_logfile*
 ibdata*
 
+# SQL Backup and Export Files (root level only)
+/*.sql
+# But keep database schema and migrations
+!backend/db/**/*.sql
+
 # Python
 __pycache__/
 *.py[cod]
