@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import {
   ResponsiveContainer,
@@ -509,19 +509,17 @@ export function CategoryTrackerCard({
   };
 
   // Main render logic
-  const renderTable = useCallback(() => {
+  const renderTable = () => {
     return selectedMonth === 'all' && monthlyCategoryData && monthlyCategoryData.length > 0
       ? renderMonthlyTable()
       : renderSinglePeriodTable();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, monthlyCategoryData, categoryData]);
+  };
 
-  const renderChart = useCallback(() => {
+  const renderChart = () => {
     return selectedMonth === 'all' && monthlyCategoryData && monthlyCategoryData.length > 0
       ? renderMonthlyChart()
       : renderSinglePeriodChart();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, monthlyCategoryData, categoryData, visibleCategories]);
+  };
 
   return (
     <DataTrackerCard

@@ -15,13 +15,11 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  
-  console.log('EditableCell render - value:', value, 'options:', options);
 
   // Close dropdown when value changes (e.g., when switching between billable/non-billable)
   useEffect(() => {
     setIsOpen(false);
-  }, [value, options]); // Also close when options change
+  }, [value]); // Only depend on value to prevent infinite loop from options array recreation
 
   // Handle scroll and resize to reposition dropdown
   useEffect(() => {

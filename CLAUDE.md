@@ -1547,6 +1547,90 @@ This application provides a complete solution for transforming conversational da
 
 ## Critical Implementation Notes
 
+### React Performance & Infinite Loop Prevention ⚠️ #memorize
+
+**CRITICAL**: Always use `useMemo` for arrays/objects created in component body that are used in `useEffect` dependencies.
+
+#### Common Infinite Loop Patterns to Avoid:
+
+**❌ WRONG - Arrays recreated every render:**
+```typescript
+export function MyComponent() {
+  const myArray = ['option1', 'option2', 'option3'] // New reference every render
+  const myData = Array.from(new Set(...)) // New reference every render
+
+  useEffect(() => {
+    someFunction(myArray, myData)
+  }, [myArray, myData]) // ⚠️ INFINITE LOOP - dependencies change every render
+}
+```
+
+**✅ CORRECT - Use constants outside component:**
+```typescript
+const MY_ARRAY = ['option1', 'option2', 'option3'] as const // Created once
+
+export function MyComponent() {
+  useEffect(() => {
+    someFunction(MY_ARRAY)
+  }, [MY_ARRAY]) // ✅ Stable reference
+}
+```
+
+**✅ CORRECT - Use useMemo for computed arrays:**
+```typescript
+export function MyComponent() {
+  const myData = useMemo(() =>
+    Array.from(new Set(...)).sort()
+  , [dependencies]) // Only recreates when dependencies change
+
+  useEffect(() => {
+    someFunction(myData)
+  }, [myData]) // ✅ Stable reference unless dependencies change
+}
+```
+
+#### Real Examples from This Project:
+
+1. **EditableCell Infinite Loop (October 2025)**
+   - **Problem**: `options` array passed as prop was recreated every render in parent
+   - **Symptom**: Console flooded with EditableCell render logs, browser freezes
+   - **Fix**: Moved `CATEGORY_OPTIONS` and `URGENCY_OPTIONS` outside component
+   - **Files**: `SupportTickets.tsx`, `EditableCell.tsx`
+
+2. **SupportTickets Infinite Mounting (October 2025)**
+   - **Problem**: `availableYears`, `availableMonthsForYear`, `availableDates` arrays recreated every render
+   - **Symptom**: "SupportTickets component mounting..." flooding console
+   - **Fix**: Wrapped with `useMemo(() => Array.from(...), [dependencies])`
+   - **Files**: `SupportTickets.tsx` lines 211-242
+
+3. **Chart Rendering with useCallback (October 2025)**
+   - **Problem**: Attempted `useCallback` with nested function dependencies
+   - **Symptom**: "Maximum update depth exceeded" error
+   - **Fix**: Removed `useCallback` - render props work fine without memoization
+   - **Files**: `CostTrackerCard.tsx`, `CategoryTrackerCard.tsx`
+
+#### When to Use Each Pattern:
+
+| Pattern | Use Case | Example |
+|---------|----------|---------|
+| **Constants outside component** | Static arrays/objects that never change | `CATEGORY_OPTIONS`, `URGENCY_OPTIONS` |
+| **useMemo** | Computed values derived from props/state | `availableYears`, `filteredData` |
+| **useCallback** | Functions passed as props to memoized children | Event handlers for `React.memo` components |
+| **Plain variables** | Primitives, functions not in dependencies | Regular event handlers, render functions |
+
+#### Debug Checklist for Infinite Loops:
+
+1. ✅ **Check console** - Look for repeated component mounting logs
+2. ✅ **Inspect useEffect deps** - Are any arrays/objects created in component body?
+3. ✅ **Move static arrays outside** - Define constants before component export
+4. ✅ **Wrap computed arrays with useMemo** - Add dependency array
+5. ✅ **Remove unnecessary console.logs** - They flood output and slow performance
+6. ✅ **Test in browser** - Verify console is clean and UI is responsive
+
+**Remember**: React compares dependency arrays by **reference**, not value. `['a', 'b'] !== ['a', 'b']` in JavaScript!
+
+---
+
 ### Status-Based Architecture Benefits
 1. **Data Safety**: No accidental permanent data loss - everything is recoverable
 2. **Audit Trail**: Complete history of all changes through timestamped backups
