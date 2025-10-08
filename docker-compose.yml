@@ -63,6 +63,12 @@ services:
       - traefik-general
     labels:
       - "traefik.enable=true"
+      # Logout route - NO AUTH (must have higher priority to match first)
+      - "traefik.http.routers.billing-logout.rule=Host(`velocity.peakonedigital.com`) && Path(`/billing-overview-api/api/auth/logout`)"
+      - "traefik.http.routers.billing-logout.entrypoints=web"
+      - "traefik.http.routers.billing-logout.middlewares=billing-overview-api-strip"
+      - "traefik.http.routers.billing-logout.priority=100"
+      # Main API route - WITH AUTH (lower priority, matches after logout route)
       - "traefik.http.routers.billing-overview-api.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview-api`)"
       - "traefik.http.routers.billing-overview-api.entrypoints=web"
       - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"

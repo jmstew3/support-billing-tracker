@@ -111,10 +111,17 @@ docker-compose --env-file .env.docker up -d
 
 To log out and test new credentials:
 1. Click the **Log Out** button in the sidebar (red button below Theme toggle)
-2. Browser will redirect and prompt for credentials again
-3. Enter username and password to re-authenticate
+2. Frontend sends request to logout endpoint which returns 401
+3. Browser clears cached credentials and prompts for re-authentication
+4. Enter username and password to log back in
 
-**Note:** For best security, close your browser completely after logging out.
+**How it works:**
+- Backend provides `/api/auth/logout` endpoint that returns `401 Unauthorized`
+- Logout endpoint is **not protected** by BasicAuth (accessed via higher-priority Traefik route)
+- Browser receives 401 response and clears its credential cache
+- Works reliably in Chrome, Firefox, and Safari
+
+**Note:** Only works in production (velocity.peakonedigital.com). On localhost, BasicAuth is bypassed.
 
 #### Security Notes
 - ✅ Credentials are hashed using Apache APR1 (bcrypt variant)

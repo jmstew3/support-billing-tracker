@@ -46,21 +46,34 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     }
   };
 
-  const handleLogout = () => {
-    // For BasicAuth, we need to send invalid credentials to force re-authentication
-    // This redirects to a URL with 'logout' as username, which will fail authentication
-    // and prompt the browser to show the login dialog again
-
-    // Note: This only works when BasicAuth is active (production with Traefik)
-    // On localhost without auth, this will just reload the page
-    const currentHost = window.location.hostname;
-    const currentPath = window.location.pathname;
-    const protocol = window.location.protocol;
-
+  const handleLogout = async () => {
     // Check if we're on production domain
-    if (currentHost === 'velocity.peakonedigital.com') {
-      // Construct logout URL that forces 401 Unauthorized
-      window.location.href = `${protocol}//logout:logout@${currentHost}${currentPath}`;
+    if (window.location.hostname === 'velocity.peakonedigital.com') {
+      try {
+        // Send fetch request to logout endpoint with invalid credentials
+        // This endpoint returns 401 Unauthorized to force browser to clear cached credentials
+        // The endpoint is intentionally not protected by BasicAuth middleware
+        await fetch('/billing-overview-api/api/auth/logout', {
+          method: 'GET',
+          credentials: 'include',  // Important: include credentials
+          headers: {
+            // Send fake credentials to overwrite the cached ones
+            'Authorization': 'Basic ' + btoa('logout:logout')
+          }
+        });
+
+        // Wait a moment for browser to process the 401 response
+        // This gives the browser time to clear its cached credentials
+        setTimeout(() => {
+          // Redirect to app, which will trigger fresh authentication prompt
+          window.location.href = '/billing-overview';
+        }, 100);
+
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Even on error, try to reload to trigger auth
+        window.location.href = '/billing-overview';
+      }
     } else {
       // On localhost, show alert since BasicAuth is not active
       alert('Logout is only available in production.\n\nOn localhost, authentication is bypassed.\n\nTo test logout, access the app via:\nhttps://velocity.peakonedigital.com/billing-overview');

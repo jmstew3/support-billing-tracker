@@ -70,17 +70,25 @@ A "Log Out" button is available in the sidebar footer (below the Theme toggle):
 
 **How it works:**
 1. Click the red "Log Out" button in the sidebar
-2. Browser redirects to `logout@hostname` which triggers a 401 Unauthorized
-3. Browser clears cached credentials and shows login dialog
-4. Enter credentials again to re-authenticate
+2. Frontend sends XMLHttpRequest to `/api/auth/logout` endpoint
+3. Backend responds with `401 Unauthorized` and `WWW-Authenticate` header
+4. Browser receives 401 and clears cached BasicAuth credentials
+5. Page redirects, triggering fresh authentication prompt
 
-**Notes:**
-- ⚠️ Not a true logout - forces re-authentication by sending invalid credentials
-- ⚠️ Some browsers may retain cached credentials until browser is fully closed
-- ✅ Best practice: Close browser completely after logout for security
+**Technical Implementation:**
+- **Backend:** `routes/auth.js` provides `/api/auth/logout` endpoint that always returns 401
+- **Traefik:** Logout endpoint is **not protected** by BasicAuth (higher priority route without auth middleware)
+- **Frontend:** Uses `fetch()` with invalid credentials to trigger 401 response
+- **Browser:** Modern browsers (Chrome, Firefox, Safari) clear credential cache on 401
+
+**Testing:**
+- On **production** (velocity.peakonedigital.com): Click logout → Browser prompts for credentials
+- On **localhost**: Shows informative alert (BasicAuth not active in development)
 
 **Collapsed Sidebar:**
 - When sidebar is collapsed, logout shows as icon-only with tooltip
+
+**Note:** This is still not a true logout with session termination - BasicAuth is stateless. For proper session management, see Phase 2 (JWT authentication) in `docs/authentication-plan.md`.
 
 #### Security Considerations
 - ✅ **Adequate for:** Internal team access (5-10 users), trusted networks

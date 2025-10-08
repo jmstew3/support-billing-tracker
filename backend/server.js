@@ -8,6 +8,7 @@ import requestRoutes from './routes/requests.js';
 import twentySyncRoutes from './routes/twenty-sync.js';
 import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
+import authRoutes from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,6 +45,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
+// Auth routes MUST come first to ensure logout endpoint is accessible without BasicAuth
+app.use('/api/auth', authRoutes);
 app.use('/api', requestRoutes);
 app.use('/api/twenty', twentySyncRoutes);
 app.use('/api/fluent', fluentSyncRoutes);
