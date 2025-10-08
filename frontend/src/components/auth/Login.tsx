@@ -36,7 +36,7 @@ export const Login = () => {
               <img
                 src={peakoneLogo}
                 alt="Peakone Digital"
-                className="h-10 block"
+                className="h-10 block dark:invert"
               />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-4">

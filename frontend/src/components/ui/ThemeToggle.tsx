@@ -1,7 +1,6 @@
 import React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { buttonVariants } from '../../styles/variants/button';
 
 interface ThemeToggleProps {
   theme: 'light' | 'dark';
@@ -9,16 +8,13 @@ interface ThemeToggleProps {
   className?: string;
 }
 
-export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle, className }) => {
+export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, className }) => {
   return (
-    <button
-      onClick={onToggle}
+    <div
       className={cn(
-        buttonVariants({ variant: 'ghost', size: 'icon' }),
-        'relative',
+        'relative inline-flex items-center justify-center',
         className
       )}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       <Sun
         className={cn(
@@ -32,6 +28,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle, class
           theme === 'dark' ? 'rotate-0 scale-100' : '-rotate-90 scale-0'
         )}
       />
-    </button>
+    </div>
   );
 };

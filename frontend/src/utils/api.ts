@@ -56,6 +56,18 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
     throw new Error('Session expired. Please login again.');
   }
 
+  // Handle 403 Forbidden - invalid token (e.g., after backend restart)
+  if (response.status === 403) {
+    console.warn('Received 403 Forbidden - token invalid, clearing auth state');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+
+    // Reload page to trigger login screen
+    window.location.reload();
+
+    throw new Error('Invalid authentication token. Please login again.');
+  }
+
   return response;
 }
 

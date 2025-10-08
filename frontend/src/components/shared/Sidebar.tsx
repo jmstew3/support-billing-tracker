@@ -143,14 +143,25 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
       {/* Footer - Theme Toggle, Logout & Powered by PeakOne */}
       <div className="border-t border-border/50 bg-background/30">
         {/* Theme Toggle */}
-        <div className="flex items-center py-2 px-4">
+        <div className="py-2 px-2">
           {isCollapsed ? (
-            <ThemeToggle theme={theme} onToggle={onToggleTheme} className="w-10 h-10 mx-auto" />
+            <button
+              onClick={onToggleTheme}
+              className="w-full p-2 rounded-md text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px] group"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <ThemeToggle theme={theme} onToggle={() => {}} className="w-5 h-5" />
+            </button>
           ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Theme:</span>
-              <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-            </div>
+            <button
+              onClick={onToggleTheme}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-200 min-h-[44px] group"
+              aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              <span className="text-xs">Theme:</span>
+              <ThemeToggle theme={theme} onToggle={() => {}} className="w-5 h-5" />
+            </button>
           )}
         </div>
 
