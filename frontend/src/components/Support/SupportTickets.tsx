@@ -5,7 +5,7 @@
  * This orchestrator component delegates to specialized child components.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { LoadingState } from '../ui/LoadingState'
 import { ConfirmDialog } from '../shared/ConfirmDialog'
 
@@ -233,18 +233,28 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
       .map(request => request.Date)
   )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
 
-  // Calculate filtered costs
+  // Calculate filtered costs (memoized to prevent infinite re-renders)
   const getCurrentMonthString = () => {
     if (selectedMonth === 'all') return undefined
     return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
   }
-  const filteredCosts = calculateCosts(billableFilteredRequests, getCurrentMonthString())
 
-  // Calculate calendar data
-  const calendarData = processDailyRequests(billableFilteredRequests)
+  const filteredCosts = useMemo(() =>
+    calculateCosts(billableFilteredRequests, getCurrentMonthString()),
+    [billableFilteredRequests, selectedMonth, selectedYear]
+  )
 
-  // Calculate category data
-  const categoryData = processCategoryData(billableFilteredRequests)
+  // Calculate calendar data (memoized)
+  const calendarData = useMemo(() =>
+    processDailyRequests(billableFilteredRequests),
+    [billableFilteredRequests]
+  )
+
+  // Calculate category data (memoized)
+  const categoryData = useMemo(() =>
+    processCategoryData(billableFilteredRequests),
+    [billableFilteredRequests]
+  )
 
   // ============================================================
   // PERSISTENCE - Save hideNonBillable preference

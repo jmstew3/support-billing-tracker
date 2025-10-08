@@ -1,8 +1,11 @@
 import type { Project, FinancialSummary, MonthlyRevenue } from '../types/project';
 
-// Twenty API configuration
-const TWENTY_API_URL = import.meta.env.VITE_TWENTY_API_URL || 'https://twenny.peakonedigital.com/rest/projects';
-const TWENTY_API_TOKEN = import.meta.env.VITE_TWENTY_API_TOKEN || '';
+// API configuration - Use local backend proxy to avoid CORS issues
+const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
+  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
+
+const TWENTY_API_URL = `${API_BASE_URL}/twenty-proxy/projects`;
 const USE_MOCK = import.meta.env.VITE_TWENTY_USE_MOCK === 'true';
 
 /**
@@ -108,26 +111,19 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
   }
 
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add authentication if token is provided
-    if (TWENTY_API_TOKEN) {
-      headers['Authorization'] = `Bearer ${TWENTY_API_TOKEN}`;
-    }
-
     // Construct URL with depth and limit parameters (limit=200 to fetch all projects)
     const url = TWENTY_API_URL.includes('?')
       ? `${TWENTY_API_URL}&depth=${depth}&limit=200`
       : `${TWENTY_API_URL}?depth=${depth}&limit=200`;
 
-    console.log('Fetching projects from:', url.replace(TWENTY_API_TOKEN, '***'));
+    console.log('Fetching projects from proxy:', url);
 
+    // No need for Authorization header - backend proxy handles authentication
     const response = await fetch(url, {
       method: 'GET',
-      headers,
-      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {

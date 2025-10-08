@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import { formatCurrency, formatCurrencyAccounting } from '../../utils/currency';
 import { PRICING_CONFIG } from '../../config/pricing';
@@ -8,6 +8,7 @@ import {
   ComposedChart,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -106,6 +107,15 @@ export function CostTrackerCard({
   initialViewType = 'table',
   gridSpan,
 }: CostTrackerCardProps) {
+  // 🐛 DEBUG: Component mounted
+  console.log('🎯 CostTrackerCard MOUNTED with props:', {
+    costData,
+    monthlyCosts,
+    selectedMonth,
+    selectedYear,
+    initialViewType
+  });
+
   const [visibleUrgencies, setVisibleUrgencies] = useState<Record<string, boolean>>({
     Promotion: true,
     Low: true,
@@ -885,90 +895,245 @@ export function CostTrackerCard({
   );
   };
 
-  // Render single period chart
+  // Render single period chart - FIXED VERSION
   const renderSinglePeriodChart = () => {
     if (!costData) return null;
 
+    // Restructure data: one array item per urgency level (with null safety)
     const chartData = [
-      { name: 'Promotion', hours: costData.promotionalHours, cost: costData.promotionalNetCost !== undefined ? costData.promotionalNetCost : costData.promotionalCost, fill: visibleUrgencies.Promotion ? CHART_STYLES.barColors.promotion : CHART_STYLES.barColors.disabled },
-      { name: 'Low', hours: costData.regularHours, cost: costData.regularNetCost !== undefined ? costData.regularNetCost : costData.regularCost, fill: visibleUrgencies.Low ? CHART_STYLES.barColors.low : CHART_STYLES.barColors.disabled },
-      { name: 'Medium', hours: costData.sameDayHours, cost: costData.sameDayNetCost !== undefined ? costData.sameDayNetCost : costData.sameDayCost, fill: visibleUrgencies.Medium ? CHART_STYLES.barColors.medium : CHART_STYLES.barColors.disabled },
-      { name: 'High', hours: costData.emergencyHours, cost: costData.emergencyNetCost !== undefined ? costData.emergencyNetCost : costData.emergencyCost, fill: visibleUrgencies.High ? CHART_STYLES.barColors.high : CHART_STYLES.barColors.disabled },
+      {
+        name: 'Promotion',
+        hours: costData.promotionalHours || 0,
+        cost: (costData.promotionalNetCost !== undefined ? costData.promotionalNetCost : costData.promotionalCost) || 0,
+        visible: visibleUrgencies.Promotion
+      },
+      {
+        name: 'Low',
+        hours: costData.regularHours || 0,
+        cost: (costData.regularNetCost !== undefined ? costData.regularNetCost : costData.regularCost) || 0,
+        visible: visibleUrgencies.Low
+      },
+      {
+        name: 'Medium',
+        hours: costData.sameDayHours || 0,
+        cost: (costData.sameDayNetCost !== undefined ? costData.sameDayNetCost : costData.sameDayCost) || 0,
+        visible: visibleUrgencies.Medium
+      },
+      {
+        name: 'High',
+        hours: costData.emergencyHours || 0,
+        cost: (costData.emergencyNetCost !== undefined ? costData.emergencyNetCost : costData.emergencyCost) || 0,
+        visible: visibleUrgencies.High
+      },
     ];
 
     // Calculate max value for Y-axis domain (add $250 padding for labels)
-    const maxValue = Math.max(...chartData.map(d => d.cost));
-    const yAxisMax = maxValue + 250;
+    const maxValue = Math.max(...chartData.map(d => d.cost), 0);
+    const yAxisMax = Math.max(maxValue + 250, 500); // Minimum $500 Y-axis to prevent rendering issues
+
+    // 🐛 DEBUG LOGGING - Comprehensive chart debugging
+    console.group('🎨 CostTrackerCard Single Period Chart Render');
+    console.log('📊 Raw costData:', costData);
+    console.log('📈 Chart Data Array:', chartData);
+    console.log('💰 Individual Costs:', chartData.map(d => ({ name: d.name, cost: d.cost, hours: d.hours })));
+    console.log('📏 Y-Axis Calculation:', { maxValue, yAxisMax });
+    console.log('🎨 Visible Urgencies:', visibleUrgencies);
+    console.log('⚠️ Zero Cost Check:', chartData.filter(d => d.cost === 0).map(d => d.name));
+    console.log('⚠️ Has Any Data?:', chartData.some(d => d.cost > 0));
+
+    // Define color mapping function
+    const getBarColor = (name: string, visible: boolean) => {
+      if (!visible) return CHART_STYLES.barColors.disabled;
+      switch(name) {
+        case 'Promotion': return CHART_STYLES.barColors.promotion;
+        case 'Low': return CHART_STYLES.barColors.low;
+        case 'Medium': return CHART_STYLES.barColors.medium;
+        case 'High': return CHART_STYLES.barColors.high;
+        default: return CHART_STYLES.barColors.disabled;
+      }
+    };
+
+    console.log('🔍 Bar Colors:', chartData.map(d => ({ name: d.name, color: getBarColor(d.name, d.visible) })));
+    console.groupEnd();
+
+    // Emergency fallback: Check if there's any data to display
+    const hasData = chartData.some(d => d.cost > 0);
+    if (!hasData) {
+      console.warn('⚠️ CostTrackerCard: No cost data available for single period chart');
+      return (
+        <div style={{ padding: '20px', border: '2px dashed #F59E0B', borderRadius: '8px', backgroundColor: '#FEF3C7' }}>
+          <h3 style={{ color: '#92400E', marginBottom: '10px' }}>⚠️ No Cost Data Available</h3>
+          <p style={{ color: '#78350F', marginBottom: '10px' }}>The chart cannot be displayed because all cost values are zero.</p>
+          <details style={{ color: '#78350F' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>View Raw Data (Debug)</summary>
+            <pre style={{ backgroundColor: '#FFFBEB', padding: '10px', borderRadius: '4px', overflow: 'auto' }}>
+              {JSON.stringify(chartData, null, 2)}
+            </pre>
+          </details>
+        </div>
+      );
+    }
 
     return (
-      <div style={{ width: '100%', minHeight: 400 }}>
+      <div style={{ width: '100%', minHeight: 400, border: '1px solid #E5E7EB', borderRadius: '8px', padding: '10px' }}>
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData}>
-          <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-          <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
-          <YAxis
-            domain={[0, yAxisMax]}
-            tickFormatter={(value) => `$${(value).toLocaleString()}`}
-            {...CHART_STYLES.yAxis}
-          />
-          <Tooltip
-            cursor={false}
-            content={({ active, payload, label }) => {
-              if (active && payload && payload.length) {
-                const data = payload[0].payload;
-                const allData = chartData;
-                const totalCost = allData.reduce((sum, item) => sum + item.cost, 0);
-                const totalHours = allData.reduce((sum, item) => sum + item.hours, 0);
+          <BarChart
+            data={chartData}
+            barSize={50}
+            barCategoryGap="20%"
+          >
+            <CartesianGrid {...CHART_STYLES.cartesianGrid} />
+            <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
+            <YAxis
+              domain={[0, yAxisMax]}
+              tickFormatter={(value) => `$${(value).toLocaleString()}`}
+              {...CHART_STYLES.yAxis}
+            />
+            <Tooltip
+              cursor={false}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  const allData = chartData;
+                  const totalCost = allData.reduce((sum, item) => sum + item.cost, 0);
+                  const totalHours = allData.reduce((sum, item) => sum + item.hours, 0);
+
+                  return (
+                    <div style={CHART_STYLES.tooltipContainer}>
+                      <p style={CHART_STYLES.tooltipTitle}>{label}</p>
+                      <p style={{ ...CHART_STYLES.tooltipItem, color: '#374151' }}>
+                        Cost: {formatCurrency(data.cost)}
+                      </p>
+                      <p style={{ ...CHART_STYLES.tooltipItem, color: '#374151' }}>
+                        Hours: {data.hours.toFixed(2)}
+                      </p>
+                      <div style={CHART_STYLES.tooltipDivider}>
+                        <p style={{ color: '#111827', fontSize: '12px' }}>
+                          Total: {formatCurrency(totalCost)} ({totalHours.toFixed(2)}h)
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend
+              wrapperStyle={CHART_STYLES.legendWrapper}
+              iconType="rect"
+              content={(props) => {
+                const { payload } = props;
+                const customOrder = ['Promotion', 'Low', 'Medium', 'High'];
+                const orderedPayload = customOrder.map(key =>
+                  payload?.find(item => item.value === key)
+                ).filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined);
 
                 return (
-                  <div style={CHART_STYLES.tooltipContainer}>
-                    <p style={CHART_STYLES.tooltipTitle}>{label}</p>
-                    <p style={{ ...CHART_STYLES.tooltipItem, color: '#374151' }}>
-                      Cost: ${formatCurrency(data.cost)}
-                    </p>
-                    <p style={{ ...CHART_STYLES.tooltipItem, color: '#374151' }}>
-                      Hours: {data.hours.toFixed(2)}
-                    </p>
-                    <div style={CHART_STYLES.tooltipDivider}>
-                      <p style={{ color: '#111827', fontSize: '12px' }}>
-                        Total: ${formatCurrency(totalCost)} ({totalHours.toFixed(2)}h)
-                      </p>
-                    </div>
+                  <div>
+                    <ul style={CHART_STYLES.legendList}>
+                      {orderedPayload.map((entry, index) => entry ? (
+                        <li
+                          key={`item-${index}`}
+                          onClick={() => toggleUrgency(entry.value || '')}
+                          style={{
+                            ...CHART_STYLES.legendItem,
+                            opacity: visibleUrgencies[entry.value || ''] ? 1 : 0.35,
+                          }}
+                        >
+                          <span style={{
+                            ...CHART_STYLES.legendIcon(visibleUrgencies[entry.value || '']),
+                            backgroundColor: entry.color,
+                          }} />
+                          <span style={CHART_STYLES.legendText(visibleUrgencies[entry.value || ''])}>
+                            {entry.value}
+                          </span>
+                        </li>
+                      ) : null)}
+
+                      {isModified && (
+                        <>
+                          <li style={{
+                            width: '1px',
+                            height: '20px',
+                            backgroundColor: '#E5E7EB',
+                            margin: '0 10px'
+                          }} />
+                          <li
+                            onClick={resetFilters}
+                            style={CHART_STYLES.resetButton}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#3B82F6';
+                              e.currentTarget.style.backgroundColor = '#EFF6FF';
+                              e.currentTarget.style.borderColor = '#BFDBFE';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#6B7280';
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.borderColor = 'transparent';
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                              <path d="M21 3v5h-5" />
+                              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                              <path d="M8 21H3v-5" />
+                            </svg>
+                            Reset
+                          </li>
+                        </>
+                      )}
+                    </ul>
                   </div>
                 );
-              }
-              return null;
-            }}
-          />
-          <Bar dataKey="cost" name="Cost" shape={(props: any) => {
-            const { fill, x, y, width, height } = props;
-            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
-          }}>
-            <LabelList
-              dataKey="cost"
-              position="top"
-              formatter={(value: any) => formatCurrency(value)}
-              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+              }}
             />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
+            <Bar
+              dataKey="cost"
+              name="Cost"
+              isAnimationActive={false}
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`bar-${index}`}
+                  fill={getBarColor(entry.name, entry.visible)}
+                />
+              ))}
+              <LabelList
+                dataKey="cost"
+                position="top"
+                formatter={(value: number) => value > 0 ? formatCurrency(value) : ''}
+                style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
   };
 
   // Main render logic
-  const renderTable = () => {
+  const renderTable = useCallback(() => {
     return selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0
       ? renderMonthlyTable()
       : renderSinglePeriodTable();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, monthlyCosts, costData]);
 
-  const renderChart = () => {
+  const renderChart = useCallback(() => {
+    // 🐛 DEBUG: Track which chart is rendered
+    console.group('🔍 CostTrackerCard renderChart() Called');
+    console.log('📅 selectedMonth:', selectedMonth);
+    console.log('📊 monthlyCosts:', monthlyCosts);
+    console.log('📈 monthlyCosts.length:', monthlyCosts?.length);
+    console.log('🔀 Rendering:', selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? 'MONTHLY CHART' : 'SINGLE PERIOD CHART');
+    console.log('💰 costData:', costData);
+    console.groupEnd();
+
     return selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0
       ? renderMonthlyChart()
       : renderSinglePeriodChart();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, monthlyCosts, costData, visibleUrgencies]);
 
   return (
     <DataTrackerCard

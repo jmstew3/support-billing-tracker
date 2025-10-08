@@ -13,10 +13,12 @@ import type {
   BillingType,
 } from '../types/websiteProperty';
 
-const TWENTY_API_URL =
-  import.meta.env.VITE_TWENTY_API_URL?.replace('/projects', '/websiteProperties') ||
-  'https://twenny.peakonedigital.com/rest/websiteProperties';
-const TWENTY_API_TOKEN = import.meta.env.VITE_TWENTY_API_TOKEN || '';
+// API configuration - Use local backend proxy to avoid CORS issues
+const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
+  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
+
+const TWENTY_API_URL = `${API_BASE_URL}/twenty-proxy/websiteProperties`;
 const STANDARD_MRR = 99.0; // $99 per site per month
 
 /**
@@ -24,10 +26,12 @@ const STANDARD_MRR = 99.0; // $99 per site per month
  */
 export async function fetchWebsiteProperties(): Promise<WebsiteProperty[]> {
   try {
+    console.log('Fetching website properties from proxy:', TWENTY_API_URL);
+
+    // No need for Authorization header - backend proxy handles authentication
     const response = await fetch(`${TWENTY_API_URL}?depth=1&limit=500`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${TWENTY_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
     });
