@@ -1256,6 +1256,232 @@ Routes are managed in `App.tsx`:
 2. Run `git status` to verify it's ignored
 3. Never use `git add .` without checking what's being added
 
+#### Docker Compose Port Configuration & CORS Issues (October 2025)
+**Issue**: "Failed to fetch" errors, CORS errors, or MySQL connection failures after running `docker-compose down && up --build -d`
+
+**Root Cause**: Mismatch between `.env.docker` values and `docker-compose.yml` defaults causes port inconsistencies
+
+**Why This Happens**:
+Docker Compose loads environment variables in this order:
+1. `.env` file in project root (if exists)
+2. Environment variables passed via `--env-file` flag
+3. Default values in `docker-compose.yml` (e.g., `${VITE_PORT:-5173}`)
+
+**The Problem**:
+- When running `docker-compose --env-file .env.docker up -d`: Uses `.env.docker` values
+- When running `docker-compose up -d`: Falls back to `docker-compose.yml` defaults
+- If these don't match, containers use different ports than configs expect
+
+**Example Scenario**:
+```
+docker-compose.yml defaults:
+  VITE_API_URL: ${VITE_API_URL:-http://localhost:3011/api}  ← Correct
+  VITE_PORT: ${VITE_PORT:-5173}
+  MYSQL_PORT: ${MYSQL_PORT:-3307}
+
+.env.docker had (WRONG):
+  VITE_API_URL=http://localhost:3011/api  ← This matches now (fixed)
+  VITE_PORT=5174  ← Mismatched!
+  MYSQL_PORT=3308  ← Mismatched!
+```
+
+**Symptoms**:
+- Frontend shows "Error loading data - Failed to fetch"
+- CORS errors in browser console
+- Backend logs show `Can't connect to MySQL server on '172.16.0.89:3308'`
+- Environment variables in containers don't match expected values
+- Works after one rebuild, breaks after another
+
+**The "Flip-Flopping" Effect**:
+1. Run with `--env-file` → Uses ports 5174/3308
+2. Run without `--env-file` → Uses ports 5173/3307
+3. Backend `.env` still has `FRONTEND_URL=http://localhost:5174`
+4. Containers on 5173, but backend expects 5174 → **CORS failure**
+
+**Solution**:
+1. **Align `.env.docker` with `docker-compose.yml` defaults**:
+   ```bash
+   # .env.docker should have:
+   FRONTEND_PORT=5173  # Match default
+   MYSQL_PORT=3307     # Match default
+   VITE_PORT=5173      # Match default
+   VITE_API_URL=http://localhost:3011/api  # Match backend port
+   ```
+
+2. **Update `docker-compose.yml` defaults to match actual services**:
+   - Changed `VITE_API_URL` default from `http://localhost:3001/api` → `http://localhost:3011/api`
+   - This ensures frontend always connects to correct backend port
+
+3. **Update backend CORS configuration**:
+   ```bash
+   # backend/.env should have:
+   FRONTEND_URL=http://localhost:5173  # Match frontend port
+   ```
+
+**Verification Steps**:
+```bash
+# 1. Check environment variables in running containers
+docker exec thad-chat-frontend printenv | grep VITE_API_URL
+# Should show: VITE_API_URL=http://localhost:3011/api
+
+docker exec thad-chat-backend printenv | grep FRONTEND_URL
+# Should show: FRONTEND_URL=http://localhost:5173
+
+# 2. Test CORS headers
+curl -I -H "Origin: http://localhost:5173" http://localhost:3011/api/requests
+# Should show: Access-Control-Allow-Origin: http://localhost:5173
+
+# 3. Test API connectivity
+curl http://localhost:3011/api/health
+# Should return: {"status":"ok","database":"connected"}
+```
+
+**Recovery Steps**:
+If you encounter CORS errors after rebuild:
+1. Verify `.env.docker` matches `docker-compose.yml` defaults
+2. Restart frontend to rebuild Vite with correct environment:
+   ```bash
+   docker-compose restart frontend
+   ```
+3. Clear browser cache (Vite may serve stale API URLs)
+4. Check container environment variables (see Verification Steps above)
+
+**Best Practices**:
+- ✅ Keep `.env.docker` aligned with `docker-compose.yml` defaults
+- ✅ Always verify environment variables after rebuilding containers
+- ✅ Use consistent port numbers across all config files
+- ❌ Don't mix `docker-compose up` with and without `--env-file` flag
+- ❌ Don't assume environment changes apply immediately - restart affected containers
+
+**Files to Check**:
+- `.env.docker` - Port configuration
+- `docker-compose.yml` - Default values (lines 85, 90-92, 96)
+- `backend/.env` - CORS configuration
+- `backend/server.js` - CORS allowedOrigins (lines 21-41)
+
+#### API Error 500 & Environment Variable Conflicts (October 2025)
+**Issue**: "Error Loading Data - API error: 500" after restarting Docker Compose
+
+**Root Cause**: Conflicting environment files and cached Vite builds
+
+**Two Common Problems**:
+
+**Problem 1: Backend Port Mismatch**
+- `backend/.env` file overrides Docker Compose environment variables
+- Example: `backend/.env` has `PORT=3001` but Docker expects `PORT=3011`
+- Node.js `dotenv.config()` loads local `.env` file **after** Docker sets environment variables
+- Result: Backend starts on wrong port, API requests fail with 500 errors
+
+**Problem 2: Vite Cache with Stale Environment Variables**
+- Vite caches compiled JavaScript with environment variables baked in
+- When you restart Docker, the cache persists in `node_modules/.vite/`
+- Frontend serves cached code with old `VITE_API_URL` values
+- Result: Frontend tries to connect to wrong backend URL
+
+**Solution Steps**:
+
+1. **Remove Conflicting Backend .env File**:
+   ```bash
+   # Option 1: Delete it (recommended for Docker-only setup)
+   rm backend/.env
+
+   # Option 2: Rename for reference
+   mv backend/.env backend/.env.local.example
+   ```
+
+   This makes `.env.docker` the single source of truth for all configuration.
+
+2. **Clear Vite Cache and Rebuild Frontend**:
+   ```bash
+   # Stop all containers
+   docker-compose down
+
+   # Remove Vite cache
+   rm -rf frontend/node_modules/.vite
+
+   # Rebuild frontend without cache
+   docker-compose build --no-cache frontend
+
+   # Start with env file
+   docker-compose --env-file .env.docker up -d
+   ```
+
+3. **Verify Environment Variables**:
+   ```bash
+   # Check frontend env vars
+   docker exec thad-chat-frontend printenv | grep VITE_API_URL
+   # Expected: VITE_API_URL=http://localhost:3011/api
+
+   # Check backend env vars
+   docker exec thad-chat-backend printenv | grep PORT
+   # Expected: PORT=3011
+
+   # Test API health
+   curl http://localhost:3011/api/health
+   # Expected: {"status":"ok","database":"connected"}
+   ```
+
+**Why This Happens**:
+
+**Environment Variable Loading Order**:
+1. Docker Compose passes environment variables from `.env.docker`
+2. Backend container starts with `PORT=3011`
+3. Node.js executes `dotenv.config()` which reads `backend/.env`
+4. `backend/.env` has `PORT=3001`, which **overwrites** Docker's `PORT=3011`
+5. Backend starts on port 3001, but Docker mapped port 3011 → **Connection fails**
+
+**Vite Build Caching**:
+1. Vite compiles environment variables into JavaScript at build time
+2. Compiled code is cached in `node_modules/.vite/` directory
+3. Cache persists across `docker-compose down/up` cycles
+4. Frontend serves stale JavaScript with old API URLs → **API calls fail**
+
+**Prevention**:
+
+**For Docker-Only Development**:
+- ✅ Use `.env.docker` as the single source of truth
+- ✅ Delete or rename `backend/.env` to avoid conflicts
+- ✅ Always use `--env-file .env.docker` flag when starting containers
+- ❌ Don't create `backend/.env` or `frontend/.env` files
+
+**For Hybrid Development (Docker + Local)**:
+- Keep `backend/.env` for local non-Docker development
+- Ensure values in `backend/.env` match `.env.docker`
+- When using Docker, backend will use `.env.docker` values
+- When running locally, backend will use `backend/.env` values
+
+**When Making Environment Changes**:
+```bash
+# Full rebuild workflow
+docker-compose down
+rm -rf frontend/node_modules/.vite
+docker-compose build --no-cache frontend
+docker-compose --env-file .env.docker up -d
+```
+
+**Quick Verification After Restart**:
+```bash
+# Should return healthy status
+curl http://localhost:3011/api/health
+
+# Should show correct values
+docker exec thad-chat-frontend printenv | grep VITE
+```
+
+**Configuration Checklist**:
+- ✅ `.env.docker` exists with correct values
+- ✅ No `backend/.env` file (or values match `.env.docker`)
+- ✅ No `frontend/.env` file (Docker provides all env vars)
+- ✅ Port numbers consistent: Backend=3011, Frontend=5173, MySQL=3307
+- ✅ Always use `docker-compose --env-file .env.docker up -d`
+
+**Files Involved**:
+- `.env.docker` - Primary configuration source
+- `docker-compose.yml` - Container configuration and env var defaults
+- `backend/server.js` - Reads PORT from environment (line 19)
+- `backend/.env.local.example` - Reference file (not loaded by Docker)
+- `frontend/node_modules/.vite/` - Vite cache directory (clear when rebuilding)
+
 ### Performance Notes
 - Dashboard handles up to ~1000 requests efficiently
 - Large datasets may require pagination adjustments

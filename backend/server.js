@@ -7,6 +7,7 @@ import pool, { testConnection, initializeDatabase } from './db/config.js';
 import requestRoutes from './routes/requests.js';
 import twentySyncRoutes from './routes/twenty-sync.js';
 import fluentSyncRoutes from './routes/fluent-sync.js';
+import twentyProxyRoutes from './routes/twenty-proxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,6 +47,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api', requestRoutes);
 app.use('/api/twenty', twentySyncRoutes);
 app.use('/api/fluent', fluentSyncRoutes);
+app.use('/api/twenty-proxy', twentyProxyRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

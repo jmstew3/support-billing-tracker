@@ -22,8 +22,10 @@ cp .env.docker.example .env.docker
 
 2. **Start all services with Docker**:
 ```bash
-docker-compose up -d
+docker-compose --env-file .env.docker up -d
 ```
+
+**Important**: Always use the `--env-file .env.docker` flag to ensure correct environment variables are loaded.
 
 3. **Import existing data** (if you have CSV data):
 ```bash
@@ -32,7 +34,7 @@ docker-compose up -d
 
 4. **Access the dashboard**:
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:3001/api
+- Backend API: http://localhost:3011/api
 - MySQL: localhost:3307 (user: thaduser, password: from .env.docker)
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
@@ -319,9 +321,9 @@ SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
 
 **Via API Endpoints**:
-- View all requests: http://localhost:3001/api/requests
-- Get statistics: http://localhost:3001/api/statistics
-- Export to CSV: http://localhost:3001/api/export-csv
+- View all requests: http://localhost:3011/api/requests
+- Get statistics: http://localhost:3011/api/statistics
+- Export to CSV: http://localhost:3011/api/export-csv
 
 ### Data Import/Export
 
@@ -332,7 +334,7 @@ SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 
 **Export Database to CSV**:
 ```bash
-curl http://localhost:3001/api/export-csv > export.csv
+curl http://localhost:3011/api/export-csv > export.csv
 ```
 
 ### Backup and Recovery
@@ -346,6 +348,63 @@ docker exec thad-chat-mysql mysqldump -u root -prootpassword thad_chat > backup.
 ```bash
 docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.sql
 ```
+
+## 🔧 Troubleshooting
+
+### Common Issue: API Error 500 After Restart
+
+**Problem**: After running `docker-compose down` and `docker-compose up`, you see:
+- "Error Loading Data - API error: 500" on Dashboard
+- "No projects available. Check your Twenty CRM connection" on Projects page
+
+**Root Cause**: Two common issues:
+1. **Backend Port Mismatch**: `backend/.env` file overrides Docker environment variables
+2. **Vite Cache**: Frontend serves cached JavaScript with old API URLs
+
+**Quick Fix**:
+```bash
+# 1. Remove conflicting backend .env file
+mv backend/.env backend/.env.local.example
+
+# 2. Clear Vite cache and rebuild
+docker-compose down
+rm -rf frontend/node_modules/.vite
+docker-compose build --no-cache frontend
+docker-compose --env-file .env.docker up -d
+
+# 3. Verify it's working
+curl http://localhost:3011/api/health
+# Should return: {"status":"ok","database":"connected"}
+```
+
+**Why This Happens**:
+- Docker Compose passes `PORT=3011` from `.env.docker`
+- BUT `backend/.env` has `PORT=3001`, which overwrites the Docker value
+- Backend starts on port 3001, but Docker mapped port 3011 → Connection fails
+- Vite caches compiled environment variables, serving stale API URLs after restart
+
+**Prevention**:
+- ✅ Use `.env.docker` as single source of truth
+- ✅ Delete `backend/.env` to avoid conflicts (Docker provides all env vars)
+- ✅ Always clear Vite cache when making environment changes
+- ✅ Always use: `docker-compose --env-file .env.docker up -d`
+
+**Verification After Restart**:
+```bash
+# Check backend is on correct port
+docker exec thad-chat-backend printenv | grep PORT
+# Expected: PORT=3011
+
+# Check frontend has correct API URL
+docker exec thad-chat-frontend printenv | grep VITE_API_URL
+# Expected: VITE_API_URL=http://localhost:3011/api
+
+# Test API health
+curl http://localhost:3011/api/health
+# Expected: {"status":"ok","database":"connected"}
+```
+
+For detailed troubleshooting, see the "API Error 500 & Environment Variable Conflicts" section in [CLAUDE.md](./CLAUDE.md#api-error-500--environment-variable-conflicts-october-2025).
 
 ## 💻 Requirements
 

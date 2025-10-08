@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -491,10 +492,10 @@ export function CategoryTrackerCard({
               return null;
             }}
           />
-          <Bar dataKey="count" name="Count" shape={(props: any) => {
-            const { fill, x, y, width, height } = props;
-            return <rect x={x} y={y} width={width} height={height} fill={props.payload.fill || fill} />;
-          }}>
+          <Bar dataKey="count" name="Count">
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
             <LabelList
               dataKey="count"
               position="top"
@@ -508,17 +509,19 @@ export function CategoryTrackerCard({
   };
 
   // Main render logic
-  const renderTable = () => {
+  const renderTable = useCallback(() => {
     return selectedMonth === 'all' && monthlyCategoryData && monthlyCategoryData.length > 0
       ? renderMonthlyTable()
       : renderSinglePeriodTable();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, monthlyCategoryData, categoryData]);
 
-  const renderChart = () => {
+  const renderChart = useCallback(() => {
     return selectedMonth === 'all' && monthlyCategoryData && monthlyCategoryData.length > 0
       ? renderMonthlyChart()
       : renderSinglePeriodChart();
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, monthlyCategoryData, categoryData, visibleCategories]);
 
   return (
     <DataTrackerCard
