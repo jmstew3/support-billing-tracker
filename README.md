@@ -82,7 +82,7 @@ To update the username and password:
 
 1. **Generate new credentials hash**:
 ```bash
-docker run --rm httpd:2.4-alpine htpasswd -nb newusername newpassword
+docker run --rm httpd:2.4-alpine htpasswd -nb typeanewusername typeanewpassword
 ```
 
 This will output something like:
