@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
@@ -44,6 +44,18 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     if (onNavigate) {
       onNavigate(view);
     }
+  };
+
+  const handleLogout = () => {
+    // For BasicAuth, we need to send invalid credentials to force re-authentication
+    // This redirects to a URL with 'logout' as username, which will fail authentication
+    // and prompt the browser to show the login dialog again
+    const currentHost = window.location.hostname;
+    const currentPath = window.location.pathname;
+    const protocol = window.location.protocol;
+
+    // Construct logout URL that forces 401 Unauthorized
+    window.location.href = `${protocol}//logout@${currentHost}${currentPath}`;
   };
 
   return (
@@ -129,7 +141,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
         </ul>
       </nav>
 
-      {/* Footer - Theme Toggle & Powered by PeakOne */}
+      {/* Footer - Theme Toggle, Logout & Powered by PeakOne */}
       <div className="border-t border-border/50 bg-background/30">
         {/* Theme Toggle */}
         <div className="flex items-center py-2 px-4">
@@ -140,6 +152,28 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
               <span className="text-xs text-muted-foreground">Theme:</span>
               <ThemeToggle theme={theme} onToggle={onToggleTheme} />
             </div>
+          )}
+        </div>
+
+        {/* Logout Button */}
+        <div className="border-t border-border/50 py-2 px-2">
+          {isCollapsed ? (
+            <button
+              onClick={handleLogout}
+              className="w-full p-2 rounded-md hover:bg-destructive/10 text-destructive transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px]"
+              title="Log Out"
+              aria-label="Log Out"
+            >
+              <LogOut size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
+            >
+              <LogOut size={18} className="flex-shrink-0" />
+              <span>Log Out</span>
+            </button>
           )}
         </div>
 
