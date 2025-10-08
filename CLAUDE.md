@@ -1525,6 +1525,83 @@ If you encounter CORS errors after rebuild:
 - `backend/.env` - CORS configuration
 - `backend/server.js` - CORS allowedOrigins (lines 21-41)
 
+#### API Error 403 & JWT Token Invalidation (October 2025)
+**Issue**: "API error: 403" or "Invalid token" errors after running `docker-compose down && docker-compose up`
+
+**Root Cause**: JWT authentication tokens stored in browser become invalid after backend restart
+
+**Why This Happens**:
+1. **JWT Tokens Persist in Browser**: Access tokens are stored in browser localStorage/sessionStorage
+2. **Backend Restarts**: `docker-compose down && up` creates new container
+3. **Token Invalidation**: Stored tokens either:
+   - Reference user records that don't exist in fresh database
+   - Have expired during the downtime
+   - Were signed with different JWT_SECRET (if environment changed)
+4. **Frontend Sends Stale Token**: Browser automatically includes old token in API requests
+5. **Backend Returns 403**: `authenticateToken` middleware rejects invalid/expired token
+
+**Symptoms**:
+- Frontend shows "API error: 403" or "Invalid token" message
+- Browser console shows `403 Forbidden` responses
+- Login worked before Docker restart, now fails
+- Happens EVERY TIME after `docker-compose down && up`
+
+**Quick Fix (Immediate)**:
+```bash
+# Option 1: Clear browser localStorage manually
+# 1. Open DevTools (F12)
+# 2. Go to Application → Local Storage → http://localhost:5173
+# 3. Click "Clear All" or delete specific token entries
+# 4. Refresh page → Login screen appears
+
+# Option 2: Use incognito/private browsing window
+# New window has no cached tokens, forces fresh login
+```
+
+**Automated Fix (Implemented)**:
+The frontend now automatically detects 403 errors and redirects to login:
+- `frontend/src/utils/api.ts` checks all API responses
+- On 403 error, clears localStorage and redirects to login page
+- User sees login screen immediately without manual intervention
+
+**Prevention**:
+- ✅ **Expected Behavior**: 403 after restart is NORMAL with JWT auth
+- ✅ **No Action Needed**: Frontend auto-redirects to login
+- ⚠️ **If Using Production**: Ensure `JWT_SECRET` in `.env.docker` is stable (don't regenerate)
+- ⚠️ **Database Persistence**: User accounts must persist across restarts (check MySQL data volume)
+
+**Verification Steps**:
+```bash
+# 1. Check JWT configuration in backend
+docker exec thad-chat-backend printenv | grep JWT
+# Should show: JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN
+
+# 2. Verify user exists in database
+docker exec -it thad-chat-mysql mysql -u root -p
+> USE thad_chat;
+> SELECT id, email, role FROM users;
+# Should show at least one admin user
+
+# 3. Test token generation
+curl -X POST http://localhost:3011/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+# Should return: {"token":"eyJ...","user":{...}}
+```
+
+**Related Files**:
+- `backend/middleware/auth.js` - JWT verification logic (lines 36-39: 403 errors)
+- `backend/routes/auth.js` - Login endpoint that issues tokens
+- `frontend/src/utils/api.ts` - Auto-redirect logic on 403
+- `frontend/src/contexts/AuthContext.tsx` - Token storage management
+
+**Advanced: Token Refresh Strategy**:
+If you want to avoid re-login after every restart, implement refresh tokens:
+1. Backend already has `JWT_REFRESH_SECRET` configured
+2. Frontend can store refresh token in httpOnly cookie (more secure)
+3. On 403, attempt token refresh before redirecting to login
+4. See Phase 2 in `docs/authentication-plan.md` for full implementation
+
 #### API Error 500 & Environment Variable Conflicts (October 2025)
 **Issue**: "Error Loading Data - API error: 500" after restarting Docker Compose
 
