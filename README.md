@@ -107,10 +107,20 @@ docker-compose --env-file .env.docker up -d
 - Browser should prompt for new credentials
 - Enter the new username and password
 
+#### Logging Out
+
+To log out and test new credentials:
+1. Click the **Log Out** button in the sidebar (red button below Theme toggle)
+2. Browser will redirect and prompt for credentials again
+3. Enter username and password to re-authenticate
+
+**Note:** For best security, close your browser completely after logging out.
+
 #### Security Notes
 - ✅ Credentials are hashed using Apache APR1 (bcrypt variant)
 - ✅ Works over HTTPS for secure transmission
 - ✅ Protects both frontend and backend API
+- ✅ Logout button available in sidebar for re-authentication
 - ⚠️ Single shared credential for all users
 - 📝 For per-user authentication, see `docs/authentication-plan.md` (Phase 2)
 
