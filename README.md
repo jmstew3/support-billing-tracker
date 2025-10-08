@@ -65,6 +65,60 @@ npm install
 npm run dev
 ```
 
+## 🔒 Security & Authentication
+
+### Current Implementation: BasicAuth (Phase 1)
+
+The application is protected by HTTP Basic Authentication at the Traefik reverse proxy level. When accessing the production URL, users will be prompted for credentials.
+
+#### Default Credentials
+- **Username:** `admin`
+- **Password:** `***REMOVED***`
+- **Production URL:** `https://velocity.peakonedigital.com/billing-overview`
+
+#### Changing Authentication Credentials
+
+To update the username and password:
+
+1. **Generate new credentials hash**:
+```bash
+docker run --rm httpd:2.4-alpine htpasswd -nb newusername newpassword
+```
+
+This will output something like:
+```
+newusername:$apr1$xyz123$hashedpasswordhere
+```
+
+2. **Update `.env.docker` file**:
+```bash
+# Edit the BASIC_AUTH_USERS variable
+# IMPORTANT: Escape $ as $$ for docker-compose
+BASIC_AUTH_USERS=newusername:$$apr1$$xyz123$$hashedpasswordhere
+```
+
+3. **Restart the application**:
+```bash
+docker-compose --env-file .env.docker up -d
+```
+
+4. **Verify the change**:
+- Access the production URL
+- Browser should prompt for new credentials
+- Enter the new username and password
+
+#### Security Notes
+- ✅ Credentials are hashed using Apache APR1 (bcrypt variant)
+- ✅ Works over HTTPS for secure transmission
+- ✅ Protects both frontend and backend API
+- ⚠️ Single shared credential for all users
+- 📝 For per-user authentication, see `docs/authentication-plan.md` (Phase 2)
+
+#### Local Development
+Local access (localhost:5173, localhost:3011) bypasses authentication. Only production access via Traefik requires credentials.
+
+---
+
 ## 📁 Project Structure
 
 ```

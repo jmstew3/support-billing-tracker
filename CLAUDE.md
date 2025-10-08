@@ -26,11 +26,43 @@ The application is protected by HTTP Basic Authentication at the reverse proxy l
 - **Hash Algorithm:** Apache APR1 (MD5-based bcrypt variant)
 
 #### Changing Credentials
-To generate new credentials:
+
+To update the username and password for production access:
+
+**Step 1: Generate New Credentials Hash**
 ```bash
-docker run --rm httpd:2.4-alpine htpasswd -nb username newpassword
+docker run --rm httpd:2.4-alpine htpasswd -nb newusername newpassword
 ```
-Then update `BASIC_AUTH_USERS` in `.env.docker`, escaping `$` as `$$`.
+
+This will output:
+```
+newusername:$apr1$xyz123$hashedpasswordhere
+```
+
+**Step 2: Update Environment File**
+
+Edit `.env.docker` and update the `BASIC_AUTH_USERS` variable:
+```bash
+# IMPORTANT: Escape $ as $$ for docker-compose
+BASIC_AUTH_USERS=newusername:$$apr1$$xyz123$$hashedpasswordhere
+```
+
+**Step 3: Restart Docker Services**
+```bash
+docker-compose --env-file .env.docker up -d
+```
+
+**Step 4: Verify the Change**
+1. Access `https://velocity.peakonedigital.com/billing-overview`
+2. Browser should prompt for new credentials
+3. Enter the new username and password
+4. Dashboard should load successfully
+
+**Notes:**
+- The `$` character must be escaped as `$$` in `.env.docker` for docker-compose to parse correctly
+- Changes take effect immediately after container restart (no rebuild needed)
+- Old sessions may persist in browser until cache is cleared or browser is restarted
+- Test the new credentials in an incognito/private browser window first
 
 #### Security Considerations
 - ✅ **Adequate for:** Internal team access (5-10 users), trusted networks
