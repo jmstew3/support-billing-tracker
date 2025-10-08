@@ -17,6 +17,8 @@ CREATE TABLE requests (
   urgency ENUM('LOW', 'MEDIUM', 'HIGH', 'PROMOTION') DEFAULT 'MEDIUM',
   effort ENUM('Small', 'Medium', 'Large') DEFAULT 'Medium',
   status ENUM('active', 'deleted', 'ignored') DEFAULT 'active',
+  source ENUM('sms', 'ticket', 'email', 'phone') DEFAULT 'sms',
+  website_url VARCHAR(255) DEFAULT NULL,
   estimated_hours DECIMAL(3, 2) GENERATED ALWAYS AS (
     CASE effort
       WHEN 'Small' THEN 0.25

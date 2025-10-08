@@ -13,6 +13,9 @@ import type {
   BillingType,
 } from '../types/websiteProperty';
 
+// Import authenticatedFetch for JWT token handling
+import { authenticatedFetch } from '../utils/api';
+
 // API configuration - Use local backend proxy to avoid CORS issues
 const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
   ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
@@ -28,12 +31,9 @@ export async function fetchWebsiteProperties(): Promise<WebsiteProperty[]> {
   try {
     console.log('Fetching website properties from proxy:', TWENTY_API_URL);
 
-    // No need for Authorization header - backend proxy handles authentication
-    const response = await fetch(`${TWENTY_API_URL}?depth=1&limit=500`, {
+    // Use authenticatedFetch to include JWT token
+    const response = await authenticatedFetch(`${TWENTY_API_URL}?depth=1&limit=500`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {

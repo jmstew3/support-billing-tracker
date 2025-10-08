@@ -5,14 +5,36 @@ import { Projects } from './components/Projects/Projects';
 import { TurboHosting } from './components/Hosting/TurboHosting';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { ChartInfrastructureTest } from './components/charts/__tests__/BaseBarChart.test';
+import { Login } from './components/auth/Login';
 import { PeriodProvider } from './contexts/PeriodContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTheme } from './hooks/useTheme';
+import { Loader2 } from 'lucide-react';
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing' | 'test'>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={48} className="animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  // Show main dashboard if authenticated
   return (
     <PeriodProvider>
       <div className="flex h-screen overflow-hidden">
@@ -33,6 +55,14 @@ function App() {
         </main>
       </div>
     </PeriodProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

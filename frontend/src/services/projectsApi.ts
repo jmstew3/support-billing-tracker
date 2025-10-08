@@ -1,5 +1,8 @@
 import type { Project, FinancialSummary, MonthlyRevenue } from '../types/project';
 
+// Import authenticatedFetch for JWT token handling
+import { authenticatedFetch } from '../utils/api';
+
 // API configuration - Use local backend proxy to avoid CORS issues
 const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
   ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
@@ -118,12 +121,9 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
 
     console.log('Fetching projects from proxy:', url);
 
-    // No need for Authorization header - backend proxy handles authentication
-    const response = await fetch(url, {
+    // Use authenticatedFetch to include JWT token
+    const response = await authenticatedFetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
