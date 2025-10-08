@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
 import { formatCurrency, formatCurrencyAccounting } from '../../utils/currency';
 import { PRICING_CONFIG } from '../../config/pricing';
@@ -1112,14 +1112,13 @@ export function CostTrackerCard({
   };
 
   // Main render logic
-  const renderTable = useCallback(() => {
+  const renderTable = () => {
     return selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0
       ? renderMonthlyTable()
       : renderSinglePeriodTable();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, monthlyCosts, costData]);
+  };
 
-  const renderChart = useCallback(() => {
+  const renderChart = () => {
     // 🐛 DEBUG: Track which chart is rendered
     console.group('🔍 CostTrackerCard renderChart() Called');
     console.log('📅 selectedMonth:', selectedMonth);
@@ -1132,8 +1131,7 @@ export function CostTrackerCard({
     return selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0
       ? renderMonthlyChart()
       : renderSinglePeriodChart();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, monthlyCosts, costData, visibleUrgencies]);
+  };
 
   return (
     <DataTrackerCard

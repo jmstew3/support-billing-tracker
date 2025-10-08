@@ -33,6 +33,21 @@ import { updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest } 
 // Types
 import type { ChatRequest } from '../../types/request'
 
+// Constants - defined outside component to prevent recreation on every render
+const CATEGORY_OPTIONS = [
+  'Support',
+  'Hosting',
+  'Forms',
+  'Email',
+  'Migration',
+  'Advisory',
+  'Non-billable',
+  'Website',
+  'General'
+] as const
+
+const URGENCY_OPTIONS = ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION'] as const
+
 interface SupportTicketsProps {
   onToggleMobileMenu?: () => void
 }
@@ -186,52 +201,45 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // DERIVED STATE
   // ============================================================
 
-  const categoryOptions = [
-    'Support',
-    'Hosting',
-    'Forms',
-    'Billing',
-    'Email',
-    'Migration',
-    'Non-billable',
-    'Advisory',
-    'General'
-  ]
-
-  const urgencyOptions = ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION']
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
 
-  // Calculate available years from requests
-  const availableYears = Array.from(new Set(
-    requests.map(request => parseLocalDate(request.Date).getFullYear())
-  )).sort((a, b) => b - a) // Sort descending (newest first)
+  // Calculate available years from requests (memoized to prevent infinite re-renders)
+  const availableYears = useMemo(() =>
+    Array.from(new Set(
+      requests.map(request => parseLocalDate(request.Date).getFullYear())
+    )).sort((a, b) => b - a) // Sort descending (newest first)
+  , [requests])
 
-  // Calculate available months for selected year
-  const availableMonthsForYear = Array.from(new Set(
-    requests
-      .filter(request => parseLocalDate(request.Date).getFullYear() === selectedYear)
-      .map(request => parseLocalDate(request.Date).getMonth() + 1)
-  )).sort((a, b) => a - b) // Sort ascending (Jan to Dec)
+  // Calculate available months for selected year (memoized to prevent infinite re-renders)
+  const availableMonthsForYear = useMemo(() =>
+    Array.from(new Set(
+      requests
+        .filter(request => parseLocalDate(request.Date).getFullYear() === selectedYear)
+        .map(request => parseLocalDate(request.Date).getMonth() + 1)
+    )).sort((a, b) => a - b) // Sort ascending (Jan to Dec)
+  , [requests, selectedYear])
 
-  // Calculate available dates for selected year/month
-  const availableDates = Array.from(new Set(
-    requests
-      .filter(request => {
-        const requestDate = parseLocalDate(request.Date)
-        const requestYear = requestDate.getFullYear()
-        const requestMonth = requestDate.getMonth() + 1
+  // Calculate available dates for selected year/month (memoized to prevent infinite re-renders)
+  const availableDates = useMemo(() =>
+    Array.from(new Set(
+      requests
+        .filter(request => {
+          const requestDate = parseLocalDate(request.Date)
+          const requestYear = requestDate.getFullYear()
+          const requestMonth = requestDate.getMonth() + 1
 
-        if (requestYear !== selectedYear) return false
-        if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false
+          if (requestYear !== selectedYear) return false
+          if (selectedMonth !== 'all' && requestMonth !== selectedMonth) return false
 
-        return true
-      })
-      .map(request => request.Date)
-  )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+          return true
+        })
+        .map(request => request.Date)
+    )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+  , [requests, selectedYear, selectedMonth])
 
   // Calculate filtered costs (memoized to prevent infinite re-renders)
   const getCurrentMonthString = () => {
@@ -726,8 +734,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             onResetFilters={resetTableFilters}
             availableDates={availableDates}
             availableDays={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
-            categoryOptions={categoryOptions}
-            urgencyOptions={urgencyOptions}
+            categoryOptions={CATEGORY_OPTIONS}
+            urgencyOptions={URGENCY_OPTIONS}
             currentPage={currentPage}
             totalPages={totalPages}
             pageSize={pageSize}
