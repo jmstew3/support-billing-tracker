@@ -35,18 +35,19 @@ import type { ChatRequest } from '../../types/request'
 
 // Constants - defined outside component to prevent recreation on every render
 const CATEGORY_OPTIONS = [
-  'Support',
-  'Hosting',
-  'Forms',
-  'Email',
-  'Migration',
   'Advisory',
+  'Email',
+  'Forms',
+  'General',
+  'Hosting',
+  'Migration',
   'Non-billable',
-  'Website',
-  'General'
-] as const
+  'Scripts',
+  'Support',
+  'Website'
+]
 
-const URGENCY_OPTIONS = ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION'] as const
+const URGENCY_OPTIONS = ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION']
 
 interface SupportTicketsProps {
   onToggleMobileMenu?: () => void
@@ -185,9 +186,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
 
   const {
     activityMetrics,
-    monthlyCosts,
-    categoryBreakdownData,
-    monthlyCategoryData
+    monthlyCosts
   } = useSupportMetrics(
     billableFilteredRequests,
     selectedYear,
@@ -196,6 +195,28 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   )
 
   // Activity metrics are passed directly to SupportScorecards component
+
+  // ============================================================
+  // CATEGORY BREAKDOWN WITH ALL ACTIVE REQUESTS
+  // For Category Breakdown display only - includes Migration and Non-billable
+  // ============================================================
+
+  // Get all active requests (including Migration and Non-billable for category tracking)
+  const allActiveRequests = useMemo(
+    () => requests.filter(r => r.Status === 'active'),
+    [requests]
+  )
+
+  // Calculate category breakdown from all active requests (shows Migration/Non-billable)
+  const {
+    categoryBreakdownData: allCategoryBreakdownData,
+    monthlyCategoryData: allMonthlyCategoryData
+  } = useSupportMetrics(
+    allActiveRequests,
+    selectedYear,
+    selectedMonth,
+    selectedMonths
+  )
 
   // ============================================================
   // DERIVED STATE
@@ -625,11 +646,11 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           )}
 
           {/* Category Breakdown Tracker */}
-          {(categoryBreakdownData || monthlyCategoryData) && (
+          {(allCategoryBreakdownData || allMonthlyCategoryData) && (
             <div className="w-full">
               <CategoryTrackerCard
-                categoryData={categoryBreakdownData || undefined}
-                monthlyCategoryData={monthlyCategoryData || undefined}
+                categoryData={allCategoryBreakdownData || undefined}
+                monthlyCategoryData={allMonthlyCategoryData || undefined}
                 selectedMonth={selectedMonth}
                 selectedYear={selectedYear}
                 gridSpan=""

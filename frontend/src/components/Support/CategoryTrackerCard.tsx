@@ -25,6 +25,7 @@ export interface CategoryData {
   advisory: number;
   nonBillable: number;
   website: number;
+  scripts: number;
   total: number;
 }
 
@@ -57,12 +58,13 @@ export interface CategoryTrackerCardProps {
 const CATEGORY_COLORS = {
   support: '#3B82F6',      // Blue
   hosting: '#10B981',      // Green
-  forms: '#F59E0B',        // Orange
+  forms: '#EC4899',        // Pink
   email: '#8B5CF6',        // Purple
-  migration: '#EC4899',    // Pink
+  migration: '#F59E0B',    // Orange
   advisory: '#06B6D4',     // Cyan
-  nonBillable: '#6B7280',  // Gray
+  nonBillable: '#9CA3AF',  // Gray-400 (lighter gray)
   website: '#F97316',      // Dark Orange
+  scripts: '#EAB308',      // Yellow
   disabled: '#D1D5DB',     // Gray for disabled/filtered items
 } as const;
 
@@ -76,6 +78,7 @@ const CATEGORY_NAMES: Record<keyof Omit<CategoryData, 'total'>, string> = {
   advisory: 'Advisory',
   nonBillable: 'Non-billable',
   website: 'Website',
+  scripts: 'Scripts',
 };
 
 /**
@@ -122,6 +125,7 @@ export function CategoryTrackerCard({
     Advisory: true,
     'Non-billable': true,
     Website: true,
+    Scripts: true,
   });
 
   // Determine description based on view mode
@@ -154,6 +158,7 @@ export function CategoryTrackerCard({
       Advisory: true,
       'Non-billable': true,
       Website: true,
+      Scripts: true,
     });
   };
 
@@ -287,6 +292,7 @@ export function CategoryTrackerCard({
       Advisory: month.categories.advisory,
       'Non-billable': month.categories.nonBillable,
       Website: month.categories.website,
+      Scripts: month.categories.scripts,
       total: month.categories.total,
     }));
 
@@ -311,7 +317,7 @@ export function CategoryTrackerCard({
               if (active && payload && payload.length) {
                 const data = payload[0].payload;
 
-                const categoryOrder = ['Support', 'Hosting', 'Forms', 'Email', 'Migration', 'Advisory', 'Non-billable', 'Website'];
+                const categoryOrder = ['Support', 'Hosting', 'Forms', 'Email', 'Migration', 'Advisory', 'Non-billable', 'Website', 'Scripts'];
 
                 const sortedPayload = payload
                   .filter((entry: any) => entry.dataKey !== 'total')
@@ -343,7 +349,7 @@ export function CategoryTrackerCard({
             iconType="rect"
             content={(props) => {
               const { payload } = props;
-              const customOrder = ['Support', 'Hosting', 'Forms', 'Email', 'Migration', 'Advisory', 'Non-billable', 'Website'];
+              const customOrder = ['Support', 'Hosting', 'Forms', 'Email', 'Migration', 'Advisory', 'Non-billable', 'Website', 'Scripts'];
               const orderedPayload = customOrder.map(key =>
                 payload?.find(item => item.value === key)
               ).filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined);
@@ -407,8 +413,9 @@ export function CategoryTrackerCard({
               );
             }}
           />
-          <Bar dataKey="Website" stackId="a" fill={visibleCategories.Website ? CATEGORY_COLORS.website : CATEGORY_COLORS.disabled} />
           <Bar dataKey="Non-billable" stackId="a" fill={visibleCategories['Non-billable'] ? CATEGORY_COLORS.nonBillable : CATEGORY_COLORS.disabled} />
+          <Bar dataKey="Website" stackId="a" fill={visibleCategories.Website ? CATEGORY_COLORS.website : CATEGORY_COLORS.disabled} />
+          <Bar dataKey="Scripts" stackId="a" fill={visibleCategories.Scripts ? CATEGORY_COLORS.scripts : CATEGORY_COLORS.disabled} />
           <Bar dataKey="Advisory" stackId="a" fill={visibleCategories.Advisory ? CATEGORY_COLORS.advisory : CATEGORY_COLORS.disabled} />
           <Bar dataKey="Migration" stackId="a" fill={visibleCategories.Migration ? CATEGORY_COLORS.migration : CATEGORY_COLORS.disabled} />
           <Bar dataKey="Email" stackId="a" fill={visibleCategories.Email ? CATEGORY_COLORS.email : CATEGORY_COLORS.disabled} />

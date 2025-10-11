@@ -173,7 +173,7 @@ python3 data_preprocessor.py
 - `request_patterns.py`: Pattern definitions and categorization rules
 
 **Request Classification**:
-- **Categories**: Support, Hosting, Forms, Billing, Email, Migration
+- **Categories**: Support, Hosting, Forms, Billing, Email, Migration, Scripts
 - **Urgency Levels**: High, Medium, Low (based on keyword analysis)
 - **Effort Estimation**: Small (0.25h), Medium (0.5h), Large (1.0h)
 - **Request Types**: General Request, Site Migration, Backup Request, Form Removal, License Update, Email Routing, Form Integration
@@ -1252,8 +1252,8 @@ Routes are managed in `App.tsx`:
   - Files Modified: `CategoryPieChart.tsx` (complete refactor)
 
 - **Complete Category Support**:
-  - Added all 9 categories to both radar and pie charts
-  - Categories: Support, Hosting, Forms, Billing, Email, Migration, Non-billable, Advisory, General
+  - Added all 10 categories to both radar and pie charts
+  - Categories: Support, Hosting, Forms, Billing, Email, Migration, Non-billable, Advisory, Scripts, General
   - Consistent color mapping across all visualizations
   - Files Modified: `CategoryRadarChart.tsx`, `CategoryPieChart.tsx`
 
