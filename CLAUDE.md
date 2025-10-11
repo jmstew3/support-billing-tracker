@@ -527,7 +527,7 @@ The application has 4 main pages accessible via the sidebar navigation:
 **Data Source**: Twenty CRM projects API (`/rest/projects`)
 
 **Components Used**:
-- MonthlyRevenueTable, CumulativeBillingChart, ProjectCategoryPieChart
+- MonthlyRevenueTable, MonthlyRevenueChart, ProjectCategoryPieChart
 - Scorecard, LoadingState
 - Services: projectsApi.ts
 - Types: project.ts
@@ -564,7 +564,7 @@ The application has 4 main pages accessible via the sidebar navigation:
 
 **Components Used**:
 - Scorecard, LoadingState
-- CumulativeBillingChart, HostingTypeChart, MonthlyHostingCalculator
+- MonthlyRevenueChart, HostingTypeChart, MonthlyHostingCalculator
 - Services: hostingApi.ts
 - Types: websiteProperty.ts
 
@@ -749,7 +749,7 @@ thad-chat/
     │   │   │   ├── CategoryPieChart.tsx     # Modern pie chart with animations
     │   │   │   ├── CategoryRadarChart.tsx   # Radar chart for category metrics
     │   │   │   ├── RequestCalendarHeatmap.tsx # Calendar heatmap
-    │   │   │   ├── CumulativeBillingChart.tsx # Revenue growth chart
+    │   │   │   ├── MonthlyRevenueChart.tsx  # Monthly revenue chart
     │   │   │   ├── HostingTypeChart.tsx     # Hosting billing type distribution
     │   │   │   └── ProjectCategoryPieChart.tsx # Project category distribution
     │   │   ├── support/               # Support page components
@@ -874,7 +874,7 @@ Routes are managed in `App.tsx`:
 **Child Components**:
 - `projects/MonthlyRevenueTable` - Monthly project breakdown
 - `projects/ProjectCard` - Individual project card
-- `charts/CumulativeBillingChart` - Revenue growth visualization
+- `charts/MonthlyRevenueChart` - Monthly revenue visualization
 - `charts/ProjectCategoryPieChart` - Project category distribution
 - `shared/Scorecard` - Revenue metrics
 - `shared/LoadingState` - Loading animations
@@ -892,7 +892,7 @@ Routes are managed in `App.tsx`:
 **Child Components**:
 - `shared/Scorecard` - MRR metrics
 - `shared/LoadingState` - Loading animations
-- `charts/CumulativeBillingChart` - MRR growth visualization
+- `charts/MonthlyRevenueChart` - Monthly MRR visualization
 - `charts/HostingTypeChart` - Billing type distribution
 - `hosting/MonthlyHostingCalculator` - Detailed monthly breakdown table
 

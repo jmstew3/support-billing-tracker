@@ -12,10 +12,10 @@ class Request {
     this.status = data.status || 'active';
 
     // Handle estimated_hours - can be provided or default based on effort
-    if (data.estimated_hours !== undefined) {
+    if (data.estimated_hours !== undefined && data.estimated_hours !== null) {
       this.estimated_hours = parseFloat(data.estimated_hours);
     } else {
-      // Default based on effort
+      // Default based on effort (only for new requests)
       this.estimated_hours = this.effort === 'Small' ? 0.25 :
                             this.effort === 'Large' ? 1.00 : 0.50;
     }

@@ -1,32 +1,27 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../../services/projectsApi';
 
-interface CumulativeBillingChartProps {
+interface MonthlyRevenueChartProps {
   data: Array<{
     month: string; // YYYY-MM format
     revenue: number;
   }>;
 }
 
-export function CumulativeBillingChart({ data }: CumulativeBillingChartProps) {
+export function MonthlyRevenueChart({ data }: MonthlyRevenueChartProps) {
   // Sort data chronologically (oldest first)
   const sortedData = [...data].sort((a, b) => a.month.localeCompare(b.month));
 
-  // Calculate cumulative values
-  let cumulative = 0;
-  const cumulativeData = sortedData.map((item) => {
-    cumulative += item.revenue;
-    return {
-      month: item.month,
-      monthLabel: formatMonthLabel(item.month),
-      revenue: item.revenue,
-      cumulative: cumulative,
-    };
-  });
+  // Format data for display (no cumulative calculation)
+  const chartData = sortedData.map((item) => ({
+    month: item.month,
+    monthLabel: formatMonthLabel(item.month),
+    revenue: item.revenue,
+  }));
 
-  // Calculate max Y-axis value (round up to nearest $10k)
-  const maxCumulative = cumulativeData[cumulativeData.length - 1]?.cumulative || 0;
-  const maxYAxis = Math.ceil(maxCumulative / 10000) * 10000;
+  // Calculate max Y-axis value (round up to nearest $1k for monthly revenue)
+  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 0);
+  const maxYAxis = Math.ceil(maxRevenue / 1000) * 1000;
 
   // Format month for display (e.g., "Sep 2025")
   function formatMonthLabel(monthStr: string) {
@@ -43,10 +38,7 @@ export function CumulativeBillingChart({ data }: CumulativeBillingChartProps) {
         <div className="border bg-card p-3 text-sm">
           <p className="font-semibold mb-1">{data.monthLabel}</p>
           <p className="text-xs text-muted-foreground">
-            Month: <span className="font-medium text-foreground">{formatCurrency(data.revenue)}</span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Total: <span className="font-medium text-foreground">{formatCurrency(data.cumulative)}</span>
+            Monthly Revenue: <span className="font-medium text-foreground">{formatCurrency(data.revenue)}</span>
           </p>
         </div>
       );
@@ -57,13 +49,13 @@ export function CumulativeBillingChart({ data }: CumulativeBillingChartProps) {
   return (
     <div className="border bg-card p-6">
       <div className="mb-4">
-        <h3 className="text-md font-semibold mb-1">Cumulative Billing</h3>
+        <h3 className="text-md font-semibold mb-1">Monthly Hosting Revenue</h3>
         <p className="text-xs text-muted-foreground">
-          Total billing accumulation over time
+          Net monthly revenue after free credits
         </p>
       </div>
       <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={cumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+        <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" vertical={false} />
           <XAxis
             dataKey="monthLabel"
@@ -87,7 +79,7 @@ export function CumulativeBillingChart({ data }: CumulativeBillingChartProps) {
           />
           <Line
             type="monotone"
-            dataKey="cumulative"
+            dataKey="revenue"
             stroke="hsl(var(--foreground))"
             strokeWidth={2}
             dot={{

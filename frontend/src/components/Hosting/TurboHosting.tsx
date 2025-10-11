@@ -3,7 +3,7 @@ import { PageHeader } from '../shared/PageHeader';
 import { usePeriod } from '../../contexts/PeriodContext';
 import { Scorecard } from '../ui/Scorecard';
 import { LoadingState } from '../ui/LoadingState';
-import { CumulativeBillingChart } from '../charts/CumulativeBillingChart';
+import { MonthlyRevenueChart } from '../charts/MonthlyRevenueChart';
 import { HostingTypeChart } from '../charts/HostingTypeChart';
 import { Server, DollarSign, Gift, Zap } from 'lucide-react';
 import { MonthlyHostingCalculator } from './MonthlyHostingCalculator';
@@ -181,9 +181,9 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
           {/* Charts Section - Show when viewing all months */}
           {selectedMonthStr === 'all' && monthlyBreakdown.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-              {/* Cumulative Billing Chart - 2/3 width on desktop */}
+              {/* Monthly Revenue Chart - 2/3 width on desktop */}
               <div className="lg:col-span-2">
-                <CumulativeBillingChart
+                <MonthlyRevenueChart
                   data={monthlyBreakdown.map((m) => ({
                     month: m.month,
                     revenue: m.netMrr,
