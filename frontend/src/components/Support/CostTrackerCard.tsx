@@ -65,7 +65,7 @@ export interface CostTrackerCardProps {
   title?: string;
   /** Optional custom description */
   description?: string;
-  /** Initial view type (default: 'table') */
+  /** Initial view type (default: 'chart') */
   initialViewType?: 'table' | 'chart';
   /** Optional grid span classes for layout control */
   gridSpan?: string;
@@ -104,7 +104,7 @@ export function CostTrackerCard({
   selectedYear,
   title = 'Support Ticket Cost Tracker',
   description,
-  initialViewType = 'table',
+  initialViewType = 'chart',
   gridSpan,
 }: CostTrackerCardProps) {
   // 🐛 DEBUG: Component mounted

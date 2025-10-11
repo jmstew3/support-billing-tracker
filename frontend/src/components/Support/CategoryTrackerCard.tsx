@@ -47,7 +47,7 @@ export interface CategoryTrackerCardProps {
   title?: string;
   /** Optional custom description */
   description?: string;
-  /** Initial view type (default: 'table') */
+  /** Initial view type (default: 'chart') */
   initialViewType?: 'table' | 'chart';
   /** Optional grid span classes for layout control */
   gridSpan?: string;
@@ -110,7 +110,7 @@ export function CategoryTrackerCard({
   selectedYear,
   title = 'Category Breakdown',
   description,
-  initialViewType = 'table',
+  initialViewType = 'chart',
   gridSpan,
 }: CategoryTrackerCardProps) {
   const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({
