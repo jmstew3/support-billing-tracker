@@ -18,7 +18,7 @@ interface CategoryRadarChartProps {
 const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDimensional = false }) => {
   // Define categories
   const categories = useMemo(() =>
-    ['Non-billable', 'Support', 'Advisory', 'Forms', 'Hosting', 'Billing', 'Email', 'Website', 'Migration'],
+    ['Non-billable', 'Support', 'Advisory', 'Forms', 'Hosting', 'Billing', 'Email', 'Website', 'Scripts', 'Migration'],
     []
   );
 

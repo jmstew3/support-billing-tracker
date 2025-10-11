@@ -16,17 +16,18 @@ const getCSSVariableValue = (variableName: string) => {
 const getCategoryColors = (): Record<string, string> => ({
   'Support': '#000000',      // Black (darkest)
   'Hosting': '#1f2937',      // Gray-800
-  'Forms': '#374151',        // Gray-700
+  'Forms': '#9ca3af',        // Gray-400
   'Billing': '#4b5563',      // Gray-600
   'Email': '#6b7280',        // Gray-500
-  'Migration': '#9ca3af',    // Gray-400
+  'Migration': '#374151',    // Gray-700
   'Non-billable': '#d1d5db', // Gray-300
   'Advisory': '#e5e7eb',     // Gray-200
-  'Website': '#f3f4f6'       // Gray-100 (lightest)
+  'Website': '#f3f4f6',      // Gray-100
+  'Scripts': '#EAB308'       // Yellow
 });
 
 // All possible categories in order
-const ALL_CATEGORIES = ['Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration', 'Non-billable', 'Advisory', 'Website'];
+const ALL_CATEGORIES = ['Support', 'Hosting', 'Forms', 'Billing', 'Email', 'Migration', 'Non-billable', 'Advisory', 'Website', 'Scripts'];
 
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
   // Get theme-aware colors

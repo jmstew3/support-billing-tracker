@@ -36,6 +36,7 @@ export interface CategoryData {
   advisory: number;
   nonBillable: number;
   website: number;
+  scripts: number;
   total: number;
 }
 
@@ -221,6 +222,7 @@ export function useSupportMetrics(
       advisory: 0,
       nonBillable: 0,
       website: 0,
+      scripts: 0,
       total: 0,
     };
 
@@ -252,6 +254,9 @@ export function useSupportMetrics(
           break;
         case 'website':
           categories.website++;
+          break;
+        case 'scripts':
+          categories.scripts++;
           break;
         default:
           categories.support++;
