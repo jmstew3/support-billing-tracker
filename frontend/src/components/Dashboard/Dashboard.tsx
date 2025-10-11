@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LoadingState } from '../ui/LoadingState';
 import { PageHeader } from '../shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
@@ -17,7 +17,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
-  const { selectedYear, selectedMonth, selectedMonths, getMonthStrings, setAvailableData } = usePeriod();
+  const { selectedYear, selectedMonth, selectedMonths, selectedDay, getMonthStrings, setAvailableData } = usePeriod();
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,14 +98,82 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
 
   // Note: formatMonthLabel now imported from utils/formatting
 
-  // Filter data based on selected month(s) from context
+  // Helper function to filter line items within a month by specific day
+  const filterDayData = (monthData: MonthlyBillingSummary, day: string): MonthlyBillingSummary => {
+    // Filter tickets by date
+    const filteredTickets = monthData.ticketDetails.filter(t => t.date === day);
+    const ticketsGrossRevenue = filteredTickets.reduce((sum, t) => sum + t.amount, 0);
+    const ticketsRevenue = filteredTickets.reduce((sum, t) => sum + (t.netAmount || t.amount), 0);
+    const ticketsFreeHoursSavings = ticketsGrossRevenue - ticketsRevenue;
+    const ticketsFreeHoursApplied = filteredTickets.reduce((sum, t) => sum + (t.freeHoursApplied || 0), 0);
+
+    // Filter projects by completionDate
+    const filteredProjects = monthData.projectDetails.filter(p => p.completionDate === day);
+    const projectsGrossRevenue = filteredProjects.reduce((sum, p) => sum + (p.originalAmount || p.amount), 0);
+    const projectsRevenue = filteredProjects.reduce((sum, p) => sum + p.amount, 0);
+    const projectsLandingPageCredit = filteredProjects.filter(p => p.isFreeCredit && p.category === 'LANDING_PAGE').length;
+    const projectsMultiFormCredit = filteredProjects.filter(p => p.isFreeCredit && p.category === 'MULTI_FORM').length;
+    const projectsBasicFormCredit = filteredProjects.filter(p => p.isFreeCredit && p.category === 'BASIC_FORM').length;
+    const projectsLandingPageSavings = filteredProjects.filter(p => p.isFreeCredit && p.category === 'LANDING_PAGE').reduce((sum, p) => sum + ((p.originalAmount || 0) - p.amount), 0);
+    const projectsMultiFormSavings = filteredProjects.filter(p => p.isFreeCredit && p.category === 'MULTI_FORM').reduce((sum, p) => sum + ((p.originalAmount || 0) - p.amount), 0);
+    const projectsBasicFormSavings = filteredProjects.filter(p => p.isFreeCredit && p.category === 'BASIC_FORM').reduce((sum, p) => sum + ((p.originalAmount || 0) - p.amount), 0);
+
+    // Filter hosting by date range (hostingStart <= day <= hostingEnd OR hostingEnd is null)
+    const filteredHosting = monthData.hostingDetails.filter(h => {
+      const start = h.hostingStart || monthData.month + '-01';
+      const end = h.hostingEnd || '9999-12-31'; // No end date means still active
+      return day >= start && day <= end;
+    });
+    const hostingGross = filteredHosting.reduce((sum, h) => sum + h.grossAmount, 0);
+    const hostingRevenue = filteredHosting.reduce((sum, h) => sum + h.netAmount, 0);
+    const hostingCreditsApplied = filteredHosting.filter(h => h.creditApplied).length;
+
+    return {
+      ...monthData,
+      ticketDetails: filteredTickets,
+      ticketsCount: filteredTickets.length,
+      ticketsGrossRevenue,
+      ticketsRevenue,
+      ticketsFreeHoursApplied,
+      ticketsFreeHoursSavings,
+      projectDetails: filteredProjects,
+      projectsCount: filteredProjects.length,
+      projectsGrossRevenue,
+      projectsRevenue,
+      projectsLandingPageCredit,
+      projectsLandingPageSavings,
+      projectsMultiFormCredit,
+      projectsMultiFormSavings,
+      projectsBasicFormCredit,
+      projectsBasicFormSavings,
+      hostingDetails: filteredHosting,
+      hostingSitesCount: filteredHosting.length,
+      hostingGross,
+      hostingRevenue,
+      hostingCreditsApplied,
+      totalRevenue: ticketsRevenue + projectsRevenue + hostingRevenue
+    };
+  };
+
+  // Filter data based on selected month(s) and day from context
   // Convert context values to month string format (YYYY-MM)
   const selectedMonthStrings = getMonthStrings();
 
-  const filteredData =
-    billingSummary && selectedMonthStrings !== 'all'
+  const filteredData = useMemo(() => {
+    if (!billingSummary) return [];
+
+    // First filter by month
+    let data = selectedMonthStrings !== 'all'
       ? billingSummary.monthlyBreakdown.filter((m) => selectedMonthStrings.includes(m.month))
-      : billingSummary?.monthlyBreakdown || [];
+      : billingSummary.monthlyBreakdown;
+
+    // Then filter by day if selected
+    if (selectedDay !== 'all') {
+      data = data.map(monthData => filterDayData(monthData, selectedDay));
+    }
+
+    return data;
+  }, [billingSummary, selectedMonthStrings, selectedDay]);
 
   // Calculate all billing metrics using custom hook
   const {
@@ -256,11 +324,13 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
               monthlyData={filteredData}
               selectedYear={selectedYear}
               title={
-                selectedMonthStrings === 'all'
-                  ? 'Monthly Revenue by Category'
-                  : selectedMonths.length === 1
-                    ? `${formatMonthLabel(selectedMonthStrings[0])} Revenue Breakdown`
-                    : `${formatMonthLabel(selectedMonthStrings[0])} - ${formatMonthLabel(selectedMonthStrings[selectedMonthStrings.length - 1])} Revenue Breakdown`
+                selectedDay !== 'all'
+                  ? `Revenue for ${new Date(selectedDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                  : selectedMonthStrings === 'all'
+                    ? 'Monthly Revenue by Category'
+                    : selectedMonths.length === 1
+                      ? `${formatMonthLabel(selectedMonthStrings[0])} Revenue Breakdown`
+                      : `${formatMonthLabel(selectedMonthStrings[0])} - ${formatMonthLabel(selectedMonthStrings[selectedMonthStrings.length - 1])} Revenue Breakdown`
               }
               initialViewType="table"
               gridSpan=""

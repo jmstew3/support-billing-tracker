@@ -165,9 +165,14 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
       }
       // Reset day selection to show full month
       setSelectedDay('all');
+    } else if (mode === 'day') {
+      // Auto-select most recent day if no day selected
+      if (selectedDay === 'all' && availableDates.length > 0) {
+        const mostRecentDay = availableDates[availableDates.length - 1];
+        setSelectedDay(mostRecentDay);
+      }
     }
-    // For 'day' mode, keep current selections (user needs to select a day)
-  }, [selectedMonth, availableMonths]);
+  }, [selectedMonth, selectedDay, availableMonths, availableDates]);
 
   // Get formatted period string
   const getFormattedPeriod = useCallback((): string => {
