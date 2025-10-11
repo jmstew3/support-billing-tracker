@@ -40,7 +40,7 @@ export interface DataTrackerCardProps {
   /** Function that renders the chart view */
   renderChart: () => ReactNode;
 
-  /** Initial view type (default: 'table') */
+  /** Initial view type (default: 'chart') */
   initialViewType?: 'table' | 'chart';
 
   /** Optional CSS class for grid sizing (default: 'lg:col-span-2 xl:col-span-3') */
@@ -64,7 +64,7 @@ export function DataTrackerCard({
   badge,
   renderTable,
   renderChart,
-  initialViewType = 'table',
+  initialViewType = 'chart',
   gridSpan = 'lg:col-span-2 xl:col-span-3',
 }: DataTrackerCardProps) {
   const [viewType, setViewType] = useState<'table' | 'chart'>(initialViewType);
@@ -84,8 +84,8 @@ export function DataTrackerCard({
           </div>
           <ToggleGroup
             options={[
-              { value: 'table', label: 'Table' },
-              { value: 'chart', label: 'Chart' }
+              { value: 'chart', label: 'Chart' },
+              { value: 'table', label: 'Table' }
             ]}
             value={viewType}
             onValueChange={(value) => setViewType(value as 'table' | 'chart')}

@@ -28,7 +28,7 @@ export interface RevenueTrackerCardProps {
   title?: string;
   /** Optional custom description */
   description?: string;
-  /** Initial view type (default: 'table') */
+  /** Initial view type (default: 'chart') */
   initialViewType?: 'table' | 'chart';
   /** Optional grid span classes for layout control */
   gridSpan?: string;
@@ -54,7 +54,7 @@ export function RevenueTrackerCard({
   selectedYear,
   title = 'Revenue Tracker',
   description,
-  initialViewType = 'table',
+  initialViewType = 'chart',
   gridSpan,
 }: RevenueTrackerCardProps) {
   const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({
