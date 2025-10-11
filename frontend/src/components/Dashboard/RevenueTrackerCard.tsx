@@ -441,23 +441,9 @@ export function RevenueTrackerCard({
               );
             }}
           />
-          <Bar yAxisId="revenue" dataKey="Tickets" stackId="a" fill={visibleCategories.Tickets ? CHART_STYLES.barColors.tickets : CHART_STYLES.barColors.disabled} />
-          <Bar yAxisId="revenue" dataKey="Projects" stackId="a" fill={visibleCategories.Projects ? CHART_STYLES.barColors.projects : CHART_STYLES.barColors.disabled} />
-          <Bar yAxisId="revenue" dataKey="Hosting" stackId="a" fill={visibleCategories.Hosting ? CHART_STYLES.barColors.hosting : CHART_STYLES.barColors.disabled}>
-            <LabelList
-              dataKey="total"
-              position="top"
-              content={(props: any) => {
-                const { x, y, width, value } = props;
-                if (!value || value <= 0) return null;
-                return (
-                  <text x={x + width / 2} y={y - 5} fill="#374151" textAnchor="middle" fontSize="12" fontWeight="bold">
-                    {formatCurrency(value)}
-                  </text>
-                );
-              }}
-            />
-          </Bar>
+          <Bar yAxisId="revenue" dataKey="Tickets" fill={visibleCategories.Tickets ? CHART_STYLES.barColors.tickets : CHART_STYLES.barColors.disabled} maxBarSize={60} />
+          <Bar yAxisId="revenue" dataKey="Projects" fill={visibleCategories.Projects ? CHART_STYLES.barColors.projects : CHART_STYLES.barColors.disabled} maxBarSize={60} />
+          <Bar yAxisId="revenue" dataKey="Hosting" fill={visibleCategories.Hosting ? CHART_STYLES.barColors.hosting : CHART_STYLES.barColors.disabled} maxBarSize={60} />
           {showCountLine && (
             <Line
               yAxisId="count"
