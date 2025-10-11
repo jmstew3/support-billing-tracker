@@ -208,7 +208,7 @@ Phase 2 successfully refactored 3 major chart components to use the new BaseBarC
 
 ### Other Chart Components
 
-**CumulativeBillingChart** - Line chart, not in scope for bar chart refactoring
+**MonthlyRevenueChart** - Line chart, not in scope for bar chart refactoring
 **CategoryPieChart** - Pie chart, not in scope for bar chart refactoring
 **CategoryRadarChart** - Radar chart, not in scope for bar chart refactoring
 **ProjectCategoryPieChart** - Pie chart, not in scope for bar chart refactoring

@@ -19,14 +19,7 @@ CREATE TABLE requests (
   status ENUM('active', 'deleted', 'ignored') DEFAULT 'active',
   source ENUM('sms', 'ticket', 'email', 'phone') DEFAULT 'sms',
   website_url VARCHAR(255) DEFAULT NULL,
-  estimated_hours DECIMAL(3, 2) GENERATED ALWAYS AS (
-    CASE effort
-      WHEN 'Small' THEN 0.25
-      WHEN 'Medium' THEN 0.50
-      WHEN 'Large' THEN 1.00
-      ELSE 0.50
-    END
-  ) STORED,
+  estimated_hours DECIMAL(5, 2) DEFAULT 0.50,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
