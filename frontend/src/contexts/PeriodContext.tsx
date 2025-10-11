@@ -145,6 +145,30 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Set view mode with side effects to sync month/day selections
+  const setViewModeWithSync = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+
+    // Sync month/day selections based on view mode
+    if (mode === 'all') {
+      // Reset to "all" view - clear month and day filters
+      setSelectedMonth('all');
+      setSelectedMonthsState('all');
+      setSelectedDay('all');
+    } else if (mode === 'month') {
+      // Keep current month selection (or use first available month if "all")
+      if (selectedMonth === 'all' && availableMonths.length > 0) {
+        // Default to most recent month
+        const latestMonth = Math.max(...availableMonths);
+        setSelectedMonth(latestMonth);
+        setSelectedMonthsState([latestMonth]);
+      }
+      // Reset day selection to show full month
+      setSelectedDay('all');
+    }
+    // For 'day' mode, keep current selections (user needs to select a day)
+  }, [selectedMonth, availableMonths]);
+
   // Get formatted period string
   const getFormattedPeriod = useCallback((): string => {
     if (selectedDay !== 'all') {
@@ -303,7 +327,7 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     setMonth,
     setMonths,
     setDay,
-    setViewMode,
+    setViewMode: setViewModeWithSync,
     setAvailableData,
     navigatePrevious,
     navigateNext,
@@ -325,6 +349,7 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     setMonth,
     setMonths,
     setDay,
+    setViewModeWithSync,
     setAvailableData,
     navigatePrevious,
     navigateNext,
