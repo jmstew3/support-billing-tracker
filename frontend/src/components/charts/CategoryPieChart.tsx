@@ -78,8 +78,8 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   };
 
   return (
-    <div className="w-full min-h-[300px] h-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full h-[400px]">
+      <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie
             data={completeData as any}
