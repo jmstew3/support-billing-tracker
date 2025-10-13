@@ -14,6 +14,7 @@ import { PageHeader } from '../shared/PageHeader'
 import { SupportScorecards } from './sections/SupportScorecards'
 import { CostTrackerCard } from './CostTrackerCard'
 import { CategoryTrackerCard } from './CategoryTrackerCard'
+import { CategoryDistributionChart } from './CategoryDistributionChart'
 import { SupportChartsSection } from './sections/SupportChartsSection'
 import { SupportTableSection } from './sections/SupportTableSection'
 import { ArchivedRequestsSection } from './sections/ArchivedRequestsSection'
@@ -218,6 +219,62 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     selectedMonths
   )
 
+  // Calculate total category distribution for ALL active tickets (for CategoryDistributionChart)
+  const totalCategoryData = useMemo(() => {
+    const categories = {
+      support: 0,
+      hosting: 0,
+      forms: 0,
+      email: 0,
+      migration: 0,
+      advisory: 0,
+      nonBillable: 0,
+      website: 0,
+      scripts: 0,
+      total: 0,
+    };
+
+    allActiveRequests.forEach(request => {
+      const category = request.Category || 'Support';
+      categories.total++;
+
+      switch (category.toLowerCase()) {
+        case 'support':
+          categories.support++;
+          break;
+        case 'hosting':
+          categories.hosting++;
+          break;
+        case 'forms':
+          categories.forms++;
+          break;
+        case 'email':
+          categories.email++;
+          break;
+        case 'migration':
+          categories.migration++;
+          break;
+        case 'advisory':
+          categories.advisory++;
+          break;
+        case 'non-billable':
+          categories.nonBillable++;
+          break;
+        case 'website':
+          categories.website++;
+          break;
+        case 'scripts':
+          categories.scripts++;
+          break;
+        default:
+          categories.support++;
+          break;
+      }
+    });
+
+    return categories;
+  }, [allActiveRequests]);
+
   // ============================================================
   // DERIVED STATE
   // ============================================================
@@ -280,9 +337,10 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   )
 
   // Calculate category data (memoized)
+  // Use allActiveRequests instead of billableFilteredRequests to ensure pie chart always has data
   const categoryData = useMemo(() =>
-    processCategoryData(billableFilteredRequests),
-    [billableFilteredRequests]
+    processCategoryData(allActiveRequests),
+    [allActiveRequests]
   )
 
   // ============================================================
@@ -645,9 +703,10 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             </div>
           )}
 
-          {/* Category Breakdown Tracker */}
-          {(allCategoryBreakdownData || allMonthlyCategoryData) && (
-            <div className="w-full">
+          {/* Category Components Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
+            {/* Category Breakdown Tracker */}
+            {(allCategoryBreakdownData || allMonthlyCategoryData) && (
               <CategoryTrackerCard
                 categoryData={allCategoryBreakdownData || undefined}
                 monthlyCategoryData={allMonthlyCategoryData || undefined}
@@ -655,8 +714,17 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
                 selectedYear={selectedYear}
                 gridSpan=""
               />
-            </div>
-          )}
+            )}
+
+            {/* Category Distribution Chart (Simple Bar Chart) */}
+            {totalCategoryData && totalCategoryData.total > 0 && (
+              <CategoryDistributionChart
+                categoryData={totalCategoryData}
+                title="Category Distribution"
+                description="Ticket volume by category (all active tickets)"
+              />
+            )}
+          </div>
 
           {/* Charts Section */}
           <SupportChartsSection
