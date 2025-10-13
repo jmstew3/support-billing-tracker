@@ -374,8 +374,17 @@ export function useSupportMetrics(
     if (selectedMonths === 'all' || (Array.isArray(selectedMonths) && selectedMonths.length !== 1)) {
       return null;
     }
-    return calculateCategoryData(requests);
-  }, [requests, selectedMonth, selectedMonths]);
+
+    // Filter requests to selected month only
+    const filteredRequests = requests.filter(request => {
+      const requestDate = parseLocalDate(request.Date);
+      const year = requestDate.getFullYear();
+      const month = requestDate.getMonth() + 1;
+      return year === selectedYear && month === selectedMonths[0];
+    });
+
+    return calculateCategoryData(filteredRequests);
+  }, [requests, selectedYear, selectedMonth, selectedMonths]);
 
   return {
     activityMetrics,
