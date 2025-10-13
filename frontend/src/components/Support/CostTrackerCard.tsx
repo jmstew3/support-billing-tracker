@@ -876,14 +876,20 @@ export function CostTrackerCard({
               dataKey="netTotalCost"
               position="top"
               content={(props: any) => {
-                const { x, y, width, value, index } = props;
-                if (!value || value <= 0) return null;
+                const { x, y, width, index } = props;
                 const entry = chartData[index];
-                const hasFreeHours = entry.freeHoursSavings > 0;
-                const displayValue = hasFreeHours ? formatCurrency(value) : formatCurrency(entry.totalCost);
+
+                // Calculate visible total by summing only visible urgency levels
+                const visibleTotal = (visibleUrgencies.Promotion ? entry.Promotion : 0) +
+                                   (visibleUrgencies.Low ? entry.Low : 0) +
+                                   (visibleUrgencies.Medium ? entry.Medium : 0) +
+                                   (visibleUrgencies.High ? entry.High : 0);
+
+                if (visibleTotal <= 0) return null;
+
                 return (
                   <text x={x + width / 2} y={y - 5} fill="#374151" textAnchor="middle" fontSize="12" fontWeight="bold">
-                    {displayValue}
+                    {formatCurrency(visibleTotal)}
                   </text>
                 );
               }}
@@ -1101,8 +1107,32 @@ export function CostTrackerCard({
               <LabelList
                 dataKey="cost"
                 position="top"
-                formatter={(value: number) => value > 0 ? formatCurrency(value) : ''}
-                style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+                content={(props: any) => {
+                  const { x, y, width, index } = props;
+                  // Calculate visible total by summing only visible urgency levels
+                  const visibleTotal = chartData
+                    .filter(entry => visibleUrgencies[entry.name])
+                    .reduce((sum, entry) => sum + entry.cost, 0);
+
+                  // Only show label on the topmost visible bar (last in stack order)
+                  const visibleBars = chartData.filter(entry => visibleUrgencies[entry.name]);
+                  const lastVisibleIndex = chartData.indexOf(visibleBars[visibleBars.length - 1]);
+
+                  if (index !== lastVisibleIndex || visibleTotal <= 0) return null;
+
+                  return (
+                    <text
+                      x={x + width / 2}
+                      y={y - 5}
+                      fill="#374151"
+                      textAnchor="middle"
+                      fontSize="12"
+                      fontWeight="bold"
+                    >
+                      {formatCurrency(visibleTotal)}
+                    </text>
+                  );
+                }}
               />
             </Bar>
           </BarChart>
