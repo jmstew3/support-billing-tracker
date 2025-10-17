@@ -5,15 +5,13 @@
  *
  * Features:
  * - Calendar heatmap with date click interaction
- * - Category chart with pie/radar toggle
+ * - Category radar chart (fixed display)
  * - Responsive grid layout (stacked on mobile, side-by-side on desktop)
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card'
 import { RequestCalendarHeatmap } from '../../charts/RequestCalendarHeatmap'
 import CategoryRadarChart from '../../charts/CategoryRadarChart'
-import { CategoryPieChart } from '../../charts/CategoryPieChart'
-import { ToggleGroup } from '../../ui/toggle-group'
 import { parseLocalDate } from '../../../utils/supportHelpers'
 
 export interface SupportChartsSectionProps {
@@ -27,12 +25,10 @@ export interface SupportChartsSectionProps {
 
   // Category chart data
   categoryData: any
-  chartType: 'pie' | 'radar'
 
   // Event handlers
   onCalendarDateClick: (date: string) => void
   onBackToCalendar: () => void
-  onChartTypeChange: (type: 'pie' | 'radar') => void
 }
 
 export function SupportChartsSection({
@@ -43,10 +39,8 @@ export function SupportChartsSection({
   selectedYear,
   monthNames,
   categoryData,
-  chartType,
   onCalendarDateClick,
   onBackToCalendar,
-  onChartTypeChange
 }: SupportChartsSectionProps) {
   // Generate calendar title based on view mode
   const getCalendarTitle = () => {
@@ -101,25 +95,10 @@ export function SupportChartsSection({
       <Card>
         <CardHeader>
           <CardTitle>Request Categories</CardTitle>
-          <CardDescription>Distribution of request types</CardDescription>
-          <div className="mt-2">
-            <ToggleGroup
-              options={[
-                { value: 'pie', label: 'Pie' },
-                { value: 'radar', label: 'Radar' }
-              ]}
-              value={chartType}
-              onValueChange={(value) => onChartTypeChange(value as 'pie' | 'radar')}
-              size="sm"
-            />
-          </div>
+          <CardDescription>Multidimensional category analysis</CardDescription>
         </CardHeader>
         <CardContent>
-          {chartType === 'radar' ? (
-            <CategoryRadarChart data={categoryData} />
-          ) : (
-            <CategoryPieChart data={categoryData} />
-          )}
+          <CategoryRadarChart data={categoryData} />
         </CardContent>
       </Card>
     </div>

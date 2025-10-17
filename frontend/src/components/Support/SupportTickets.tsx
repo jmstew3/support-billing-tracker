@@ -106,7 +106,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const [stagedBulkHours, setStagedBulkHours] = useState<number | null>(null)
 
   // UI state
-  const [chartType, setChartType] = useState<'pie' | 'radar'>('radar')
   const [hideNonBillable, setHideNonBillable] = useState<boolean>(() => {
     const saved = localStorage.getItem('hideNonBillable')
     return saved !== null ? JSON.parse(saved) : true
@@ -735,10 +734,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             selectedYear={selectedYear}
             monthNames={monthNames}
             categoryData={categoryData}
-            chartType={chartType}
             onCalendarDateClick={handleCalendarDateClick}
             onBackToCalendar={handleBackToCalendar}
-            onChartTypeChange={setChartType}
           />
 
           {/* Table Section */}

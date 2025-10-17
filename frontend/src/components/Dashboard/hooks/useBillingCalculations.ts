@@ -40,7 +40,11 @@ export function useBillingCalculations({
     const displayTotals =
       currentMonthString === 'all'
         ? {
-            totalRevenue: billingSummary?.totalRevenue || 0,
+            // Calculate totalRevenue by summing all months for all sources to match table total
+            // (billingSummary.totalRevenue uses latest month's hosting MRR only)
+            totalRevenue: (billingSummary?.totalTicketsRevenue || 0) +
+                         (billingSummary?.totalProjectsRevenue || 0) +
+                         (billingSummary?.monthlyBreakdown.reduce((sum, m) => sum + m.hostingRevenue, 0) || 0),
             totalTicketsRevenue: billingSummary?.totalTicketsRevenue || 0,
             totalProjectsRevenue: billingSummary?.totalProjectsRevenue || 0,
             // Override totalHostingRevenue to sum all months for table display
