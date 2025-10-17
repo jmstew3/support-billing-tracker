@@ -191,7 +191,453 @@ python3 main.py
 
 **Note**: The extractor handles both sender formats from iMessage exports ("Thad Norman" or "Them")
 
-### 2. Frontend Dashboard (`frontend/`)
+### 2. FluentSupport Sync Operations
+
+#### Overview
+The FluentSupport sync system integrates support tickets from FluentSupport (WordPress plugin) into the application database. This allows unified management of both iMessage SMS requests and FluentSupport tickets in a single dashboard.
+
+#### Architecture
+
+**API Integration**:
+- **WordPress REST API**: `https://support.peakonedigital.com/wp-json/fluent-support/v2/tickets`
+- **Authentication**: WordPress Application Password (HTTP Basic Auth)
+- **Backend Service**: `backend/services/fluentSupportApi.js`
+- **Sync Route**: `backend/routes/fluent-sync.js`
+
+**Database Schema**:
+```sql
+-- Main requests table (stores all support requests)
+CREATE TABLE requests (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  date DATE NOT NULL,
+  time TIME NOT NULL,
+  category VARCHAR(50),
+  description TEXT,
+  urgency ENUM('LOW', 'MEDIUM', 'HIGH'),
+  source ENUM('sms', 'fluent', 'ticket', 'email', 'phone'),
+  -- ... other fields
+);
+
+-- FluentSupport ticket metadata
+CREATE TABLE fluent_tickets (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  fluent_id INT UNIQUE NOT NULL,  -- Unique ticket ID from FluentSupport
+  request_id INT,                 -- Links to requests table
+  ticket_number VARCHAR(50),
+  customer_email VARCHAR(255),
+  product_name VARCHAR(255),
+  ticket_status VARCHAR(50),
+  -- ... metadata fields
+  FOREIGN KEY (request_id) REFERENCES requests(id)
+);
+
+-- Sync operation tracking
+CREATE TABLE fluent_sync_status (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  last_sync_at TIMESTAMP,
+  last_sync_status ENUM('in_progress', 'success', 'failed'),
+  tickets_fetched INT,
+  tickets_added INT,
+  tickets_updated INT,
+  date_filter DATE
+);
+```
+
+#### Sync Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     FluentSupport Sync Flow                      │
+└─────────────────────────────────────────────────────────────────┘
+
+1. Configuration
+   ├── VITE_FLUENT_DATE_FILTER in .env.docker
+   ├── Determines which tickets to fetch (created_at >= date)
+   └── Backend restart required to apply changes
+
+2. Authentication
+   ├── User logs in via /api/auth/login
+   ├── Receives JWT access token (1 hour expiry)
+   └── Token sent in Authorization header
+
+3. Sync Trigger
+   ├── POST /api/fluent/sync
+   ├── Requires valid JWT token
+   ├── Optional dateFilter in request body
+   └── Fetches tickets from FluentSupport API
+
+4. Data Processing
+   ├── For each ticket:
+   │   ├── Check if fluent_id exists in fluent_tickets table
+   │   ├── Transform FluentSupport format → Request format
+   │   └── INSERT new or UPDATE existing record
+   └── Transaction-based (all or nothing)
+
+5. Deduplication Logic
+   ├── UNIQUE constraint on fluent_tickets.fluent_id
+   ├── Existing ticket → UPDATE request + fluent_tickets
+   ├── New ticket → INSERT request + fluent_tickets
+   └── No duplicates possible
+
+6. Response
+   ├── {ticketsFetched, ticketsAdded, ticketsUpdated, ticketsSkipped}
+   ├── Sync status recorded in fluent_sync_status
+   └── Viewable via GET /api/fluent/status
+```
+
+#### Data Transformation
+
+**FluentSupport Ticket → Request Mapping**:
+
+| FluentSupport Field | Request Field | Transformation |
+|---------------------|---------------|----------------|
+| `created_at` | `date`, `time` | Split timestamp into date (YYYY-MM-DD) and time (HH:MM:SS) |
+| `title` + `customer_message` | `description` | Concatenate subject and message body |
+| `priority` | `urgency` | Maps: `critical`→HIGH, `high`→HIGH, `medium`→MEDIUM, `normal`→LOW |
+| `product_name` | `website_url` | Direct copy if available |
+| `status` | Metadata only | Stored in `fluent_tickets.ticket_status`, not in `requests.status` |
+| `id` | `fluent_id` | Unique identifier stored in `fluent_tickets` table |
+| - | `source` | Hard-coded as `'fluent'` |
+| - | `request_type` | Default: `'General Request'` |
+| - | `effort` | Default: `'Medium'` |
+| - | `status` | Default: `'active'` |
+
+**Priority Mapping Logic** (`fluentSupportApi.js`):
+```javascript
+function mapFluentPriority(priority) {
+  const mapping = {
+    'critical': 'HIGH',
+    'high': 'HIGH',
+    'medium': 'MEDIUM',
+    'normal': 'LOW'
+  };
+  return mapping[priority?.toLowerCase()] || 'MEDIUM';
+}
+```
+
+#### Sync API Endpoints
+
+##### POST `/api/fluent/sync`
+**Purpose**: Trigger synchronization of FluentSupport tickets
+
+**Authentication**: JWT Bearer token required
+
+**Request Body**:
+```json
+{
+  "dateFilter": "2025-10-17"  // Optional, overrides env var
+}
+```
+
+**Response (Success)**:
+```json
+{
+  "success": true,
+  "ticketsFetched": 7,
+  "ticketsAdded": 5,
+  "ticketsUpdated": 2,
+  "ticketsSkipped": 0,
+  "syncDuration": 1489,
+  "dateFilter": "2025-10-17"
+}
+```
+
+**Response (Error)**:
+```json
+{
+  "success": false,
+  "error": "FluentSupport API connection failed"
+}
+```
+
+##### GET `/api/fluent/status`
+**Purpose**: Retrieve last sync operation status and statistics
+
+**Authentication**: None required (public endpoint)
+
+**Response**:
+```json
+{
+  "syncStatus": {
+    "id": 15,
+    "last_sync_at": "2025-10-17T13:25:50.000Z",
+    "last_sync_status": "success",
+    "tickets_fetched": 7,
+    "tickets_added": 7,
+    "tickets_updated": 0,
+    "tickets_skipped": 0,
+    "sync_duration_ms": 1489,
+    "date_filter": "2025-10-11T00:00:00.000Z"
+  },
+  "totalTickets": 29,
+  "statusBreakdown": [
+    {"ticket_status": "active", "count": 4},
+    {"ticket_status": "closed", "count": 19},
+    {"ticket_status": "new", "count": 6}
+  ]
+}
+```
+
+##### GET `/api/fluent/tickets`
+**Purpose**: Retrieve FluentSupport tickets with request details
+
+**Authentication**: None required
+
+**Query Parameters**:
+- `limit`: Number of records (default: 100)
+- `offset`: Pagination offset (default: 0)
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "fluent_id": 12345,
+    "ticket_number": "TKT-001",
+    "customer_name": "John Doe",
+    "customer_email": "john@example.com",
+    "priority": "high",
+    "ticket_status": "active",
+    "product_name": "Example Website",
+    "date": "2025-10-16",
+    "time": "19:26:50",
+    "category": "Support",
+    "urgency": "HIGH",
+    "status": "active"
+  }
+]
+```
+
+#### Step-by-Step Sync Procedure
+
+**1. Update Configuration**
+```bash
+# Edit .env.docker (line 68)
+VITE_FLUENT_DATE_FILTER=2025-10-17
+```
+
+**2. Restart Backend**
+```bash
+docker-compose restart backend
+sleep 3  # Allow time for backend to initialize
+```
+
+**3. Authenticate**
+```bash
+curl -X POST http://localhost:3011/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+```
+
+**4. Trigger Sync**
+```bash
+curl -X POST http://localhost:3011/api/fluent/sync \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"dateFilter":"2025-10-17"}'
+```
+
+**5. Verify Results**
+```bash
+# Check sync status
+curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
+
+# Check database
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '2025-10-17';"
+```
+
+#### Deduplication Strategy
+
+**How It Works**:
+1. Each FluentSupport ticket has a unique `id` from the WordPress database
+2. This ID is stored as `fluent_id` in the `fluent_tickets` table
+3. `UNIQUE` constraint prevents duplicate `fluent_id` entries
+4. Before inserting, system checks: `SELECT id FROM fluent_tickets WHERE fluent_id = ?`
+5. If found → **UPDATE** existing request record
+6. If not found → **INSERT** new request record
+
+**Benefits**:
+- ✅ Safe to run sync multiple times
+- ✅ No duplicate tickets created
+- ✅ Existing tickets updated with latest data
+- ✅ Preserves manual edits (hours, custom categories)
+- ✅ Transaction-based rollback on errors
+
+**Code Example** (`fluent-sync.js`):
+```javascript
+// Check if ticket exists
+const [existing] = await connection.query(
+  'SELECT id, request_id FROM fluent_tickets WHERE fluent_id = ?',
+  [requestData.fluent_id]
+);
+
+if (existing.length > 0) {
+  // UPDATE existing ticket
+  await connection.query(
+    'UPDATE requests SET description = ?, urgency = ? WHERE id = ?',
+    [requestData.description, requestData.urgency, existing[0].request_id]
+  );
+  ticketsUpdated++;
+} else {
+  // INSERT new ticket
+  const [result] = await connection.query(
+    'INSERT INTO requests (date, time, description, urgency, source) VALUES (?, ?, ?, ?, ?)',
+    [requestData.date, requestData.time, requestData.description, requestData.urgency, 'fluent']
+  );
+  await connection.query(
+    'INSERT INTO fluent_tickets (fluent_id, request_id, ...) VALUES (?, ?, ...)',
+    [requestData.fluent_id, result.insertId, ...]
+  );
+  ticketsAdded++;
+}
+```
+
+#### Error Handling
+
+**Transaction-Based Sync**:
+- Entire sync wrapped in MySQL transaction
+- If any error occurs → `ROLLBACK` all changes
+- Ensures data consistency (all or nothing)
+
+**Common Errors**:
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Missing/invalid JWT token | Re-authenticate to get fresh token |
+| `403 Forbidden` | Token expired (>1 hour old) | Login again for new token |
+| `500 Internal Server Error` | FluentSupport API unreachable | Check WordPress site status |
+| `Database connection failed` | MySQL container not running | `docker-compose ps` to verify |
+| `Sync status: failed` | Exception during processing | Check backend logs: `docker logs thad-chat-backend` |
+
+**Logging**:
+```bash
+# View backend logs for sync details
+docker logs -f thad-chat-backend | grep FluentSupport
+
+# Example output:
+# [FluentSupport Sync] Starting sync process...
+# [FluentSupport Sync] Sync ID: 15, Date Filter: 2025-10-17
+# [FluentSupport Sync] Fetched 7 tickets from API
+# [FluentSupport Sync] Creating new ticket 12345
+# [FluentSupport Sync] Completed successfully in 1489ms
+```
+
+#### Sync Frequency Recommendations
+
+**Regular Maintenance**:
+- **Weekly**: Sync from 7 days ago every Monday
+- **Bi-weekly**: Sync from 14 days ago every other week
+- **Monthly**: Full sync from beginning of month
+
+**After Incidents**:
+- **Data Gap**: Sync from last known good date
+- **System Outage**: Sync from outage start date
+- **Historical Import**: Sync from earliest desired date
+
+**Best Practices**:
+1. Always check last sync date before choosing new date filter
+2. Use conservative date ranges (go back further than needed)
+3. Verify sync results before updating date filter for next sync
+4. Keep sync logs for audit trail
+5. Test sync in development before production
+
+#### Automation Options
+
+**Option 1: Shell Script** (`sync-fluent-tickets.sh`):
+```bash
+#!/bin/bash
+# Usage: ./sync-fluent-tickets.sh [YYYY-MM-DD]
+DATE_FILTER=${1:-$(date -d '7 days ago' +%Y-%m-%d)}
+
+echo "Syncing FluentSupport tickets from $DATE_FILTER..."
+
+# Update config
+sed -i "s/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=$DATE_FILTER/" .env.docker
+
+# Restart backend
+docker-compose restart backend
+sleep 5
+
+# Authenticate and sync
+TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['accessToken'])")
+
+curl -X POST http://localhost:3011/api/fluent/sync \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{\"dateFilter\":\"$DATE_FILTER\"}" | python3 -m json.tool
+
+echo "Sync complete!"
+```
+
+**Option 2: Cron Job** (Future Enhancement):
+```bash
+# Add to crontab: crontab -e
+# Run every Sunday at 2 AM
+0 2 * * 0 /path/to/sync-fluent-tickets.sh
+```
+
+**Option 3: n8n Workflow** (Advanced):
+- Scheduled trigger (weekly/daily)
+- HTTP Request: POST /api/auth/login
+- HTTP Request: POST /api/fluent/sync
+- Email notification on completion
+
+#### Configuration Reference
+
+**Environment Variables** (`.env.docker`):
+```bash
+# FluentSupport API Configuration
+VITE_FLUENT_API_URL=https://support.peakonedigital.com
+VITE_FLUENT_API_USERNAME=Justin
+VITE_FLUENT_API_PASSWORD=2uuy 1vjJ 0biK IE4o vmS3 SOMJ
+VITE_FLUENT_DATE_FILTER=2025-10-11  # Only sync tickets after this date
+```
+
+**Authentication**:
+- WordPress Application Password (not regular password)
+- Generated in WordPress: Users → Profile → Application Passwords
+- Format: `xxxx xxxx xxxx xxxx` (spaces optional)
+
+**Files Involved**:
+- `backend/services/fluentSupportApi.js` - API client and data transformation
+- `backend/routes/fluent-sync.js` - Sync endpoint and logic
+- `backend/db/schema.sql` - Database schema (fluent_tickets, fluent_sync_status)
+- `.env.docker` - Configuration (line 60-68)
+
+#### Monitoring & Maintenance
+
+**Health Checks**:
+```bash
+# Check last sync time
+curl -s http://localhost:3011/api/fluent/status | grep last_sync_at
+
+# Check for failed syncs
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT * FROM fluent_sync_status WHERE last_sync_status='failed' ORDER BY id DESC LIMIT 5;"
+
+# Check for duplicate fluent_ids (should be 0)
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT fluent_id, COUNT(*) FROM fluent_tickets GROUP BY fluent_id HAVING COUNT(*) > 1;"
+```
+
+**Data Integrity Checks**:
+```bash
+# Verify all fluent_tickets link to valid requests
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT COUNT(*) FROM fluent_tickets WHERE request_id NOT IN (SELECT id FROM requests);"
+# Expected: 0
+
+# Check for orphaned requests (fluent source but no fluent_tickets entry)
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND id NOT IN (SELECT request_id FROM fluent_tickets WHERE request_id IS NOT NULL);"
+# Expected: 0
+```
+
+### 3. Frontend Dashboard (`frontend/`)
 
 #### Technology Stack
 - **Framework**: React 18 with TypeScript

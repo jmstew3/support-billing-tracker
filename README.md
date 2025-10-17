@@ -136,6 +136,137 @@ Local access (localhost:5173, localhost:3011) bypasses authentication. Only prod
 
 ---
 
+## 🔄 FluentSupport Ticket Sync
+
+The application automatically syncs support tickets from FluentSupport (WordPress plugin) into the database. This allows you to view both iMessage SMS requests and FluentSupport tickets in a unified dashboard.
+
+### Quick Sync (One Command)
+
+To sync tickets from the last 7 days:
+
+```bash
+# Update date filter (change date as needed)
+sed -i 's/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=2025-10-17/' .env.docker
+
+# Restart backend and trigger sync
+docker-compose restart backend && sleep 3 && \
+TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' \
+  | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4) && \
+curl -X POST http://localhost:3011/api/fluent/sync \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"dateFilter":"2025-10-17"}'
+```
+
+**Replace `2025-10-17` with your desired start date in YYYY-MM-DD format**
+
+### Step-by-Step Sync Process
+
+#### 1. Update Date Filter
+
+Edit `.env.docker` and change the `VITE_FLUENT_DATE_FILTER` variable (line 68):
+
+```bash
+# Only sync tickets created after this date (YYYY-MM-DD)
+VITE_FLUENT_DATE_FILTER=2025-10-17
+```
+
+#### 2. Restart Backend
+
+Apply the new configuration:
+
+```bash
+docker-compose restart backend
+sleep 3  # Wait for backend to start
+```
+
+#### 3. Authenticate
+
+Get a JWT token for API access:
+
+```bash
+curl -X POST http://localhost:3011/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+```
+
+Copy the `accessToken` value from the response.
+
+#### 4. Trigger Sync
+
+Run the sync with your token:
+
+```bash
+curl -X POST http://localhost:3011/api/fluent/sync \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{"dateFilter":"2025-10-17"}'
+```
+
+#### 5. Verify Results
+
+Check the sync status:
+
+```bash
+# View sync summary
+curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
+
+# Check database
+docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+  -e "SELECT COUNT(*) as total, MIN(date) as earliest, MAX(date) as latest FROM requests WHERE date >= '2025-10-17';"
+```
+
+### Sync Behavior
+
+**Deduplication:**
+- Each FluentSupport ticket has a unique `fluent_id`
+- System automatically detects existing tickets by ID
+- **New tickets** → Creates new database records
+- **Existing tickets** → Updates records with latest data
+- **Safe to re-run** → No duplicate tickets created
+
+**What Gets Synced:**
+- Ticket description and subject
+- Priority level → Urgency mapping
+- Product/website information
+- Customer details and timestamps
+- All FluentSupport metadata
+
+**What's Preserved:**
+- Dashboard edits (hours, categories)
+- Status flags (active/deleted/ignored)
+- Manual adjustments and notes
+
+### Recommended Sync Schedule
+
+- **Weekly Updates**: Sync from 7 days ago every week
+- **After Gaps**: Sync from last known good date
+- **Historical Import**: Sync from earliest desired date (e.g., 2025-01-01)
+
+### Troubleshooting
+
+**"Access token required" error:**
+- JWT token is missing or invalid
+- Solution: Login again to get fresh token
+
+**"Token expired" error:**
+- Tokens expire after 1 hour
+- Solution: Re-authenticate to get new token
+
+**Sync returns 0 tickets:**
+- Date filter may be too recent
+- Solution: Adjust date to go back further
+
+**Backend not reachable:**
+- Container may not be running
+- Solution: `docker-compose ps` to check, `docker-compose restart backend` to fix
+
+For detailed sync documentation, see [CLAUDE.md](./CLAUDE.md#fluentsupport-sync-operations).
+
+---
+
 ## 📁 Project Structure
 
 ```

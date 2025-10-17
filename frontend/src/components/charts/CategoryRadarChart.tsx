@@ -133,13 +133,13 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
             />
             <PolarAngleAxis
               dataKey="category"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 9 }}
               className="text-gray-600"
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 8 }}
               tickCount={5}
               axisLine={false}
             />
@@ -196,13 +196,13 @@ const CategoryRadarChart: React.FC<CategoryRadarChartProps> = ({ data, multiDime
           />
           <PolarAngleAxis
             dataKey="category"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 9 }}
             className="text-gray-600"
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, domainMax]}
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 8 }}
             ticks={ticks as any}
             axisLine={false}
           />

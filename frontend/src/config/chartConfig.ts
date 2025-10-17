@@ -42,7 +42,7 @@ export const CHART_THEME = {
    */
   xAxis: {
     stroke: 'hsl(var(--muted-foreground))',
-    fontSize: 11,
+    fontSize: 10,
     tickLine: false,
     axisLine: { stroke: 'hsl(var(--border))' },
   },
@@ -53,7 +53,7 @@ export const CHART_THEME = {
    */
   yAxis: {
     stroke: 'hsl(var(--muted-foreground))',
-    fontSize: 11,
+    fontSize: 10,
     tickLine: false,
     axisLine: { stroke: 'hsl(var(--border))' },
   },

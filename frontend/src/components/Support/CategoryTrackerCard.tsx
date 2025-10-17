@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../base/DataTrackerCard';
+import { CustomMonthTick, CustomCategoryTick } from './CustomAxisTicks';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -301,11 +302,19 @@ export function CategoryTrackerCard({
     const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding
 
     return (
-      <div style={{ width: '100%', minHeight: 400 }}>
-        <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart data={chartData}>
+      <div style={{ width: '100%', minHeight: 480 }}>
+        <ResponsiveContainer width="100%" height={480}>
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+          >
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-          <XAxis dataKey="month" {...CHART_STYLES.xAxis} />
+          <XAxis
+            dataKey="month"
+            tick={<CustomMonthTick />}
+            height={100}
+            interval={0}
+          />
           <YAxis
             domain={[0, yAxisMax]}
             allowDecimals={false}
@@ -429,7 +438,7 @@ export function CategoryTrackerCard({
                 const { x, y, width, value } = props;
                 if (!value || value <= 0) return null;
                 return (
-                  <text x={x + width / 2} y={y - 5} fill="#374151" textAnchor="middle" fontSize="12" fontWeight="bold">
+                  <text x={x + width / 2} y={y - 5} fill="#374151" textAnchor="middle" fontSize="14" fontWeight="bold">
                     {value}
                   </text>
                 );
@@ -460,11 +469,20 @@ export function CategoryTrackerCard({
     const yAxisMax = Math.ceil(maxValue * 1.1); // Add 10% padding
 
     return (
-      <div style={{ width: '100%', minHeight: 400 }}>
-        <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart data={chartData} layout="horizontal">
+      <div style={{ width: '100%', minHeight: 500 }}>
+        <ResponsiveContainer width="100%" height={500}>
+          <ComposedChart
+            data={chartData}
+            layout="horizontal"
+            margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+          >
           <CartesianGrid {...CHART_STYLES.cartesianGrid} />
-          <XAxis dataKey="name" {...CHART_STYLES.xAxis} />
+          <XAxis
+            dataKey="name"
+            tick={<CustomCategoryTick maxCharsPerLine={10} />}
+            height={120}
+            interval={0}
+          />
           <YAxis
             domain={[0, yAxisMax]}
             allowDecimals={false}
@@ -506,7 +524,7 @@ export function CategoryTrackerCard({
             <LabelList
               dataKey="count"
               position="top"
-              style={{ fontSize: '12px', fontWeight: 'bold', fill: '#374151' }}
+              style={{ fontSize: '14px', fontWeight: 'bold', fill: '#374151' }}
             />
           </Bar>
         </ComposedChart>

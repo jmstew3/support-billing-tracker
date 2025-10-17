@@ -155,7 +155,7 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
         <div className="bg-white rounded-lg p-6">
           <div className="flex">
             {/* Y-axis labels */}
-            <div className="w-12 pr-2 flex flex-col justify-between items-end text-xs text-gray-500 h-64">
+            <div className="w-12 pr-2 flex flex-col justify-between items-end text-[10px] text-gray-500 h-64">
               <span>{maxHourlyCount}</span>
               <span>{Math.ceil(maxHourlyCount * 0.75)}</span>
               <span>{Math.ceil(maxHourlyCount * 0.5)}</span>
@@ -207,7 +207,7 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
 
                         {/* Hour label below */}
                         <div className="absolute top-full mt-1 w-full text-center">
-                          <span className="text-xs text-gray-600">
+                          <span className="text-[10px] text-gray-600">
                             {hour === 0 ? '12AM' : hour < 12 ? `${hour}AM` : hour === 12 ? '12PM' : `${hour - 12}PM`}
                           </span>
                         </div>
