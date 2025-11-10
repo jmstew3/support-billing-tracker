@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 import requests
 import json
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env.docker
+# To use: Set VITE_TWENTY_API_TOKEN in .env.docker
+load_dotenv('.env.docker')
 
 # API Configuration
-API_URL = "https://twenny.peakonedigital.com/rest/supportTickets"
-API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkOWJkMDFkZS0zODI4LTQ0NzUtODQwOC1kMDRkMjAyYTNlMGEiLCJ0eXBlIjoiQVBJX0tFWSIsIndvcmtzcGFjZUlkIjoiZDliZDAxZGUtMzgyOC00NDc1LTg0MDgtZDA0ZDIwMmEzZTBhIiwiaWF0IjoxNzU4NjQ0MjcxLCJleHAiOjQ5MTIyNDQyNzEsImp0aSI6ImRmMmFjYWNjLTY3NmEtNGFjOS05ODgyLWMzYjE2MzM3MmFmYSJ9.ZZJhf3_0n0y9ZLqwBirBFEq-CnroTTAdhEm-MVptbm0"
+API_URL = os.getenv('VITE_TWENTY_API_URL', 'https://twenny.peakonedigital.com/rest/supportTickets')
+API_TOKEN = os.getenv('VITE_TWENTY_API_TOKEN')
+
+if not API_TOKEN:
+    print("❌ ERROR: VITE_TWENTY_API_TOKEN not found in environment variables")
+    print("Please set VITE_TWENTY_API_TOKEN in .env.docker file")
+    exit(1)
 
 print("Testing Twenty API...")
 print(f"URL: {API_URL}")

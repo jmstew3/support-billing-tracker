@@ -302,10 +302,76 @@ support-billing-tracker/
 │   ├── 01_raw/                    # Raw iMessage exports
 │   ├── 02_processed/              # Cleaned messages
 │   └── 03_final/                  # Production data
+├── archive/                # Historical scripts and tools
+│   ├── migrations/                # Completed one-time migration scripts
+│   ├── diagnostics/               # Debugging and diagnostic tools
+│   └── legacy/                    # Obsolete or deprecated scripts
+├── instructions/           # Documentation and guides
+│   └── *.md                       # Various documentation files
 ├── docker-compose.yml      # Docker orchestration
 ├── docker-import.sh        # Data import script
 └── CLAUDE.md              # Comprehensive documentation
 ```
+
+## 📂 Archive Folder Structure
+
+The `archive/` directory contains historical scripts and tools that are no longer actively used but are preserved for reference. This helps keep the project root clean while maintaining access to potentially useful code and documentation.
+
+### Archive Subdirectories
+
+#### `/archive/migrations/`
+**Purpose**: Completed one-time migration scripts that have already been executed
+
+**Current Contents**:
+- `migrate-invoice-status-data.py` - Migrated Twenty CRM invoice statuses (completed Sept 30, 2025)
+- `update-invoice-status-enum.py` - Updated Twenty CRM field metadata (completed Sept 30, 2025)
+
+**When to Archive Here**: Place migration scripts here after they've been successfully run in production and are no longer needed for regular operations.
+
+#### `/archive/diagnostics/`
+**Purpose**: Debugging and diagnostic tools used to investigate or fix issues
+
+**Current Contents**:
+- `test_truncation.py` - Diagnostic script that identified text truncation bug in CSV output
+
+**When to Archive Here**: Move diagnostic scripts here after the issue has been resolved but the script might be useful for similar future debugging.
+
+#### `/archive/legacy/`
+**Purpose**: Obsolete or deprecated scripts that have been replaced by newer implementations
+
+**Current Contents**: Currently empty (obsolete files were deleted rather than archived)
+
+**When to Archive Here**: Place old versions of scripts here when they've been completely replaced by new implementations but you want to keep them for historical reference.
+
+### Archive Usage Guidelines
+
+1. **Before Archiving**: Ensure the script is truly no longer needed for active operations
+2. **Documentation**: Add comments to archived scripts explaining why they were archived and when
+3. **Recovery**: Scripts can be moved back to active directories if needed in the future
+4. **Security**: Review archived scripts for hardcoded credentials before committing
+
+## 📚 Instructions Folder
+
+The `instructions/` directory contains all technical documentation and guides that were previously scattered throughout the project root. This centralized approach keeps the root directory clean while making documentation easy to find.
+
+**Contents Include**:
+- Technical setup guides (Docker, MySQL, migration)
+- Integration documentation (Twenty CRM, FluentSupport, n8n)
+- Development plans and progress tracking
+- Architecture and refactoring documentation
+- Mobile optimization and UI/UX guides
+- Testing checklists and debugging instructions
+
+**Key Files**:
+- `DOCKER.md` - Docker setup and configuration
+- `MYSQL_SETUP.md` - Database configuration guide
+- `TWENTY_INTEGRATION.md` - Twenty CRM API integration details
+- `authentication-plan.md` - Future authentication implementation roadmap
+- `mobile-optimization.md` - Mobile responsiveness documentation
+
+**Note**: The main project documentation remains in the root:
+- `README.md` (this file) - Project overview and quick start
+- `CLAUDE.md` - Comprehensive technical documentation
 
 ## 🔧 Features
 
