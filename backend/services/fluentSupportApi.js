@@ -265,6 +265,34 @@ export function transformFluentTicket(ticket) {
 
   const urgency = mapPriority(ticket.priority);
 
+  /**
+   * Map FluentSupport product title to internal category
+   * @param {string} productTitle - The product title from FluentSupport
+   * @returns {string} The mapped category for our application
+   */
+  const mapFluentCategory = (productTitle) => {
+    if (!productTitle) {
+      console.log('[FluentSupport] No product title provided, defaulting to Support');
+      return 'Support';
+    }
+
+    const mapping = {
+      'Support': 'Support',      // Direct match
+      'Hosting': 'Hosting',      // Direct match
+      'Migration': 'Migration',  // Direct match
+      'Website': 'Website',      // Direct match
+      'Project': 'General',      // Map Project to General category
+      'Email': 'Email',          // Direct match (if exists)
+      'Forms': 'Forms',          // Direct match (if exists)
+      'Scripts': 'Scripts',      // Direct match (if exists)
+      'Advisory': 'Advisory',    // Direct match (if exists)
+    };
+
+    const mappedCategory = mapping[productTitle] || 'Support';
+    console.log(`[FluentSupport] Mapping product "${productTitle}" to category "${mappedCategory}"`);
+    return mappedCategory;
+  };
+
   // Parse creation date
   const createdAt = ticket.created_at || ticket.created_date || ticket.date_created;
   const creationDate = createdAt ? new Date(createdAt) : new Date();
@@ -293,7 +321,7 @@ export function transformFluentTicket(ticket) {
     date,
     time,
     request_type: 'Fluent Ticket',
-    category: 'Support', // Default category, can be customized based on ticket.product or ticket.tags
+    category: mapFluentCategory(ticket.product?.title),
     description,
     urgency,
     effort: estimateEffort(urgency),
@@ -314,7 +342,7 @@ export function transformFluentTicket(ticket) {
       mailbox_id: ticket.mailbox_id,
       priority: ticket.priority,
       product_id: ticket.product_id,
-      product_name: ticket.product?.name || ticket.product_name,
+      product_name: ticket.product?.title || ticket.product_name,
       agent_id: ticket.agent_id,
       agent_name: ticket.agent?.name || ticket.agent_name,
       raw_data: ticket
