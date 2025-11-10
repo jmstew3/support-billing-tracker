@@ -93,7 +93,8 @@ services:
       - backend
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3011/api}
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: production
+      VITE_HMR_DISABLED: true
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
       VITE_TWENTY_USE_MOCK: ${VITE_TWENTY_USE_MOCK:-true}
