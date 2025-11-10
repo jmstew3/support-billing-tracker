@@ -1,5 +1,5 @@
 '''
-Main application entry point for Thad Norman request extraction.
+Main application entry point for support request extraction.
 '''
 
 import os
@@ -55,14 +55,14 @@ def print_summary(extractor):
 
 def main():
     '''Main application function.'''
-    print("Thad Norman Request Extraction Tool")
+    print("Support Request Extraction Tool")
     print("===================================\n")
 
     # Get data path from environment variable or use default
     data_path = os.getenv('DATA_PATH', './data')
 
     # Build path to processed CSV file
-    csv_path = os.path.join(data_path, '02_processed', 'thad_messages_cleaned.csv')
+    csv_path = os.path.join(data_path, '02_processed', 'messages_cleaned.csv')
     csv_path = os.path.abspath(csv_path)
 
     print(f"Using data path: {os.path.abspath(data_path)}")

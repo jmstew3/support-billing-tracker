@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Docker CSV Import Script for Thad Chat
+# Docker CSV Import Script for Support Billing Tracker
 
 set -e
 
 echo "📂 Importing CSV data to Docker MySQL database..."
 
 # Default CSV path
-CSV_PATH="${1:-data/03_final/thad_requests_table.csv}"
+CSV_PATH="${1:-data/03_final/requests_table.csv}"
 
 # Check if file exists
 if [ ! -f "$CSV_PATH" ]; then
@@ -17,7 +17,7 @@ if [ ! -f "$CSV_PATH" ]; then
 fi
 
 # Check if services are running
-if ! docker-compose ps | grep -q "thad-chat-backend.*Up"; then
+if ! docker-compose ps | grep -q "support-billing-tracker-backend.*Up"; then
     echo "⚠️  Backend service is not running. Starting services..."
     docker-compose up -d
     echo "⏳ Waiting for services to be ready..."
@@ -26,7 +26,7 @@ fi
 
 # Copy CSV file to container
 echo "📤 Copying CSV file to backend container..."
-docker cp "$CSV_PATH" thad-chat-backend:/tmp/import.csv
+docker cp "$CSV_PATH" support-billing-tracker-backend:/tmp/import.csv
 
 # Run import command
 echo "🔄 Running import script..."

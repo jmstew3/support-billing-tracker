@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: thad-chat-mysql
+    container_name: support-billing-tracker-mysql
     restart: unless-stopped
     env_file: .env.docker
     environment:
@@ -29,7 +29,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: thad-chat-backend
+    container_name: support-billing-tracker-backend
     restart: unless-stopped
     env_file: .env.docker
     depends_on:
@@ -86,7 +86,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
-    container_name: thad-chat-frontend
+    container_name: support-billing-tracker-frontend
     restart: unless-stopped
     env_file: .env.docker
     depends_on:
