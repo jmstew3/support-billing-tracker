@@ -1,4 +1,4 @@
-# Thad-Chat Request Analysis Dashboard
+# Support Billing Tracker
 
 A comprehensive business intelligence dashboard that processes iMessage conversation data to extract, categorize, and analyze support requests. The application transforms raw chat messages into structured business insights through an ETL pipeline and provides an interactive React dashboard for data visualization and management.
 
@@ -29,7 +29,7 @@ docker-compose --env-file .env.docker up -d
 
 3. **Import existing data** (if you have CSV data):
 ```bash
-./docker-import.sh data/03_final/thad_requests_table.csv
+./docker-import.sh data/03_final/requests_table.csv
 ```
 
 4. **Access the dashboard**:
@@ -43,7 +43,7 @@ See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
 1. **Export messages from iMessage database**:
 ```bash
-python3 export_imessages.py chat-backup.db 2251 2025-05-01 2025-09-15 data/01_raw/thad_messages_export.csv
+python3 export_imessages.py chat-backup.db 2251 2025-05-01 2025-09-15 data/01_raw/messages_export.csv
 ```
 
 2. **Clean and preprocess messages**:
@@ -54,7 +54,7 @@ python3 data_preprocessor.py
 
 3. **Extract business requests**:
 ```bash
-cd thad-request-extractor
+cd request-extractor
 python3 main.py
 ```
 
@@ -214,7 +214,7 @@ Check the sync status:
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT COUNT(*) as total, MIN(date) as earliest, MAX(date) as latest FROM requests WHERE date >= '2025-10-17';"
 ```
 
@@ -270,7 +270,7 @@ For detailed sync documentation, see [CLAUDE.md](./CLAUDE.md#fluentsupport-sync-
 ## 📁 Project Structure
 
 ```
-thad-chat/
+support-billing-tracker/
 ├── backend/                # Express.js API server
 │   ├── db/                        # Database configuration
 │   │   └── schema.sql             # MySQL schema definition
@@ -297,7 +297,7 @@ thad-chat/
 │   └── public/                    # Static assets
 ├── src/                    # Python ETL pipeline
 │   ├── data_preprocessor.py       # Data cleaning
-│   └── thad-request-extractor/    # Request extraction
+│   └── request-extractor/         # Request extraction
 ├── data/                   # Data pipeline directories
 │   ├── 01_raw/                    # Raw iMessage exports
 │   ├── 02_processed/              # Cleaned messages
@@ -511,14 +511,14 @@ Host: 127.0.0.1 or localhost
 Port: 3307 (not 3306)
 User: thaduser
 Password: [from .env.docker]
-Database: thad_chat
+Database: support_billing_tracker
 ```
 
 **Via MySQL Command Line**:
 ```bash
 mysql -h localhost -P 3307 -u thaduser -p
 # Enter password from .env.docker
-USE thad_chat;
+USE support_billing_tracker;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
 
@@ -531,7 +531,7 @@ SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 
 **Import CSV to Database**:
 ```bash
-./docker-import.sh data/03_final/thad_requests_table.csv
+./docker-import.sh data/03_final/requests_table.csv
 ```
 
 **Export Database to CSV**:
@@ -543,12 +543,12 @@ curl http://localhost:3011/api/export-csv > export.csv
 
 **Backup Database**:
 ```bash
-docker exec thad-chat-mysql mysqldump -u root -prootpassword thad_chat > backup.sql
+docker exec support-billing-tracker-mysql mysqldump -u root -prootpassword support_billing_tracker > backup.sql
 ```
 
 **Restore Database**:
 ```bash
-docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.sql
+docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword support_billing_tracker < backup.sql
 ```
 
 ## 🔧 Troubleshooting
@@ -594,11 +594,11 @@ curl http://localhost:3011/api/health
 **Verification After Restart**:
 ```bash
 # Check backend is on correct port
-docker exec thad-chat-backend printenv | grep PORT
+docker exec support-billing-tracker-backend printenv | grep PORT
 # Expected: PORT=3011
 
 # Check frontend has correct API URL
-docker exec thad-chat-frontend printenv | grep VITE_API_URL
+docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
 # Expected: VITE_API_URL=http://localhost:3011/api
 
 # Test API health

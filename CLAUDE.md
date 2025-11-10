@@ -1,4 +1,4 @@
-# Thad Chat Request Analysis Dashboard
+# Support Billing Tracker
 
 ## Overview
 
@@ -151,25 +151,25 @@ See `docs/authentication-plan.md` for detailed roadmap:
 
 **How to Run**:
 ```bash
-cd /Users/justinstewart/thad-chat/src
+cd /Users/justinstewart/support-billing-tracker/src
 python3 data_preprocessor.py
 ```
 
 **Configuration**:
-- Input: `/Users/justinstewart/thad-chat/data/01_raw/thad_messages_export.csv`
-- Output: `/Users/justinstewart/thad-chat/data/02_processed/thad_messages_cleaned.csv`
+- Input: `/Users/justinstewart/support-billing-tracker/data/01_raw/messages_export.csv`
+- Output: `/Users/justinstewart/support-billing-tracker/data/02_processed/messages_cleaned.csv`
 
 **Column Mapping**:
 - `message` → `message_text`
 - `sent_at` → `message_date`
 - Preserves `phone` and `sender` columns
 
-#### Stage 2: Request Extraction (`src/thad-request-extractor/`)
+#### Stage 2: Request Extraction (`src/request-extractor/`)
 **Purpose**: Extract business requests from cleaned messages using pattern matching and NLP
 
 **Key Components**:
 - `main.py`: Entry point and summary reporting (uses absolute path to cleaned data)
-- `request_extractor.py`: Core extraction logic (supports both "Thad Norman" and "Them" as sender)
+- `request_extractor.py`: Core extraction logic (supports both sender names)
 - `request_patterns.py`: Pattern definitions and categorization rules
 
 **Request Classification**:
@@ -180,7 +180,7 @@ python3 data_preprocessor.py
 
 **How to Run**:
 ```bash
-cd /Users/justinstewart/thad-chat/src/thad-request-extractor
+cd /Users/justinstewart/support-billing-tracker/src/request-extractor
 python3 main.py
 ```
 
@@ -189,7 +189,7 @@ python3 main.py
 - `output/requests_detailed.xlsx`: Excel format with additional analytics
 - `output/requests_summary.json`: Summary statistics
 
-**Note**: The extractor handles both sender formats from iMessage exports ("Thad Norman" or "Them")
+**Note**: The extractor handles various sender formats from iMessage exports
 
 ### 2. FluentSupport Sync Operations
 
@@ -443,7 +443,7 @@ curl -X POST http://localhost:3011/api/fluent/sync \
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '2025-10-17';"
 ```
 
@@ -508,12 +508,12 @@ if (existing.length > 0) {
 | `403 Forbidden` | Token expired (>1 hour old) | Login again for new token |
 | `500 Internal Server Error` | FluentSupport API unreachable | Check WordPress site status |
 | `Database connection failed` | MySQL container not running | `docker-compose ps` to verify |
-| `Sync status: failed` | Exception during processing | Check backend logs: `docker logs thad-chat-backend` |
+| `Sync status: failed` | Exception during processing | Check backend logs: `docker logs support-billing-tracker-backend` |
 
 **Logging**:
 ```bash
 # View backend logs for sync details
-docker logs -f thad-chat-backend | grep FluentSupport
+docker logs -f support-billing-tracker-backend | grep FluentSupport
 
 # Example output:
 # [FluentSupport Sync] Starting sync process...
@@ -616,23 +616,23 @@ VITE_FLUENT_DATE_FILTER=2025-10-11  # Only sync tickets after this date
 curl -s http://localhost:3011/api/fluent/status | grep last_sync_at
 
 # Check for failed syncs
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT * FROM fluent_sync_status WHERE last_sync_status='failed' ORDER BY id DESC LIMIT 5;"
 
 # Check for duplicate fluent_ids (should be 0)
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT fluent_id, COUNT(*) FROM fluent_tickets GROUP BY fluent_id HAVING COUNT(*) > 1;"
 ```
 
 **Data Integrity Checks**:
 ```bash
 # Verify all fluent_tickets link to valid requests
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT COUNT(*) FROM fluent_tickets WHERE request_id NOT IN (SELECT id FROM requests);"
 # Expected: 0
 
 # Check for orphaned requests (fluent source but no fluent_tickets entry)
-docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND id NOT IN (SELECT request_id FROM fluent_tickets WHERE request_id IS NOT NULL);"
 # Expected: 0
 ```
@@ -798,7 +798,7 @@ docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
 #### Key Features
 
 ##### Data Loading
-- Loads CSV data from `/frontend/public/thad_requests_table.csv`
+- Loads CSV data from `/frontend/public/requests_table.csv`
 - Automatic parsing and type conversion
 - Real-time data updates when CSV is replaced
 
@@ -841,7 +841,7 @@ docker exec thad-chat-mysql mysql -u thaduser -pthadpassword thad_chat \
 #### How to Run Frontend
 
 ```bash
-cd /Users/justinstewart/thad-chat/frontend
+cd /Users/justinstewart/support-billing-tracker/frontend
 
 # Install dependencies
 npm install
@@ -1157,19 +1157,19 @@ date,time,month,request_type,category,description,urgency,effort,status
 ## File Structure
 
 ```
-thad-chat/
+support-billing-tracker/
 ├── CLAUDE.md                          # This documentation file
 ├── data/
 │   ├── 01_raw/                        # Raw iMessage exports
 │   ├── 02_processed/                  # Cleaned message data
 │   └── 03_final/                      # Final structured data with status
-│       ├── thad_requests_table.csv    # Main dataset (all statuses)
+│       ├── requests_table.csv         # Main dataset (all statuses)
 │       ├── deleted_requests.csv       # Backup of deleted requests
 │       └── backups/                   # Timestamped snapshots
-│           └── thad_requests_backup_*.csv
+│           └── requests_backup_*.csv
 ├── src/
 │   ├── data_preprocessor.py           # Stage 1: Message cleaning
-│   └── thad-request-extractor/        # Stage 2: Request extraction
+│   └── request-extractor/             # Stage 2: Request extraction
 │       ├── main.py
 │       ├── request_extractor.py
 │       └── request_patterns.py
@@ -1235,7 +1235,7 @@ thad-chat/
     │       ├── websiteProperty.ts     # TypeScript interfaces for hosting
     │       └── billing.ts             # TypeScript interfaces for billing
     └── public/
-        └── thad_requests_table.csv    # Data source for dashboard
+        └── requests_table.csv          # Data source for dashboard
 ```
 
 ## Navigation & Routing
@@ -1754,10 +1754,10 @@ Routes are managed in `App.tsx`:
 #### Enhanced Data Persistence (July 2025)
 - **Feature**: Integration with `data/03_final/` directory structure
 - **Components**:
-  - Main table: `thad_requests_table.csv` (active requests)
+  - Main table: `requests_table.csv` (active requests)
   - Deleted backup: `deleted_requests.csv` (recoverable data)
-  - Timestamped backups: `backups/thad_requests_backup_YYYY-MM-DDTHH-mm-ss.csv`
-  - Original preservation: `thad_original_backup.csv`
+  - Timestamped backups: `backups/requests_backup_YYYY-MM-DDTHH-mm-ss.csv`
+  - Original preservation: `original_backup.csv`
 - **Workflow**: Auto-save to file system with localStorage fallback
 - **Recovery**: Complete audit trail from raw data through final state
 
@@ -1809,7 +1809,7 @@ Routes are managed in `App.tsx`:
 ### Common Issues
 
 #### Data Not Loading in Dashboard
-1. Verify CSV exists at `/frontend/public/thad_requests_table.csv`
+1. Verify CSV exists at `/frontend/public/requests_table.csv`
 2. Check CSV format matches expected columns
 3. Ensure no malformed CSV data (quotes, commas in content)
 
@@ -1933,10 +1933,10 @@ docker-compose.yml defaults:
 **Verification Steps**:
 ```bash
 # 1. Check environment variables in running containers
-docker exec thad-chat-frontend printenv | grep VITE_API_URL
+docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
 # Should show: VITE_API_URL=http://localhost:3011/api
 
-docker exec thad-chat-backend printenv | grep FRONTEND_URL
+docker exec support-billing-tracker-backend printenv | grep FRONTEND_URL
 # Should show: FRONTEND_URL=http://localhost:5173
 
 # 2. Test CORS headers
@@ -2019,12 +2019,12 @@ The frontend now automatically detects 403 errors and redirects to login:
 **Verification Steps**:
 ```bash
 # 1. Check JWT configuration in backend
-docker exec thad-chat-backend printenv | grep JWT
+docker exec support-billing-tracker-backend printenv | grep JWT
 # Should show: JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN
 
 # 2. Verify user exists in database
-docker exec -it thad-chat-mysql mysql -u root -p
-> USE thad_chat;
+docker exec -it support-billing-tracker-mysql mysql -u root -p
+> USE support_billing_tracker;
 > SELECT id, email, role FROM users;
 # Should show at least one admin user
 
@@ -2098,11 +2098,11 @@ If you want to avoid re-login after every restart, implement refresh tokens:
 3. **Verify Environment Variables**:
    ```bash
    # Check frontend env vars
-   docker exec thad-chat-frontend printenv | grep VITE_API_URL
+   docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
    # Expected: VITE_API_URL=http://localhost:3011/api
 
    # Check backend env vars
-   docker exec thad-chat-backend printenv | grep PORT
+   docker exec support-billing-tracker-backend printenv | grep PORT
    # Expected: PORT=3011
 
    # Test API health
@@ -2154,7 +2154,7 @@ docker-compose --env-file .env.docker up -d
 curl http://localhost:3011/api/health
 
 # Should show correct values
-docker exec thad-chat-frontend printenv | grep VITE
+docker exec support-billing-tracker-frontend printenv | grep VITE
 ```
 
 **Configuration Checklist**:
@@ -2190,7 +2190,7 @@ docker exec thad-chat-frontend printenv | grep VITE
 ### For New Data Processing:
 1. Export messages from iMessage database:
    ```bash
-   python3 export_imessages.py chat-backup.db [chat_id] [start_date] [end_date] data/01_raw/thad_messages_export.csv
+   python3 export_imessages.py chat-backup.db [chat_id] [start_date] [end_date] data/01_raw/messages_export.csv
    ```
 2. Clean the exported messages:
    ```bash
@@ -2198,7 +2198,7 @@ docker exec thad-chat-frontend printenv | grep VITE
    ```
 3. Extract requests from cleaned data:
    ```bash
-   cd thad-request-extractor && python3 main.py
+   cd request-extractor && python3 main.py
    ```
 4. Configure Twenty CRM API (if using):
    ```bash

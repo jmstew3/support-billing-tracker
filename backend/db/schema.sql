@@ -1,6 +1,6 @@
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS thad_chat;
-USE thad_chat;
+CREATE DATABASE IF NOT EXISTS support_billing_tracker;
+USE support_billing_tracker;
 
 -- Drop existing table if it exists (for clean setup)
 DROP TABLE IF EXISTS requests;
