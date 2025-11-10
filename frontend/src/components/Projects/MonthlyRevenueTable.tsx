@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, AlertTriangle, Zap } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, convertMicrosToDollars } from '../../services/projectsApi';
 import { FREE_LANDING_PAGE_START_DATE } from '../../config/pricing';
@@ -182,10 +182,9 @@ export function MonthlyRevenueTable({
                 const isExpanded = expandedMonths.has(monthData.month);
 
                 return (
-                  <>
+                  <React.Fragment key={monthData.month}>
                     {/* Month Header Row */}
                     <tr
-                      key={`month-${monthData.month}`}
                       className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
                       onClick={() => toggleMonth(monthData.month)}
                     >
@@ -475,7 +474,7 @@ export function MonthlyRevenueTable({
                         </tr>
                       </>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
 
