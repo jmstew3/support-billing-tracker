@@ -43,22 +43,17 @@ async function parseCSV(filePath) {
 
     return data;
   } catch (error) {
-    console.error('Error parsing CSV:', error);
     throw error;
   }
 }
 
 async function importCSV(filePath, clearExisting = false) {
-  console.log(`📂 Importing CSV from: ${filePath}`);
-
   try {
     // Parse CSV file
     const data = await parseCSV(filePath);
-    console.log(`📊 Found ${data.length} rows to import`);
 
     // Clear existing data if requested
     if (clearExisting) {
-      console.log('🗑️ Clearing existing data...');
       await pool.execute('DELETE FROM requests');
     }
 
@@ -96,21 +91,8 @@ async function importCSV(filePath, clearExisting = false) {
       }
     }
 
-    console.log('\n');
-    console.log('📊 Import Summary:');
-    console.log(`✅ Successfully imported: ${imported}`);
-    console.log(`❌ Failed: ${failed}`);
-
-    if (errors.length > 0) {
-      console.log('\n⚠️ First 10 errors:');
-      errors.slice(0, 10).forEach(err => {
-        console.log(`  - ${err.row}: ${err.error}`);
-      });
-    }
-
     return { imported, failed, errors };
   } catch (error) {
-    console.error('❌ Import failed:', error.message);
     throw error;
   }
 }
@@ -131,23 +113,6 @@ async function main() {
     } else if (args[i] === '--clear') {
       clearExisting = true;
     } else if (args[i] === '--help') {
-      console.log(`
-CSV Import Script for Thad Chat Dashboard
-
-Usage:
-  npm run import [options]
-
-Options:
-  --file <path>   Path to CSV file (default: data/03_final/thad_requests_table.csv)
-  --clear         Clear existing data before import
-  --help          Show this help message
-
-Examples:
-  npm run import                            # Import default CSV
-  npm run import --clear                    # Clear data and import
-  npm run import --file custom.csv          # Import custom CSV
-  npm run import --file custom.csv --clear  # Clear and import custom CSV
-      `);
       process.exit(0);
     }
   }
@@ -155,7 +120,6 @@ Examples:
   try {
     // Test database connection
     const connection = await pool.getConnection();
-    console.log('✅ Database connected');
     connection.release();
 
     // Check if file exists
@@ -164,19 +128,8 @@ Examples:
     // Run import
     await importCSV(csvPath, clearExisting);
 
-    // Show final statistics
-    const [result] = await pool.execute('SELECT COUNT(*) as count FROM requests WHERE status = "active"');
-    console.log(`\n📊 Total active requests in database: ${result[0].count}`);
-
     process.exit(0);
   } catch (error) {
-    console.error('❌ Script failed:', error.message);
-    if (error.code === 'ENOENT') {
-      console.error(`File not found: ${csvPath}`);
-      console.log('Make sure the CSV file exists at the specified path.');
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('Cannot connect to MySQL. Make sure MySQL is running.');
-    }
     process.exit(1);
   }
 }

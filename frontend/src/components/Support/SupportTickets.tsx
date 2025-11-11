@@ -55,8 +55,6 @@ interface SupportTicketsProps {
 }
 
 export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
-  console.log('SupportTickets component mounting...')
-
   // ============================================================
   // STATE MANAGEMENT
   // ============================================================
@@ -543,7 +541,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        console.error('Failed to bulk update requests:', error)
+        // Bulk update failed
       }
     } else {
       // Local-only mode: apply updates directly
@@ -566,12 +564,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // ============================================================
 
   const updateRequest = async (index: number, field: string, value: any) => {
-    console.log(`Updating request ${index}, field: ${field}, value:`, value)
-
     if (apiAvailable) {
       const request = requests[index]
       if (!request || !request.id) {
-        console.error('Request or request ID not found')
         return
       }
 
@@ -584,7 +579,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        console.error('Failed to update request:', error)
+        // Update failed
       }
     } else {
       setRequests(prevRequests => {
@@ -618,7 +613,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           )
         )
       } catch (error) {
-        console.error('Failed to delete request:', error)
+        // Delete failed
       }
     } else {
       setRequests(prevRequests =>
@@ -645,7 +640,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         )
       )
     } catch (error) {
-      console.error('Failed to restore request:', error)
+      // Restore failed
     }
   }
 
