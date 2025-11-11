@@ -29,8 +29,6 @@ const STANDARD_MRR = 99.0; // $99 per site per month
  */
 export async function fetchWebsiteProperties(): Promise<WebsiteProperty[]> {
   try {
-    console.log('Fetching website properties from proxy:', TWENTY_API_URL);
-
     // Use authenticatedFetch to include JWT token
     const response = await authenticatedFetch(`${TWENTY_API_URL}?depth=1&limit=500`, {
       method: 'GET',
