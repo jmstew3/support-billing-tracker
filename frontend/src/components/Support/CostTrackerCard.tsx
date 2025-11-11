@@ -107,15 +107,6 @@ export function CostTrackerCard({
   initialViewType = 'table',
   gridSpan,
 }: CostTrackerCardProps) {
-  // 🐛 DEBUG: Component mounted
-  console.log('🎯 CostTrackerCard MOUNTED with props:', {
-    costData,
-    monthlyCosts,
-    selectedMonth,
-    selectedYear,
-    initialViewType
-  });
-
   const [visibleUrgencies, setVisibleUrgencies] = useState<Record<string, boolean>>({
     Promotion: true,
     Low: true,
@@ -937,16 +928,6 @@ export function CostTrackerCard({
     const maxValue = Math.max(...chartData.map(d => d.cost), 0);
     const yAxisMax = Math.max(maxValue + 250, 500); // Minimum $500 Y-axis to prevent rendering issues
 
-    // 🐛 DEBUG LOGGING - Comprehensive chart debugging
-    console.group('🎨 CostTrackerCard Single Period Chart Render');
-    console.log('📊 Raw costData:', costData);
-    console.log('📈 Chart Data Array:', chartData);
-    console.log('💰 Individual Costs:', chartData.map(d => ({ name: d.name, cost: d.cost, hours: d.hours })));
-    console.log('📏 Y-Axis Calculation:', { maxValue, yAxisMax });
-    console.log('🎨 Visible Urgencies:', visibleUrgencies);
-    console.log('⚠️ Zero Cost Check:', chartData.filter(d => d.cost === 0).map(d => d.name));
-    console.log('⚠️ Has Any Data?:', chartData.some(d => d.cost > 0));
-
     // Define color mapping function
     const getBarColor = (name: string, visible: boolean) => {
       if (!visible) return CHART_STYLES.barColors.disabled;
@@ -959,13 +940,9 @@ export function CostTrackerCard({
       }
     };
 
-    console.log('🔍 Bar Colors:', chartData.map(d => ({ name: d.name, color: getBarColor(d.name, d.visible) })));
-    console.groupEnd();
-
     // Emergency fallback: Check if there's any data to display
     const hasData = chartData.some(d => d.cost > 0);
     if (!hasData) {
-      console.warn('⚠️ CostTrackerCard: No cost data available for single period chart');
       return (
         <div style={{ padding: '20px', border: '2px dashed #F59E0B', borderRadius: '8px', backgroundColor: '#FEF3C7' }}>
           <h3 style={{ color: '#92400E', marginBottom: '10px' }}>⚠️ No Cost Data Available</h3>
@@ -1149,15 +1126,6 @@ export function CostTrackerCard({
   };
 
   const renderChart = () => {
-    // 🐛 DEBUG: Track which chart is rendered
-    console.group('🔍 CostTrackerCard renderChart() Called');
-    console.log('📅 selectedMonth:', selectedMonth);
-    console.log('📊 monthlyCosts:', monthlyCosts);
-    console.log('📈 monthlyCosts.length:', monthlyCosts?.length);
-    console.log('🔀 Rendering:', selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0 ? 'MONTHLY CHART' : 'SINGLE PERIOD CHART');
-    console.log('💰 costData:', costData);
-    console.groupEnd();
-
     return selectedMonth === 'all' && monthlyCosts && monthlyCosts.length > 0
       ? renderMonthlyChart()
       : renderSinglePeriodChart();

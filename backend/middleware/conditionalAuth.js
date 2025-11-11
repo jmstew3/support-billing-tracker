@@ -38,7 +38,6 @@ export const conditionalAuth = async (req, res, next) => {
         authMethod: 'basicauth'
       };
 
-      console.log('✅ BasicAuth-protected request - JWT validation bypassed');
       return next();
     }
 
@@ -70,7 +69,6 @@ export const conditionalAuth = async (req, res, next) => {
       authMethod: 'jwt'
     };
 
-    console.log(`✅ JWT authenticated: ${user.email}`);
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

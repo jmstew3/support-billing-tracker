@@ -53,7 +53,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
       await logout();
       // Logout function in AuthContext will clear tokens and trigger re-render to login screen
     } catch (error) {
-      console.error('Logout error:', error);
+      // Logout failed
     }
   };
 

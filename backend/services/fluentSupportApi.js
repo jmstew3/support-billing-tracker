@@ -39,9 +39,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
     const baseUrl = FLUENT_API_URL.replace(/\/$/, ''); // Remove trailing slash
     const endpoint = `${baseUrl}/wp-json/fluent-support/v2/tickets`;
 
-    console.log(`[FluentSupport] Fetching tickets from: ${endpoint}`);
-    console.log(`[FluentSupport] Date filter: created_at >= ${dateFilter}`);
-
     // FluentSupport API may support pagination
     let allTickets = [];
     let page = 1;
@@ -50,15 +47,11 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
 
     while (hasMore) {
       const url = `${endpoint}?per_page=${perPage}&page=${page}`;
-      console.log(`[FluentSupport] Fetching page ${page}...`);
 
       const response = await axios.get(url, {
         headers,
         timeout: 30000 // 30 second timeout
       });
-
-      console.log(`[FluentSupport] Response data type:`, typeof response.data);
-      console.log(`[FluentSupport] Response data keys:`, response.data ? Object.keys(response.data) : 'null');
 
       let tickets = [];
       if (Array.isArray(response.data)) {
@@ -76,8 +69,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
         tickets = response.data.data;
       }
 
-      console.log(`[FluentSupport] Parsed ${tickets.length} tickets from response`);
-
       if (tickets.length === 0) {
         hasMore = false;
       } else {
@@ -93,8 +84,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
 
         allTickets = allTickets.concat(filteredTickets);
 
-        console.log(`[FluentSupport] Page ${page}: ${tickets.length} total, ${filteredTickets.length} after date filter`);
-
         // Check if we should continue pagination
         if (tickets.length < perPage) {
           hasMore = false;
@@ -104,15 +93,9 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
       }
     }
 
-    console.log(`[FluentSupport] Total tickets fetched: ${allTickets.length} (after date filter: ${dateFilter})`);
     return allTickets;
 
   } catch (error) {
-    console.error('[FluentSupport] Error fetching tickets:', error.message);
-    if (error.response) {
-      console.error('[FluentSupport] Response status:', error.response.status);
-      console.error('[FluentSupport] Response data:', error.response.data);
-    }
     throw new Error(`FluentSupport API error: ${error.message}`);
   }
 }
@@ -138,14 +121,11 @@ export async function fetchFluentTicket(ticketId) {
     const baseUrl = FLUENT_API_URL.replace(/\/$/, '');
     const url = `${baseUrl}/wp-json/fluent-support/v2/ticket/${ticketId}`;
 
-    console.log(`[FluentSupport] Fetching ticket ${ticketId}...`);
-
     const response = await axios.get(url, { headers });
 
     return response.data;
 
   } catch (error) {
-    console.error(`[FluentSupport] Error fetching ticket ${ticketId}:`, error.message);
     throw new Error(`FluentSupport API error: ${error.message}`);
   }
 }
