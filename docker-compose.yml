@@ -8,7 +8,7 @@ services:
     env_file: .env.docker
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: thad_chat
+      MYSQL_DATABASE: support_billing_tracker
       MYSQL_USER: ${MYSQL_USER:-thaduser}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
     ports:
@@ -40,7 +40,7 @@ services:
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${MYSQL_USER:-thaduser}
       DB_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
-      DB_NAME: ${DB_NAME:-thad_chat}
+      DB_NAME: ${DB_NAME:-support_billing_tracker}
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-development}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}

@@ -18,6 +18,8 @@ import { CategoryDistributionChart } from './CategoryDistributionChart'
 import { SupportChartsSection } from './sections/SupportChartsSection'
 import { SupportTableSection } from './sections/SupportTableSection'
 import { ArchivedRequestsSection } from './sections/ArchivedRequestsSection'
+import { FluentSyncButton } from './FluentSyncButton'
+import { FluentSyncStatus } from './FluentSyncStatus'
 
 // Hooks
 import { usePeriod } from '../../contexts/PeriodContext'
@@ -121,6 +123,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const scrollPositionRef = useRef<number>(0)
   const shouldPreserveScrollRef = useRef<boolean>(false)
 
+  // FluentSupport sync state
+  const [syncRefreshTrigger, setSyncRefreshTrigger] = useState(0)
+
   // ============================================================
   // DATA HOOK - Centralized data management
   // ============================================================
@@ -136,7 +141,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     archivedRequests,
     startIndex,
     endIndex,
-    totalPages
+    totalPages,
+    reloadData
   } = useSupportData({
     selectedYear,
     selectedMonth,
@@ -645,6 +651,18 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   }
 
   // ============================================================
+  // EVENT HANDLERS - FluentSupport Sync
+  // ============================================================
+
+  const handleSyncComplete = async () => {
+    // Reload request data to include new FluentSupport tickets
+    await reloadData()
+
+    // Trigger refresh of sync status component
+    setSyncRefreshTrigger(prev => prev + 1)
+  }
+
+  // ============================================================
   // UTILITY FUNCTIONS
   // ============================================================
 
@@ -670,6 +688,12 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         showViewToggle={true}
         viewOptions={['all', 'month', 'day']}
         onToggleMobileMenu={onToggleMobileMenu}
+        rightControls={
+          <FluentSyncButton
+            onSyncComplete={handleSyncComplete}
+            className="hidden xl:flex"
+          />
+        }
       />
 
       {/* Main Content Container */}
@@ -682,6 +706,12 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             totalActiveCount={requests.filter(r => r.Status === 'active').length}
             costs={filteredCosts}
             activityMetrics={activityMetrics}
+          />
+
+          {/* FluentSupport Sync Status */}
+          <FluentSyncStatus
+            refreshTrigger={syncRefreshTrigger}
+            className="max-w-2xl"
           />
 
           {/* Cost Tracker */}

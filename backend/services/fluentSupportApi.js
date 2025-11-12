@@ -220,14 +220,39 @@ function parseFluentSupportHTML(htmlContent) {
  * @returns {Object} Request data object for database insertion
  */
 export function transformFluentTicket(ticket) {
-  // Map FluentSupport priority to internal urgency
+  /**
+   * Map FluentSupport priority to internal urgency level
+   * FluentSupport priorities: critical, high, urgent, medium, normal, low
+   * Our urgency levels: HIGH, MEDIUM, LOW
+   * @param {string} priority - The priority from FluentSupport
+   * @returns {string} The mapped urgency level
+   */
   const mapPriority = (priority) => {
-    if (!priority) return 'MEDIUM';
+    if (!priority) {
+      console.log('[FluentSupport] No priority provided, defaulting to MEDIUM');
+      return 'MEDIUM';
+    }
 
-    const p = priority.toLowerCase();
-    if (p === 'critical' || p === 'high' || p === 'urgent') return 'HIGH';
-    if (p === 'medium' || p === 'normal') return 'MEDIUM';
-    return 'LOW';
+    // Case-insensitive matching with trimming
+    const normalizedPriority = priority.toString().trim().toLowerCase();
+
+    // Map FluentSupport priority values to our urgency levels
+    if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency HIGH`);
+      return 'HIGH';
+    }
+    if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency MEDIUM`);
+      return 'MEDIUM';
+    }
+    if (normalizedPriority === 'low') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency LOW`);
+      return 'LOW';
+    }
+
+    // Unknown priority value - log warning and default to MEDIUM
+    console.warn(`[FluentSupport] Unknown priority "${priority}" - defaulting to MEDIUM`);
+    return 'MEDIUM';
   };
 
   // Estimate effort based on urgency
@@ -246,6 +271,34 @@ export function transformFluentTicket(ticket) {
   const urgency = mapPriority(ticket.priority);
 
   /**
+   * Validate category against frontend CATEGORY_OPTIONS
+   * Valid categories: Advisory, Email, Forms, General, Hosting, Migration, Non-billable, Scripts, Support, Website
+   * @param {string} category - The category to validate
+   * @returns {string} The validated category or 'Support' fallback
+   */
+  const validateCategory = (category) => {
+    const validCategories = [
+      'Advisory',
+      'Email',
+      'Forms',
+      'General',
+      'Hosting',
+      'Migration',
+      'Non-billable',
+      'Scripts',
+      'Support',
+      'Website'
+    ];
+
+    if (validCategories.includes(category)) {
+      return category;
+    }
+
+    console.warn(`[FluentSupport] Invalid category "${category}" - not in CATEGORY_OPTIONS, defaulting to Support`);
+    return 'Support';
+  };
+
+  /**
    * Map FluentSupport product title to internal category
    * @param {string} productTitle - The product title from FluentSupport
    * @returns {string} The mapped category for our application
@@ -256,21 +309,32 @@ export function transformFluentTicket(ticket) {
       return 'Support';
     }
 
+    // Normalize case: "support" → "Support", "HOSTING" → "Hosting"
+    const normalizedTitle = productTitle.trim();
+    const capitalizedTitle = normalizedTitle.charAt(0).toUpperCase() + normalizedTitle.slice(1).toLowerCase();
+
     const mapping = {
       'Support': 'Support',      // Direct match
       'Hosting': 'Hosting',      // Direct match
       'Migration': 'Migration',  // Direct match
       'Website': 'Website',      // Direct match
       'Project': 'General',      // Map Project to General category
-      'Email': 'Email',          // Direct match (if exists)
-      'Forms': 'Forms',          // Direct match (if exists)
-      'Scripts': 'Scripts',      // Direct match (if exists)
-      'Advisory': 'Advisory',    // Direct match (if exists)
+      'General': 'General',      // Direct match
+      'Email': 'Email',          // Direct match
+      'Forms': 'Forms',          // Direct match
+      'Scripts': 'Scripts',      // Direct match
+      'Advisory': 'Advisory',    // Direct match
     };
 
-    const mappedCategory = mapping[productTitle] || 'Support';
-    console.log(`[FluentSupport] Mapping product "${productTitle}" to category "${mappedCategory}"`);
-    return mappedCategory;
+    const mappedCategory = mapping[capitalizedTitle];
+
+    if (!mappedCategory) {
+      console.warn(`[FluentSupport] Unknown product "${productTitle}" (normalized: "${capitalizedTitle}") - defaulting to Support`);
+      return validateCategory('Support');
+    }
+
+    console.log(`[FluentSupport] Mapping product "${productTitle}" → category "${mappedCategory}"`);
+    return validateCategory(mappedCategory);
   };
 
   // Parse creation date
