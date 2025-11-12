@@ -204,6 +204,19 @@ The FluentSupport sync system integrates support tickets from FluentSupport (Wor
 - **Backend Service**: `backend/services/fluentSupportApi.js`
 - **Sync Route**: `backend/routes/fluent-sync.js`
 
+**UI Components** ✅ **Implemented**:
+- **FluentSyncButton**: Trigger button with optional date filter in Support page header
+  - Location: `frontend/src/components/Support/FluentSyncButton.tsx`
+  - Features: Loading state, date picker, success/error notifications
+  - Automatically reloads request data after successful sync
+- **FluentSyncStatus**: Status widget displaying last sync information
+  - Location: `frontend/src/components/Support/FluentSyncStatus.tsx`
+  - Displays: Last sync time, total tickets, sync statistics, status indicator
+  - Auto-refreshes after sync completion
+- **Integration**: Both components are integrated into `SupportTickets.tsx`
+  - Sync button: Header (desktop/tablet only, hidden on mobile)
+  - Sync status: Main content area (after scorecards)
+
 **Database Schema**:
 ```sql
 -- Main requests table (stores all support requests)
@@ -320,7 +333,10 @@ function mapFluentPriority(priority) {
 ##### POST `/api/fluent/sync`
 **Purpose**: Trigger synchronization of FluentSupport tickets
 
-**Authentication**: JWT Bearer token required
+**Authentication**: Context-aware via `conditionalAuth` middleware
+- **Production** (velocity.peakonedigital.com): Protected by Traefik BasicAuth - no JWT needed
+- **Development** (localhost): Requires JWT Bearer token from `/api/auth/login`
+- Middleware automatically detects environment and applies appropriate authentication
 
 **Request Body**:
 ```json
@@ -410,16 +426,36 @@ function mapFluentPriority(priority) {
 
 #### Step-by-Step Sync Procedure
 
+**Option 1: Using the UI (Recommended)**
+
+1. Navigate to the Support page in the dashboard
+2. Click the "Sync FluentSupport" button in the header
+3. (Optional) Click the calendar icon to set a custom date filter
+4. Click "Sync FluentSupport" to trigger the sync
+5. View sync results in the notification and status widget
+
+**Option 2: Using the Automation Script**
+
+```bash
+# Sync from 7 days ago (default)
+./scripts/sync-fluent-tickets.sh
+
+# Sync from specific date
+./scripts/sync-fluent-tickets.sh 2025-10-17
+```
+
+**Option 3: Manual CLI Sync (Localhost)**
+
 **1. Update Configuration**
 ```bash
-# Edit .env.docker (line 68)
+# Edit .env.docker
 VITE_FLUENT_DATE_FILTER=2025-10-17
 ```
 
 **2. Restart Backend**
 ```bash
 docker-compose restart backend
-sleep 3  # Allow time for backend to initialize
+sleep 5  # Allow time for backend to initialize
 ```
 
 **3. Authenticate**
@@ -427,6 +463,7 @@ sleep 3  # Allow time for backend to initialize
 curl -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+# Save the accessToken from response
 ```
 
 **4. Trigger Sync**
@@ -445,6 +482,43 @@ curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 # Check database
 docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '2025-10-17';"
+```
+
+**Option 4: Manual CLI Sync (Production)**
+
+**Note**: On production (velocity.peakonedigital.com), Traefik BasicAuth is already active, so JWT authentication is **not needed**.
+
+**1. SSH to production server**
+```bash
+ssh user@velocity.peakonedigital.com
+cd /path/to/support-billing-tracker
+```
+
+**2. Update Configuration**
+```bash
+# Edit .env.docker
+VITE_FLUENT_DATE_FILTER=2025-10-17
+```
+
+**3. Restart Backend**
+```bash
+docker-compose restart backend
+sleep 5
+```
+
+**4. Trigger Sync (BasicAuth Only)**
+```bash
+# Traefik handles authentication - no JWT needed
+curl -X POST https://velocity.peakonedigital.com/billing-overview-api/api/fluent/sync \
+  -u "admin:***REMOVED***" \
+  -H "Content-Type: application/json" \
+  -d '{"dateFilter":"2025-10-17"}'
+```
+
+**5. Verify Results**
+```bash
+curl -s -u "admin:***REMOVED***" \
+  https://velocity.peakonedigital.com/billing-overview-api/api/fluent/status | python3 -m json.tool
 ```
 
 #### Deduplication Strategy
@@ -544,47 +618,106 @@ docker logs -f support-billing-tracker-backend | grep FluentSupport
 
 #### Automation Options
 
-**Option 1: Shell Script** (`sync-fluent-tickets.sh`):
+**Option 1: Shell Script** ✅ **Implemented**
+
+The automation script is located at [`scripts/sync-fluent-tickets.sh`](scripts/sync-fluent-tickets.sh).
+
+**Features**:
+- ✅ Automatic date calculation (defaults to 7 days ago)
+- ✅ Environment file updates
+- ✅ Backend container restart with health checks
+- ✅ JWT authentication
+- ✅ Sync execution with formatted output
+- ✅ Database verification
+- ✅ Error handling and logging
+- ✅ Cross-platform support (Linux & macOS)
+
+**Usage**:
 ```bash
-#!/bin/bash
-# Usage: ./sync-fluent-tickets.sh [YYYY-MM-DD]
-DATE_FILTER=${1:-$(date -d '7 days ago' +%Y-%m-%d)}
+# Sync from 7 days ago (default)
+./scripts/sync-fluent-tickets.sh
 
-echo "Syncing FluentSupport tickets from $DATE_FILTER..."
-
-# Update config
-sed -i "s/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=$DATE_FILTER/" .env.docker
-
-# Restart backend
-docker-compose restart backend
-sleep 5
-
-# Authenticate and sync
-TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' \
-  | python3 -c "import sys, json; print(json.load(sys.stdin)['accessToken'])")
-
-curl -X POST http://localhost:3011/api/fluent/sync \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"dateFilter\":\"$DATE_FILTER\"}" | python3 -m json.tool
-
-echo "Sync complete!"
+# Sync from specific date
+./scripts/sync-fluent-tickets.sh 2025-10-17
 ```
 
-**Option 2: Cron Job** (Future Enhancement):
-```bash
-# Add to crontab: crontab -e
-# Run every Sunday at 2 AM
-0 2 * * 0 /path/to/sync-fluent-tickets.sh
+**Example Output**:
+```
+[INFO] Date filter: 2025-10-17
+[SUCCESS] Updated VITE_FLUENT_DATE_FILTER to 2025-10-17
+[SUCCESS] Backend container restarted
+[SUCCESS] Backend is ready
+[SUCCESS] Authenticated successfully
+[INFO] Triggering FluentSupport sync for dates >= 2025-10-17...
+
+============================================================
+                    SYNC RESULTS
+============================================================
+{
+  "success": true,
+  "ticketsFetched": 7,
+  "ticketsAdded": 7,
+  "ticketsUpdated": 0,
+  "ticketsSkipped": 0,
+  "syncDuration": 1489
+}
+
+[SUCCESS] Sync completed successfully
+[INFO] Fetched: 7 | Added: 7 | Updated: 0 | Skipped: 0
+[SUCCESS] FluentSupport tickets in database (>= 2025-10-17): 7
 ```
 
-**Option 3: n8n Workflow** (Advanced):
-- Scheduled trigger (weekly/daily)
-- HTTP Request: POST /api/auth/login
-- HTTP Request: POST /api/fluent/sync
-- Email notification on completion
+**Option 2: Cron Job Automation**
+
+Schedule automatic syncs using cron:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add one of these entries:
+
+# Daily sync at 2 AM (recommended for active support)
+0 2 * * * cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+
+# Weekly sync every Sunday at 2 AM
+0 2 * * 0 cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+
+# Bi-weekly sync (1st and 15th at 2 AM)
+0 2 1,15 * * cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+```
+
+**Log Rotation** (optional):
+```bash
+# Create /etc/logrotate.d/fluent-sync
+/var/log/fluent-sync.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+}
+```
+
+**Option 3: n8n Workflow** (Advanced)
+
+For visual workflow automation:
+
+1. **Create new workflow** in n8n
+2. **Add Schedule Trigger** (e.g., every Sunday at 2 AM)
+3. **Add HTTP Request node** (Auth):
+   - Method: POST
+   - URL: `http://localhost:3011/api/auth/login`
+   - Body: `{"email":"admin@peakonedigital.com","password":"***REMOVED***"}`
+   - Extract: `accessToken` from response
+4. **Add HTTP Request node** (Sync):
+   - Method: POST
+   - URL: `http://localhost:3011/api/fluent/sync`
+   - Headers: `Authorization: Bearer {{$json["accessToken"]}}`
+   - Body: `{"dateFilter":"{{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"}`
+5. **Add Email node** (Notification):
+   - Subject: `FluentSupport Sync Complete`
+   - Body: `Fetched: {{$json["ticketsFetched"]}}, Added: {{$json["ticketsAdded"]}}`
 
 #### Configuration Reference
 
