@@ -317,15 +317,97 @@ CREATE TABLE fluent_sync_status (
 
 **Priority Mapping Logic** (`fluentSupportApi.js`):
 ```javascript
-function mapFluentPriority(priority) {
-  const mapping = {
-    'critical': 'HIGH',
-    'high': 'HIGH',
-    'medium': 'MEDIUM',
-    'normal': 'LOW'
-  };
-  return mapping[priority?.toLowerCase()] || 'MEDIUM';
+function mapPriority(priority) {
+  const normalizedPriority = priority?.toString().trim().toLowerCase();
+
+  // FluentSupport → Our Urgency
+  if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
+    return 'HIGH';
+  }
+  if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
+    return 'MEDIUM';
+  }
+  if (normalizedPriority === 'low') {
+    return 'LOW';
+  }
+
+  return 'MEDIUM'; // Default fallback
 }
+```
+
+**Priority Mapping Table**:
+
+| FluentSupport Priority | Our Urgency Level | Notes |
+|------------------------|-------------------|-------|
+| `critical` | `HIGH` | Highest priority tickets |
+| `high` | `HIGH` | High priority tickets |
+| `urgent` | `HIGH` | Urgent tickets |
+| `medium` | `MEDIUM` | Standard priority |
+| `normal` | `MEDIUM` | Normal priority |
+| `low` | `LOW` | Low priority tickets |
+| *(any other value)* | `MEDIUM` | Unknown priority defaults to MEDIUM |
+| *(null/empty)* | `MEDIUM` | Missing priority defaults to MEDIUM |
+
+#### Product → Category Mapping
+
+**FluentSupport Product Mapping Logic** (`fluentSupportApi.js`):
+
+The `product.title` field from FluentSupport tickets is mapped to our internal `Category` field with the following rules:
+
+**Mapping Table**:
+
+| FluentSupport Product | Our Category | Example Use Case |
+|----------------------|--------------|------------------|
+| `Support` | `Support` | General support requests |
+| `Hosting` | `Hosting` | Server, DNS, SSL, email hosting |
+| `Migration` | `Migration` | Website transfers, domain migrations |
+| `Website` | `Website` | Website updates, content changes |
+| `Project` | `General` | Project-related requests |
+| `General` | `General` | Miscellaneous requests |
+| `Email` | `Email` | Email configuration, troubleshooting |
+| `Forms` | `Forms` | Contact forms, Gravity Forms |
+| `Scripts` | `Scripts` | Custom scripts, automation |
+| `Advisory` | `Advisory` | Consultations, recommendations |
+| *(unknown product)* | `Support` | Any unmapped product defaults to Support |
+| *(null/empty)* | `Support` | Missing product defaults to Support |
+
+**Case Normalization**:
+- Product names are **case-insensitive**: `"support"`, `"Support"`, `"SUPPORT"` all map correctly
+- Leading/trailing whitespace is automatically trimmed
+- First character capitalized, rest lowercase: `"hosting"` → `"Hosting"`
+
+**Validation**:
+- All mapped categories are validated against the frontend `CATEGORY_OPTIONS` list
+- Invalid categories are logged as warnings and fallback to `Support`
+- Valid categories: `Advisory`, `Email`, `Forms`, `General`, `Hosting`, `Migration`, `Non-billable`, `Scripts`, `Support`, `Website`
+
+**Logging**:
+- ✅ Successful mappings: `[FluentSupport] Mapping product "Hosting" → category "Hosting"`
+- ⚠️ Unknown products: `[FluentSupport] Unknown product "Custom Product" - defaulting to Support`
+- ⚠️ Invalid categories: `[FluentSupport] Invalid category "InvalidCat" - defaulting to Support`
+- ℹ️ Missing products: `[FluentSupport] No product title provided, defaulting to Support`
+
+**Code Reference**:
+```javascript
+// Example: "hosting" → "Hosting" category
+const normalizedTitle = productTitle.trim();
+const capitalizedTitle = normalizedTitle.charAt(0).toUpperCase() + normalizedTitle.slice(1).toLowerCase();
+
+const mapping = {
+  'Support': 'Support',
+  'Hosting': 'Hosting',
+  'Migration': 'Migration',
+  'Website': 'Website',
+  'Project': 'General',    // Special mapping
+  'General': 'General',
+  'Email': 'Email',
+  'Forms': 'Forms',
+  'Scripts': 'Scripts',
+  'Advisory': 'Advisory'
+};
+
+const mappedCategory = mapping[capitalizedTitle] || 'Support';
+return validateCategory(mappedCategory);
 ```
 
 #### Sync API Endpoints
