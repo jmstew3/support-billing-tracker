@@ -691,7 +691,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         rightControls={
           <FluentSyncButton
             onSyncComplete={handleSyncComplete}
-            className="hidden xl:flex"
+            className="flex"
           />
         }
       />
