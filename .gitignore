@@ -1,6 +1,7 @@
 data/
 # MySQL Database Files - NEVER commit these!
 mysql_data/
+mysql_data_backup*/
 *.ibd
 *.frm
 *.MYD
