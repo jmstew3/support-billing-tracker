@@ -1,4 +1,4 @@
-# Thad Chat Request Analysis Dashboard
+# Support Billing Tracker
 
 ## Overview
 
@@ -151,25 +151,25 @@ See `docs/authentication-plan.md` for detailed roadmap:
 
 **How to Run**:
 ```bash
-cd /Users/justinstewart/thad-chat/src
+cd /Users/justinstewart/support-billing-tracker/src
 python3 data_preprocessor.py
 ```
 
 **Configuration**:
-- Input: `/Users/justinstewart/thad-chat/data/01_raw/thad_messages_export.csv`
-- Output: `/Users/justinstewart/thad-chat/data/02_processed/thad_messages_cleaned.csv`
+- Input: `/Users/justinstewart/support-billing-tracker/data/01_raw/messages_export.csv`
+- Output: `/Users/justinstewart/support-billing-tracker/data/02_processed/messages_cleaned.csv`
 
 **Column Mapping**:
 - `message` → `message_text`
 - `sent_at` → `message_date`
 - Preserves `phone` and `sender` columns
 
-#### Stage 2: Request Extraction (`src/thad-request-extractor/`)
+#### Stage 2: Request Extraction (`src/request-extractor/`)
 **Purpose**: Extract business requests from cleaned messages using pattern matching and NLP
 
 **Key Components**:
 - `main.py`: Entry point and summary reporting (uses absolute path to cleaned data)
-- `request_extractor.py`: Core extraction logic (supports both "Thad Norman" and "Them" as sender)
+- `request_extractor.py`: Core extraction logic (supports both sender names)
 - `request_patterns.py`: Pattern definitions and categorization rules
 
 **Request Classification**:
@@ -180,7 +180,7 @@ python3 data_preprocessor.py
 
 **How to Run**:
 ```bash
-cd /Users/justinstewart/thad-chat/src/thad-request-extractor
+cd /Users/justinstewart/support-billing-tracker/src/request-extractor
 python3 main.py
 ```
 
@@ -189,7 +189,7 @@ python3 main.py
 - `output/requests_detailed.xlsx`: Excel format with additional analytics
 - `output/requests_summary.json`: Summary statistics
 
-**Note**: The extractor handles both sender formats from iMessage exports ("Thad Norman" or "Them")
+**Note**: The extractor handles various sender formats from iMessage exports
 
 ### 2. FluentSupport Sync Operations
 
@@ -203,6 +203,19 @@ The FluentSupport sync system integrates support tickets from FluentSupport (Wor
 - **Authentication**: WordPress Application Password (HTTP Basic Auth)
 - **Backend Service**: `backend/services/fluentSupportApi.js`
 - **Sync Route**: `backend/routes/fluent-sync.js`
+
+**UI Components** ✅ **Implemented**:
+- **FluentSyncButton**: Trigger button with optional date filter in Support page header
+  - Location: `frontend/src/components/Support/FluentSyncButton.tsx`
+  - Features: Loading state, date picker, success/error notifications
+  - Automatically reloads request data after successful sync
+- **FluentSyncStatus**: Status widget displaying last sync information
+  - Location: `frontend/src/components/Support/FluentSyncStatus.tsx`
+  - Displays: Last sync time, total tickets, sync statistics, status indicator
+  - Auto-refreshes after sync completion
+- **Integration**: Both components are integrated into `SupportTickets.tsx`
+  - Sync button: Header (desktop/tablet only, hidden on mobile)
+  - Sync status: Main content area (after scorecards)
 
 **Database Schema**:
 ```sql
@@ -304,15 +317,97 @@ CREATE TABLE fluent_sync_status (
 
 **Priority Mapping Logic** (`fluentSupportApi.js`):
 ```javascript
-function mapFluentPriority(priority) {
-  const mapping = {
-    'critical': 'HIGH',
-    'high': 'HIGH',
-    'medium': 'MEDIUM',
-    'normal': 'LOW'
-  };
-  return mapping[priority?.toLowerCase()] || 'MEDIUM';
+function mapPriority(priority) {
+  const normalizedPriority = priority?.toString().trim().toLowerCase();
+
+  // FluentSupport → Our Urgency
+  if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
+    return 'HIGH';
+  }
+  if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
+    return 'MEDIUM';
+  }
+  if (normalizedPriority === 'low') {
+    return 'LOW';
+  }
+
+  return 'MEDIUM'; // Default fallback
 }
+```
+
+**Priority Mapping Table**:
+
+| FluentSupport Priority | Our Urgency Level | Notes |
+|------------------------|-------------------|-------|
+| `critical` | `HIGH` | Highest priority tickets |
+| `high` | `HIGH` | High priority tickets |
+| `urgent` | `HIGH` | Urgent tickets |
+| `medium` | `MEDIUM` | Standard priority |
+| `normal` | `MEDIUM` | Normal priority |
+| `low` | `LOW` | Low priority tickets |
+| *(any other value)* | `MEDIUM` | Unknown priority defaults to MEDIUM |
+| *(null/empty)* | `MEDIUM` | Missing priority defaults to MEDIUM |
+
+#### Product → Category Mapping
+
+**FluentSupport Product Mapping Logic** (`fluentSupportApi.js`):
+
+The `product.title` field from FluentSupport tickets is mapped to our internal `Category` field with the following rules:
+
+**Mapping Table**:
+
+| FluentSupport Product | Our Category | Example Use Case |
+|----------------------|--------------|------------------|
+| `Support` | `Support` | General support requests |
+| `Hosting` | `Hosting` | Server, DNS, SSL, email hosting |
+| `Migration` | `Migration` | Website transfers, domain migrations |
+| `Website` | `Website` | Website updates, content changes |
+| `Project` | `General` | Project-related requests |
+| `General` | `General` | Miscellaneous requests |
+| `Email` | `Email` | Email configuration, troubleshooting |
+| `Forms` | `Forms` | Contact forms, Gravity Forms |
+| `Scripts` | `Scripts` | Custom scripts, automation |
+| `Advisory` | `Advisory` | Consultations, recommendations |
+| *(unknown product)* | `Support` | Any unmapped product defaults to Support |
+| *(null/empty)* | `Support` | Missing product defaults to Support |
+
+**Case Normalization**:
+- Product names are **case-insensitive**: `"support"`, `"Support"`, `"SUPPORT"` all map correctly
+- Leading/trailing whitespace is automatically trimmed
+- First character capitalized, rest lowercase: `"hosting"` → `"Hosting"`
+
+**Validation**:
+- All mapped categories are validated against the frontend `CATEGORY_OPTIONS` list
+- Invalid categories are logged as warnings and fallback to `Support`
+- Valid categories: `Advisory`, `Email`, `Forms`, `General`, `Hosting`, `Migration`, `Non-billable`, `Scripts`, `Support`, `Website`
+
+**Logging**:
+- ✅ Successful mappings: `[FluentSupport] Mapping product "Hosting" → category "Hosting"`
+- ⚠️ Unknown products: `[FluentSupport] Unknown product "Custom Product" - defaulting to Support`
+- ⚠️ Invalid categories: `[FluentSupport] Invalid category "InvalidCat" - defaulting to Support`
+- ℹ️ Missing products: `[FluentSupport] No product title provided, defaulting to Support`
+
+**Code Reference**:
+```javascript
+// Example: "hosting" → "Hosting" category
+const normalizedTitle = productTitle.trim();
+const capitalizedTitle = normalizedTitle.charAt(0).toUpperCase() + normalizedTitle.slice(1).toLowerCase();
+
+const mapping = {
+  'Support': 'Support',
+  'Hosting': 'Hosting',
+  'Migration': 'Migration',
+  'Website': 'Website',
+  'Project': 'General',    // Special mapping
+  'General': 'General',
+  'Email': 'Email',
+  'Forms': 'Forms',
+  'Scripts': 'Scripts',
+  'Advisory': 'Advisory'
+};
+
+const mappedCategory = mapping[capitalizedTitle] || 'Support';
+return validateCategory(mappedCategory);
 ```
 
 #### Sync API Endpoints
@@ -320,7 +415,10 @@ function mapFluentPriority(priority) {
 ##### POST `/api/fluent/sync`
 **Purpose**: Trigger synchronization of FluentSupport tickets
 
-**Authentication**: JWT Bearer token required
+**Authentication**: Context-aware via `conditionalAuth` middleware
+- **Production** (velocity.peakonedigital.com): Protected by Traefik BasicAuth - no JWT needed
+- **Development** (localhost): Requires JWT Bearer token from `/api/auth/login`
+- Middleware automatically detects environment and applies appropriate authentication
 
 **Request Body**:
 ```json
@@ -410,16 +508,36 @@ function mapFluentPriority(priority) {
 
 #### Step-by-Step Sync Procedure
 
+**Option 1: Using the UI (Recommended)**
+
+1. Navigate to the Support page in the dashboard
+2. Click the "Sync FluentSupport" button in the header
+3. (Optional) Click the calendar icon to set a custom date filter
+4. Click "Sync FluentSupport" to trigger the sync
+5. View sync results in the notification and status widget
+
+**Option 2: Using the Automation Script**
+
+```bash
+# Sync from 7 days ago (default)
+./scripts/sync-fluent-tickets.sh
+
+# Sync from specific date
+./scripts/sync-fluent-tickets.sh 2025-10-17
+```
+
+**Option 3: Manual CLI Sync (Localhost)**
+
 **1. Update Configuration**
 ```bash
-# Edit .env.docker (line 68)
+# Edit .env.docker
 VITE_FLUENT_DATE_FILTER=2025-10-17
 ```
 
 **2. Restart Backend**
 ```bash
 docker-compose restart backend
-sleep 3  # Allow time for backend to initialize
+sleep 5  # Allow time for backend to initialize
 ```
 
 **3. Authenticate**
@@ -427,6 +545,7 @@ sleep 3  # Allow time for backend to initialize
 curl -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+# Save the accessToken from response
 ```
 
 **4. Trigger Sync**
@@ -443,8 +562,45 @@ curl -X POST http://localhost:3011/api/fluent/sync \
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '2025-10-17';"
+```
+
+**Option 4: Manual CLI Sync (Production)**
+
+**Note**: On production (velocity.peakonedigital.com), Traefik BasicAuth is already active, so JWT authentication is **not needed**.
+
+**1. SSH to production server**
+```bash
+ssh user@velocity.peakonedigital.com
+cd /path/to/support-billing-tracker
+```
+
+**2. Update Configuration**
+```bash
+# Edit .env.docker
+VITE_FLUENT_DATE_FILTER=2025-10-17
+```
+
+**3. Restart Backend**
+```bash
+docker-compose restart backend
+sleep 5
+```
+
+**4. Trigger Sync (BasicAuth Only)**
+```bash
+# Traefik handles authentication - no JWT needed
+curl -X POST https://velocity.peakonedigital.com/billing-overview-api/api/fluent/sync \
+  -u "admin:***REMOVED***" \
+  -H "Content-Type: application/json" \
+  -d '{"dateFilter":"2025-10-17"}'
+```
+
+**5. Verify Results**
+```bash
+curl -s -u "admin:***REMOVED***" \
+  https://velocity.peakonedigital.com/billing-overview-api/api/fluent/status | python3 -m json.tool
 ```
 
 #### Deduplication Strategy
@@ -508,12 +664,12 @@ if (existing.length > 0) {
 | `403 Forbidden` | Token expired (>1 hour old) | Login again for new token |
 | `500 Internal Server Error` | FluentSupport API unreachable | Check WordPress site status |
 | `Database connection failed` | MySQL container not running | `docker-compose ps` to verify |
-| `Sync status: failed` | Exception during processing | Check backend logs: `docker logs thad-chat-backend` |
+| `Sync status: failed` | Exception during processing | Check backend logs: `docker logs support-billing-tracker-backend` |
 
 **Logging**:
 ```bash
 # View backend logs for sync details
-docker logs -f thad-chat-backend | grep FluentSupport
+docker logs -f support-billing-tracker-backend | grep FluentSupport
 
 # Example output:
 # [FluentSupport Sync] Starting sync process...
@@ -544,47 +700,106 @@ docker logs -f thad-chat-backend | grep FluentSupport
 
 #### Automation Options
 
-**Option 1: Shell Script** (`sync-fluent-tickets.sh`):
+**Option 1: Shell Script** ✅ **Implemented**
+
+The automation script is located at [`scripts/sync-fluent-tickets.sh`](scripts/sync-fluent-tickets.sh).
+
+**Features**:
+- ✅ Automatic date calculation (defaults to 7 days ago)
+- ✅ Environment file updates
+- ✅ Backend container restart with health checks
+- ✅ JWT authentication
+- ✅ Sync execution with formatted output
+- ✅ Database verification
+- ✅ Error handling and logging
+- ✅ Cross-platform support (Linux & macOS)
+
+**Usage**:
 ```bash
-#!/bin/bash
-# Usage: ./sync-fluent-tickets.sh [YYYY-MM-DD]
-DATE_FILTER=${1:-$(date -d '7 days ago' +%Y-%m-%d)}
+# Sync from 7 days ago (default)
+./scripts/sync-fluent-tickets.sh
 
-echo "Syncing FluentSupport tickets from $DATE_FILTER..."
-
-# Update config
-sed -i "s/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=$DATE_FILTER/" .env.docker
-
-# Restart backend
-docker-compose restart backend
-sleep 5
-
-# Authenticate and sync
-TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' \
-  | python3 -c "import sys, json; print(json.load(sys.stdin)['accessToken'])")
-
-curl -X POST http://localhost:3011/api/fluent/sync \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"dateFilter\":\"$DATE_FILTER\"}" | python3 -m json.tool
-
-echo "Sync complete!"
+# Sync from specific date
+./scripts/sync-fluent-tickets.sh 2025-10-17
 ```
 
-**Option 2: Cron Job** (Future Enhancement):
-```bash
-# Add to crontab: crontab -e
-# Run every Sunday at 2 AM
-0 2 * * 0 /path/to/sync-fluent-tickets.sh
+**Example Output**:
+```
+[INFO] Date filter: 2025-10-17
+[SUCCESS] Updated VITE_FLUENT_DATE_FILTER to 2025-10-17
+[SUCCESS] Backend container restarted
+[SUCCESS] Backend is ready
+[SUCCESS] Authenticated successfully
+[INFO] Triggering FluentSupport sync for dates >= 2025-10-17...
+
+============================================================
+                    SYNC RESULTS
+============================================================
+{
+  "success": true,
+  "ticketsFetched": 7,
+  "ticketsAdded": 7,
+  "ticketsUpdated": 0,
+  "ticketsSkipped": 0,
+  "syncDuration": 1489
+}
+
+[SUCCESS] Sync completed successfully
+[INFO] Fetched: 7 | Added: 7 | Updated: 0 | Skipped: 0
+[SUCCESS] FluentSupport tickets in database (>= 2025-10-17): 7
 ```
 
-**Option 3: n8n Workflow** (Advanced):
-- Scheduled trigger (weekly/daily)
-- HTTP Request: POST /api/auth/login
-- HTTP Request: POST /api/fluent/sync
-- Email notification on completion
+**Option 2: Cron Job Automation**
+
+Schedule automatic syncs using cron:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add one of these entries:
+
+# Daily sync at 2 AM (recommended for active support)
+0 2 * * * cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+
+# Weekly sync every Sunday at 2 AM
+0 2 * * 0 cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+
+# Bi-weekly sync (1st and 15th at 2 AM)
+0 2 1,15 * * cd /path/to/support-billing-tracker && ./scripts/sync-fluent-tickets.sh >> /var/log/fluent-sync.log 2>&1
+```
+
+**Log Rotation** (optional):
+```bash
+# Create /etc/logrotate.d/fluent-sync
+/var/log/fluent-sync.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+}
+```
+
+**Option 3: n8n Workflow** (Advanced)
+
+For visual workflow automation:
+
+1. **Create new workflow** in n8n
+2. **Add Schedule Trigger** (e.g., every Sunday at 2 AM)
+3. **Add HTTP Request node** (Auth):
+   - Method: POST
+   - URL: `http://localhost:3011/api/auth/login`
+   - Body: `{"email":"admin@peakonedigital.com","password":"***REMOVED***"}`
+   - Extract: `accessToken` from response
+4. **Add HTTP Request node** (Sync):
+   - Method: POST
+   - URL: `http://localhost:3011/api/fluent/sync`
+   - Headers: `Authorization: Bearer {{$json["accessToken"]}}`
+   - Body: `{"dateFilter":"{{ $now.minus({days: 7}).toFormat('yyyy-MM-dd') }}"}`
+5. **Add Email node** (Notification):
+   - Subject: `FluentSupport Sync Complete`
+   - Body: `Fetched: {{$json["ticketsFetched"]}}, Added: {{$json["ticketsAdded"]}}`
 
 #### Configuration Reference
 
@@ -616,23 +831,23 @@ VITE_FLUENT_DATE_FILTER=2025-10-11  # Only sync tickets after this date
 curl -s http://localhost:3011/api/fluent/status | grep last_sync_at
 
 # Check for failed syncs
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT * FROM fluent_sync_status WHERE last_sync_status='failed' ORDER BY id DESC LIMIT 5;"
 
 # Check for duplicate fluent_ids (should be 0)
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT fluent_id, COUNT(*) FROM fluent_tickets GROUP BY fluent_id HAVING COUNT(*) > 1;"
 ```
 
 **Data Integrity Checks**:
 ```bash
 # Verify all fluent_tickets link to valid requests
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT COUNT(*) FROM fluent_tickets WHERE request_id NOT IN (SELECT id FROM requests);"
 # Expected: 0
 
 # Check for orphaned requests (fluent source but no fluent_tickets entry)
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT COUNT(*) FROM requests WHERE source='fluent' AND id NOT IN (SELECT request_id FROM fluent_tickets WHERE request_id IS NOT NULL);"
 # Expected: 0
 ```
@@ -798,7 +1013,7 @@ docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
 #### Key Features
 
 ##### Data Loading
-- Loads CSV data from `/frontend/public/thad_requests_table.csv`
+- Loads CSV data from `/frontend/public/requests_table.csv`
 - Automatic parsing and type conversion
 - Real-time data updates when CSV is replaced
 
@@ -841,7 +1056,7 @@ docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
 #### How to Run Frontend
 
 ```bash
-cd /Users/justinstewart/thad-chat/frontend
+cd /Users/justinstewart/support-billing-tracker/frontend
 
 # Install dependencies
 npm install
@@ -1157,19 +1372,19 @@ date,time,month,request_type,category,description,urgency,effort,status
 ## File Structure
 
 ```
-thad-chat/
+support-billing-tracker/
 ├── CLAUDE.md                          # This documentation file
 ├── data/
 │   ├── 01_raw/                        # Raw iMessage exports
 │   ├── 02_processed/                  # Cleaned message data
 │   └── 03_final/                      # Final structured data with status
-│       ├── thad_requests_table.csv    # Main dataset (all statuses)
+│       ├── requests_table.csv         # Main dataset (all statuses)
 │       ├── deleted_requests.csv       # Backup of deleted requests
 │       └── backups/                   # Timestamped snapshots
-│           └── thad_requests_backup_*.csv
+│           └── requests_backup_*.csv
 ├── src/
 │   ├── data_preprocessor.py           # Stage 1: Message cleaning
-│   └── thad-request-extractor/        # Stage 2: Request extraction
+│   └── request-extractor/             # Stage 2: Request extraction
 │       ├── main.py
 │       ├── request_extractor.py
 │       └── request_patterns.py
@@ -1235,7 +1450,7 @@ thad-chat/
     │       ├── websiteProperty.ts     # TypeScript interfaces for hosting
     │       └── billing.ts             # TypeScript interfaces for billing
     └── public/
-        └── thad_requests_table.csv    # Data source for dashboard
+        └── requests_table.csv          # Data source for dashboard
 ```
 
 ## Navigation & Routing
@@ -1754,10 +1969,10 @@ Routes are managed in `App.tsx`:
 #### Enhanced Data Persistence (July 2025)
 - **Feature**: Integration with `data/03_final/` directory structure
 - **Components**:
-  - Main table: `thad_requests_table.csv` (active requests)
+  - Main table: `requests_table.csv` (active requests)
   - Deleted backup: `deleted_requests.csv` (recoverable data)
-  - Timestamped backups: `backups/thad_requests_backup_YYYY-MM-DDTHH-mm-ss.csv`
-  - Original preservation: `thad_original_backup.csv`
+  - Timestamped backups: `backups/requests_backup_YYYY-MM-DDTHH-mm-ss.csv`
+  - Original preservation: `original_backup.csv`
 - **Workflow**: Auto-save to file system with localStorage fallback
 - **Recovery**: Complete audit trail from raw data through final state
 
@@ -1809,7 +2024,7 @@ Routes are managed in `App.tsx`:
 ### Common Issues
 
 #### Data Not Loading in Dashboard
-1. Verify CSV exists at `/frontend/public/thad_requests_table.csv`
+1. Verify CSV exists at `/frontend/public/requests_table.csv`
 2. Check CSV format matches expected columns
 3. Ensure no malformed CSV data (quotes, commas in content)
 
@@ -1933,10 +2148,10 @@ docker-compose.yml defaults:
 **Verification Steps**:
 ```bash
 # 1. Check environment variables in running containers
-docker exec thad-chat-frontend printenv | grep VITE_API_URL
+docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
 # Should show: VITE_API_URL=http://localhost:3011/api
 
-docker exec thad-chat-backend printenv | grep FRONTEND_URL
+docker exec support-billing-tracker-backend printenv | grep FRONTEND_URL
 # Should show: FRONTEND_URL=http://localhost:5173
 
 # 2. Test CORS headers
@@ -2019,12 +2234,12 @@ The frontend now automatically detects 403 errors and redirects to login:
 **Verification Steps**:
 ```bash
 # 1. Check JWT configuration in backend
-docker exec thad-chat-backend printenv | grep JWT
+docker exec support-billing-tracker-backend printenv | grep JWT
 # Should show: JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN
 
 # 2. Verify user exists in database
-docker exec -it thad-chat-mysql mysql -u root -p
-> USE thad_chat;
+docker exec -it support-billing-tracker-mysql mysql -u root -p
+> USE support_billing_tracker;
 > SELECT id, email, role FROM users;
 # Should show at least one admin user
 
@@ -2098,11 +2313,11 @@ If you want to avoid re-login after every restart, implement refresh tokens:
 3. **Verify Environment Variables**:
    ```bash
    # Check frontend env vars
-   docker exec thad-chat-frontend printenv | grep VITE_API_URL
+   docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
    # Expected: VITE_API_URL=http://localhost:3011/api
 
    # Check backend env vars
-   docker exec thad-chat-backend printenv | grep PORT
+   docker exec support-billing-tracker-backend printenv | grep PORT
    # Expected: PORT=3011
 
    # Test API health
@@ -2154,7 +2369,7 @@ docker-compose --env-file .env.docker up -d
 curl http://localhost:3011/api/health
 
 # Should show correct values
-docker exec thad-chat-frontend printenv | grep VITE
+docker exec support-billing-tracker-frontend printenv | grep VITE
 ```
 
 **Configuration Checklist**:
@@ -2190,7 +2405,7 @@ docker exec thad-chat-frontend printenv | grep VITE
 ### For New Data Processing:
 1. Export messages from iMessage database:
    ```bash
-   python3 export_imessages.py chat-backup.db [chat_id] [start_date] [end_date] data/01_raw/thad_messages_export.csv
+   python3 export_imessages.py chat-backup.db [chat_id] [start_date] [end_date] data/01_raw/messages_export.csv
    ```
 2. Clean the exported messages:
    ```bash
@@ -2198,7 +2413,7 @@ docker exec thad-chat-frontend printenv | grep VITE
    ```
 3. Extract requests from cleaned data:
    ```bash
-   cd thad-request-extractor && python3 main.py
+   cd request-extractor && python3 main.py
    ```
 4. Configure Twenty CRM API (if using):
    ```bash

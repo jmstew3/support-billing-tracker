@@ -19,7 +19,7 @@ class RequestExtractor:
     def load_data(self):
         """Load the CSV file into a pandas DataFrame."""
         self.df = pd.read_csv(self.csv_path)
-        # Filter for Thad's messages only (handle both 'Thad Norman' and 'Them' formats)
+        # Filter for support agent messages (handle multiple sender formats)
         self.df = self.df[
             ((self.df['sender'] == 'Thad Norman') | (self.df['sender'] == 'Them')) &
             (self.df['message_text'].notna())
@@ -34,7 +34,7 @@ class RequestExtractor:
         self.df['time'] = self.df['datetime'].dt.strftime('%I:%M %p').str.lstrip('0')
         self.df['month'] = self.df['datetime'].dt.to_period('M')
         
-        print(f"Loaded {len(self.df)} messages from Thad Norman")
+        print(f"Loaded {len(self.df)} support agent messages")
         
     def extract_urgency(self, text: str) -> str:
         """Determine urgency level from message text."""

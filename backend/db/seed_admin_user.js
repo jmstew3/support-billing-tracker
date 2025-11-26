@@ -26,7 +26,6 @@ async function seedAdminUser() {
     );
 
     if (existing.length > 0) {
-      console.log('✅ Admin user already exists:', email);
       return;
     }
 
@@ -39,13 +38,7 @@ async function seedAdminUser() {
       [email, password_hash, 'admin', true]
     );
 
-    console.log('✅ Admin user created successfully');
-    console.log('   Email:', email);
-    console.log('   Password:', password);
-    console.log('   User ID:', result.insertId);
-    console.log('\n⚠️  Please change the default password after first login!');
   } catch (error) {
-    console.error('❌ Error seeding admin user:', error);
     throw error;
   } finally {
     await pool.end();

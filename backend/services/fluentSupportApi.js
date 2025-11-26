@@ -39,9 +39,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
     const baseUrl = FLUENT_API_URL.replace(/\/$/, ''); // Remove trailing slash
     const endpoint = `${baseUrl}/wp-json/fluent-support/v2/tickets`;
 
-    console.log(`[FluentSupport] Fetching tickets from: ${endpoint}`);
-    console.log(`[FluentSupport] Date filter: created_at >= ${dateFilter}`);
-
     // FluentSupport API may support pagination
     let allTickets = [];
     let page = 1;
@@ -50,15 +47,11 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
 
     while (hasMore) {
       const url = `${endpoint}?per_page=${perPage}&page=${page}`;
-      console.log(`[FluentSupport] Fetching page ${page}...`);
 
       const response = await axios.get(url, {
         headers,
         timeout: 30000 // 30 second timeout
       });
-
-      console.log(`[FluentSupport] Response data type:`, typeof response.data);
-      console.log(`[FluentSupport] Response data keys:`, response.data ? Object.keys(response.data) : 'null');
 
       let tickets = [];
       if (Array.isArray(response.data)) {
@@ -76,8 +69,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
         tickets = response.data.data;
       }
 
-      console.log(`[FluentSupport] Parsed ${tickets.length} tickets from response`);
-
       if (tickets.length === 0) {
         hasMore = false;
       } else {
@@ -93,8 +84,6 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
 
         allTickets = allTickets.concat(filteredTickets);
 
-        console.log(`[FluentSupport] Page ${page}: ${tickets.length} total, ${filteredTickets.length} after date filter`);
-
         // Check if we should continue pagination
         if (tickets.length < perPage) {
           hasMore = false;
@@ -104,15 +93,9 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
       }
     }
 
-    console.log(`[FluentSupport] Total tickets fetched: ${allTickets.length} (after date filter: ${dateFilter})`);
     return allTickets;
 
   } catch (error) {
-    console.error('[FluentSupport] Error fetching tickets:', error.message);
-    if (error.response) {
-      console.error('[FluentSupport] Response status:', error.response.status);
-      console.error('[FluentSupport] Response data:', error.response.data);
-    }
     throw new Error(`FluentSupport API error: ${error.message}`);
   }
 }
@@ -138,14 +121,11 @@ export async function fetchFluentTicket(ticketId) {
     const baseUrl = FLUENT_API_URL.replace(/\/$/, '');
     const url = `${baseUrl}/wp-json/fluent-support/v2/ticket/${ticketId}`;
 
-    console.log(`[FluentSupport] Fetching ticket ${ticketId}...`);
-
     const response = await axios.get(url, { headers });
 
     return response.data;
 
   } catch (error) {
-    console.error(`[FluentSupport] Error fetching ticket ${ticketId}:`, error.message);
     throw new Error(`FluentSupport API error: ${error.message}`);
   }
 }
@@ -240,14 +220,39 @@ function parseFluentSupportHTML(htmlContent) {
  * @returns {Object} Request data object for database insertion
  */
 export function transformFluentTicket(ticket) {
-  // Map FluentSupport priority to internal urgency
+  /**
+   * Map FluentSupport priority to internal urgency level
+   * FluentSupport priorities: critical, high, urgent, medium, normal, low
+   * Our urgency levels: HIGH, MEDIUM, LOW
+   * @param {string} priority - The priority from FluentSupport
+   * @returns {string} The mapped urgency level
+   */
   const mapPriority = (priority) => {
-    if (!priority) return 'MEDIUM';
+    if (!priority) {
+      console.log('[FluentSupport] No priority provided, defaulting to MEDIUM');
+      return 'MEDIUM';
+    }
 
-    const p = priority.toLowerCase();
-    if (p === 'critical' || p === 'high' || p === 'urgent') return 'HIGH';
-    if (p === 'medium' || p === 'normal') return 'MEDIUM';
-    return 'LOW';
+    // Case-insensitive matching with trimming
+    const normalizedPriority = priority.toString().trim().toLowerCase();
+
+    // Map FluentSupport priority values to our urgency levels
+    if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency HIGH`);
+      return 'HIGH';
+    }
+    if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency MEDIUM`);
+      return 'MEDIUM';
+    }
+    if (normalizedPriority === 'low') {
+      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency LOW`);
+      return 'LOW';
+    }
+
+    // Unknown priority value - log warning and default to MEDIUM
+    console.warn(`[FluentSupport] Unknown priority "${priority}" - defaulting to MEDIUM`);
+    return 'MEDIUM';
   };
 
   // Estimate effort based on urgency
@@ -264,6 +269,73 @@ export function transformFluentTicket(ticket) {
   };
 
   const urgency = mapPriority(ticket.priority);
+
+  /**
+   * Validate category against frontend CATEGORY_OPTIONS
+   * Valid categories: Advisory, Email, Forms, General, Hosting, Migration, Non-billable, Scripts, Support, Website
+   * @param {string} category - The category to validate
+   * @returns {string} The validated category or 'Support' fallback
+   */
+  const validateCategory = (category) => {
+    const validCategories = [
+      'Advisory',
+      'Email',
+      'Forms',
+      'General',
+      'Hosting',
+      'Migration',
+      'Non-billable',
+      'Scripts',
+      'Support',
+      'Website'
+    ];
+
+    if (validCategories.includes(category)) {
+      return category;
+    }
+
+    console.warn(`[FluentSupport] Invalid category "${category}" - not in CATEGORY_OPTIONS, defaulting to Support`);
+    return 'Support';
+  };
+
+  /**
+   * Map FluentSupport product title to internal category
+   * @param {string} productTitle - The product title from FluentSupport
+   * @returns {string} The mapped category for our application
+   */
+  const mapFluentCategory = (productTitle) => {
+    if (!productTitle) {
+      console.log('[FluentSupport] No product title provided, defaulting to Support');
+      return 'Support';
+    }
+
+    // Normalize case: "support" → "Support", "HOSTING" → "Hosting"
+    const normalizedTitle = productTitle.trim();
+    const capitalizedTitle = normalizedTitle.charAt(0).toUpperCase() + normalizedTitle.slice(1).toLowerCase();
+
+    const mapping = {
+      'Support': 'Support',      // Direct match
+      'Hosting': 'Hosting',      // Direct match
+      'Migration': 'Migration',  // Direct match
+      'Website': 'Website',      // Direct match
+      'Project': 'General',      // Map Project to General category
+      'General': 'General',      // Direct match
+      'Email': 'Email',          // Direct match
+      'Forms': 'Forms',          // Direct match
+      'Scripts': 'Scripts',      // Direct match
+      'Advisory': 'Advisory',    // Direct match
+    };
+
+    const mappedCategory = mapping[capitalizedTitle];
+
+    if (!mappedCategory) {
+      console.warn(`[FluentSupport] Unknown product "${productTitle}" (normalized: "${capitalizedTitle}") - defaulting to Support`);
+      return validateCategory('Support');
+    }
+
+    console.log(`[FluentSupport] Mapping product "${productTitle}" → category "${mappedCategory}"`);
+    return validateCategory(mappedCategory);
+  };
 
   // Parse creation date
   const createdAt = ticket.created_at || ticket.created_date || ticket.date_created;
@@ -293,7 +365,7 @@ export function transformFluentTicket(ticket) {
     date,
     time,
     request_type: 'Fluent Ticket',
-    category: 'Support', // Default category, can be customized based on ticket.product or ticket.tags
+    category: mapFluentCategory(ticket.product?.title),
     description,
     urgency,
     effort: estimateEffort(urgency),
@@ -314,7 +386,7 @@ export function transformFluentTicket(ticket) {
       mailbox_id: ticket.mailbox_id,
       priority: ticket.priority,
       product_id: ticket.product_id,
-      product_name: ticket.product?.name || ticket.product_name,
+      product_name: ticket.product?.title || ticket.product_name,
       agent_id: ticket.agent_id,
       agent_name: ticket.agent?.name || ticket.agent_name,
       raw_data: ticket

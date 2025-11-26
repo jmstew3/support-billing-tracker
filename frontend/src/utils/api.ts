@@ -5,13 +5,6 @@ const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
   ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
   : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
 
-console.log('API Configuration:', {
-  hostname: window.location.hostname,
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  API_BASE_URL,
-  env: import.meta.env
-});
-
 /**
  * Get authorization headers with JWT token
  */
@@ -107,7 +100,6 @@ export async function fetchRequests(filters?: {
     if (filters?.endDate) params.append('endDate', filters.endDate);
 
     const url = `${API_BASE_URL}/requests?${params.toString()}`;
-    console.log('Fetching requests from:', url);
     const response = await authenticatedFetch(url);
 
     if (!response.ok) {
@@ -115,7 +107,6 @@ export async function fetchRequests(filters?: {
     }
 
     const data = await response.json();
-    console.log('Fetched', data.length, 'requests from API');
     return data.map(transformDbRow);
   } catch (error) {
     console.error('Error fetching requests:', error);
@@ -137,8 +128,6 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
       estimated_hours: updates.EstimatedHours
     };
 
-    console.log(`API updateRequest - Sending update for ID ${id}:`, payload);
-
     const response = await authenticatedFetch(`${API_BASE_URL}/requests/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
@@ -149,8 +138,6 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
       console.error(`API updateRequest - Server error: ${response.status} ${response.statusText}`, errorText);
       throw new Error(`Failed to update request: ${response.statusText}`);
     }
-
-    console.log(`API updateRequest - Successfully updated request ${id}`);
   } catch (error) {
     console.error('Error updating request:', error);
     throw error;
@@ -296,16 +283,13 @@ export async function checkAPIHealth(): Promise<boolean> {
   try {
     // Use public /health endpoint (not /api/health which requires JWT)
     const healthUrl = API_BASE_URL.replace('/api', '') + '/health';
-    console.log('Checking API health at:', healthUrl);
     const response = await fetch(healthUrl, {
       method: 'GET',
       mode: 'cors',
     });
-    console.log('API health response:', response.status, response.ok);
     return response.ok;
   } catch (error) {
     console.error('API health check failed:', error);
-    console.error('API_BASE_URL was:', API_BASE_URL);
     return false;
   }
 }

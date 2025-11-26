@@ -56,7 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await refreshToken();
       }
     } catch (error) {
-      console.error('Error fetching user info:', error);
       // Clear invalid tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -116,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ refreshToken: refreshTokenValue })
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      // Logout failed
     }
 
     // Clear local storage and state
@@ -153,7 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch updated user info
       await fetchUserInfo();
     } catch (error) {
-      console.error('Token refresh error:', error);
       // Clear invalid tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');

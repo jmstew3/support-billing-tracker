@@ -1,4 +1,4 @@
-# Thad-Chat Request Analysis Dashboard
+# Support Billing Tracker
 
 A comprehensive business intelligence dashboard that processes iMessage conversation data to extract, categorize, and analyze support requests. The application transforms raw chat messages into structured business insights through an ETL pipeline and provides an interactive React dashboard for data visualization and management.
 
@@ -29,7 +29,7 @@ docker-compose --env-file .env.docker up -d
 
 3. **Import existing data** (if you have CSV data):
 ```bash
-./docker-import.sh data/03_final/thad_requests_table.csv
+./docker-import.sh data/03_final/requests_table.csv
 ```
 
 4. **Access the dashboard**:
@@ -43,7 +43,7 @@ See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
 1. **Export messages from iMessage database**:
 ```bash
-python3 export_imessages.py chat-backup.db 2251 2025-05-01 2025-09-15 data/01_raw/thad_messages_export.csv
+python3 export_imessages.py chat-backup.db 2251 2025-05-01 2025-09-15 data/01_raw/messages_export.csv
 ```
 
 2. **Clean and preprocess messages**:
@@ -54,7 +54,7 @@ python3 data_preprocessor.py
 
 3. **Extract business requests**:
 ```bash
-cd thad-request-extractor
+cd request-extractor
 python3 main.py
 ```
 
@@ -214,7 +214,7 @@ Check the sync status:
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec thad-chat-mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat \
+docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
   -e "SELECT COUNT(*) as total, MIN(date) as earliest, MAX(date) as latest FROM requests WHERE date >= '2025-10-17';"
 ```
 
@@ -270,7 +270,7 @@ For detailed sync documentation, see [CLAUDE.md](./CLAUDE.md#fluentsupport-sync-
 ## 📁 Project Structure
 
 ```
-thad-chat/
+support-billing-tracker/
 ├── backend/                # Express.js API server
 │   ├── db/                        # Database configuration
 │   │   └── schema.sql             # MySQL schema definition
@@ -297,15 +297,81 @@ thad-chat/
 │   └── public/                    # Static assets
 ├── src/                    # Python ETL pipeline
 │   ├── data_preprocessor.py       # Data cleaning
-│   └── thad-request-extractor/    # Request extraction
+│   └── request-extractor/         # Request extraction
 ├── data/                   # Data pipeline directories
 │   ├── 01_raw/                    # Raw iMessage exports
 │   ├── 02_processed/              # Cleaned messages
 │   └── 03_final/                  # Production data
+├── archive/                # Historical scripts and tools
+│   ├── migrations/                # Completed one-time migration scripts
+│   ├── diagnostics/               # Debugging and diagnostic tools
+│   └── legacy/                    # Obsolete or deprecated scripts
+├── instructions/           # Documentation and guides
+│   └── *.md                       # Various documentation files
 ├── docker-compose.yml      # Docker orchestration
 ├── docker-import.sh        # Data import script
 └── CLAUDE.md              # Comprehensive documentation
 ```
+
+## 📂 Archive Folder Structure
+
+The `archive/` directory contains historical scripts and tools that are no longer actively used but are preserved for reference. This helps keep the project root clean while maintaining access to potentially useful code and documentation.
+
+### Archive Subdirectories
+
+#### `/archive/migrations/`
+**Purpose**: Completed one-time migration scripts that have already been executed
+
+**Current Contents**:
+- `migrate-invoice-status-data.py` - Migrated Twenty CRM invoice statuses (completed Sept 30, 2025)
+- `update-invoice-status-enum.py` - Updated Twenty CRM field metadata (completed Sept 30, 2025)
+
+**When to Archive Here**: Place migration scripts here after they've been successfully run in production and are no longer needed for regular operations.
+
+#### `/archive/diagnostics/`
+**Purpose**: Debugging and diagnostic tools used to investigate or fix issues
+
+**Current Contents**:
+- `test_truncation.py` - Diagnostic script that identified text truncation bug in CSV output
+
+**When to Archive Here**: Move diagnostic scripts here after the issue has been resolved but the script might be useful for similar future debugging.
+
+#### `/archive/legacy/`
+**Purpose**: Obsolete or deprecated scripts that have been replaced by newer implementations
+
+**Current Contents**: Currently empty (obsolete files were deleted rather than archived)
+
+**When to Archive Here**: Place old versions of scripts here when they've been completely replaced by new implementations but you want to keep them for historical reference.
+
+### Archive Usage Guidelines
+
+1. **Before Archiving**: Ensure the script is truly no longer needed for active operations
+2. **Documentation**: Add comments to archived scripts explaining why they were archived and when
+3. **Recovery**: Scripts can be moved back to active directories if needed in the future
+4. **Security**: Review archived scripts for hardcoded credentials before committing
+
+## 📚 Instructions Folder
+
+The `instructions/` directory contains all technical documentation and guides that were previously scattered throughout the project root. This centralized approach keeps the root directory clean while making documentation easy to find.
+
+**Contents Include**:
+- Technical setup guides (Docker, MySQL, migration)
+- Integration documentation (Twenty CRM, FluentSupport, n8n)
+- Development plans and progress tracking
+- Architecture and refactoring documentation
+- Mobile optimization and UI/UX guides
+- Testing checklists and debugging instructions
+
+**Key Files**:
+- `DOCKER.md` - Docker setup and configuration
+- `MYSQL_SETUP.md` - Database configuration guide
+- `TWENTY_INTEGRATION.md` - Twenty CRM API integration details
+- `authentication-plan.md` - Future authentication implementation roadmap
+- `mobile-optimization.md` - Mobile responsiveness documentation
+
+**Note**: The main project documentation remains in the root:
+- `README.md` (this file) - Project overview and quick start
+- `CLAUDE.md` - Comprehensive technical documentation
 
 ## 🔧 Features
 
@@ -511,14 +577,14 @@ Host: 127.0.0.1 or localhost
 Port: 3307 (not 3306)
 User: ***REMOVED***
 Password: [from .env.docker]
-Database: thad_chat
+Database: support_billing_tracker
 ```
 
 **Via MySQL Command Line**:
 ```bash
 mysql -h localhost -P 3307 -u ***REMOVED*** -p
 # Enter password from .env.docker
-USE thad_chat;
+USE support_billing_tracker;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
 
@@ -531,7 +597,7 @@ SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 
 **Import CSV to Database**:
 ```bash
-./docker-import.sh data/03_final/thad_requests_table.csv
+./docker-import.sh data/03_final/requests_table.csv
 ```
 
 **Export Database to CSV**:
@@ -543,12 +609,12 @@ curl http://localhost:3011/api/export-csv > export.csv
 
 **Backup Database**:
 ```bash
-docker exec thad-chat-mysql mysqldump -u root -prootpassword thad_chat > backup.sql
+docker exec support-billing-tracker-mysql mysqldump -u root -prootpassword support_billing_tracker > backup.sql
 ```
 
 **Restore Database**:
 ```bash
-docker exec -i thad-chat-mysql mysql -u root -prootpassword thad_chat < backup.sql
+docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword support_billing_tracker < backup.sql
 ```
 
 ## 🔧 Troubleshooting
@@ -594,11 +660,11 @@ curl http://localhost:3011/api/health
 **Verification After Restart**:
 ```bash
 # Check backend is on correct port
-docker exec thad-chat-backend printenv | grep PORT
+docker exec support-billing-tracker-backend printenv | grep PORT
 # Expected: PORT=3011
 
 # Check frontend has correct API URL
-docker exec thad-chat-frontend printenv | grep VITE_API_URL
+docker exec support-billing-tracker-frontend printenv | grep VITE_API_URL
 # Expected: VITE_API_URL=http://localhost:3011/api
 
 # Test API health

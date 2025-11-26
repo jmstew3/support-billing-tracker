@@ -3,7 +3,7 @@
 -- Date: 2025-10-08
 -- Description: Adds missing source and website_url columns to requests table
 
-USE thad_chat;
+USE support_billing_tracker;
 
 -- Add source column if it doesn't exist
 ALTER TABLE requests

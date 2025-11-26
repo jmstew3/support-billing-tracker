@@ -2,12 +2,12 @@
 -- Date: 2025-10-01
 -- Description: Adds boolean flag column to support row flagging feature
 
-USE thad_chat;
+USE support_billing_tracker;
 
 -- Add is_flagged column to existing requests table (check if column doesn't exist first)
 SET @column_exists = (SELECT COUNT(*)
                       FROM INFORMATION_SCHEMA.COLUMNS
-                      WHERE TABLE_SCHEMA = 'thad_chat'
+                      WHERE TABLE_SCHEMA = 'support_billing_tracker'
                       AND TABLE_NAME = 'requests'
                       AND COLUMN_NAME = 'is_flagged');
 
@@ -21,7 +21,7 @@ DEALLOCATE PREPARE stmt;
 -- Add index for better query performance (check if index doesn't exist first)
 SET @index_exists = (SELECT COUNT(*)
                      FROM INFORMATION_SCHEMA.STATISTICS
-                     WHERE TABLE_SCHEMA = 'thad_chat'
+                     WHERE TABLE_SCHEMA = 'support_billing_tracker'
                      AND TABLE_NAME = 'requests'
                      AND INDEX_NAME = 'idx_is_flagged');
 

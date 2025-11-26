@@ -108,8 +108,6 @@ export function calculateFinancialSummary(projects: Project[]): FinancialSummary
 export async function fetchProjects(depth: number = 1): Promise<Project[]> {
   // Return empty array if mock mode (no more mock data)
   if (USE_MOCK) {
-    console.log('Mock mode enabled (VITE_TWENTY_USE_MOCK=true) - returning empty array');
-    console.log('Set VITE_TWENTY_USE_MOCK=false to use live API');
     return [];
   }
 
@@ -118,8 +116,6 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
     const url = TWENTY_API_URL.includes('?')
       ? `${TWENTY_API_URL}&depth=${depth}&limit=200`
       : `${TWENTY_API_URL}?depth=${depth}&limit=200`;
-
-    console.log('Fetching projects from proxy:', url);
 
     // Use authenticatedFetch to include JWT token
     const response = await authenticatedFetch(url, {
@@ -133,11 +129,6 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
     }
 
     const data = await response.json();
-    console.log('Twenty API Response Structure:', {
-      hasData: !!data.data,
-      hasProjects: !!data.data?.projects,
-      projectCount: data.data?.projects?.length || 0,
-    });
 
     // Handle the nested response structure from Twenty API
     let rawProjects: any[] = [];
@@ -146,15 +137,12 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
       if (data.data && data.data.projects) {
         // GraphQL-style response: { data: { projects: [...] } }
         rawProjects = data.data.projects;
-        console.log(`✓ Loaded ${rawProjects.length} projects from Twenty CRM`);
       } else if (data.items) {
         // Paginated response: { items: [...] }
         rawProjects = data.items;
-        console.log(`✓ Loaded ${rawProjects.length} projects (paginated)`);
       } else if (Array.isArray(data)) {
         // Direct array response
         rawProjects = data;
-        console.log(`✓ Loaded ${rawProjects.length} projects (direct array)`);
       } else {
         console.warn('Unexpected response structure:', Object.keys(data));
         rawProjects = [];

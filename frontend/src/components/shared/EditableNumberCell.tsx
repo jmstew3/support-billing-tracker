@@ -49,7 +49,6 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
 
   const handleSave = () => {
     const numValue = parseFloat(editValue);
-    console.log(`EditableNumberCell - Attempting to save: ${editValue} -> ${numValue}`);
 
     // Validate the value
     if (!isNaN(numValue) && numValue >= min && numValue <= max) {
@@ -62,12 +61,9 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
         // Otherwise round to nearest 0.25 increment
         roundedValue = roundToQuarterHour(numValue);
       }
-      console.log(`EditableNumberCell - Rounding ${numValue} to ${roundedValue} (nearest 0.25 increment)`);
-      console.log(`EditableNumberCell - Valid value, calling onSave with: ${roundedValue}`);
       onSave(roundedValue);
       setIsEditing(false);
     } else {
-      console.warn(`EditableNumberCell - Invalid value: ${numValue} (min: ${min}, max: ${max})`);
       // Reset to original value if invalid
       setEditValue(value.toFixed(2));
       setIsEditing(false);

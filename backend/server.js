@@ -10,6 +10,7 @@ import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
 import { authenticateToken } from './middleware/auth.js';
+import { conditionalAuth } from './middleware/conditionalAuth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,11 +50,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Auth routes MUST come first and are NOT protected (to allow login)
 app.use('/api/auth', authRoutes);
 
-// All other API routes require JWT authentication
-app.use('/api', authenticateToken, requestRoutes);
-app.use('/api/twenty', authenticateToken, twentySyncRoutes);
-app.use('/api/fluent', authenticateToken, fluentSyncRoutes);
-app.use('/api/twenty-proxy', authenticateToken, twentyProxyRoutes);
+// All other API routes use conditional authentication
+// (BasicAuth in production via Traefik, JWT for direct API access)
+app.use('/api', conditionalAuth, requestRoutes);
+app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
+app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
+app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

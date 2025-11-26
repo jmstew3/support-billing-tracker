@@ -57,9 +57,6 @@ export async function fetchSupportTickets(depth: number = 1): Promise<SupportTic
       ? `${TWENTY_API_URL}?depth=${depth}`
       : `${TWENTY_API_URL}/rest/supportTicket?depth=${depth}`;
 
-    console.log('Fetching tickets from:', url);
-    console.log('Request headers:', headers);
-
     const response = await fetch(url, {
       method: 'GET',
       headers,
@@ -73,7 +70,6 @@ export async function fetchSupportTickets(depth: number = 1): Promise<SupportTic
     }
 
     const data = await response.json();
-    console.log('Twenty API Raw Response:', data);
 
     // Handle the nested response structure from Twenty API
     let tickets: SupportTicket[] = [];
