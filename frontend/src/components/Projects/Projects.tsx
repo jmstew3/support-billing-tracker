@@ -19,10 +19,10 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter states - hard-coded to READY invoice status for billing focus
+  // Filter states - shows billable projects (READY, INVOICED, PAID)
   const [filters, setFilters] = useState<ProjectFilters>({
     hostingStatus: 'ALL',
-    invoiceStatus: 'READY', // Hard-coded for billing reconciliation
+    invoiceStatus: 'BILLABLE', // Shows Ready, Invoiced, and Paid projects
     projectCategory: 'ALL',
     searchQuery: '',
   });
@@ -46,11 +46,11 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
     }
   };
 
-  // Filter projects to only show READY status (billing reconciliation focus)
+  // Filter projects to show billable statuses (READY, INVOICED, PAID)
   const readyProjects = useMemo(() => {
     return projects.filter((project) => {
-      // Only show ready invoices (ready to invoice)
-      if (project.invoiceStatus !== 'READY') {
+      // Show Ready, Invoiced, and Paid projects (exclude Not Ready)
+      if (!['READY', 'INVOICED', 'PAID'].includes(project.invoiceStatus)) {
         return false;
       }
 

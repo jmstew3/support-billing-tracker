@@ -208,11 +208,11 @@ function transformRequestsToTickets(requests: ChatRequest[]): BillableTicket[] {
 
 /**
  * Transform Projects into BillableProjects
- * Only includes READY status projects (ready to invoice)
+ * Includes all billable statuses: READY, INVOICED, and PAID
  */
 function transformProjectsToBillable(projects: Project[]): BillableProject[] {
   return projects
-    .filter((proj) => proj.invoiceStatus === 'READY')
+    .filter((proj) => ['READY', 'INVOICED', 'PAID'].includes(proj.invoiceStatus))
     .map((proj) => ({
       id: proj.id,
       name: proj.name,
