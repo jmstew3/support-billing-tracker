@@ -18,6 +18,8 @@ import { CategoryDistributionChart } from './CategoryDistributionChart'
 import { SupportChartsSection } from './sections/SupportChartsSection'
 import { SupportTableSection } from './sections/SupportTableSection'
 import { ArchivedRequestsSection } from './sections/ArchivedRequestsSection'
+import { FluentSyncButton } from './FluentSyncButton'
+import { FluentSyncStatus } from './FluentSyncStatus'
 
 // Hooks
 import { usePeriod } from '../../contexts/PeriodContext'
@@ -55,8 +57,6 @@ interface SupportTicketsProps {
 }
 
 export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
-  console.log('SupportTickets component mounting...')
-
   // ============================================================
   // STATE MANAGEMENT
   // ============================================================
@@ -123,6 +123,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const scrollPositionRef = useRef<number>(0)
   const shouldPreserveScrollRef = useRef<boolean>(false)
 
+  // FluentSupport sync state
+  const [syncRefreshTrigger, setSyncRefreshTrigger] = useState(0)
+
   // ============================================================
   // DATA HOOK - Centralized data management
   // ============================================================
@@ -138,7 +141,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     archivedRequests,
     startIndex,
     endIndex,
-    totalPages
+    totalPages,
+    reloadData
   } = useSupportData({
     selectedYear,
     selectedMonth,
@@ -543,7 +547,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        console.error('Failed to bulk update requests:', error)
+        // Bulk update failed
       }
     } else {
       // Local-only mode: apply updates directly
@@ -566,12 +570,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // ============================================================
 
   const updateRequest = async (index: number, field: string, value: any) => {
-    console.log(`Updating request ${index}, field: ${field}, value:`, value)
-
     if (apiAvailable) {
       const request = requests[index]
       if (!request || !request.id) {
-        console.error('Request or request ID not found')
         return
       }
 
@@ -584,7 +585,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        console.error('Failed to update request:', error)
+        // Update failed
       }
     } else {
       setRequests(prevRequests => {
@@ -618,7 +619,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           )
         )
       } catch (error) {
-        console.error('Failed to delete request:', error)
+        // Delete failed
       }
     } else {
       setRequests(prevRequests =>
@@ -645,8 +646,20 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         )
       )
     } catch (error) {
-      console.error('Failed to restore request:', error)
+      // Restore failed
     }
+  }
+
+  // ============================================================
+  // EVENT HANDLERS - FluentSupport Sync
+  // ============================================================
+
+  const handleSyncComplete = async () => {
+    // Reload request data to include new FluentSupport tickets
+    await reloadData()
+
+    // Trigger refresh of sync status component
+    setSyncRefreshTrigger(prev => prev + 1)
   }
 
   // ============================================================
@@ -675,6 +688,12 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         showViewToggle={true}
         viewOptions={['all', 'month', 'day']}
         onToggleMobileMenu={onToggleMobileMenu}
+        rightControls={
+          <FluentSyncButton
+            onSyncComplete={handleSyncComplete}
+            className="flex"
+          />
+        }
       />
 
       {/* Main Content Container */}
@@ -687,6 +706,12 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             totalActiveCount={requests.filter(r => r.Status === 'active').length}
             costs={filteredCosts}
             activityMetrics={activityMetrics}
+          />
+
+          {/* FluentSupport Sync Status */}
+          <FluentSyncStatus
+            refreshTrigger={syncRefreshTrigger}
+            className="max-w-2xl"
           />
 
           {/* Cost Tracker */}

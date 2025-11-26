@@ -17,8 +17,6 @@ router.post('/sync', async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    console.log('[FluentSupport Sync] Starting sync process...');
-
     // Get date filter from request or use default
     const dateFilter = req.body.dateFilter || process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
 
@@ -29,11 +27,8 @@ router.post('/sync', async (req, res) => {
     );
     const syncId = syncResult.insertId;
 
-    console.log(`[FluentSupport Sync] Sync ID: ${syncId}, Date Filter: ${dateFilter}`);
-
     // Fetch tickets from FluentSupport API
     const tickets = await fetchFluentTickets(dateFilter);
-    console.log(`[FluentSupport Sync] Fetched ${tickets.length} tickets from API`);
 
     let ticketsAdded = 0;
     let ticketsUpdated = 0;
@@ -45,7 +40,6 @@ router.post('/sync', async (req, res) => {
         const requestData = transformFluentTicket(ticket);
 
         if (!requestData.fluent_id) {
-          console.warn('[FluentSupport Sync] Skipping ticket without ID:', ticket);
           ticketsSkipped++;
           continue;
         }
@@ -60,8 +54,6 @@ router.post('/sync', async (req, res) => {
           // Update existing ticket
           const fluentTicketId = existing[0].id;
           const requestId = existing[0].request_id;
-
-          console.log(`[FluentSupport Sync] Updating ticket ${requestData.fluent_id} (DB ID: ${fluentTicketId})`);
 
           // Update the associated request
           if (requestId) {
@@ -120,8 +112,6 @@ router.post('/sync', async (req, res) => {
 
         } else {
           // Create new request
-          console.log(`[FluentSupport Sync] Creating new ticket ${requestData.fluent_id}`);
-
           const [result] = await connection.query(
             `INSERT INTO requests (date, time, request_type, category, description,
                                   urgency, effort, status, source, website_url)
@@ -178,7 +168,6 @@ router.post('/sync', async (req, res) => {
         }
 
       } catch (ticketError) {
-        console.error(`[FluentSupport Sync] Error processing ticket:`, ticketError);
         ticketsSkipped++;
       }
     }
@@ -196,9 +185,6 @@ router.post('/sync', async (req, res) => {
 
     await connection.commit();
 
-    console.log(`[FluentSupport Sync] Completed successfully in ${duration}ms`);
-    console.log(`[FluentSupport Sync] Fetched: ${tickets.length}, Added: ${ticketsAdded}, Updated: ${ticketsUpdated}, Skipped: ${ticketsSkipped}`);
-
     res.json({
       success: true,
       ticketsFetched: tickets.length,
@@ -210,8 +196,6 @@ router.post('/sync', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[FluentSupport Sync] Error:', error);
-
     if (connection) {
       await connection.rollback();
 
@@ -225,7 +209,7 @@ router.post('/sync', async (req, res) => {
           [error.message]
         );
       } catch (updateError) {
-        console.error('[FluentSupport Sync] Failed to update sync status:', updateError);
+        // Failed to update sync status
       }
     }
 
@@ -272,7 +256,6 @@ router.get('/status', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[FluentSupport Sync] Error fetching status:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -297,7 +280,6 @@ router.get('/tickets', async (req, res) => {
     res.json(tickets);
 
   } catch (error) {
-    console.error('[FluentSupport Sync] Error fetching tickets:', error);
     res.status(500).json({ error: error.message });
   }
 });

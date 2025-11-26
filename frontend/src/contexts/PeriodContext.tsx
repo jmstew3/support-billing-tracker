@@ -107,17 +107,14 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     // Validation
     if (months !== 'all') {
       if (months.length === 0) {
-        console.warn('Cannot set empty month array, using "all" instead');
         setSelectedMonthsState('all');
         setSelectedMonth('all');
         return;
       }
       if (months.length > 12) {
-        console.warn('Cannot select more than 12 months, truncating to first 12');
         months = months.slice(0, 12);
       }
       if (!areMonthsConsecutive(months)) {
-        console.warn('Months must be consecutive, using first month only');
         setSelectedMonthsState([months[0]]);
         setSelectedMonth(months[0]);
         return;

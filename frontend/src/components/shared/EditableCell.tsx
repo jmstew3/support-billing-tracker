@@ -73,15 +73,11 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   };
 
   const handleOptionClick = (newValue: string) => {
-    console.log('EditableCell: Option clicked:', newValue, 'Current value:', value);
     setIsOpen(false); // Close dropdown immediately
     // Use setTimeout to ensure state update happens after DOM update
     setTimeout(() => {
       if (newValue !== value) {
-        console.log('EditableCell: Calling onSave with:', newValue);
         onSave(newValue);
-      } else {
-        console.log('EditableCell: No change needed, values are the same');
       }
     }, 0);
   };

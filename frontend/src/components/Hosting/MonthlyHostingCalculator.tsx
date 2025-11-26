@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Zap, Download } from 'lucide-react';
 import { formatCurrency, formatCurrencyAccounting, formatMonthLabel, formatDate, formatCount } from '../../utils/formatting';
 import { exportHostingData, type HostingExportData } from '../../utils/csvExport';
@@ -222,10 +222,9 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                 const isExpanded = expandedMonths.has(monthData.month);
 
                 return (
-                  <>
+                  <React.Fragment key={monthData.month}>
                     {/* Month Header Row */}
                     <tr
-                      key={`month-${monthData.month}`}
                       className="bg-muted/50 hover:bg-muted/70 cursor-pointer border-b transition-colors"
                       onClick={(e) => {
                         // Prevent toggle when clicking export button
@@ -432,7 +431,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                         </tr>
                       </>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
 

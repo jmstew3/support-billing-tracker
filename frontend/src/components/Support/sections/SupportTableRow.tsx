@@ -139,7 +139,6 @@ export function SupportTableRow({
           value={request.Category || categorizeRequest(request.Request_Summary)}
           options={categoryOptions}
           onSave={(newValue) => {
-            console.log('Category EditableCell onSave called with:', newValue)
             onUpdateRequest(index, 'Category', newValue)
           }}
         />
@@ -155,7 +154,6 @@ export function SupportTableRow({
             value={request.Urgency}
             options={urgencyOptions}
             onSave={(newValue) => {
-              console.log('Urgency EditableCell onSave called with:', newValue)
               onUpdateRequest(index, 'Urgency', newValue)
             }}
             formatDisplayValue={formatUrgencyDisplay}
@@ -172,7 +170,6 @@ export function SupportTableRow({
             value={request.EstimatedHours != null ? request.EstimatedHours : 0.50}
             urgency={request.Urgency}
             onSave={(newValue) => {
-              console.log('Hours EditableNumberCell onSave called with:', newValue)
               onUpdateRequest(index, 'EstimatedHours', newValue)
             }}
           />

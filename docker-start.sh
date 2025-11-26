@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Thad Chat Docker Startup Script
+# Support Billing Tracker Docker Startup Script
 
 set -e
 
-echo "🚀 Starting Thad Chat Application with Docker..."
+echo "🚀 Starting Support Billing Tracker Application with Docker..."
 
 # Load environment variables if .env.docker exists
 if [ -f .env.docker ]; then
@@ -67,4 +67,4 @@ echo "📝 To view logs: docker-compose logs -f [service]"
 echo "🛑 To stop:     docker-compose down"
 echo "🗑️  To reset:    docker-compose down -v"
 echo ""
-echo "✨ Thad Chat is ready!"
+echo "✨ Support Billing Tracker is ready!"

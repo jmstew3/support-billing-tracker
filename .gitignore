@@ -10,6 +10,14 @@ binlog.*
 ib_logfile*
 ibdata*
 
+# SSL Certificates and Private Keys - NEVER commit these!
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
 # SQL Backup and Export Files (root level only)
 /*.sql
 # But keep database schema and migrations
@@ -61,3 +69,6 @@ backend/.env.local.example
 
 # MCP configuration (contains API keys)
 .mcp.json
+
+# Temporary rollback scripts
+rollback*.sh
