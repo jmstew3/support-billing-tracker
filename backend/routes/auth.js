@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -7,6 +8,50 @@ const router = express.Router();
 
 // Store refresh tokens in memory (in production, use Redis or database)
 const refreshTokens = new Set();
+
+// Rate limiting configuration for authentication endpoints
+// Prevents brute force attacks on login
+
+// Strict rate limiter for login endpoint
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window per IP
+  message: {
+    error: 'Too many login attempts. Please try again after 15 minutes.',
+    retryAfter: 15 * 60 // seconds
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: true, // Don't count successful logins against the limit
+  keyGenerator: (req) => {
+    // Use combination of IP and email for more granular rate limiting
+    return `${req.ip}-${req.body?.email || 'unknown'}`;
+  }
+});
+
+// Moderate rate limiter for other auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // 20 requests per window per IP
+  message: {
+    error: 'Too many requests. Please try again later.',
+    retryAfter: 5 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Strict rate limiter for password change
+const passwordChangeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // 3 attempts per hour
+  message: {
+    error: 'Too many password change attempts. Please try again after 1 hour.',
+    retryAfter: 60 * 60
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 /**
  * POST /api/auth/login
@@ -29,7 +74,7 @@ const refreshTokens = new Set();
  *   }
  * }
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -104,7 +149,7 @@ router.post('/login', async (req, res) => {
  *   "message": "Logged out successfully"
  * }
  */
-router.post('/logout', (req, res) => {
+router.post('/logout', authLimiter, (req, res) => {
   const { refreshToken } = req.body;
 
   if (refreshToken) {
@@ -128,7 +173,7 @@ router.post('/logout', (req, res) => {
  *   "accessToken": "eyJhbGciOiJIUzI1NiIs..."
  * }
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authLimiter, async (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
@@ -218,7 +263,7 @@ router.get('/me', authenticateToken, async (req, res) => {
  *   "newPassword": "newpassword"
  * }
  */
-router.post('/change-password', authenticateToken, async (req, res) => {
+router.post('/change-password', passwordChangeLimiter, authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   try {

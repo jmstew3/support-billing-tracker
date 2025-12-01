@@ -25,40 +25,78 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// GET all requests
+// GET all requests with pagination support
 router.get('/requests', async (req, res) => {
   try {
-    const { status = 'active', category, urgency, startDate, endDate } = req.query;
+    const {
+      status = 'active',
+      category,
+      urgency,
+      startDate,
+      endDate,
+      // Pagination parameters
+      limit,
+      offset = 0,
+      cursor // cursor-based pagination (uses id)
+    } = req.query;
 
     let query = 'SELECT * FROM requests WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM requests WHERE 1=1';
     const params = [];
+    const countParams = [];
 
     if (status && status !== 'all') {
       query += ' AND status = ?';
+      countQuery += ' AND status = ?';
       params.push(status);
+      countParams.push(status);
     }
 
     if (category) {
       query += ' AND category = ?';
+      countQuery += ' AND category = ?';
       params.push(category);
+      countParams.push(category);
     }
 
     if (urgency) {
       query += ' AND urgency = ?';
-      params.push(urgency.toUpperCase());
+      countQuery += ' AND urgency = ?';
+      const upperUrgency = urgency.toUpperCase();
+      params.push(upperUrgency);
+      countParams.push(upperUrgency);
     }
 
     if (startDate) {
       query += ' AND date >= ?';
+      countQuery += ' AND date >= ?';
       params.push(startDate);
+      countParams.push(startDate);
     }
 
     if (endDate) {
       query += ' AND date <= ?';
+      countQuery += ' AND date <= ?';
       params.push(endDate);
+      countParams.push(endDate);
     }
 
-    query += ' ORDER BY date DESC, time DESC';
+    // Cursor-based pagination (for infinite scroll / load more)
+    if (cursor) {
+      query += ' AND id < ?';
+      params.push(parseInt(cursor));
+    }
+
+    query += ' ORDER BY date DESC, time DESC, id DESC';
+
+    // Apply limit if provided (pagination mode)
+    const parsedLimit = limit ? parseInt(limit) : null;
+    const parsedOffset = parseInt(offset) || 0;
+
+    if (parsedLimit) {
+      query += ' LIMIT ? OFFSET ?';
+      params.push(parsedLimit, parsedOffset);
+    }
 
     const [rows] = await pool.execute(query, params);
 
@@ -81,7 +119,27 @@ router.get('/requests', async (req, res) => {
       UpdatedAt: row.updated_at
     }));
 
-    res.json(transformedRows);
+    // If pagination is enabled, return with metadata
+    if (parsedLimit) {
+      const [[{ total }]] = await pool.execute(countQuery, countParams);
+      const lastItem = rows[rows.length - 1];
+
+      res.json({
+        data: transformedRows,
+        pagination: {
+          total: parseInt(total),
+          limit: parsedLimit,
+          offset: parsedOffset,
+          hasMore: parsedOffset + transformedRows.length < total,
+          nextCursor: lastItem ? lastItem.id : null,
+          currentPage: Math.floor(parsedOffset / parsedLimit) + 1,
+          totalPages: Math.ceil(total / parsedLimit)
+        }
+      });
+    } else {
+      // Backward compatible: return array directly if no pagination params
+      res.json(transformedRows);
+    }
   } catch (error) {
     console.error('Error fetching requests:', error);
     res.status(500).json({ error: 'Failed to fetch requests' });

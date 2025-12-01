@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { SupportTickets } from './components/Support/SupportTickets';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { SupportTickets } from './features/support/components/SupportTickets';
 import { Sidebar } from './components/shared/Sidebar';
-import { Projects } from './components/Projects/Projects';
-import { TurboHosting } from './components/Hosting/TurboHosting';
-import { Dashboard } from './components/Dashboard/Dashboard';
+import { Projects } from './features/projects/components/Projects';
+import { TurboHosting } from './features/hosting/components/TurboHosting';
+import { Dashboard } from './features/dashboard/components/Dashboard';
 import { ChartInfrastructureTest } from './components/charts/__tests__/BaseBarChart.test';
-import { Login } from './components/auth/Login';
+import { Login } from './features/auth/components/Login';
 import { PeriodProvider } from './contexts/PeriodContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTheme } from './hooks/useTheme';
+import { queryClient } from './lib/queryClient';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -60,9 +62,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
