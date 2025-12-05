@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Calendar as CalendarIcon, X } from "lucide-react";
-import { format, startOfMonth, endOfMonth, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { clsx } from "clsx";
 
@@ -32,7 +32,7 @@ export function DatePickerPopover({
   selectedMonths = 'all',
   selectedDay,
   availableYears,
-  availableMonths,
+  availableMonths: _availableMonths,
   availableDates,
   onYearChange,
   onMonthChange,
@@ -42,9 +42,11 @@ export function DatePickerPopover({
   maxDate,
   enableRangeMode = false,
 }: DatePickerPopoverProps) {
+  // Silence unused variable warnings - these are kept for API compatibility
+  void _availableMonths;
+
   const [isOpen, setIsOpen] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<'calendar' | 'presets' | 'monthRange'>('calendar');
-  const [isRangeModeActive, setIsRangeModeActive] = React.useState(false);
   const [rangeStart, setRangeStart] = React.useState<number | null>(null);
   const popoverRef = React.useRef<HTMLDivElement>(null);
 

@@ -15,7 +15,7 @@ export interface BillableTicket {
   amount: number; // hours × rate (gross amount)
   freeHoursApplied?: number; // Free hours credited to this ticket
   netAmount?: number; // amount - (freeHoursApplied × rate)
-  source: 'sms' | 'ticket' | 'email' | 'phone';
+  source: 'sms' | 'ticket' | 'email' | 'phone' | 'fluent';
 }
 
 /**

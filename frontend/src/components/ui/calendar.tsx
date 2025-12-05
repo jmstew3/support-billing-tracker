@@ -162,7 +162,7 @@ export function Calendar({
                 }
               )}
               aria-label={format(day, "PPPP")}
-              aria-selected={isSelected}
+              aria-selected={isSelected ?? false}
               aria-disabled={isDisabled}
             >
               {format(day, "d")}

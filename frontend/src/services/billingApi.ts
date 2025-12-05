@@ -1,7 +1,8 @@
 import { fetchRequests } from '../utils/api';
 import { fetchProjects, convertMicrosToDollars } from './projectsApi';
 import { fetchWebsiteProperties, generateMonthlyBreakdown } from './hostingApi';
-import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE, FREE_LANDING_PAGES_PER_MONTH, FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_MULTI_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE } from '../config/pricing';
+import { PRICING_CONFIG, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE, FREE_LANDING_PAGES_PER_MONTH, FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORMS_PER_MONTH } from '../config/pricing';
+import { parseTimeToMinutes } from '../shared/utils/time/timeUtils';
 import type {
   MonthlyBillingSummary,
   BillingSummary,
@@ -222,27 +223,6 @@ function transformProjectsToBillable(projects: Project[]): BillableProject[] {
       hostingStatus: proj.hostingStatus || 'INACTIVE',
       amount: convertMicrosToDollars(proj.revenueAmount.amountMicros),
     }));
-}
-
-/**
- * Helper function to parse time string to minutes since midnight
- * Converts "8:47 AM" or "11:30 PM" format to comparable numeric value
- * Used for chronological sorting of tickets within the same day
- */
-function parseTimeToMinutes(time: string): number {
-  const [timePart, period] = time.split(' ');
-  const [hours, minutes] = timePart.split(':').map(Number);
-
-  let totalMinutes = 0;
-  if (period === 'PM' && hours !== 12) {
-    totalMinutes = (hours + 12) * 60 + minutes;
-  } else if (period === 'AM' && hours === 12) {
-    totalMinutes = minutes; // 12 AM is midnight (0:00)
-  } else {
-    totalMinutes = hours * 60 + minutes;
-  }
-
-  return totalMinutes;
 }
 
 /**

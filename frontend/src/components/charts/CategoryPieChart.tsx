@@ -6,12 +6,6 @@ interface CategoryPieChartProps {
   data: CategoryCount[];
 }
 
-// Helper function to get CSS variable value
-const getCSSVariableValue = (variableName: string) => {
-  if (typeof window === 'undefined') return '';
-  return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
-};
-
 // Get colors - using black/grey shades for monochrome design
 const getCategoryColors = (): Record<string, string> => ({
   'Support': '#000000',      // Black (darkest)

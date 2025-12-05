@@ -271,7 +271,7 @@ export interface MonthlyBreakdownExportData {
       name: string;
       billingType: string;
       grossAmount: number;
-      creditAmount: number;
+      creditAmount?: number;
       netAmount: number;
       hostingStart?: string | null;
       hostingEnd?: string | null;
