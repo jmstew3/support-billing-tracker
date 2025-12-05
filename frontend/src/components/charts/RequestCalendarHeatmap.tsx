@@ -18,8 +18,6 @@ export function RequestCalendarHeatmap({ data, isHourlyView, onDateClick, select
 
   // Months per page for responsive design
   const MONTHS_PER_PAGE_DESKTOP = 3;
-  const MONTHS_PER_PAGE_TABLET = 2;
-  const MONTHS_PER_PAGE_MOBILE = 1;
 
   // Group data by month
   const monthlyData = useMemo(() => {

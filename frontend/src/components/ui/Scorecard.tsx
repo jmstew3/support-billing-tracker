@@ -10,11 +10,12 @@ import {
 } from '../../styles/variants/scorecard';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 
-interface ScorecardProps extends ScorecardVariants, ScorecardValueVariants {
+interface ScorecardProps extends Omit<ScorecardVariants, 'size'>, Omit<ScorecardValueVariants, 'size'> {
   title: string;
   value: string | number | React.ReactNode;
   description?: string | React.ReactNode;
   icon?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
   valueClassName?: string;
   titleClassName?: string;
@@ -54,7 +55,7 @@ export const Scorecard = React.forwardRef<HTMLDivElement, ScorecardProps>(
           {icon && <div className="text-muted-foreground opacity-70">{icon}</div>}
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className={cn(scorecardValueVariants({ size: valueSizeMap[size] }), "text-lg font-semibold text-foreground", valueClassName)}>
+          <div className={cn(scorecardValueVariants({ size: valueSizeMap[size || 'md'] }), "text-lg font-semibold text-foreground", valueClassName)}>
             {value}
           </div>
           {description && (

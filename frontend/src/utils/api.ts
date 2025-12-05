@@ -1,9 +1,8 @@
 import type { ChatRequest } from '../types/request';
+import { API_CONFIG } from '../config/apiConfig';
 
-// Use the public API URL when accessing from the domain, otherwise use local
-const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
-  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
+// Use centralized API configuration (single source of truth)
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 /**
  * Get authorization headers with JWT token

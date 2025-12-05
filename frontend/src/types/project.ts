@@ -81,7 +81,7 @@ export interface FinancialSummary {
 // Project filter options
 export interface ProjectFilters {
   hostingStatus: 'ALL' | 'ACTIVE' | 'INACTIVE';
-  invoiceStatus: 'ALL' | 'NOT_READY' | 'READY' | 'INVOICED' | 'PAID';
+  invoiceStatus: 'ALL' | 'NOT_READY' | 'READY' | 'INVOICED' | 'PAID' | 'BILLABLE';
   projectCategory: 'ALL' | 'MIGRATION' | 'LANDING_PAGE' | 'WEBSITE' | 'MULTI_FORM' | 'BASIC_FORM';
   searchQuery: string;
 }

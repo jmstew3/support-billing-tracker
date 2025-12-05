@@ -33,7 +33,6 @@ export function PeriodSelector({ type = 'full', label = 'Period:' }: PeriodSelec
     navigateNext,
     canNavigatePrevious,
     canNavigateNext,
-    getFormattedPeriod,
   } = usePeriod();
 
   // Month names for formatting

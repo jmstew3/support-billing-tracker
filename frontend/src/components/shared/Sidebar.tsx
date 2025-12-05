@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Ticket, FolderKanban, DollarSign, BarChart3, Zap, ChevronLeft, ChevronRight, Menu, X, LogOut } from 'lucide-react';
+import { Ticket, FolderKanban, BarChart3, Zap, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
 import velocityLogo from '../../assets/velocity-logo.png';
@@ -16,7 +16,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   // Close mobile menu when view changes
   useEffect(() => {

@@ -1,5 +1,6 @@
 import type { ChatRequest, DailyRequestCount, CategoryCount, CostCalculation } from '../types/request';
 import { RATES, DEFAULT_HOURS, FREE_HOURS_PER_MONTH, FREE_HOURS_START_DATE } from '../config/pricing';
+import { parseTimeToMinutes } from '../shared/utils/time/timeUtils';
 
 // Request data interface for processed data
 export interface RequestData {
@@ -74,25 +75,6 @@ export function processDailyRequests(requests: ChatRequest[]): DailyRequestCount
   
   console.log('Daily counts sample:', result.slice(0, 3));
   return result;
-}
-
-// Helper function to parse time string to minutes since midnight
-// Converts "8:47 AM" or "11:30 PM" format to comparable numeric value
-// Used for chronological sorting of requests within the same day
-function parseTimeToMinutes(time: string): number {
-  const [timePart, period] = time.split(' ');
-  const [hours, minutes] = timePart.split(':').map(Number);
-
-  let totalMinutes = 0;
-  if (period === 'PM' && hours !== 12) {
-    totalMinutes = (hours + 12) * 60 + minutes;
-  } else if (period === 'AM' && hours === 12) {
-    totalMinutes = minutes; // 12 AM is midnight (0:00)
-  } else {
-    totalMinutes = hours * 60 + minutes;
-  }
-
-  return totalMinutes;
 }
 
 // Process category counts for pie chart

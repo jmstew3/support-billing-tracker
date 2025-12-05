@@ -2,10 +2,13 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import { typographyVariants, type TypographyVariants } from '../../styles/variants/typography';
 
-interface TypographyProps extends TypographyVariants, React.HTMLAttributes<HTMLElement> {
+type ValidHTMLTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'label' | 'small' | 'strong' | 'em' | 'div';
+
+interface TypographyProps extends Omit<TypographyVariants, 'color'>, Omit<React.HTMLAttributes<HTMLElement>, 'color'> {
   children: React.ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  as?: ValidHTMLTag;
   className?: string;
+  color?: TypographyVariants['color'];
 }
 
 export const Typography = React.forwardRef<HTMLElement, TypographyProps>(
@@ -28,7 +31,7 @@ export const Typography = React.forwardRef<HTMLElement, TypographyProps>(
 Typography.displayName = 'Typography';
 
 // Helper function to get default HTML tag based on variant
-function getDefaultTag(variant: TypographyProps['variant']): keyof JSX.IntrinsicElements {
+function getDefaultTag(variant: TypographyProps['variant']): ValidHTMLTag {
   switch (variant) {
     case 'h1':
       return 'h1';

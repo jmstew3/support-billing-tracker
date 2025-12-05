@@ -92,5 +92,6 @@ export const typography = {
 // Utility function to combine typography classes
 export const getTypographyClasses = (preset: keyof typeof typography.components): string => {
   const config = typography.components[preset];
-  return `${config.size} ${config.weight} ${config.tracking || ''}`.trim();
+  const tracking = 'tracking' in config ? config.tracking : '';
+  return `${config.size} ${config.weight} ${tracking}`.trim();
 };

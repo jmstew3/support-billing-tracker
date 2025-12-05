@@ -2,14 +2,11 @@ import type { Project, FinancialSummary, MonthlyRevenue } from '../types/project
 
 // Import authenticatedFetch for JWT token handling
 import { authenticatedFetch } from '../utils/api';
+import { API_CONFIG, ENDPOINTS } from '../config/apiConfig';
 
-// API configuration - Use local backend proxy to avoid CORS issues
-const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
-  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
-
-const TWENTY_API_URL = `${API_BASE_URL}/twenty-proxy/projects`;
-const USE_MOCK = import.meta.env.VITE_TWENTY_USE_MOCK === 'true';
+// Use centralized API configuration (single source of truth)
+const TWENTY_API_URL = ENDPOINTS.PROJECTS;
+const USE_MOCK = API_CONFIG.USE_TWENTY_MOCK;
 
 /**
  * Format currency for display
@@ -167,34 +164,5 @@ export async function fetchProjects(depth: number = 1): Promise<Project[]> {
   }
 }
 
-/**
- * Create a new project in Twenty API
- * @param project Project data to create
- * @returns Created project with ID
- */
-export async function createProject(project: Omit<Project, 'id'>): Promise<Project> {
-  try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (TWENTY_API_TOKEN) {
-      headers['Authorization'] = `Bearer ${TWENTY_API_TOKEN}`;
-    }
-
-    const response = await fetch(`${TWENTY_API_URL}?depth=1`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(project),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create project: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating project:', error);
-    throw error;
-  }
-}
+// createProject function removed - was unused and caused TypeScript errors
+// If needed in future, implement using authenticatedFetch like fetchProjects

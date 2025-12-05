@@ -68,7 +68,7 @@ export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartPro
 
   // Custom label
   const renderCustomizedLabel = ({
-    cx, cy, midAngle, innerRadius, outerRadius, name, value
+    cx, cy, midAngle, outerRadius, name, value
   }: any) => {
     const percentage = ((value / total) * 100).toFixed(1);
 

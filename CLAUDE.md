@@ -125,6 +125,128 @@ See `docs/authentication-plan.md` for detailed roadmap:
 - Use strong passwords for MySQL and BasicAuth
 - Keep Docker images and dependencies updated
 
+### Database Backups
+
+Automated MySQL backup system with rotation and restore capabilities.
+
+#### Backup Scripts Location
+```
+scripts/
+├── backup-mysql.sh    # Creates compressed SQL dumps
+└── restore-mysql.sh   # Restores from backup with safety prompts
+```
+
+#### Backup Storage
+```
+mysql_data_backup/
+├── daily/             # Last 7 days
+├── weekly/            # Last 4 Sundays
+├── monthly/           # Last 12 months (1st of each month)
+├── backup.log         # Operation logs
+└── cron.log           # Cron execution logs
+```
+
+#### Manual Backup Commands
+
+```bash
+# Create a backup (auto-detects type based on date)
+./scripts/backup-mysql.sh
+
+# Force specific backup type
+./scripts/backup-mysql.sh --type daily
+./scripts/backup-mysql.sh --type weekly
+./scripts/backup-mysql.sh --type monthly
+
+# List all existing backups
+./scripts/backup-mysql.sh --list
+```
+
+#### Restore Commands
+
+```bash
+# Interactive restore (shows list, prompts for selection)
+./scripts/restore-mysql.sh
+
+# List available backups
+./scripts/restore-mysql.sh --list
+
+# Restore latest backup of specific type
+./scripts/restore-mysql.sh --latest daily
+./scripts/restore-mysql.sh --latest monthly
+
+# Restore specific file
+./scripts/restore-mysql.sh /path/to/backup.sql.gz
+```
+
+**Safety Features:**
+- Requires typing `RESTORE` to confirm (prevents accidental restores)
+- Handles both `.sql` and `.sql.gz` files
+- Shows backup size and date before confirming
+
+#### Automated Daily Backups (Cron)
+
+Add to your NAS task scheduler or crontab:
+
+```bash
+# Daily backup at 2:00 AM
+0 2 * * * /share/Coding/Docker/support-billing-tracker/scripts/backup-mysql.sh >> /share/Coding/Docker/support-billing-tracker/mysql_data_backup/cron.log 2>&1
+```
+
+**For Asustor NAS:**
+1. Open ADM → Services → Scheduled Tasks
+2. Click "Add" → "User Defined Script"
+3. Name: `MySQL Backup - Support Billing Tracker`
+4. Schedule: Daily at 02:00
+5. Command:
+   ```
+   /share/Coding/Docker/support-billing-tracker/scripts/backup-mysql.sh >> /share/Coding/Docker/support-billing-tracker/mysql_data_backup/cron.log 2>&1
+   ```
+6. Enable notification on failure (optional)
+
+#### Retention Policy
+
+| Type | Retention | Trigger |
+|------|-----------|---------|
+| Daily | 5 backups | Every day (except Sunday/1st) |
+| Weekly | 4 backups | Every Sunday |
+| Monthly | 6 backups | 1st of each month |
+
+#### Recovery Scenarios
+
+**Scenario 1: Accidental `docker-compose down -v`**
+```bash
+# Restart MySQL container
+docker-compose up -d mysql
+
+# Wait for container to be healthy
+sleep 10
+
+# Restore from latest backup
+./scripts/restore-mysql.sh --latest daily
+```
+
+**Scenario 2: Corrupted data after bad import**
+```bash
+# List available backups
+./scripts/restore-mysql.sh --list
+
+# Restore from specific backup before the corruption
+./scripts/restore-mysql.sh mysql_data_backup/daily/support_billing_tracker_2025-11-25_020000.sql.gz
+```
+
+**Scenario 3: Complete system rebuild**
+```bash
+# Start fresh containers
+docker-compose down
+docker-compose up -d
+
+# Wait for MySQL to initialize
+sleep 30
+
+# Restore from monthly backup
+./scripts/restore-mysql.sh --latest monthly
+```
+
 ## Architecture & Components
 
 ### 1. Data Processing Pipeline (ETL)

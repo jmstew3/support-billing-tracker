@@ -15,14 +15,10 @@ import type {
 
 // Import authenticatedFetch for JWT token handling
 import { authenticatedFetch } from '../utils/api';
+import { ENDPOINTS, STANDARD_MRR } from '../config/apiConfig';
 
-// API configuration - Use local backend proxy to avoid CORS issues
-const API_BASE_URL = window.location.hostname === 'velocity.peakonedigital.com'
-  ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api');
-
-const TWENTY_API_URL = `${API_BASE_URL}/twenty-proxy/websiteProperties`;
-const STANDARD_MRR = 99.0; // $99 per site per month
+// Use centralized API configuration (single source of truth)
+const TWENTY_API_URL = ENDPOINTS.WEBSITE_PROPERTIES;
 
 /**
  * Fetch all website properties from Twenty CRM
@@ -150,7 +146,6 @@ function calculateDaysActive(
   const [targetYear, targetMonthNum] = targetMonth.split('-').map(Number);
   const daysInMonth = getDaysInMonth(targetYear, targetMonthNum);
 
-  const startDate = new Date(hostingStart);
   const endDate = hostingEnd ? new Date(hostingEnd) : null;
 
   if (billingType === 'FULL') {

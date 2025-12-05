@@ -12,11 +12,14 @@ interface EditableNumberCellProps {
 export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   value,
   onSave,
-  urgency,
+  urgency: _urgency,
   min = 0,
   max = 99.99,
-  placeholder = '0.50'
+  placeholder: _placeholder = '0.50'
 }) => {
+  // Silence unused variable warnings - kept for API compatibility
+  void _urgency;
+  void _placeholder;
   // Always use 0.25 increments (15 minute intervals)
   const step = 0.25;
 
