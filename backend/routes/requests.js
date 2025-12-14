@@ -462,53 +462,271 @@ router.get('/export-csv', async (req, res) => {
   }
 });
 
-// Legacy endpoint for compatibility with existing frontend
+/**
+ * POST /api/requests/save-csv
+ * Legacy endpoint for replacing all request data with CSV content
+ *
+ * WARNING: This endpoint DELETES ALL EXISTING DATA before importing!
+ *
+ * Security Requirements:
+ * 1. Must include confirmDelete: "DELETE_ALL_DATA" in request body
+ * 2. Creates automatic backup before deletion
+ * 3. Uses transaction for atomic operation (all-or-nothing)
+ *
+ * Request body:
+ * {
+ *   "csvContent": "date,time,...\n2025-01-01,10:00,...",
+ *   "confirmDelete": "DELETE_ALL_DATA"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "imported": 100,
+ *   "backupTable": "requests_backup_1705234567890",
+ *   "previousCount": 50
+ * }
+ */
 router.post('/save-csv', async (req, res) => {
+  let connection;
+
   try {
-    const { csvContent } = req.body;
+    const { csvContent, confirmDelete } = req.body;
+
+    // SECURITY: Require explicit confirmation to prevent accidental data loss
+    if (confirmDelete !== 'DELETE_ALL_DATA') {
+      return res.status(400).json({
+        error: 'This operation will DELETE ALL existing data.',
+        message: 'To confirm, include { "confirmDelete": "DELETE_ALL_DATA" } in your request body.',
+        hint: 'Consider using POST /api/import-csv instead, which adds data without deleting.'
+      });
+    }
+
+    if (!csvContent || typeof csvContent !== 'string') {
+      return res.status(400).json({ error: 'csvContent is required and must be a string' });
+    }
 
     // Parse CSV content
-    const lines = csvContent.split('\n');
-    const headers = lines[0].split(',');
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'CSV must have at least a header row and one data row' });
+    }
 
-    // Clear existing data and import new
-    await pool.execute('DELETE FROM requests');
+    const headers = lines[0].split(',').map(h => h.trim());
 
+    // Get connection for transaction
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Count existing records
+    const [[{ count: previousCount }]] = await connection.query(
+      'SELECT COUNT(*) as count FROM requests'
+    );
+
+    // Create backup table with timestamp
+    const backupTable = `requests_backup_${Date.now()}`;
+    await connection.query(
+      `CREATE TABLE ${backupTable} AS SELECT * FROM requests`
+    );
+    console.log(`[save-csv] Created backup table: ${backupTable} with ${previousCount} records`);
+
+    // Clear existing data
+    await connection.query('DELETE FROM requests');
+
+    // Import new data
     let imported = 0;
+    let skipped = 0;
+    const errors = [];
+
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
 
-      const values = lines[i].match(/(".*?"|[^,]+)/g);
-      if (!values) continue;
+      try {
+        const values = lines[i].match(/(".*?"|[^,]+)/g);
+        if (!values) {
+          skipped++;
+          continue;
+        }
 
-      const row = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '';
-      });
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '';
+        });
 
-      const request = new Request({
-        date: row.date,
-        time: row.time,
-        request_type: row.request_type || 'General Request',
-        category: row.category || 'Support',
-        description: row.description,
-        urgency: row.urgency || 'MEDIUM',
-        effort: row.effort || 'Medium',
-        status: 'active'
-      });
+        // Validate required fields
+        if (!row.date || !row.time) {
+          errors.push({ line: i + 1, error: 'Missing required date or time' });
+          skipped++;
+          continue;
+        }
 
-      await request.save();
-      imported++;
+        const request = new Request({
+          date: row.date,
+          time: row.time,
+          request_type: row.request_type || 'General Request',
+          category: row.category || 'Support',
+          description: row.description || '',
+          urgency: row.urgency || 'MEDIUM',
+          effort: row.effort || 'Medium',
+          status: row.status || 'active'
+        });
+
+        await request.save();
+        imported++;
+      } catch (rowError) {
+        errors.push({ line: i + 1, error: rowError.message });
+        skipped++;
+      }
     }
+
+    // Commit transaction
+    await connection.commit();
+
+    console.log(`[save-csv] Import complete: ${imported} imported, ${skipped} skipped`);
 
     res.json({
       success: true,
-      filename: 'database',
-      imported
+      imported,
+      skipped,
+      previousCount: parseInt(previousCount),
+      backupTable,
+      message: `Successfully replaced ${previousCount} records with ${imported} new records. Backup saved to table: ${backupTable}`,
+      errors: errors.length > 0 ? errors.slice(0, 10) : undefined // Show first 10 errors
+    });
+
+  } catch (error) {
+    // Rollback on error
+    if (connection) {
+      try {
+        await connection.rollback();
+        console.log('[save-csv] Transaction rolled back due to error');
+      } catch (rollbackError) {
+        console.error('[save-csv] Rollback failed:', rollbackError);
+      }
+    }
+
+    console.error('Error saving CSV:', error);
+    res.status(500).json({
+      error: 'Failed to save CSV data. No changes were made.',
+      details: error.message
+    });
+
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+/**
+ * GET /api/requests/backups
+ * List available backup tables created by save-csv operations
+ * Useful for recovery and audit purposes
+ */
+router.get('/backups', async (req, res) => {
+  try {
+    const [tables] = await pool.execute(
+      `SELECT TABLE_NAME, CREATE_TIME, TABLE_ROWS
+       FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME LIKE 'requests_backup_%'
+       ORDER BY CREATE_TIME DESC
+       LIMIT 20`
+    );
+
+    res.json({
+      backups: tables.map(t => ({
+        name: t.TABLE_NAME,
+        createdAt: t.CREATE_TIME,
+        rowCount: t.TABLE_ROWS,
+        // Extract timestamp from table name
+        timestamp: parseInt(t.TABLE_NAME.replace('requests_backup_', ''))
+      }))
     });
   } catch (error) {
-    console.error('Error saving CSV:', error);
-    res.status(500).json({ error: 'Failed to save CSV data' });
+    console.error('Error listing backups:', error);
+    res.status(500).json({ error: 'Failed to list backups' });
+  }
+});
+
+/**
+ * POST /api/requests/restore-backup
+ * Restore data from a backup table
+ *
+ * Request body:
+ * {
+ *   "backupTable": "requests_backup_1705234567890",
+ *   "confirmRestore": "RESTORE_FROM_BACKUP"
+ * }
+ */
+router.post('/restore-backup', async (req, res) => {
+  let connection;
+
+  try {
+    const { backupTable, confirmRestore } = req.body;
+
+    if (confirmRestore !== 'RESTORE_FROM_BACKUP') {
+      return res.status(400).json({
+        error: 'This operation will replace current data with backup.',
+        message: 'To confirm, include { "confirmRestore": "RESTORE_FROM_BACKUP" } in your request body.'
+      });
+    }
+
+    // Validate backup table name (prevent SQL injection)
+    if (!/^requests_backup_\d+$/.test(backupTable)) {
+      return res.status(400).json({ error: 'Invalid backup table name' });
+    }
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Check backup table exists
+    const [[{ count: backupExists }]] = await connection.query(
+      `SELECT COUNT(*) as count FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+      [backupTable]
+    );
+
+    if (backupExists === 0) {
+      return res.status(404).json({ error: `Backup table ${backupTable} not found` });
+    }
+
+    // Create a backup of current data before restore
+    const preRestoreBackup = `requests_pre_restore_${Date.now()}`;
+    await connection.query(
+      `CREATE TABLE ${preRestoreBackup} AS SELECT * FROM requests`
+    );
+
+    // Clear current data and restore from backup
+    await connection.query('DELETE FROM requests');
+    await connection.query(
+      `INSERT INTO requests SELECT * FROM ${backupTable}`
+    );
+
+    const [[{ count: restoredCount }]] = await connection.query(
+      'SELECT COUNT(*) as count FROM requests'
+    );
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      restoredCount: parseInt(restoredCount),
+      preRestoreBackup,
+      message: `Restored ${restoredCount} records from ${backupTable}. Pre-restore backup: ${preRestoreBackup}`
+    });
+
+  } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('Error restoring backup:', error);
+    res.status(500).json({ error: 'Failed to restore backup', details: error.message });
+
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
