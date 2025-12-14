@@ -60,8 +60,8 @@ services:
       VITE_FLUENT_API_USERNAME: ${VITE_FLUENT_API_USERNAME:-}
       VITE_FLUENT_API_PASSWORD: ${VITE_FLUENT_API_PASSWORD:-}
       VITE_FLUENT_DATE_FILTER: ${VITE_FLUENT_DATE_FILTER:-2025-09-20}
-    # ports:
-    #   - "${BACKEND_PORT:-3011}:3011"  # Removed: Access only via Cloudflare tunnel
+    ports:
+      - "${BACKEND_PORT:-3011}:3011"  # Exposed for local development
     volumes:
       - ./backend:/app
       - /app/node_modules
