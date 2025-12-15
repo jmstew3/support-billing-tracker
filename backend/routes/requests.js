@@ -1,6 +1,20 @@
 import express from 'express';
 import pool from '../db/config.js';
 import Request from '../models/Request.js';
+import {
+  bulkOperationLimiter,
+  dataTransferLimiter,
+  destructiveOperationLimiter,
+  validateId,
+  validateStatus,
+  validateUrgency,
+  validateCategory,
+  validateDate,
+  validatePagination,
+  validateIdArray,
+  sanitizeErrorMessage,
+  escapeIdentifier
+} from '../middleware/security.js';
 
 const router = express.Router();
 
@@ -16,11 +30,11 @@ router.get('/health', async (req, res) => {
       database: 'connected'
     });
   } catch (error) {
+    // Don't expose internal error details in health check
     res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
-      error: error.message
+      database: 'disconnected'
     });
   }
 });
@@ -29,16 +43,38 @@ router.get('/health', async (req, res) => {
 router.get('/requests', async (req, res) => {
   try {
     const {
-      status = 'active',
-      category,
-      urgency,
-      startDate,
-      endDate,
-      // Pagination parameters
-      limit,
-      offset = 0,
-      cursor // cursor-based pagination (uses id)
+      status: rawStatus,
+      category: rawCategory,
+      urgency: rawUrgency,
+      startDate: rawStartDate,
+      endDate: rawEndDate,
+      limit: rawLimit,
+      offset: rawOffset,
+      cursor: rawCursor
     } = req.query;
+
+    // Validate inputs
+    const status = validateStatus(rawStatus);
+    const category = rawCategory ? validateCategory(rawCategory) : null;
+    const urgency = rawUrgency ? validateUrgency(rawUrgency) : null;
+    const startDate = rawStartDate ? validateDate(rawStartDate) : null;
+    const endDate = rawEndDate ? validateDate(rawEndDate) : null;
+    const { limit: parsedLimit, offset: parsedOffset } = validatePagination({ limit: rawLimit, offset: rawOffset });
+    const cursor = rawCursor ? validateId(rawCursor) : null;
+
+    // Check for invalid inputs
+    if (rawCategory && !category) {
+      return res.status(400).json({ error: 'Invalid category value' });
+    }
+    if (rawUrgency && !urgency) {
+      return res.status(400).json({ error: 'Invalid urgency value' });
+    }
+    if (rawStartDate && !startDate) {
+      return res.status(400).json({ error: 'Invalid start date format (use YYYY-MM-DD)' });
+    }
+    if (rawEndDate && !endDate) {
+      return res.status(400).json({ error: 'Invalid end date format (use YYYY-MM-DD)' });
+    }
 
     let query = 'SELECT * FROM requests WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM requests WHERE 1=1';
@@ -62,9 +98,8 @@ router.get('/requests', async (req, res) => {
     if (urgency) {
       query += ' AND urgency = ?';
       countQuery += ' AND urgency = ?';
-      const upperUrgency = urgency.toUpperCase();
-      params.push(upperUrgency);
-      countParams.push(upperUrgency);
+      params.push(urgency);
+      countParams.push(urgency);
     }
 
     if (startDate) {
@@ -84,21 +119,19 @@ router.get('/requests', async (req, res) => {
     // Cursor-based pagination (for infinite scroll / load more)
     if (cursor) {
       query += ' AND id < ?';
-      params.push(parseInt(cursor));
+      params.push(cursor);
     }
 
     query += ' ORDER BY date DESC, time DESC, id DESC';
 
     // Apply limit if provided (pagination mode)
-    const parsedLimit = limit ? parseInt(limit) : null;
-    const parsedOffset = parseInt(offset) || 0;
-
+    // Note: Using query() instead of execute() because MySQL prepared statements
+    // have issues with LIMIT/OFFSET placeholders in some configurations
     if (parsedLimit) {
-      query += ' LIMIT ? OFFSET ?';
-      params.push(parsedLimit, parsedOffset);
+      query += ` LIMIT ${parseInt(parsedLimit, 10)} OFFSET ${parseInt(parsedOffset, 10)}`;
     }
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await pool.query(query, params);
 
     // Transform data to match frontend format
     const transformedRows = rows.map(row => ({
@@ -149,7 +182,11 @@ router.get('/requests', async (req, res) => {
 // GET single request
 router.get('/requests/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = validateId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
+
     const [rows] = await pool.execute('SELECT * FROM requests WHERE id = ?', [id]);
 
     if (rows.length === 0) {
@@ -199,10 +236,14 @@ router.post('/requests', async (req, res) => {
 // PUT update request
 router.put('/requests/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = validateId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
+
     const updates = req.body;
 
-    // Build dynamic update query
+    // Build dynamic update query with validation
     const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours'];
     const updateFields = [];
     const updateValues = [];
@@ -211,15 +252,36 @@ router.put('/requests/:id', async (req, res) => {
       if (updates[field] !== undefined) {
         updateFields.push(`${field} = ?`);
         let value = updates[field];
+
+        // Validate specific fields
         if (field === 'urgency') {
-          value = updates[field].toUpperCase();
+          value = validateUrgency(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid urgency value (must be LOW, MEDIUM, or HIGH)' });
+          }
+        } else if (field === 'category') {
+          value = validateCategory(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid category value' });
+          }
+        } else if (field === 'status') {
+          value = validateStatus(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid status value' });
+          }
         } else if (field === 'estimated_hours') {
           value = parseFloat(value);
           // Validate hours range - allow 0 but not negative values
           if (isNaN(value) || value < 0 || value > 99.99) {
             return res.status(400).json({ error: 'Estimated hours must be between 0 and 99.99' });
           }
+        } else if (field === 'description' && typeof value === 'string') {
+          // Limit description length
+          if (value.length > 10000) {
+            return res.status(400).json({ error: 'Description too long (max 10000 characters)' });
+          }
         }
+
         updateValues.push(value);
       }
     }
@@ -247,7 +309,11 @@ router.put('/requests/:id', async (req, res) => {
 // DELETE request (soft delete - update status)
 router.delete('/requests/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = validateId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
+
     const { permanent = false } = req.query;
 
     if (permanent === 'true') {
@@ -278,13 +344,15 @@ router.delete('/requests/:id', async (req, res) => {
   }
 });
 
-// POST bulk update requests
-router.post('/requests/bulk-update', async (req, res) => {
+// POST bulk update requests (rate limited)
+router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
   try {
-    const { ids, updates } = req.body;
+    const { ids: rawIds, updates } = req.body;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ error: 'Invalid request IDs' });
+    // Validate IDs array
+    const ids = validateIdArray(rawIds);
+    if (!ids) {
+      return res.status(400).json({ error: 'Invalid request IDs (must be array of 1-100 valid IDs)' });
     }
 
     const allowedFields = ['category', 'urgency', 'status', 'estimated_hours'];
@@ -296,8 +364,22 @@ router.post('/requests/bulk-update', async (req, res) => {
         updateFields.push(`${field} = ?`);
         let value = updates[field];
 
+        // Validate each field
         if (field === 'urgency') {
-          value = updates[field].toUpperCase();
+          value = validateUrgency(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid urgency value (must be LOW, MEDIUM, or HIGH)' });
+          }
+        } else if (field === 'category') {
+          value = validateCategory(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid category value' });
+          }
+        } else if (field === 'status') {
+          value = validateStatus(updates[field]);
+          if (!value) {
+            return res.status(400).json({ error: 'Invalid status value' });
+          }
         } else if (field === 'estimated_hours') {
           value = parseFloat(updates[field]);
           // Validate hours range - allow 0 but not negative values
@@ -370,13 +452,21 @@ router.get('/statistics', async (req, res) => {
   }
 });
 
-// POST import CSV data
-router.post('/import-csv', async (req, res) => {
+// POST import CSV data (rate limited)
+router.post('/import-csv', dataTransferLimiter, async (req, res) => {
   try {
     const { csvData } = req.body;
 
     if (!csvData || !Array.isArray(csvData)) {
       return res.status(400).json({ error: 'Invalid CSV data' });
+    }
+
+    // Limit number of rows to prevent DoS
+    const MAX_IMPORT_ROWS = 1000;
+    if (csvData.length > MAX_IMPORT_ROWS) {
+      return res.status(400).json({
+        error: `Too many rows. Maximum ${MAX_IMPORT_ROWS} rows allowed per import.`
+      });
     }
 
     let imported = 0;
@@ -385,22 +475,28 @@ router.post('/import-csv', async (req, res) => {
 
     for (const row of csvData) {
       try {
+        // Validate and sanitize row data
+        const category = validateCategory(row.category) || 'Support';
+        const urgency = validateUrgency(row.urgency) || 'MEDIUM';
+        const status = validateStatus(row.status) || 'active';
+
         const request = new Request({
           date: row.date,
           time: row.time,
           request_type: row.request_type || 'General Request',
-          category: row.category || 'Support',
-          description: row.description || row.Request_Summary,
-          urgency: row.urgency || 'MEDIUM',
+          category,
+          description: (row.description || row.Request_Summary || '').slice(0, 10000), // Limit length
+          urgency,
           effort: row.effort || 'Medium',
-          status: row.status || 'active'
+          status
         });
 
         await request.save();
         imported++;
       } catch (error) {
         failed++;
-        errors.push({ row, error: error.message });
+        // Don't expose internal error details
+        errors.push({ row: imported + failed, error: 'Failed to import row' });
       }
     }
 
@@ -416,10 +512,10 @@ router.post('/import-csv', async (req, res) => {
   }
 });
 
-// GET export as CSV
-router.get('/export-csv', async (req, res) => {
+// GET export as CSV (rate limited)
+router.get('/export-csv', dataTransferLimiter, async (req, res) => {
   try {
-    const { status = 'active' } = req.query;
+    const status = validateStatus(req.query.status);
 
     let query = 'SELECT * FROM requests';
     const params = [];
@@ -487,7 +583,7 @@ router.get('/export-csv', async (req, res) => {
  *   "previousCount": 50
  * }
  */
-router.post('/save-csv', async (req, res) => {
+router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
   let connection;
 
   try {
@@ -523,12 +619,13 @@ router.post('/save-csv', async (req, res) => {
       'SELECT COUNT(*) as count FROM requests'
     );
 
-    // Create backup table with timestamp
-    const backupTable = `requests_backup_${Date.now()}`;
+    // Create backup table with timestamp (escaped to prevent SQL injection)
+    const backupTableName = `requests_backup_${Date.now()}`;
+    const escapedBackupTable = escapeIdentifier(backupTableName);
     await connection.query(
-      `CREATE TABLE ${backupTable} AS SELECT * FROM requests`
+      `CREATE TABLE ${escapedBackupTable} AS SELECT * FROM requests`
     );
-    console.log(`[save-csv] Created backup table: ${backupTable} with ${previousCount} records`);
+    console.log(`[save-csv] Created backup table: ${backupTableName} with ${previousCount} records`);
 
     // Clear existing data
     await connection.query('DELETE FROM requests');
@@ -608,7 +705,7 @@ router.post('/save-csv', async (req, res) => {
     console.error('Error saving CSV:', error);
     res.status(500).json({
       error: 'Failed to save CSV data. No changes were made.',
-      details: error.message
+      details: sanitizeErrorMessage(error, process.env.NODE_ENV === 'development')
     });
 
   } finally {
@@ -659,7 +756,7 @@ router.get('/backups', async (req, res) => {
  *   "confirmRestore": "RESTORE_FROM_BACKUP"
  * }
  */
-router.post('/restore-backup', async (req, res) => {
+router.post('/restore-backup', destructiveOperationLimiter, async (req, res) => {
   let connection;
 
   try {
@@ -691,16 +788,18 @@ router.post('/restore-backup', async (req, res) => {
       return res.status(404).json({ error: `Backup table ${backupTable} not found` });
     }
 
-    // Create a backup of current data before restore
+    // Create a backup of current data before restore (escaped to prevent SQL injection)
     const preRestoreBackup = `requests_pre_restore_${Date.now()}`;
+    const escapedPreRestoreBackup = escapeIdentifier(preRestoreBackup);
     await connection.query(
-      `CREATE TABLE ${preRestoreBackup} AS SELECT * FROM requests`
+      `CREATE TABLE ${escapedPreRestoreBackup} AS SELECT * FROM requests`
     );
 
-    // Clear current data and restore from backup
+    // Clear current data and restore from backup (backupTable already validated via regex)
+    const escapedBackupTable = escapeIdentifier(backupTable);
     await connection.query('DELETE FROM requests');
     await connection.query(
-      `INSERT INTO requests SELECT * FROM ${backupTable}`
+      `INSERT INTO requests SELECT * FROM ${escapedBackupTable}`
     );
 
     const [[{ count: restoredCount }]] = await connection.query(
@@ -718,10 +817,18 @@ router.post('/restore-backup', async (req, res) => {
 
   } catch (error) {
     if (connection) {
-      await connection.rollback();
+      try {
+        await connection.rollback();
+        console.log('[restore-backup] Transaction rolled back due to error');
+      } catch (rollbackError) {
+        console.error('[restore-backup] Rollback failed:', rollbackError);
+      }
     }
     console.error('Error restoring backup:', error);
-    res.status(500).json({ error: 'Failed to restore backup', details: error.message });
+    res.status(500).json({
+      error: 'Failed to restore backup. No changes were made.',
+      details: sanitizeErrorMessage(error, process.env.NODE_ENV === 'development')
+    });
 
   } finally {
     if (connection) {

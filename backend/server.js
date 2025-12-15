@@ -11,6 +11,7 @@ import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
 import { authenticateToken } from './middleware/auth.js';
 import { conditionalAuth } from './middleware/conditionalAuth.js';
+import { sanitizeErrorMessage } from './middleware/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,8 +44,11 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Request body size limits - prevent DoS attacks via large payloads
+// 2MB for JSON (CSV imports may be large but 1000 row limit in route handles this)
+// 1MB for URL-encoded form data
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Routes
 // Auth routes MUST come first and are NOT protected (to allow login)
@@ -66,13 +70,21 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Error handling middleware - sanitizes error messages to prevent info leakage
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({
+  const isDev = process.env.NODE_ENV === 'development';
+  const status = err.status || 500;
+
+  // Sanitize error message to prevent exposing sensitive details
+  const message = status >= 500
+    ? sanitizeErrorMessage(err, isDev)
+    : (err.message || 'An error occurred');
+
+  res.status(status).json({
     error: {
-      message: err.message || 'Internal server error',
-      status: err.status || 500
+      message,
+      status
     }
   });
 });
