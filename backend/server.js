@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -22,7 +23,37 @@ dotenv.config({ path: join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Security headers middleware - protects against common web vulnerabilities
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for UI frameworks
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://velocity.peakonedigital.com"],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Disable for API compatibility
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
+// Request timeout middleware - protects against slow HTTP attacks (Slowloris)
+app.use((req, res, next) => {
+  req.setTimeout(30000); // 30 seconds request timeout
+  res.setTimeout(30000); // 30 seconds response timeout
+  next();
+});
+
+// CORS configuration
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
@@ -104,12 +135,18 @@ async function startServer() {
     // Initialize database schema
     await initializeDatabase();
 
-    // Start listening
-    app.listen(PORT, () => {
+    // Start listening with server-level timeout configuration
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`📊 Frontend expected at ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
       console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🔒 Security: Helmet enabled, request timeout 30s`);
     });
+
+    // Server-level timeouts for protection against slow HTTP attacks
+    server.timeout = 30000; // 30 seconds - max time for request/response
+    server.keepAliveTimeout = 65000; // 65 seconds - slightly longer than typical proxy timeouts
+    server.headersTimeout = 66000; // Must be larger than keepAliveTimeout
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

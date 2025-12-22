@@ -3,7 +3,9 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import RefreshTokenRepository from '../repositories/RefreshTokenRepository.js';
+import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { validatePassword } from '../middleware/security.js';
 
 const router = express.Router();
 
@@ -102,12 +104,27 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Find user by email
     const user = await User.findByEmail(email);
     if (!user) {
+      // Log failed login attempt (user not found)
+      await AuditLogRepository.logFromRequest(req, AuditActions.AUTH_LOGIN_FAILURE, {
+        resourceType: 'user',
+        details: { email, reason: 'user_not_found' },
+        status: 'failure'
+      });
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Verify password
     const isValid = await User.verifyPassword(password, user.password_hash);
     if (!isValid) {
+      // Log failed login attempt (wrong password)
+      await AuditLogRepository.logFromRequest(req, AuditActions.AUTH_LOGIN_FAILURE, {
+        userId: user.id,
+        userEmail: user.email,
+        resourceType: 'user',
+        resourceId: user.id,
+        details: { reason: 'invalid_password' },
+        status: 'failure'
+      });
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -155,6 +172,16 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // Update last login timestamp
     await User.updateLastLogin(user.id);
+
+    // Log successful login
+    await AuditLogRepository.logFromRequest(req, AuditActions.AUTH_LOGIN_SUCCESS, {
+      userId: user.id,
+      userEmail: user.email,
+      resourceType: 'user',
+      resourceId: user.id,
+      details: { role: user.role },
+      status: 'success'
+    });
 
     // Return tokens and user info (without password)
     res.json({
@@ -323,8 +350,13 @@ router.post('/change-password', passwordChangeLimiter, authenticateToken, async 
       return res.status(400).json({ error: 'Current and new passwords are required' });
     }
 
-    if (newPassword.length < 12) {
-      return res.status(400).json({ error: 'New password must be at least 12 characters' });
+    // Validate password complexity
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        error: 'Password does not meet complexity requirements',
+        details: passwordValidation.errors
+      });
     }
 
     // Fetch user
@@ -343,13 +375,22 @@ router.post('/change-password', passwordChangeLimiter, authenticateToken, async 
     await User.updatePassword(user.id, newPassword);
 
     // Revoke all refresh tokens for security (forces re-login on all devices)
+    let revokedCount = 0;
     try {
-      const revokedCount = await RefreshTokenRepository.revokeAllForUser(user.id);
+      revokedCount = await RefreshTokenRepository.revokeAllForUser(user.id);
       console.log(`Password changed for user ${user.id}, revoked ${revokedCount} refresh tokens`);
     } catch (revokeError) {
       console.error('Failed to revoke tokens after password change:', revokeError);
       // Continue anyway - password was changed successfully
     }
+
+    // Log password change
+    await AuditLogRepository.logFromRequest(req, AuditActions.AUTH_PASSWORD_CHANGE, {
+      resourceType: 'user',
+      resourceId: user.id,
+      details: { tokensRevoked: revokedCount },
+      status: 'success'
+    });
 
     res.json({ message: 'Password changed successfully. Please login again on all devices.' });
   } catch (error) {

@@ -85,8 +85,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      let errorMessage = 'Login failed';
+
+      // Handle specific HTTP status codes with user-friendly messages
+      if (response.status === 404) {
+        errorMessage = 'Service unavailable. Please try again later.';
+      } else if (response.status === 401) {
+        errorMessage = 'Invalid credentials';
+      } else if (response.status === 429) {
+        errorMessage = 'Too many attempts. Please wait and try again.';
+      } else if (response.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else {
+        try {
+          const error = await response.json();
+          if (error.error) errorMessage = error.error;
+        } catch {
+          // Response body was empty or not JSON - use default message
+        }
+      }
+
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
