@@ -111,8 +111,14 @@ export async function triggerTwentySync(): Promise<TwentySyncResult> {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Sync failed: ${response.statusText}`);
+      let errorMessage = `Sync failed: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // Response body was empty or not JSON
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -162,8 +168,14 @@ export async function triggerFluentSync(dateFilter?: string): Promise<FluentSync
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Sync failed: ${response.statusText}`);
+      let errorMessage = `Sync failed: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        // Response body was empty or not JSON
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();

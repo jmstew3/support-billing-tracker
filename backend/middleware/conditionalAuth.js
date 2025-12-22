@@ -8,16 +8,25 @@ import User from '../models/User.js';
  *
  * Production (velocity.peakonedigital.com):
  *   - Protected by Traefik BasicAuth at reverse proxy level
- *   - This middleware trusts BasicAuth and allows requests without JWT
- *   - Creates a pseudo-user object for authenticated BasicAuth users
+ *   - This middleware trusts BasicAuth and looks up the configured admin user
+ *   - Uses ADMIN_EMAIL env var to find user in database
  *
  * Development (localhost) or Direct API Access:
  *   - Requires JWT token in Authorization header
  *   - Standard JWT validation and user lookup
  *
+ * Security Note: BasicAuth users share a single identity in audit logs.
+ * For per-user tracking, configure Traefik ForwardAuth or use JWT-only auth.
+ *
  * This prevents the "double authentication" problem where users must pass
  * BasicAuth AND provide a JWT token, which requires a login screen.
  */
+
+// Cache the admin user for BasicAuth requests to avoid repeated DB lookups
+let cachedBasicAuthUser = null;
+let cacheExpiry = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const conditionalAuth = async (req, res, next) => {
   try {
     const host = req.get('host') || '';
@@ -30,14 +39,33 @@ export const conditionalAuth = async (req, res, next) => {
 
     if (isBasicAuthProtected) {
       // Request came through Traefik BasicAuth - user is already authenticated
-      // Create a pseudo-user object for compatibility with routes expecting req.user
-      req.user = {
-        id: 1,
-        email: 'admin@peakonedigital.com',
-        role: 'admin',
-        authMethod: 'basicauth'
-      };
+      // Look up admin user from database (with caching to reduce DB load)
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@peakonedigital.com';
 
+      if (!cachedBasicAuthUser || Date.now() > cacheExpiry) {
+        const user = await User.findByEmail(adminEmail);
+        if (user) {
+          cachedBasicAuthUser = {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            authMethod: 'basicauth'
+          };
+          cacheExpiry = Date.now() + CACHE_TTL;
+        } else {
+          // Fallback if user not found in database
+          console.warn(`[conditionalAuth] Admin user ${adminEmail} not found in database, using fallback`);
+          cachedBasicAuthUser = {
+            id: 1,
+            email: adminEmail,
+            role: 'admin',
+            authMethod: 'basicauth'
+          };
+          cacheExpiry = Date.now() + CACHE_TTL;
+        }
+      }
+
+      req.user = { ...cachedBasicAuthUser };
       return next();
     }
 

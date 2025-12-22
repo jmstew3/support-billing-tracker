@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../db/config.js';
 import Request from '../models/Request.js';
+import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
 import {
   bulkOperationLimiter,
   dataTransferLimiter,
@@ -324,6 +325,14 @@ router.delete('/requests/:id', async (req, res) => {
         return res.status(404).json({ error: 'Request not found' });
       }
 
+      // Audit log permanent deletion
+      await AuditLogRepository.logFromRequest(req, AuditActions.DATA_DELETE, {
+        resourceType: 'request',
+        resourceId: id,
+        details: { permanent: true },
+        status: 'success'
+      });
+
       res.json({ message: 'Request permanently deleted' });
     } else {
       // Soft delete (update status)
@@ -335,6 +344,14 @@ router.delete('/requests/:id', async (req, res) => {
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Request not found' });
       }
+
+      // Audit log soft deletion
+      await AuditLogRepository.logFromRequest(req, AuditActions.DATA_DELETE, {
+        resourceType: 'request',
+        resourceId: id,
+        details: { permanent: false, newStatus: 'deleted' },
+        status: 'success'
+      });
 
       res.json({ message: 'Request marked as deleted' });
     }
@@ -399,6 +416,17 @@ router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
     const placeholders = ids.map(() => '?').join(', ');
     const query = `UPDATE requests SET ${updateFields.join(', ')} WHERE id IN (${placeholders})`;
     const [result] = await pool.execute(query, [...updateValues, ...ids]);
+
+    // Audit log bulk update
+    await AuditLogRepository.logFromRequest(req, AuditActions.DATA_BULK_UPDATE, {
+      resourceType: 'request',
+      details: {
+        affectedIds: ids,
+        fieldsUpdated: Object.keys(updates),
+        affectedRows: result.affectedRows
+      },
+      status: 'success'
+    });
 
     res.json({
       message: 'Bulk update successful',
@@ -681,6 +709,19 @@ router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
 
     console.log(`[save-csv] Import complete: ${imported} imported, ${skipped} skipped`);
 
+    // Audit log the destructive data replacement
+    await AuditLogRepository.logFromRequest(req, AuditActions.DATA_BACKUP, {
+      resourceType: 'request',
+      details: {
+        operation: 'save-csv',
+        previousCount: parseInt(previousCount),
+        imported,
+        skipped,
+        backupTable
+      },
+      status: 'success'
+    });
+
     res.json({
       success: true,
       imported,
@@ -807,6 +848,17 @@ router.post('/restore-backup', destructiveOperationLimiter, async (req, res) => 
     );
 
     await connection.commit();
+
+    // Audit log the restore operation
+    await AuditLogRepository.logFromRequest(req, AuditActions.DATA_RESTORE, {
+      resourceType: 'request',
+      details: {
+        sourceBackup: backupTable,
+        restoredCount: parseInt(restoredCount),
+        preRestoreBackup
+      },
+      status: 'success'
+    });
 
     res.json({
       success: true,

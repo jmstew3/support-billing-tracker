@@ -219,3 +219,62 @@ export function escapeIdentifier(identifier) {
   // Double any backticks and wrap in backticks
   return '`' + identifier.replace(/`/g, '``') + '`';
 }
+
+/**
+ * Password Complexity Validation
+ * Enforces strong password requirements
+ * @param {string} password - Password to validate
+ * @returns {object} { valid: boolean, errors: string[] }
+ */
+export function validatePassword(password) {
+  const errors = [];
+  const MIN_LENGTH = 12;
+
+  if (!password || typeof password !== 'string') {
+    return { valid: false, errors: ['Password is required'] };
+  }
+
+  // Length check
+  if (password.length < MIN_LENGTH) {
+    errors.push(`Password must be at least ${MIN_LENGTH} characters`);
+  }
+
+  // Complexity checks
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+
+  if (!/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push('Password must contain at least one special character (!@#$%^&*...)');
+  }
+
+  // Common password patterns to reject
+  const commonPatterns = [
+    /^password/i,
+    /^123456/,
+    /^qwerty/i,
+    /(.)\1{3,}/, // Repeated characters (4+ in a row)
+    /^admin/i,
+    /^letmein/i,
+  ];
+
+  for (const pattern of commonPatterns) {
+    if (pattern.test(password)) {
+      errors.push('Password contains a common pattern and is too predictable');
+      break;
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
