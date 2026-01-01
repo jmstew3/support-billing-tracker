@@ -5,7 +5,6 @@ import { Sidebar } from './components/shared/Sidebar';
 import { Projects } from './features/projects/components/Projects';
 import { TurboHosting } from './features/hosting/components/TurboHosting';
 import { Dashboard } from './features/dashboard/components/Dashboard';
-import { ChartInfrastructureTest } from './components/charts/__tests__/BaseBarChart.test';
 import { Login } from './features/auth/components/Login';
 import { PeriodProvider } from './contexts/PeriodContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -15,7 +14,7 @@ import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing' | 'test'>('overview');
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
@@ -68,11 +67,6 @@ function AppContent() {
           {currentView === 'billing' && (
             <ErrorBoundary>
               <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-            </ErrorBoundary>
-          )}
-          {currentView === 'test' && (
-            <ErrorBoundary>
-              <ChartInfrastructureTest />
             </ErrorBoundary>
           )}
         </main>

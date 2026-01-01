@@ -6,8 +6,8 @@ import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
-  currentView?: 'home' | 'projects' | 'overview' | 'billing' | 'test';
-  onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing' | 'test') => void;
+  currentView?: 'home' | 'projects' | 'overview' | 'billing';
+  onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing') => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
@@ -42,7 +42,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     { id: 'billing' as const, label: 'Turbo Hosting', icon: Zap },
   ];
 
-  const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing' | 'test') => {
+  const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing') => {
     if (onNavigate) {
       onNavigate(view);
     }
@@ -52,7 +52,7 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
     try {
       await logout();
       // Logout function in AuthContext will clear tokens and trigger re-render to login screen
-    } catch (error) {
+    } catch {
       // Logout failed
     }
   };

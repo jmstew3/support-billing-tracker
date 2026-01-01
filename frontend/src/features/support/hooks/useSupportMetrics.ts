@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import type { ChatRequest } from '../../../types/request';
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers';

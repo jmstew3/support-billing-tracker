@@ -112,33 +112,37 @@ export function SupportTableHeader({
     preserveScrollPosition()
 
     switch (type) {
-      case 'source':
+      case 'source': {
         const newSourceFilter = checked
           ? [...sourceFilter, value]
           : sourceFilter.filter(s => s !== value)
         onSourceFilterChange(newSourceFilter)
         break
+      }
       case 'date':
         onDateFilterChange(value)
         break
-      case 'day':
+      case 'day': {
         const newDayFilter = checked
           ? [...dayFilter, value]
           : dayFilter.filter(d => d !== value)
         onDayFilterChange(newDayFilter)
         break
-      case 'category':
+      }
+      case 'category': {
         const newCategoryFilter = checked
           ? [...categoryFilter, value]
           : categoryFilter.filter(c => c !== value)
         onCategoryFilterChange(newCategoryFilter)
         break
-      case 'urgency':
+      }
+      case 'urgency': {
         const newUrgencyFilter = checked
           ? [...urgencyFilter, value]
           : urgencyFilter.filter(u => u !== value)
         onUrgencyFilterChange(newUrgencyFilter)
         break
+      }
     }
   }
 

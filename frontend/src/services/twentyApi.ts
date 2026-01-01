@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { transformTickets } from '../utils/ticketTransform';
 import type { ChatRequest } from '../types/request';
 

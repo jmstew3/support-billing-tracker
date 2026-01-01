@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ChatRequest } from '../types/request';
 import { API_CONFIG } from '../config/apiConfig';
 

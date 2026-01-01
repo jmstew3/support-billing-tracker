@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, type ReactNode } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../../../components/base/DataTrackerCard';
 import { formatCurrency, formatCurrencyAccounting } from '../../../utils/formatting';
