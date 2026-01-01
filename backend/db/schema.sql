@@ -17,9 +17,10 @@ CREATE TABLE requests (
   urgency ENUM('LOW', 'MEDIUM', 'HIGH', 'PROMOTION') DEFAULT 'MEDIUM',
   effort ENUM('Small', 'Medium', 'Large') DEFAULT 'Medium',
   status ENUM('active', 'deleted', 'ignored') DEFAULT 'active',
-  source ENUM('sms', 'ticket', 'email', 'phone') DEFAULT 'sms',
+  source ENUM('sms', 'ticket', 'email', 'phone', 'fluent') DEFAULT 'sms',
   website_url VARCHAR(255) DEFAULT NULL,
   estimated_hours DECIMAL(5, 2) DEFAULT 0.50,
+  billing_date DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

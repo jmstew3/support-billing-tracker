@@ -159,6 +159,7 @@ router.get('/requests', async (req, res) => {
       Status: row.status,
       source: row.source || 'sms', // Include source field with default
       website_url: row.website_url || null, // Include website URL from FluentSupport
+      BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
     }));
@@ -217,6 +218,9 @@ router.get('/requests/:id', async (req, res) => {
       Effort: row.effort,
       EstimatedHours: parseFloat(row.estimated_hours),
       Status: row.status,
+      source: row.source || 'sms',
+      website_url: row.website_url || null,
+      BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
     };
@@ -255,7 +259,7 @@ router.put('/requests/:id', async (req, res) => {
     const updates = req.body;
 
     // Build dynamic update query with validation
-    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours'];
+    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours', 'billing_date'];
     const updateFields = [];
     const updateValues = [];
 
@@ -290,6 +294,16 @@ router.put('/requests/:id', async (req, res) => {
           // Limit description length
           if (value.length > 10000) {
             return res.status(400).json({ error: 'Description too long (max 10000 characters)' });
+          }
+        } else if (field === 'billing_date') {
+          // Allow null to clear, or validate date format
+          if (value !== null && value !== '') {
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateRegex.test(value)) {
+              return res.status(400).json({ error: 'Invalid billing_date format (use YYYY-MM-DD)' });
+            }
+          } else {
+            value = null; // Normalize empty string to null
           }
         }
 
