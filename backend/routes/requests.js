@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import pool from '../db/config.js';
 import Request from '../models/Request.js';
 import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
@@ -18,6 +19,15 @@ import {
 } from '../middleware/security.js';
 
 const router = express.Router();
+
+// Rate limiter for DELETE operations
+const deleteRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each IP to 50 delete requests per windowMs
+  message: 'Too many delete requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Health check endpoint
 router.get('/health', async (req, res) => {
@@ -308,7 +318,7 @@ router.put('/requests/:id', async (req, res) => {
 });
 
 // DELETE request (soft delete - update status)
-router.delete('/requests/:id', async (req, res) => {
+router.delete('/requests/:id', deleteRateLimiter, async (req, res) => {
   try {
     const id = validateId(req.params.id);
     if (!id) {
