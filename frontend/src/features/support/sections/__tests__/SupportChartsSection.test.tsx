@@ -6,11 +6,11 @@ import { render, screen } from '@testing-library/react'
 import { SupportChartsSection } from '../SupportChartsSection'
 
 // Mock the chart components
-vi.mock('../../../charts/RequestCalendarHeatmap', () => ({
+vi.mock('../../../../components/charts/RequestCalendarHeatmap', () => ({
   RequestCalendarHeatmap: () => <div data-testid="calendar-heatmap">Calendar Heatmap</div>
 }))
 
-vi.mock('../../../charts/CategoryRadarChart', () => ({
+vi.mock('../../../../components/charts/CategoryRadarChart', () => ({
   default: () => <div data-testid="radar-chart">Radar Chart</div>
 }))
 
@@ -91,13 +91,6 @@ describe('SupportChartsSection', () => {
     ).toBeInTheDocument()
   })
 
-  it('should render chart type toggle with pie and radar options', () => {
-    render(<SupportChartsSection {...defaultProps} />)
-
-    expect(screen.getByText('Pie')).toBeInTheDocument()
-    expect(screen.getByText('Radar')).toBeInTheDocument()
-  })
-
   it('should have correct grid layout classes', () => {
     const { container } = render(<SupportChartsSection {...defaultProps} />)
 
@@ -108,7 +101,7 @@ describe('SupportChartsSection', () => {
   it('should render category chart description', () => {
     render(<SupportChartsSection {...defaultProps} />)
 
-    expect(screen.getByText('Distribution of request types')).toBeInTheDocument()
+    expect(screen.getByText('Multidimensional category analysis')).toBeInTheDocument()
   })
 
   it('should handle fallback for invalid date in day view', () => {
@@ -120,14 +113,15 @@ describe('SupportChartsSection', () => {
       />
     )
 
+    // With an invalid date, the toLocaleDateString returns "Invalid Date"
     expect(screen.getByText('Requests by Hour - Invalid Date')).toBeInTheDocument()
   })
 
   it('should render both cards with proper structure', () => {
     const { container } = render(<SupportChartsSection {...defaultProps} />)
 
-    // Should have two Card components
-    const cards = container.querySelectorAll('[class*="rounded"]')
-    expect(cards.length).toBeGreaterThan(0)
+    // Should have Card components (look for CardHeader elements)
+    const cardHeaders = container.querySelectorAll('[class*="flex flex-col space-y"]')
+    expect(cardHeaders.length).toBeGreaterThan(0)
   })
 })

@@ -118,6 +118,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
       }}
       className="w-20 px-2 py-1 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
       title="Click to edit hours"
+      data-testid="editable-number-cell"
     >
       {roundedInitialValue.toFixed(2)}
     </button>
