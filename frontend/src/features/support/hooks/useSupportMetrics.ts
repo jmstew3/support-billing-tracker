@@ -287,7 +287,9 @@ export function useSupportMetrics(
     );
 
     billableReqs.forEach(request => {
-      const requestDate = parseLocalDate(request.Date);
+      // Use BillingDate for revenue/cost calculations if set, otherwise use original Date
+      const effectiveDate = request.BillingDate || request.Date;
+      const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
 

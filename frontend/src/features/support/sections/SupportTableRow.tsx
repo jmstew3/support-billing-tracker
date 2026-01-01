@@ -15,6 +15,7 @@
 import { TableCell, TableRow } from '../../../components/ui/table'
 import { EditableCell } from '../../../components/shared/EditableCell'
 import { EditableNumberCell } from '../../../components/shared/EditableNumberCell'
+import { EditableDateCell } from '../components/EditableDateCell'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../../components/ui/tooltip'
 import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard, ExternalLink } from 'lucide-react'
 import type { ChatRequest } from '../../../types/request'
@@ -172,6 +173,18 @@ export function SupportTableRow({
             urgency={request.Urgency}
             onSave={(newValue) => {
               onUpdateRequest(index, 'EstimatedHours', newValue)
+            }}
+          />
+        )}
+      </TableCell>
+      <TableCell className="min-w-[120px]">
+        {isNonBillable ? (
+          <span className="text-gray-400 text-xs">-</span>
+        ) : (
+          <EditableDateCell
+            value={request.BillingDate ?? null}
+            onSave={(newValue) => {
+              onUpdateRequest(index, 'BillingDate', newValue)
             }}
           />
         )}
