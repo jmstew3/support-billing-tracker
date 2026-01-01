@@ -297,7 +297,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                                 comparison = a.hostingEnd.localeCompare(b.hostingEnd);
                                 break;
 
-                              case 'billingType':
+                              case 'billingType': {
                                 // Sort order: FULL, PRORATED_START, PRORATED_END, INACTIVE
                                 const typeOrder: Record<string, number> = {
                                   FULL: 1,
@@ -307,6 +307,7 @@ export function MonthlyHostingCalculator({ monthlyBreakdown }: MonthlyHostingCal
                                 };
                                 comparison = typeOrder[a.billingType] - typeOrder[b.billingType];
                                 break;
+                              }
 
                               case 'days':
                                 comparison = a.daysActive - b.daysActive;

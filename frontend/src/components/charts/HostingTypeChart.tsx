@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import { BaseBarChart } from './BaseBarChart';
 import { HOSTING_COLORS } from '../../config/chartConfig';

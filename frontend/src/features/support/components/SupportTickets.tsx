@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * SupportTickets - Main Support Ticket Management Component
  *

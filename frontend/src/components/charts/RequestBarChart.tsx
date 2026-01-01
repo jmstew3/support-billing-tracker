@@ -35,7 +35,7 @@ export function RequestBarChart({ data, isHourlyView = false }: RequestBarChartP
             ...item,
             date: format(parseISO(item.date), 'EEE, MMM dd')
           };
-        } catch (error) {
+        } catch {
           // If date parsing fails, use original
           return {
             ...item,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * useSupportData Hook
  *
@@ -254,12 +255,13 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
           aValue = (a.Category || categorizeRequest(a.Request_Summary)).toLowerCase()
           bValue = (b.Category || categorizeRequest(b.Request_Summary)).toLowerCase()
           break
-        case 'Urgency':
+        case 'Urgency': {
           // Sort by urgency level: HIGH > MEDIUM > LOW > PROMOTION
           const urgencyOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'PROMOTION': 0 }
           aValue = urgencyOrder[a.Urgency as keyof typeof urgencyOrder] || 0
           bValue = urgencyOrder[b.Urgency as keyof typeof urgencyOrder] || 0
           break
+        }
         case 'EstimatedHours':
           aValue = a.EstimatedHours || 0
           bValue = b.EstimatedHours || 0

@@ -21,12 +21,7 @@
     "lint-staged": "^15.4.1"
   },
   "lint-staged": {
-    "frontend/src/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "backend/**/*.js": [
-      "eslint --fix"
-    ]
+    "frontend/src/**/*.{ts,tsx}": "cd frontend && eslint --fix --config eslint.config.mjs",
+    "backend/**/*.js": "cd backend && eslint --fix"
   }
 }

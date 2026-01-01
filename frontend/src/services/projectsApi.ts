@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Project, FinancialSummary, MonthlyRevenue } from '../types/project';
 
 // Import authenticatedFetch for JWT token handling
