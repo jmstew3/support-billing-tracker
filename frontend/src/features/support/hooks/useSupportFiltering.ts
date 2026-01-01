@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import type { ChatRequest } from '../../../types/request';
+import type { DateRangeFilter } from '../types/filters';
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers';
 import { categorizeRequest } from '../../../utils/dataProcessing';
 
@@ -11,7 +12,7 @@ export interface FilterOptions {
   categoryFilter: string[];
   urgencyFilter: string[];
   sourceFilter: string[];
-  dateFilter: string | 'all';
+  dateRange: DateRangeFilter;
   dayFilter: string[];
   searchQuery: string;
   hideNonBillable: boolean;
@@ -79,7 +80,14 @@ export function useSupportFiltering(
       if (filters.categoryFilter.length > 0 && !filters.categoryFilter.includes(request.Category || 'Support')) return false;
       if (filters.urgencyFilter.length > 0 && !filters.urgencyFilter.includes(request.Urgency)) return false;
       if (filters.sourceFilter.length > 0 && !filters.sourceFilter.includes(request.source || 'sms')) return false;
-      if (filters.dateFilter !== 'all' && request.Date !== filters.dateFilter) return false;
+
+      // Date range filtering
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const requestDateStr = request.Date; // YYYY-MM-DD format
+        if (filters.dateRange.from && requestDateStr < filters.dateRange.from) return false;
+        if (filters.dateRange.to && requestDateStr > filters.dateRange.to) return false;
+      }
+
       if (filters.dayFilter.length > 0 && !filters.dayFilter.includes(requestDayOfWeek)) return false;
 
       // Search filter - case-insensitive search in Request_Summary

@@ -36,6 +36,10 @@ import { updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest } 
 
 // Types
 import type { ChatRequest } from '../../../types/request'
+import type { DateRangeFilter, FilterPreset } from '../types/filters'
+
+// Filter utilities
+import { useFilterCounts, calculateActiveFilterCount } from '../hooks/useFilterCounts'
 
 // Constants - defined outside component to prevent recreation on every render
 const CATEGORY_OPTIONS = [
@@ -88,16 +92,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [urgencyFilter, setUrgencyFilter] = useState<string[]>([])
   const [sourceFilter, setSourceFilter] = useState<string[]>([])
-  const [dateFilter, setDateFilter] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<DateRangeFilter>({ from: null, to: null })
   const [dayFilter, setDayFilter] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [showFilters, setShowFilters] = useState({
-    date: false,
-    day: false,
-    category: false,
-    urgency: false,
-    source: false
-  })
 
   // Bulk selection state
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set())
@@ -153,7 +150,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     categoryFilter,
     urgencyFilter,
     sourceFilter,
-    dateFilter,
+    dateRange,
     dayFilter,
     searchQuery,
     currentPage,
@@ -176,7 +173,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
       categoryFilter,
       urgencyFilter,
       sourceFilter,
-      dateFilter,
+      dateRange,
       dayFilter,
       searchQuery,
       hideNonBillable,
@@ -184,6 +181,25 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
       sortDirection
     }
   )
+
+  // ============================================================
+  // FILTER COUNTS AND ACTIVE FILTER COUNT
+  // ============================================================
+
+  const filterCounts = useFilterCounts({
+    requests,
+    selectedYear,
+    selectedMonth,
+    selectedDay
+  })
+
+  const activeFilterCount = calculateActiveFilterCount({
+    categoryFilter,
+    urgencyFilter,
+    sourceFilter,
+    dateRange,
+    dayFilter
+  })
 
   // ============================================================
   // METRICS HOOK - Calculations and analytics
@@ -414,22 +430,54 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     setCurrentPage(1)
   }
 
-  const toggleColumnFilter = (column: string) => {
-    setShowFilters(prev => ({
-      ...prev,
-      [column]: !prev[column as keyof typeof prev]
-    }))
-  }
-
   const resetTableFilters = () => {
     setSortColumn(null)
     setSortDirection('asc')
     setCategoryFilter([])
     setUrgencyFilter([])
     setSourceFilter([])
-    setDateFilter('all')
+    setDateRange({ from: null, to: null })
     setDayFilter([])
     setSearchQuery('')
+  }
+
+  const handleApplyPreset = (preset: FilterPreset) => {
+    // Reset all filters first
+    setCategoryFilter([])
+    setUrgencyFilter([])
+    setSourceFilter([])
+    setDateRange({ from: null, to: null })
+    setDayFilter([])
+
+    // Apply preset filters
+    if (preset.filters.categoryFilter) {
+      setCategoryFilter(preset.filters.categoryFilter)
+    }
+    if (preset.filters.urgencyFilter) {
+      setUrgencyFilter(preset.filters.urgencyFilter)
+    }
+    if (preset.filters.sourceFilter) {
+      setSourceFilter(preset.filters.sourceFilter)
+    }
+    if (preset.filters.dateRange) {
+      setDateRange(preset.filters.dateRange)
+    }
+    if (preset.filters.dayFilter) {
+      setDayFilter(preset.filters.dayFilter)
+    }
+
+    // Special handling for "Billable Only" preset
+    if (preset.id === 'billable-only') {
+      // Exclude Non-billable and Migration categories by selecting all others
+      const billableCategories = CATEGORY_OPTIONS.filter(
+        cat => cat !== 'Non-billable' && cat !== 'Migration'
+      )
+      setCategoryFilter(billableCategories)
+    }
+
+    setCurrentPage(1)
+    setSelectedRequestIds(new Set())
+    setSelectAll(false)
   }
 
   // ============================================================
@@ -805,13 +853,13 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSort={handleSort}
-            showFilters={showFilters}
             sourceFilter={sourceFilter}
-            dateFilter={dateFilter}
+            dateRange={dateRange}
             dayFilter={dayFilter}
             categoryFilter={categoryFilter}
             urgencyFilter={urgencyFilter}
-            onToggleColumnFilter={toggleColumnFilter}
+            filterCounts={filterCounts}
+            activeFilterCount={activeFilterCount}
             onSourceFilterChange={(sources) => {
               preserveScrollPosition()
               setSourceFilter(sources)
@@ -819,9 +867,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
               setSelectedRequestIds(new Set())
               setSelectAll(false)
             }}
-            onDateFilterChange={(date) => {
+            onDateRangeChange={(range) => {
               preserveScrollPosition()
-              setDateFilter(date)
+              setDateRange(range)
               setCurrentPage(1)
               setSelectedRequestIds(new Set())
               setSelectAll(false)
@@ -847,9 +895,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
               setSelectedRequestIds(new Set())
               setSelectAll(false)
             }}
+            onApplyPreset={handleApplyPreset}
             onResetFilters={resetTableFilters}
-            availableDates={availableDates}
-            availableDays={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
+            formatUrgencyDisplay={formatUrgencyDisplay}
             categoryOptions={CATEGORY_OPTIONS}
             urgencyOptions={URGENCY_OPTIONS}
             currentPage={currentPage}
@@ -863,7 +911,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             selectedMonth={selectedMonth}
             selectedDay={selectedDay}
             formatTime={formatTime}
-            formatUrgencyDisplay={formatUrgencyDisplay}
             preserveScrollPosition={preserveScrollPosition}
           />
 
