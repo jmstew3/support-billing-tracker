@@ -19,16 +19,16 @@ cd support-billing-tracker
 
 ```bash
 # Copy example environment file
-cp .env.docker.example .env.docker
+cp .env.example .env
 
 # Edit with your values
-nano .env.docker
+nano .env
 ```
 
 ### 3. Start with Docker Compose
 
 ```bash
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 ```
 
 ### 4. Access Application
@@ -88,7 +88,7 @@ cd backend && npm test
 cd frontend && npm test
 
 # Full integration test
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 curl http://localhost:3011/api/health
 ```
 
@@ -306,7 +306,7 @@ npm test -- --watch
 
 ```bash
 # Start all services
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 
 # View logs
 docker-compose logs -f backend
@@ -335,7 +335,7 @@ docker-compose down -v
 | `VITE_TWENTY_API_URL` | Twenty CRM API | `https://twenty.example.com/rest` |
 | `VITE_TWENTY_API_TOKEN` | Twenty API token | `Bearer xxx` |
 
-### Backend (.env.docker)
+### Backend (.env)
 
 | Variable | Description | Example |
 |----------|-------------|---------|
@@ -358,7 +358,7 @@ docker-compose down -v
 ### Database Connection
 
 1. Ensure MySQL container is running: `docker-compose ps`
-2. Check credentials in `.env.docker`
+2. Check credentials in `.env`
 3. Verify network connectivity: `docker network ls`
 
 ### Cache Issues

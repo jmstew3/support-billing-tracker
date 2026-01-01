@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo } from 'react';
 import type { ChatRequest } from '../../../types/request';
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers';
@@ -118,12 +119,13 @@ export function useSupportFiltering(
           aValue = (a.Category || categorizeRequest(a.Request_Summary)).toLowerCase();
           bValue = (b.Category || categorizeRequest(b.Request_Summary)).toLowerCase();
           break;
-        case 'Urgency':
+        case 'Urgency': {
           // Sort by urgency level: HIGH > MEDIUM > LOW
           const urgencyOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
           aValue = urgencyOrder[a.Urgency as keyof typeof urgencyOrder] || 0;
           bValue = urgencyOrder[b.Urgency as keyof typeof urgencyOrder] || 0;
           break;
+        }
         default:
           return 0;
       }

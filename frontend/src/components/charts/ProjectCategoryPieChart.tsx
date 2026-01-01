@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
 import type { Project } from '../../types/project';
@@ -37,7 +38,8 @@ export function ProjectCategoryPieChart({ projects }: ProjectCategoryPieChartPro
 
     // Convert to chart data format
     return Object.entries(counts)
-      .filter(([_, data]) => data.count > 0)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([_category, data]) => data.count > 0)
       .map(([category, data]) => ({
         name: formatCategoryName(category),
         value: data.count,

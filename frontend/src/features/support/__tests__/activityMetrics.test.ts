@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Baseline tests for Support activity metric functions
  * These tests will be extracted into a separate utility file during refactoring

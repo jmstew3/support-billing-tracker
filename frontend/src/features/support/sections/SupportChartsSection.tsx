@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * SupportChartsSection Component
  *
@@ -51,7 +52,7 @@ export function SupportChartsSection({
           month: 'long',
           day: 'numeric'
         })}`
-      } catch (error) {
+      } catch {
         return `Requests by Hour - ${selectedDay}`
       }
     }

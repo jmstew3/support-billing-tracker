@@ -160,14 +160,16 @@ export function DatePickerPopover({
     const currentMonth = today.getMonth() + 1;
 
     switch (preset) {
-      case 'last3':
+      case 'last3': {
         const last3 = Array.from({ length: 3 }, (_, i) => Math.max(1, currentMonth - 2 + i));
         onMonthsChange(last3);
         break;
-      case 'last6':
+      }
+      case 'last6': {
         const last6 = Array.from({ length: 6 }, (_, i) => Math.max(1, currentMonth - 5 + i));
         onMonthsChange(last6);
         break;
+      }
       case 'q1':
         onMonthsChange([1, 2, 3]);
         break;
@@ -180,10 +182,11 @@ export function DatePickerPopover({
       case 'q4':
         onMonthsChange([10, 11, 12]);
         break;
-      case 'ytd':
+      case 'ytd': {
         const ytd = Array.from({ length: currentMonth }, (_, i) => i + 1);
         onMonthsChange(ytd);
         break;
+      }
     }
     onDayChange('all');
     setIsOpen(false);

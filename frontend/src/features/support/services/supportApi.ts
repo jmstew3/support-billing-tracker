@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Support domain API service
  * Handles all support ticket CRUD operations

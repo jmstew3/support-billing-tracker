@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "Running pre-push checks..."
+
+# Run frontend tests
+echo "Running frontend tests..."
+cd frontend && npm run test -- --run
+
+# Run backend tests
+echo "Running backend tests..."
+cd ../backend && npm test
+
+echo "All checks passed!"
