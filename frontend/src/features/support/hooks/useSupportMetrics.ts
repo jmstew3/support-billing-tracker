@@ -66,7 +66,8 @@ export function useSupportMetrics(
 
       const dayCount: Record<string, number> = {};
       reqs.forEach(request => {
-        dayCount[request.Date] = (dayCount[request.Date] || 0) + 1;
+        const effectiveDate = request.BillingDate || request.Date;
+        dayCount[effectiveDate] = (dayCount[effectiveDate] || 0) + 1;
       });
 
       let maxCount = 0;
@@ -165,7 +166,8 @@ export function useSupportMetrics(
       const dayCount: Record<string, number> = {};
 
       reqs.forEach(request => {
-        const dayName = getDayOfWeek(request.Date);
+        const effectiveDate = request.BillingDate || request.Date;
+        const dayName = getDayOfWeek(effectiveDate);
         dayCount[dayName] = (dayCount[dayName] || 0) + 1;
       });
 
@@ -336,7 +338,8 @@ export function useSupportMetrics(
     const requestsByMonth = new Map<string, ChatRequest[]>();
 
     requests.forEach(request => {
-      const requestDate = parseLocalDate(request.Date);
+      const effectiveDate = request.BillingDate || request.Date;
+      const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
 
@@ -380,7 +383,8 @@ export function useSupportMetrics(
 
     // Filter requests to selected month only
     const filteredRequests = requests.filter(request => {
-      const requestDate = parseLocalDate(request.Date);
+      const effectiveDate = request.BillingDate || request.Date;
+      const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
       return year === selectedYear && month === selectedMonths[0];

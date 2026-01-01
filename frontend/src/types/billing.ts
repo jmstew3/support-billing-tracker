@@ -72,6 +72,15 @@ export interface MonthlyBillingSummary {
 }
 
 /**
+ * Data source availability status
+ */
+export interface DataSourceStatus {
+  requests: { available: boolean; error?: string };
+  projects: { available: boolean; error?: string };
+  hosting: { available: boolean; error?: string };
+}
+
+/**
  * Overall billing summary across all months
  */
 export interface BillingSummary {
@@ -80,4 +89,5 @@ export interface BillingSummary {
   totalProjectsRevenue: number;
   totalHostingRevenue: number; // Current MRR (latest month's net hosting revenue)
   monthlyBreakdown: MonthlyBillingSummary[];
+  dataSourceStatus: DataSourceStatus; // Status of each data source
 }

@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Ticket, FolderKanban, BarChart3, Zap, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
+import { viewToRoute } from '../../router';
 import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
   currentView?: 'home' | 'projects' | 'overview' | 'billing';
-  onNavigate?: (view: 'home' | 'projects' | 'overview' | 'billing') => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
-export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
+export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { logout } = useAuth();
 
@@ -43,9 +45,8 @@ export function Sidebar({ currentView = 'home', onNavigate, isMobileOpen, setIsM
   ];
 
   const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing') => {
-    if (onNavigate) {
-      onNavigate(view);
-    }
+    const route = viewToRoute[view];
+    navigate(route);
   };
 
   const handleLogout = async () => {

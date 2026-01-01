@@ -13,6 +13,7 @@ services:
     volumes:
       - ${MYSQL_DATA_PATH:-./mysql_data}:/var/lib/mysql
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/db/seed_requests.sql:/docker-entrypoint-initdb.d/02-seed-requests.sql:ro
     networks:
       - velocity-network
     healthcheck:

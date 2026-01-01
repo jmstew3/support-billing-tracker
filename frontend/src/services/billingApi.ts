@@ -8,6 +8,7 @@ import type {
   BillingSummary,
   BillableTicket,
   BillableProject,
+  DataSourceStatus,
 } from '../types/billing';
 import type { ChatRequest } from '../types/request';
 import type { Project } from '../types/project';
@@ -17,13 +18,59 @@ import type { Project } from '../types/project';
  * Groups all revenue sources by month for unified billing reconciliation
  */
 export async function generateComprehensiveBilling(): Promise<BillingSummary> {
+  // Track data source availability
+  const dataSourceStatus: DataSourceStatus = {
+    requests: { available: false },
+    projects: { available: false },
+    hosting: { available: false },
+  };
+
+  // Fetch data from all three sources in parallel using allSettled for graceful handling
+  const [requestsResult, projectsResult, hostingResult] = await Promise.allSettled([
+    fetchRequests(),
+    fetchProjects(),
+    fetchWebsiteProperties(),
+  ]);
+
+  // Extract data from settled results, using empty arrays for failures
+  let requests: ChatRequest[] = [];
+  let projects: Project[] = [];
+  let hostingProperties: Parameters<typeof generateMonthlyBreakdown>[0] = [];
+
+  if (requestsResult.status === 'fulfilled') {
+    requests = requestsResult.value;
+    dataSourceStatus.requests = { available: true };
+  } else {
+    console.warn('Failed to fetch requests:', requestsResult.reason);
+    dataSourceStatus.requests = {
+      available: false,
+      error: requestsResult.reason?.message || 'Failed to load support requests'
+    };
+  }
+
+  if (projectsResult.status === 'fulfilled') {
+    projects = projectsResult.value;
+    dataSourceStatus.projects = { available: true };
+  } else {
+    console.warn('Failed to fetch projects:', projectsResult.reason);
+    dataSourceStatus.projects = {
+      available: false,
+      error: projectsResult.reason?.message || 'Failed to load projects from Twenty CRM'
+    };
+  }
+
+  if (hostingResult.status === 'fulfilled') {
+    hostingProperties = hostingResult.value;
+    dataSourceStatus.hosting = { available: true };
+  } else {
+    console.warn('Failed to fetch hosting properties:', hostingResult.reason);
+    dataSourceStatus.hosting = {
+      available: false,
+      error: hostingResult.reason?.message || 'Failed to load hosting data from Twenty CRM'
+    };
+  }
+
   try {
-    // Fetch data from all three sources in parallel
-    const [requests, projects, hostingProperties] = await Promise.all([
-      fetchRequests(),
-      fetchProjects(),
-      fetchWebsiteProperties(),
-    ]);
 
     // Generate hosting breakdown (reuse existing logic)
     const hostingBreakdown = generateMonthlyBreakdown(hostingProperties);
@@ -172,10 +219,19 @@ export async function generateComprehensiveBilling(): Promise<BillingSummary> {
       totalProjectsRevenue,
       totalHostingRevenue,
       monthlyBreakdown,
+      dataSourceStatus,
     };
   } catch (error) {
     console.error('Error generating comprehensive billing:', error);
-    throw error;
+    // Return empty summary with error status rather than throwing
+    return {
+      totalRevenue: 0,
+      totalTicketsRevenue: 0,
+      totalProjectsRevenue: 0,
+      totalHostingRevenue: 0,
+      monthlyBreakdown: [],
+      dataSourceStatus,
+    };
   }
 }
 
@@ -194,7 +250,7 @@ function transformRequestsToTickets(requests: ChatRequest[]): BillableTicket[] {
 
       return {
         id: String(req.id || `${req.Date}-${req.Time}`),
-        date: req.Date,
+        date: req.BillingDate || req.Date, // Prefer billing date if set
         time: req.Time,
         description: req.Request_Summary,
         category: req.Category || 'Unknown',

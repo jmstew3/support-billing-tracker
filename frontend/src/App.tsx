@@ -1,22 +1,12 @@
-import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { SupportTickets } from './features/support/components/SupportTickets';
-import { Sidebar } from './components/shared/Sidebar';
-import { Projects } from './features/projects/components/Projects';
-import { TurboHosting } from './features/hosting/components/TurboHosting';
-import { Dashboard } from './features/dashboard/components/Dashboard';
+import { RouterProvider } from 'react-router-dom';
 import { Login } from './features/auth/components/Login';
-import { PeriodProvider } from './contexts/PeriodContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useTheme } from './hooks/useTheme';
 import { queryClient } from './lib/queryClient';
 import { Loader2 } from 'lucide-react';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { router } from './router';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
 
   // Show loading spinner while checking authentication
@@ -36,43 +26,8 @@ function AppContent() {
     return <Login />;
   }
 
-  // Show main dashboard if authenticated
-  return (
-    <PeriodProvider>
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar
-          currentView={currentView}
-          onNavigate={setCurrentView}
-          isMobileOpen={isMobileMenuOpen}
-          setIsMobileOpen={setIsMobileMenuOpen}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
-        <main className="flex-1 overflow-auto">
-          {currentView === 'home' && (
-            <ErrorBoundary>
-              <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-            </ErrorBoundary>
-          )}
-          {currentView === 'projects' && (
-            <ErrorBoundary>
-              <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-            </ErrorBoundary>
-          )}
-          {currentView === 'overview' && (
-            <ErrorBoundary>
-              <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-            </ErrorBoundary>
-          )}
-          {currentView === 'billing' && (
-            <ErrorBoundary>
-              <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-            </ErrorBoundary>
-          )}
-        </main>
-      </div>
-    </PeriodProvider>
-  );
+  // Show router-based app if authenticated
+  return <RouterProvider router={router} />;
 }
 
 function App() {
