@@ -12,6 +12,7 @@ export interface ChatRequest {
   Effort?: string;
   source?: 'sms' | 'ticket' | 'email' | 'phone' | 'fluent'; // Data source - defaults to 'sms' for existing data
   website_url?: string | null; // Website URL extracted from FluentSupport tickets
+  BillingDate?: string | null; // YYYY-MM-DD format, null = use original Date for billing
 }
 
 export interface DailyRequestCount {
