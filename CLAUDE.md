@@ -23,9 +23,8 @@ docker-compose --env-file .env.docker up -d
 # Backend API: http://localhost:3011/api
 # Production: https://velocity.peakonedigital.com/billing-overview
 
-# Credentials (BasicAuth)
-Username: admin
-Password: ***REMOVED***
+# Credentials (BasicAuth) - see .env.docker
+# DO NOT commit actual credentials to documentation
 ```
 
 ### Data Processing Pipeline
