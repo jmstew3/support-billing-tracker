@@ -27,6 +27,8 @@ function transformDbRow(row: any): ChatRequest {
     EstimatedHours: row.EstimatedHours,
     Status: row.Status,
     source: row.source || 'sms', // Default to 'sms' for backwards compatibility
+    website_url: row.website_url || null,
+    BillingDate: row.BillingDate || null,
   };
 }
 
@@ -76,7 +78,7 @@ export async function fetchRequests(filters?: {
  */
 export async function updateRequest(id: number, updates: Partial<ChatRequest>): Promise<void> {
   try {
-    const payload = {
+    const payload: Record<string, any> = {
       category: updates.Category,
       urgency: updates.Urgency,
       effort: updates.Effort,
@@ -85,6 +87,11 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
       request_type: updates.Request_Type,
       estimated_hours: updates.EstimatedHours,
     };
+
+    // Handle billing_date separately to allow explicit null (clear)
+    if (updates.BillingDate !== undefined) {
+      payload.billing_date = updates.BillingDate;
+    }
 
     const response = await authenticatedFetch(`${ENDPOINTS.REQUESTS}/${id}`, {
       method: 'PUT',
