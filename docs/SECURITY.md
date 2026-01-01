@@ -7,10 +7,13 @@
 The application is protected by HTTP Basic Authentication at the reverse proxy level using Traefik middleware.
 
 ### Access Credentials
-- **Username:** `admin`
-- **Password:** `PeakonBilling2025`
-- **Storage:** `.env.docker` file (not committed to Git)
+- **Username:** Configured in `.env.docker` (ADMIN_EMAIL)
+- **Password:** Configured in `.env.docker` (ADMIN_PASSWORD)
+- **Storage:** `.env.docker` file (NOT committed to Git)
 - **Hash Algorithm:** Apache APR1 (MD5-based bcrypt variant)
+
+> **SECURITY NOTE:** Never commit actual credentials to documentation or version control.
+> See `.env.docker.example` for configuration template.
 
 ### How It Works
 1. All requests to `velocity.peakonedigital.com/billing-overview` and `/billing-overview-api` are intercepted by Traefik
