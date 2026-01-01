@@ -1,4 +1,4 @@
 #!/bin/bash
-# Helper script for docker-compose with .env.docker
+# Helper script for docker-compose (loads .env automatically)
 
-docker-compose --env-file .env.docker "$@"
+docker-compose "$@"

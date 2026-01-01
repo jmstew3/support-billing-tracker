@@ -1,11 +1,8 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: support-billing-tracker-mysql
     restart: unless-stopped
-    env_file: .env.docker
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: support_billing_tracker
@@ -31,7 +28,6 @@ services:
       dockerfile: Dockerfile
     container_name: support-billing-tracker-backend
     restart: unless-stopped
-    env_file: .env.docker
     depends_on:
       mysql:
         condition: service_healthy
@@ -88,7 +84,6 @@ services:
       target: development
     container_name: support-billing-tracker-frontend
     restart: unless-stopped
-    env_file: .env.docker
     depends_on:
       - backend
     environment:

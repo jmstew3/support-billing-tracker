@@ -17,7 +17,7 @@
 #
 # Requirements:
 #   - Docker and docker-compose installed
-#   - .env.docker file with FluentSupport configuration
+#   - .env file with FluentSupport configuration
 #   - curl and jq commands available
 #
 
@@ -35,7 +35,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Configuration
-ENV_FILE="$PROJECT_ROOT/.env.docker"
+ENV_FILE="$PROJECT_ROOT/.env"
 BACKEND_CONTAINER="support-billing-tracker-backend"
 API_BASE_URL="http://localhost:3011/api"
 
@@ -63,9 +63,9 @@ log_error() {
 # VALIDATION
 # ============================================================
 
-# Check if .env.docker exists
+# Check if .env exists
 if [ ! -f "$ENV_FILE" ]; then
-    log_error ".env.docker file not found at: $ENV_FILE"
+    log_error ".env file not found at: $ENV_FILE"
     exit 1
 fi
 
@@ -120,7 +120,7 @@ log_info "Date filter: $DATE_FILTER"
 # UPDATE ENVIRONMENT FILE
 # ============================================================
 
-log_info "Updating VITE_FLUENT_DATE_FILTER in .env.docker..."
+log_info "Updating VITE_FLUENT_DATE_FILTER in .env..."
 
 # Check if the variable exists in the file
 if grep -q "^VITE_FLUENT_DATE_FILTER=" "$ENV_FILE"; then
@@ -136,7 +136,7 @@ if grep -q "^VITE_FLUENT_DATE_FILTER=" "$ENV_FILE"; then
 else
     # Add new line
     echo "VITE_FLUENT_DATE_FILTER=$DATE_FILTER" >> "$ENV_FILE"
-    log_success "Added VITE_FLUENT_DATE_FILTER=$DATE_FILTER to .env.docker"
+    log_success "Added VITE_FLUENT_DATE_FILTER=$DATE_FILTER to .env"
 fi
 
 # ============================================================
