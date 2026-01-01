@@ -6,10 +6,10 @@ set -e
 
 echo "🚀 Starting Support Billing Tracker Application with Docker..."
 
-# Load environment variables if .env.docker exists
-if [ -f .env.docker ]; then
-    echo "📋 Loading environment variables from .env.docker"
-    export $(cat .env.docker | grep -v '^#' | xargs)
+# Load environment variables if .env exists
+if [ -f .env ]; then
+    echo "📋 Loading environment variables from .env"
+    export $(cat .env | grep -v '^#' | xargs)
 fi
 
 # Check if Docker is running

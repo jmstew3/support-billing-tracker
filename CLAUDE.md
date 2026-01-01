@@ -17,13 +17,13 @@ Business intelligence dashboard for support request tracking and billing. Proces
 
 ```bash
 # Start with Docker
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:3011/api
 # Production: https://velocity.peakonedigital.com/billing-overview
 
-# Credentials (BasicAuth) - see .env.docker
+# Credentials (BasicAuth) - see .env
 # DO NOT commit actual credentials to documentation
 ```
 
@@ -69,7 +69,7 @@ cd request-extractor && python3 main.py
 
 ## Key Configuration
 
-**Environment (`.env.docker`):**
+**Environment (`.env`):**
 ```bash
 # API
 VITE_API_URL=http://localhost:3011/api
