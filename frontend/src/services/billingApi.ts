@@ -250,7 +250,7 @@ function transformRequestsToTickets(requests: ChatRequest[]): BillableTicket[] {
 
       return {
         id: String(req.id || `${req.Date}-${req.Time}`),
-        date: req.Date,
+        date: req.BillingDate || req.Date, // Prefer billing date if set
         time: req.Time,
         description: req.Request_Summary,
         category: req.Category || 'Unknown',
