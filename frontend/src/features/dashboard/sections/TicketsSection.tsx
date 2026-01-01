@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronUp, ChevronDown, Ticket, Zap } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { formatCurrency, formatCurrencyAccounting } from '../../../utils/formatting';
 import { CountBadge, CreditBadge } from '../../../components/ui/BillingBadge';
 import type { MonthlyBillingSummary } from '../../../types/billing';
@@ -77,7 +78,9 @@ export function TicketsSection({ monthData, isExpanded, onToggle }: TicketsSecti
                 <td className="py-3 px-2 text-right text-muted-foreground text-xs w-8">
                   {idx + 1}
                 </td>
-                <td className="py-2 px-4 text-xs text-muted-foreground w-32">{ticket.date}</td>
+                <td className="py-2 px-4 text-xs text-muted-foreground w-32">
+                  {format(parseISO(ticket.date), 'MMM d, yyyy')}
+                </td>
                 <td className="py-2 px-4 text-xs">
                   <div
                     className={`cursor-pointer ${!isTicketExpanded ? 'line-clamp-2' : ''}`}
