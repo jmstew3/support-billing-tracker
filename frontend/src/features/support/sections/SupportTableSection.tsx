@@ -20,8 +20,11 @@ import { Table, TableBody } from '../../../components/ui/table'
 import { SupportTableHeader } from './SupportTableHeader'
 import { SupportTableRow } from './SupportTableRow'
 import { Pagination } from '../../../components/shared/Pagination'
-import { Search, X, ArrowUp } from 'lucide-react'
+import { FilterPanel } from '../components/FilterPanel'
+import { Search, X, ArrowUp, CalendarDays } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import type { ChatRequest } from '../../../types/request'
+import type { DateRangeFilter, FilterPreset, FilterCounts } from '../types/filters'
 
 export interface SupportTableSectionProps {
   // Data
@@ -65,29 +68,23 @@ export interface SupportTableSectionProps {
   onSort: (column: string) => void
 
   // Filters
-  showFilters: {
-    source: boolean
-    date: boolean
-    day: boolean
-    category: boolean
-    urgency: boolean
-  }
   sourceFilter: string[]
-  dateFilter: string
+  dateRange: DateRangeFilter
   dayFilter: string[]
   categoryFilter: string[]
   urgencyFilter: string[]
-  onToggleColumnFilter: (column: string) => void
+  filterCounts: FilterCounts
+  activeFilterCount: number
   onSourceFilterChange: (sources: string[]) => void
-  onDateFilterChange: (date: string) => void
+  onDateRangeChange: (range: DateRangeFilter) => void
   onDayFilterChange: (days: string[]) => void
   onCategoryFilterChange: (categories: string[]) => void
   onUrgencyFilterChange: (urgencies: string[]) => void
+  onApplyPreset: (preset: FilterPreset) => void
   onResetFilters: () => void
+  formatUrgencyDisplay: (urgency: string) => string
 
   // Filter options
-  availableDates: string[]
-  availableDays: string[]
   categoryOptions: string[]
   urgencyOptions: string[]
 
@@ -109,7 +106,6 @@ export interface SupportTableSectionProps {
 
   // Utilities
   formatTime: (time: string) => string
-  formatUrgencyDisplay: (urgency: string) => string
   preserveScrollPosition: () => void
 }
 
@@ -142,21 +138,21 @@ export function SupportTableSection({
   sortColumn,
   sortDirection,
   onSort,
-  showFilters,
   sourceFilter,
-  dateFilter,
+  dateRange,
   dayFilter,
   categoryFilter,
   urgencyFilter,
-  onToggleColumnFilter,
+  filterCounts,
+  activeFilterCount,
   onSourceFilterChange,
-  onDateFilterChange,
+  onDateRangeChange,
   onDayFilterChange,
   onCategoryFilterChange,
   onUrgencyFilterChange,
+  onApplyPreset,
   onResetFilters,
-  availableDates,
-  availableDays,
+  formatUrgencyDisplay,
   categoryOptions,
   urgencyOptions,
   currentPage,
@@ -166,22 +162,43 @@ export function SupportTableSection({
   onPageSizeChange,
   onUpdateRequest,
   onDeleteRequest,
-  selectedYear,
-  selectedMonth,
-  selectedDay,
+  selectedYear: _selectedYear,
+  selectedMonth: _selectedMonth,
+  selectedDay: _selectedDay,
   formatTime,
-  formatUrgencyDisplay,
-  preserveScrollPosition
+  preserveScrollPosition: _preserveScrollPosition
 }: SupportTableSectionProps) {
-  // Silence unused variable warning - kept for API compatibility
+  // Silence unused variable warnings - kept for API compatibility
   void _endIndex;
+  void _selectedYear;
+  void _selectedMonth;
+  void _selectedDay;
+  void _preserveScrollPosition;
 
-  const hasActiveFilters = sortColumn !== null ||
+  // Check if any filters are active (kept for future UI state)
+  const _hasActiveFilters = sortColumn !== null ||
     categoryFilter.length > 0 ||
     urgencyFilter.length > 0 ||
-    dateFilter !== 'all' ||
+    sourceFilter.length > 0 ||
+    (dateRange.from || dateRange.to) ||
     dayFilter.length > 0 ||
     searchQuery !== ''
+  void _hasActiveFilters;
+
+  // Format date range for display
+  const formatDateRangeDisplay = (range: DateRangeFilter): string => {
+    if (!range.from && !range.to) return ''
+    const formatDate = (dateStr: string) => format(parseISO(dateStr), 'MMM d, yyyy')
+    if (range.from && range.to) {
+      if (range.from === range.to) {
+        return formatDate(range.from)
+      }
+      return `${formatDate(range.from)} → ${formatDate(range.to)}`
+    }
+    if (range.from) return `From ${formatDate(range.from)}`
+    if (range.to) return `Until ${formatDate(range.to)}`
+    return ''
+  }
 
   return (
     <Card>
@@ -368,14 +385,26 @@ export function SupportTableSection({
               )}
             </div>
 
-            {hasActiveFilters && (
-              <button
-                onClick={onResetFilters}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Reset Filters
-              </button>
-            )}
+            {/* Filter Panel */}
+            <FilterPanel
+              categoryFilter={categoryFilter}
+              urgencyFilter={urgencyFilter}
+              sourceFilter={sourceFilter}
+              dateRange={dateRange}
+              dayFilter={dayFilter}
+              categoryOptions={categoryOptions}
+              urgencyOptions={urgencyOptions}
+              filterCounts={filterCounts}
+              activeFilterCount={activeFilterCount}
+              onCategoryFilterChange={onCategoryFilterChange}
+              onUrgencyFilterChange={onUrgencyFilterChange}
+              onSourceFilterChange={onSourceFilterChange}
+              onDateRangeChange={onDateRangeChange}
+              onDayFilterChange={onDayFilterChange}
+              onApplyPreset={onApplyPreset}
+              onResetFilters={onResetFilters}
+              formatUrgencyDisplay={formatUrgencyDisplay}
+            />
           </div>
 
           <div className="text-xs text-muted-foreground">
@@ -384,7 +413,7 @@ export function SupportTableSection({
         </div>
 
         {/* Active Filters Display */}
-        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || dateFilter !== 'all' || dayFilter.length > 0) && (
+        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || (dateRange.from || dateRange.to) || dayFilter.length > 0) && (
           <div className="flex flex-wrap gap-2 mb-4">
             {/* Category Filters */}
             {categoryFilter.map(category => (
@@ -454,15 +483,15 @@ export function SupportTableSection({
               </div>
             ))}
 
-            {/* Date Filter */}
-            {dateFilter !== 'all' && (
+            {/* Date Range Filter */}
+            {(dateRange.from || dateRange.to) && (
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
-                <ArrowUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                <CalendarDays className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                 <span className="text-muted-foreground">Date:</span>
-                <span className="font-medium text-blue-600 dark:text-blue-400">{dateFilter}</span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">{formatDateRangeDisplay(dateRange)}</span>
                 <button
                   onClick={() => {
-                    onDateFilterChange('all')
+                    onDateRangeChange({ from: null, to: null })
                   }}
                   className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
@@ -483,28 +512,6 @@ export function SupportTableSection({
                 sortColumn={sortColumn}
                 sortDirection={sortDirection}
                 onSort={onSort}
-                showFilters={showFilters}
-                sourceFilter={sourceFilter}
-                dateFilter={dateFilter}
-                dayFilter={dayFilter}
-                categoryFilter={categoryFilter}
-                urgencyFilter={urgencyFilter}
-                availableDates={availableDates}
-                availableDays={availableDays}
-                categoryOptions={categoryOptions}
-                urgencyOptions={urgencyOptions}
-                onToggleColumnFilter={onToggleColumnFilter}
-                onSourceFilterChange={onSourceFilterChange}
-                onDateFilterChange={onDateFilterChange}
-                onDayFilterChange={onDayFilterChange}
-                onCategoryFilterChange={onCategoryFilterChange}
-                onUrgencyFilterChange={onUrgencyFilterChange}
-                requests={requests}
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                selectedDay={selectedDay}
-                formatUrgencyDisplay={formatUrgencyDisplay}
-                preserveScrollPosition={preserveScrollPosition}
               />
               <TableBody>
                 {paginatedRequests.map((request, paginatedIndex) => {

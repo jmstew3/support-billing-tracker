@@ -82,27 +82,25 @@ describe('SupportTableSection', () => {
     sortColumn: null,
     sortDirection: 'asc' as 'asc' | 'desc',
     onSort: vi.fn(),
-    showFilters: {
-      source: false,
-      date: false,
-      day: false,
-      category: false,
-      urgency: false
-    },
     sourceFilter: [],
-    dateFilter: 'all',
+    dateRange: { from: null, to: null },
     dayFilter: [],
     categoryFilter: [],
     urgencyFilter: [],
-    onToggleColumnFilter: vi.fn(),
     onSourceFilterChange: vi.fn(),
-    onDateFilterChange: vi.fn(),
+    onDateRangeChange: vi.fn(),
     onDayFilterChange: vi.fn(),
     onCategoryFilterChange: vi.fn(),
     onUrgencyFilterChange: vi.fn(),
     onResetFilters: vi.fn(),
-    availableDates: ['2025-06-23', '2025-06-24'],
-    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    onApplyPreset: vi.fn(),
+    filterCounts: {
+      source: { sms: 1, ticket: 1 },
+      urgency: { HIGH: 1, MEDIUM: 1 },
+      category: { Support: 1, Hosting: 1 },
+      day: { Mon: 1, Tue: 1 }
+    },
+    activeFilterCount: 0,
     categoryOptions: ['Support', 'Hosting', 'Forms', 'Billing'],
     urgencyOptions: ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION'],
     currentPage: 1,
@@ -188,26 +186,28 @@ describe('SupportTableSection', () => {
     expect(defaultProps.onSearchQueryChange).toHaveBeenCalledWith('')
   })
 
-  it('should display reset filters button when filters are active', () => {
-    render(<SupportTableSection {...defaultProps} sortColumn="Date" />)
-
-    expect(screen.getByText('Reset Filters')).toBeInTheDocument()
-  })
-
-  it('should not display reset filters button when no filters are active', () => {
+  it('should render Filter button in toolbar', () => {
     render(<SupportTableSection {...defaultProps} />)
 
-    expect(screen.queryByText('Reset Filters')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Filters/i })).toBeInTheDocument()
   })
 
-  it('should call onResetFilters when reset button is clicked', async () => {
+  it('should show active filter count badge when filters are active', () => {
+    render(<SupportTableSection {...defaultProps} activeFilterCount={3} />)
+
+    // The filter count badge should be displayed
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('should open filter panel when Filters button is clicked', async () => {
     const user = userEvent.setup()
-    render(<SupportTableSection {...defaultProps} sortColumn="Date" />)
+    render(<SupportTableSection {...defaultProps} />)
 
-    const resetButton = screen.getByText('Reset Filters')
-    await user.click(resetButton)
+    const filterButton = screen.getByRole('button', { name: /Filters/i })
+    await user.click(filterButton)
 
-    expect(defaultProps.onResetFilters).toHaveBeenCalled()
+    // Reset all filters button should be visible in the panel
+    expect(screen.getByText('Reset all filters')).toBeInTheDocument()
   })
 
   it('should display request count', () => {
