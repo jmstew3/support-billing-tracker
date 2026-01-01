@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import type { ChatRequest } from '../../../types/request'
+import type { DateRangeFilter } from '../types/filters'
 import { fetchRequests, checkAPIHealth } from '../../../utils/api'
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
@@ -28,7 +29,7 @@ interface UseSupportDataProps {
   categoryFilter: string[]
   urgencyFilter: string[]
   sourceFilter: string[]
-  dateFilter: string
+  dateRange: DateRangeFilter
   dayFilter: string[]
 
   // Search
@@ -81,7 +82,7 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
     categoryFilter,
     urgencyFilter,
     sourceFilter,
-    dateFilter,
+    dateRange,
     dayFilter,
     searchQuery,
     hideNonBillable,
@@ -215,7 +216,14 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
       if (categoryFilter.length > 0 && !categoryFilter.includes(request.Category || 'Support')) return false
       if (urgencyFilter.length > 0 && !urgencyFilter.includes(request.Urgency)) return false
       if (sourceFilter.length > 0 && !sourceFilter.includes(request.source || 'sms')) return false
-      if (dateFilter !== 'all' && request.Date !== dateFilter) return false
+
+      // Date range filtering
+      if (dateRange.from || dateRange.to) {
+        const requestDateStr = request.Date // YYYY-MM-DD format
+        if (dateRange.from && requestDateStr < dateRange.from) return false
+        if (dateRange.to && requestDateStr > dateRange.to) return false
+      }
+
       if (dayFilter.length > 0 && !dayFilter.includes(requestDayOfWeek)) return false
 
       // Search filter - case-insensitive search in Request_Summary
@@ -297,7 +305,7 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
     categoryFilter,
     urgencyFilter,
     sourceFilter,
-    dateFilter,
+    dateRange,
     dayFilter,
     searchQuery,
     hideNonBillable,
