@@ -86,7 +86,10 @@ export const conditionalAuth = async (req, res, next) => {
     // Fetch user from database to ensure they still exist and are active
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(401).json({ error: 'User not found or inactive' });
+      return res.status(401).json({
+        error: 'User not found or inactive',
+        hint: 'User account may have been deactivated or removed'
+      });
     }
 
     // Attach user to request object

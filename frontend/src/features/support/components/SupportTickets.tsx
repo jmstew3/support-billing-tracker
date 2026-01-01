@@ -547,7 +547,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        // Bulk update failed
+        console.error('Failed to apply bulk updates:', error)
+        // TODO: Add user notification for failed bulk update
       }
     } else {
       // Local-only mode: apply updates directly
@@ -585,7 +586,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           return newRequests
         })
       } catch (error) {
-        // Update failed
+        console.error(`Failed to update request field ${field}:`, error)
+        // TODO: Add user notification for failed update
       }
     } else {
       setRequests(prevRequests => {
@@ -619,7 +621,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
           )
         )
       } catch (error) {
-        // Delete failed
+        console.error('Failed to delete request:', error)
+        // TODO: Add user notification for failed delete operation
       }
     } else {
       setRequests(prevRequests =>
@@ -646,7 +649,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         )
       )
     } catch (error) {
-      // Restore failed
+      console.error('Failed to restore request:', error)
+      // TODO: Add user notification for failed restore operation
     }
   }
 

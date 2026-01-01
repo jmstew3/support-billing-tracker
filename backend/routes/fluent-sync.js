@@ -50,9 +50,21 @@ router.get('/tickets', async (req, res) => {
   try {
     const { limit = 100, offset = 0 } = req.query;
 
+    // Validate and sanitize limit and offset parameters
+    const parsedLimit = parseInt(limit, 10);
+    const parsedOffset = parseInt(offset, 10);
+
+    // Enforce reasonable limits to prevent resource exhaustion
+    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 1000) {
+      return res.status(400).json({ error: 'Invalid limit parameter (must be 1-1000)' });
+    }
+    if (isNaN(parsedOffset) || parsedOffset < 0) {
+      return res.status(400).json({ error: 'Invalid offset parameter (must be >= 0)' });
+    }
+
     const tickets = await FluentSyncService.getTickets({
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      limit: parsedLimit,
+      offset: parsedOffset
     });
 
     res.json(tickets);
