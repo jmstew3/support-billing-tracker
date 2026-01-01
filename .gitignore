@@ -72,3 +72,4 @@ backend/.env.local.example
 
 # Temporary rollback scripts
 rollback*.sh
+coverage/
