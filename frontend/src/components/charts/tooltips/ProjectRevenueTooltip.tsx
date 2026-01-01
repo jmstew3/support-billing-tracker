@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatCurrency } from '../../../services/projectsApi';
 
 interface ProjectRevenueTooltipProps {

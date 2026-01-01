@@ -9,9 +9,9 @@ A comprehensive business intelligence dashboard that processes iMessage conversa
 1. **Set up environment variables**:
 ```bash
 # Copy the example environment file
-cp .env.docker.example .env.docker
+cp .env.example .env
 
-# Edit .env.docker with your preferred passwords
+# Edit .env with your preferred passwords
 # (Default passwords are provided for local development)
 
 # For Twenty CRM integration, add:
@@ -22,10 +22,10 @@ cp .env.docker.example .env.docker
 
 2. **Start all services with Docker**:
 ```bash
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 ```
 
-**Important**: Always use the `--env-file .env.docker` flag to ensure correct environment variables are loaded.
+Docker Compose automatically loads the `.env` file from the project root.
 
 3. **Import existing data** (if you have CSV data):
 ```bash
@@ -35,7 +35,7 @@ docker-compose --env-file .env.docker up -d
 4. **Access the dashboard**:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3011/api
-- MySQL: localhost:3307 (user: ***REMOVED***, password: from .env.docker)
+- MySQL: localhost:3307 (user: ***REMOVED***, password: from .env)
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
@@ -90,7 +90,7 @@ This will output something like:
 newusername:$apr1$xyz123$hashedpasswordhere
 ```
 
-2. **Update `.env.docker` file**:
+2. **Update `.env` file**:
 ```bash
 # Edit the BASIC_AUTH_USERS variable
 # IMPORTANT: Escape $ as $$ for docker-compose
@@ -99,7 +99,7 @@ BASIC_AUTH_USERS=newusername:$$apr1$$xyz123$$hashedpasswordhere
 
 3. **Restart the application**:
 ```bash
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 ```
 
 4. **Verify the change**:
@@ -146,7 +146,7 @@ To sync tickets from the last 7 days:
 
 ```bash
 # Update date filter (change date as needed)
-sed -i 's/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=2025-10-17/' .env.docker
+sed -i 's/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=2025-10-17/' .env
 
 # Restart backend and trigger sync
 docker-compose restart backend && sleep 3 && \
@@ -166,7 +166,7 @@ curl -X POST http://localhost:3011/api/fluent/sync \
 
 #### 1. Update Date Filter
 
-Edit `.env.docker` and change the `VITE_FLUENT_DATE_FILTER` variable (line 68):
+Edit `.env` and change the `VITE_FLUENT_DATE_FILTER` variable:
 
 ```bash
 # Only sync tickets created after this date (YYYY-MM-DD)
@@ -576,14 +576,14 @@ Uses sophisticated pattern matching to identify:
 Host: 127.0.0.1 or localhost
 Port: 3307 (not 3306)
 User: ***REMOVED***
-Password: [from .env.docker]
+Password: [from .env]
 Database: support_billing_tracker
 ```
 
 **Via MySQL Command Line**:
 ```bash
 mysql -h localhost -P 3307 -u ***REMOVED*** -p
-# Enter password from .env.docker
+# Enter password from .env
 USE support_billing_tracker;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
@@ -638,7 +638,7 @@ mv backend/.env backend/.env.local.example
 docker-compose down
 rm -rf frontend/node_modules/.vite
 docker-compose build --no-cache frontend
-docker-compose --env-file .env.docker up -d
+docker-compose up -d
 
 # 3. Verify it's working
 curl http://localhost:3011/api/health
@@ -652,10 +652,10 @@ curl http://localhost:3011/api/health
 - Vite caches compiled environment variables, serving stale API URLs after restart
 
 **Prevention**:
-- ✅ Use `.env.docker` as single source of truth
+- ✅ Use `.env` as single source of truth
 - ✅ Delete `backend/.env` to avoid conflicts (Docker provides all env vars)
 - ✅ Always clear Vite cache when making environment changes
-- ✅ Always use: `docker-compose --env-file .env.docker up -d`
+- ✅ Always use: `docker-compose up -d`
 
 **Verification After Restart**:
 ```bash

@@ -5,16 +5,16 @@ import { Sidebar } from './components/shared/Sidebar';
 import { Projects } from './features/projects/components/Projects';
 import { TurboHosting } from './features/hosting/components/TurboHosting';
 import { Dashboard } from './features/dashboard/components/Dashboard';
-import { ChartInfrastructureTest } from './components/charts/__tests__/BaseBarChart.test';
 import { Login } from './features/auth/components/Login';
 import { PeriodProvider } from './contexts/PeriodContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTheme } from './hooks/useTheme';
 import { queryClient } from './lib/queryClient';
 import { Loader2 } from 'lucide-react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AppContent() {
-  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing' | 'test'>('overview');
+  const [currentView, setCurrentView] = useState<'home' | 'projects' | 'overview' | 'billing'>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, isLoading } = useAuth();
@@ -49,11 +49,26 @@ function AppContent() {
           onToggleTheme={toggleTheme}
         />
         <main className="flex-1 overflow-auto">
-          {currentView === 'home' && <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'projects' && <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'overview' && <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'billing' && <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />}
-          {currentView === 'test' && <ChartInfrastructureTest />}
+          {currentView === 'home' && (
+            <ErrorBoundary>
+              <SupportTickets onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+            </ErrorBoundary>
+          )}
+          {currentView === 'projects' && (
+            <ErrorBoundary>
+              <Projects onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+            </ErrorBoundary>
+          )}
+          {currentView === 'overview' && (
+            <ErrorBoundary>
+              <Dashboard onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+            </ErrorBoundary>
+          )}
+          {currentView === 'billing' && (
+            <ErrorBoundary>
+              <TurboHosting onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
     </PeriodProvider>

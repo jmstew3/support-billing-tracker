@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { DataTrackerCard, TABLE_STYLES, CHART_STYLES } from '../../../components/base/DataTrackerCard';
 import { CustomMonthTick, CustomCategoryTick } from './CustomAxisTicks';

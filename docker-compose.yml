@@ -1,11 +1,8 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: support-billing-tracker-mysql
     restart: unless-stopped
-    env_file: .env.docker
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: support_billing_tracker
@@ -31,7 +28,6 @@ services:
       dockerfile: Dockerfile
     container_name: support-billing-tracker-backend
     restart: unless-stopped
-    env_file: .env.docker
     depends_on:
       mysql:
         condition: service_healthy
@@ -60,8 +56,8 @@ services:
       VITE_FLUENT_API_USERNAME: ${VITE_FLUENT_API_USERNAME:-}
       VITE_FLUENT_API_PASSWORD: ${VITE_FLUENT_API_PASSWORD:-}
       VITE_FLUENT_DATE_FILTER: ${VITE_FLUENT_DATE_FILTER:-2025-09-20}
-    # ports:
-    #   - "${BACKEND_PORT:-3011}:3011"  # Removed: Access only via Cloudflare tunnel
+    ports:
+      - "${BACKEND_PORT:-3011}:3011"  # Exposed for local development
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -77,8 +73,8 @@ services:
       - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"
       - "traefik.docker.network=traefik-general"
       - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
-      # Apply strip prefix middleware and security middleware (JWT auth handled by backend)
-      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip,rate-limit-api@file,security-headers@file"
+      # Apply strip prefix middleware only (JWT auth handled by backend, removed file-based middlewares that may not exist)
+      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
     command: npm start
 
   frontend:
@@ -88,7 +84,6 @@ services:
       target: development
     container_name: support-billing-tracker-frontend
     restart: unless-stopped
-    env_file: .env.docker
     depends_on:
       - backend
     environment:

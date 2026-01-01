@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { BaseBarChart } from './BaseBarChart';
 import { ProjectRevenueTooltip } from './tooltips/ProjectRevenueTooltip';

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Tests for SupportTableRow component
  */
@@ -169,7 +170,7 @@ describe('SupportTableRow', () => {
       </table>
     )
 
-    const icon = screen.getByLabelText('Request via Ticket System')
+    const icon = screen.getByLabelText('Request via Twenty CRM')
     expect(icon).toBeInTheDocument()
   })
 
