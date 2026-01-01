@@ -149,7 +149,7 @@ describe('ArchivedRequestsSection', () => {
   it('should display source icon for ticket requests', () => {
     render(<ArchivedRequestsSection {...defaultProps} showArchived={true} />)
 
-    const ticketIcon = screen.getByLabelText('Request via Ticket System')
+    const ticketIcon = screen.getByLabelText('Request via Twenty CRM')
     expect(ticketIcon).toBeInTheDocument()
   })
 

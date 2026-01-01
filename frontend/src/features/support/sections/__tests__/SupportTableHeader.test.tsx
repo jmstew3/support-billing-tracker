@@ -165,7 +165,8 @@ describe('SupportTableHeader', () => {
     )
 
     expect(screen.getByText('Text')).toBeInTheDocument()
-    expect(screen.getByText('Ticket')).toBeInTheDocument()
+    expect(screen.getByText('Twenty CRM')).toBeInTheDocument()
+    expect(screen.getByText('FluentSupport')).toBeInTheDocument()
     expect(screen.getByText('Email')).toBeInTheDocument()
     expect(screen.getByText('Phone')).toBeInTheDocument()
   })

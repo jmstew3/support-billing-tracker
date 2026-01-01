@@ -99,7 +99,7 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-testid="editable-cell">
       <button
         ref={buttonRef}
         onClick={handleToggleOpen}
