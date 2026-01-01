@@ -1,14 +1,6 @@
-/**
- * Request Routes (REFACTORED)
- *
- * Delegates business logic to RequestService layer.
- * Routes now focus on HTTP concerns: request/response handling, status codes, error formatting.
- */
-
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import pool from '../db/config.js';
-<<<<<<< HEAD
 import Request from '../models/Request.js';
 import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
 import {
@@ -38,31 +30,11 @@ const deleteRateLimiter = rateLimit({
 });
 
 // Health check endpoint
-=======
-import RequestService, { ValidationError } from '../services/RequestService.js';
-
-const router = express.Router();
-
-/**
- * Error response helper
- */
-function sendError(res, error) {
-  if (error instanceof ValidationError) {
-    return res.status(error.statusCode).json({ error: error.message });
-  }
-
-  console.error('Request error:', error);
-  return res.status(500).json({ error: error.message || 'Internal server error' });
-}
-
-// ============================================================
-// HEALTH CHECK
-// ============================================================
-
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
 router.get('/health', async (req, res) => {
   try {
-    await pool.execute('SELECT 1');
+    // Test database connection
+    const [rows] = await pool.execute('SELECT 1');
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -78,7 +50,6 @@ router.get('/health', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // GET all requests with pagination support
 router.get('/requests', async (req, res) => {
   try {
@@ -213,78 +184,69 @@ router.get('/requests', async (req, res) => {
       // Backward compatible: return array directly if no pagination params
       res.json(transformedRows);
     }
-=======
-// ============================================================
-// CRUD OPERATIONS
-// ============================================================
-
-/**
- * GET /requests - List all requests with filters
- */
-router.get('/requests', async (req, res) => {
-  try {
-    const { status, category, urgency, startDate, endDate } = req.query;
-
-    const requests = await RequestService.findAll({
-      status,
-      category,
-      urgency,
-      startDate,
-      endDate
-    });
-
-    res.json(requests);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
   } catch (error) {
-    sendError(res, error);
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
 
-/**
- * GET /requests/:id - Get single request
- */
+// GET single request
 router.get('/requests/:id', async (req, res) => {
   try {
-<<<<<<< HEAD
     const id = validateId(req.params.id);
     if (!id) {
       return res.status(400).json({ error: 'Invalid request ID' });
     }
 
     const [rows] = await pool.execute('SELECT * FROM requests WHERE id = ?', [id]);
-=======
-    const { id } = req.params;
-    const request = await RequestService.findById(id);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
 
-    if (!request) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    res.json(request);
+    const row = rows[0];
+    const transformedRow = {
+      id: row.id,
+      Date: row.date.toISOString().split('T')[0],
+      Time: row.time,
+      Month: row.month,
+      Request_Type: row.request_type,
+      Category: row.category,
+      Request_Summary: row.description,
+      Urgency: row.urgency,
+      Effort: row.effort,
+      EstimatedHours: parseFloat(row.estimated_hours),
+      Status: row.status,
+      CreatedAt: row.created_at,
+      UpdatedAt: row.updated_at
+    };
+
+    res.json(transformedRow);
   } catch (error) {
-    sendError(res, error);
+    console.error('Error fetching request:', error);
+    res.status(500).json({ error: 'Failed to fetch request' });
   }
 });
 
-/**
- * POST /requests - Create new request
- */
+// POST create new request
 router.post('/requests', async (req, res) => {
   try {
-    const result = await RequestService.create(req.body);
-    res.status(201).json(result);
+    const request = new Request(req.body);
+    const result = await request.save();
+
+    res.status(201).json({
+      id: result.insertId,
+      message: 'Request created successfully'
+    });
   } catch (error) {
-    sendError(res, error);
+    console.error('Error creating request:', error);
+    res.status(500).json({ error: 'Failed to create request' });
   }
 });
 
-/**
- * PUT /requests/:id - Update request
- */
+// PUT update request
 router.put('/requests/:id', async (req, res) => {
   try {
-<<<<<<< HEAD
     const id = validateId(req.params.id);
     if (!id) {
       return res.status(400).json({ error: 'Invalid request ID' });
@@ -345,22 +307,16 @@ router.put('/requests/:id', async (req, res) => {
     const [result] = await pool.execute(query, updateValues);
 
     if (result.affectedRows === 0) {
-=======
-    const { id } = req.params;
-    const result = await RequestService.update(id, req.body);
-
-    if (!result) {
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    res.json(result);
+    res.json({ message: 'Request updated successfully' });
   } catch (error) {
-    sendError(res, error);
+    console.error('Error updating request:', error);
+    res.status(500).json({ error: 'Failed to update request' });
   }
 });
 
-<<<<<<< HEAD
 // DELETE request (soft delete - update status)
 router.delete('/requests/:id', deleteRateLimiter, async (req, res) => {
   try {
@@ -370,19 +326,11 @@ router.delete('/requests/:id', deleteRateLimiter, async (req, res) => {
     }
 
     const { permanent = false } = req.query;
-=======
-/**
- * DELETE /requests/:id - Delete request (soft or permanent)
- */
-router.delete('/requests/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { permanent = 'false' } = req.query;
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
 
-    const result = await RequestService.delete(id, permanent === 'true');
+    if (permanent === 'true') {
+      // Permanent delete
+      const [result] = await pool.execute('DELETE FROM requests WHERE id = ?', [id]);
 
-<<<<<<< HEAD
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Request not found' });
       }
@@ -416,19 +364,13 @@ router.delete('/requests/:id', async (req, res) => {
       });
 
       res.json({ message: 'Request marked as deleted' });
-=======
-    if (!result) {
-      return res.status(404).json({ error: 'Request not found' });
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
     }
-
-    res.json(result);
   } catch (error) {
-    sendError(res, error);
+    console.error('Error deleting request:', error);
+    res.status(500).json({ error: 'Failed to delete request' });
   }
 });
 
-<<<<<<< HEAD
 // POST bulk update requests (rate limited)
 router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
   try {
@@ -500,38 +442,54 @@ router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
       message: 'Bulk update successful',
       affectedRows: result.affectedRows
     });
-=======
-/**
- * POST /requests/bulk-update - Bulk update requests
- */
-router.post('/requests/bulk-update', async (req, res) => {
-  try {
-    const { ids, updates } = req.body;
-    const result = await RequestService.bulkUpdate(ids, updates);
-    res.json(result);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
   } catch (error) {
-    sendError(res, error);
+    console.error('Error bulk updating requests:', error);
+    res.status(500).json({ error: 'Failed to bulk update requests' });
   }
 });
 
-// ============================================================
-// STATISTICS
-// ============================================================
-
-/**
- * GET /statistics - Get request statistics
- */
+// GET request statistics
 router.get('/statistics', async (req, res) => {
   try {
-    const stats = await RequestService.getStatistics();
-    res.json(stats);
+    // Get category distribution
+    const [categories] = await pool.execute(
+      `SELECT category, COUNT(*) as count, SUM(estimated_hours) as total_hours
+       FROM requests WHERE status = 'active' GROUP BY category`
+    );
+
+    // Get urgency distribution
+    const [urgencies] = await pool.execute(
+      `SELECT urgency, COUNT(*) as count
+       FROM requests WHERE status = 'active' GROUP BY urgency`
+    );
+
+    // Get monthly distribution
+    const [monthly] = await pool.execute(
+      `SELECT month, COUNT(*) as count
+       FROM requests WHERE status = 'active' GROUP BY month ORDER BY month`
+    );
+
+    // Get total statistics
+    const [[totals]] = await pool.execute(
+      `SELECT
+        COUNT(*) as total_requests,
+        SUM(estimated_hours) as total_hours,
+        COUNT(DISTINCT DATE(date)) as unique_days
+       FROM requests WHERE status = 'active'`
+    );
+
+    res.json({
+      categories,
+      urgencies,
+      monthly,
+      totals
+    });
   } catch (error) {
-    sendError(res, error);
+    console.error('Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
 
-<<<<<<< HEAD
 // POST import CSV data (rate limited)
 router.post('/import-csv', dataTransferLimiter, async (req, res) => {
   try {
@@ -586,26 +544,12 @@ router.post('/import-csv', dataTransferLimiter, async (req, res) => {
       failed,
       errors: errors.slice(0, 10) // Return first 10 errors only
     });
-=======
-// ============================================================
-// CSV OPERATIONS
-// ============================================================
-
-/**
- * POST /import-csv - Import CSV data
- */
-router.post('/import-csv', async (req, res) => {
-  try {
-    const { csvData } = req.body;
-    const result = await RequestService.importCSV(csvData);
-    res.json(result);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
   } catch (error) {
-    sendError(res, error);
+    console.error('Error importing CSV:', error);
+    res.status(500).json({ error: 'Failed to import CSV data' });
   }
 });
 
-<<<<<<< HEAD
 // GET export as CSV (rate limited)
 router.get('/export-csv', dataTransferLimiter, async (req, res) => {
   try {
@@ -622,15 +566,6 @@ router.get('/export-csv', dataTransferLimiter, async (req, res) => {
     query += ' ORDER BY date DESC, time DESC';
 
     const [rows] = await pool.execute(query, params);
-=======
-/**
- * GET /export-csv - Export requests as CSV
- */
-router.get('/export-csv', async (req, res) => {
-  try {
-    const { status = 'active' } = req.query;
-    const rows = await RequestService.exportCSV(status);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
 
     // Convert to CSV format
     const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
@@ -656,12 +591,12 @@ router.get('/export-csv', async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="thad_requests_export.csv"');
     res.send(csv);
   } catch (error) {
-    sendError(res, error);
+    console.error('Error exporting CSV:', error);
+    res.status(500).json({ error: 'Failed to export CSV' });
   }
 });
 
 /**
-<<<<<<< HEAD
  * POST /api/requests/save-csv
  * Legacy endpoint for replacing all request data with CSV content
  *
@@ -689,11 +624,6 @@ router.get('/export-csv', async (req, res) => {
 router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
   let connection;
 
-=======
- * POST /save-csv - Legacy CSV save endpoint (for backward compatibility)
- */
-router.post('/save-csv', async (req, res) => {
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
   try {
     const { csvContent, confirmDelete } = req.body;
 
@@ -716,7 +646,6 @@ router.post('/save-csv', async (req, res) => {
       return res.status(400).json({ error: 'CSV must have at least a header row and one data row' });
     }
 
-<<<<<<< HEAD
     const headers = lines[0].split(',').map(h => h.trim());
 
     // Get connection for transaction
@@ -744,12 +673,6 @@ router.post('/save-csv', async (req, res) => {
     let skipped = 0;
     const errors = [];
 
-=======
-    // Clear existing data
-    await pool.execute('DELETE FROM requests');
-
-    const csvData = [];
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
 
@@ -765,7 +688,6 @@ router.post('/save-csv', async (req, res) => {
           row[header] = values[index]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '';
         });
 
-<<<<<<< HEAD
         // Validate required fields
         if (!row.date || !row.time) {
           errors.push({ line: i + 1, error: 'Missing required date or time' });
@@ -974,20 +896,6 @@ router.post('/restore-backup', destructiveOperationLimiter, async (req, res) => 
     if (connection) {
       connection.release();
     }
-=======
-      csvData.push(row);
-    }
-
-    const result = await RequestService.importCSV(csvData);
-
-    res.json({
-      success: true,
-      filename: 'database',
-      imported: result.imported
-    });
-  } catch (error) {
-    sendError(res, error);
->>>>>>> d236e87 (refactor: Implement architectural improvements with service layer abstraction)
   }
 });
 
