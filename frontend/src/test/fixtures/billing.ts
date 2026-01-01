@@ -147,7 +147,12 @@ export const mockBillingSummary: BillingSummary = {
   totalTicketsRevenue: 1025.00,
   totalProjectsRevenue: 800.00,
   totalHostingRevenue: 99.00,
-  monthlyBreakdown: [mockMonthData]
+  monthlyBreakdown: [mockMonthData],
+  dataSourceStatus: {
+    requests: { available: true },
+    projects: { available: true },
+    hosting: { available: true }
+  }
 }
 
 // Additional mock: Month with no free credits
