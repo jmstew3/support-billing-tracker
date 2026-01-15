@@ -24,7 +24,9 @@ import { FilterPanel } from '../components/FilterPanel'
 import { Search, X, ArrowUp, CalendarDays } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { ChatRequest } from '../../../types/request'
-import type { DateRangeFilter, FilterPreset, FilterCounts } from '../types/filters'
+import type { DateRangeFilter, BillingDateFilter, FilterPreset, FilterCounts, HoursRange } from '../types/filters'
+import { HOURS_RANGE_DISPLAY_NAMES } from '../types/filters'
+import { Clock } from 'lucide-react'
 
 export interface SupportTableSectionProps {
   // Data
@@ -73,6 +75,8 @@ export interface SupportTableSectionProps {
   dayFilter: string[]
   categoryFilter: string[]
   urgencyFilter: string[]
+  billingDateFilter: BillingDateFilter
+  hoursFilter: string[]
   filterCounts: FilterCounts
   activeFilterCount: number
   onSourceFilterChange: (sources: string[]) => void
@@ -80,6 +84,8 @@ export interface SupportTableSectionProps {
   onDayFilterChange: (days: string[]) => void
   onCategoryFilterChange: (categories: string[]) => void
   onUrgencyFilterChange: (urgencies: string[]) => void
+  onBillingDateFilterChange: (filter: BillingDateFilter) => void
+  onHoursFilterChange: (ranges: string[]) => void
   onApplyPreset: (preset: FilterPreset) => void
   onResetFilters: () => void
   formatUrgencyDisplay: (urgency: string) => string
@@ -143,6 +149,8 @@ export function SupportTableSection({
   dayFilter,
   categoryFilter,
   urgencyFilter,
+  billingDateFilter,
+  hoursFilter,
   filterCounts,
   activeFilterCount,
   onSourceFilterChange,
@@ -150,6 +158,8 @@ export function SupportTableSection({
   onDayFilterChange,
   onCategoryFilterChange,
   onUrgencyFilterChange,
+  onBillingDateFilterChange,
+  onHoursFilterChange,
   onApplyPreset,
   onResetFilters,
   formatUrgencyDisplay,
@@ -392,6 +402,8 @@ export function SupportTableSection({
               sourceFilter={sourceFilter}
               dateRange={dateRange}
               dayFilter={dayFilter}
+              billingDateFilter={billingDateFilter}
+              hoursFilter={hoursFilter}
               categoryOptions={categoryOptions}
               urgencyOptions={urgencyOptions}
               filterCounts={filterCounts}
@@ -401,6 +413,8 @@ export function SupportTableSection({
               onSourceFilterChange={onSourceFilterChange}
               onDateRangeChange={onDateRangeChange}
               onDayFilterChange={onDayFilterChange}
+              onBillingDateFilterChange={onBillingDateFilterChange}
+              onHoursFilterChange={onHoursFilterChange}
               onApplyPreset={onApplyPreset}
               onResetFilters={onResetFilters}
               formatUrgencyDisplay={formatUrgencyDisplay}
@@ -413,7 +427,7 @@ export function SupportTableSection({
         </div>
 
         {/* Active Filters Display */}
-        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || (dateRange.from || dateRange.to) || dayFilter.length > 0) && (
+        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || (dateRange.from || dateRange.to) || dayFilter.length > 0 || (billingDateFilter.from || billingDateFilter.to || billingDateFilter.hasValue !== 'all') || hoursFilter.length > 0) && (
           <div className="flex flex-wrap gap-2 mb-4">
             {/* Category Filters */}
             {categoryFilter.map(category => (
@@ -499,6 +513,48 @@ export function SupportTableSection({
                 </button>
               </div>
             )}
+
+            {/* Billing Date Filter */}
+            {(billingDateFilter.from || billingDateFilter.to || billingDateFilter.hasValue !== 'all') && (
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
+                <CalendarDays className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                <span className="text-muted-foreground">Billing:</span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
+                  {billingDateFilter.hasValue === 'yes' ? 'Has Date' : billingDateFilter.hasValue === 'no' ? 'No Date' : ''}
+                  {billingDateFilter.hasValue !== 'no' && (billingDateFilter.from || billingDateFilter.to) && (
+                    <>
+                      {billingDateFilter.hasValue !== 'all' ? ' + ' : ''}
+                      {formatDateRangeDisplay({ from: billingDateFilter.from, to: billingDateFilter.to })}
+                    </>
+                  )}
+                </span>
+                <button
+                  onClick={() => {
+                    onBillingDateFilterChange({ from: null, to: null, hasValue: 'all' })
+                  }}
+                  className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {/* Hours Filters */}
+            {hoursFilter.map(range => (
+              <div key={`hours-${range}`} className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
+                <Clock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                <span className="text-muted-foreground">Hours:</span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">{HOURS_RANGE_DISPLAY_NAMES[range as HoursRange] || range}</span>
+                <button
+                  onClick={() => {
+                    onHoursFilterChange(hoursFilter.filter(h => h !== range))
+                  }}
+                  className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
 

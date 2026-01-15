@@ -19,6 +19,33 @@ export interface DateRangeFilter {
 }
 
 /**
+ * Billing date filter state
+ * Extends date range with hasValue toggle for filtering by presence
+ */
+export interface BillingDateFilter {
+  from: string | null;  // YYYY-MM-DD format
+  to: string | null;    // YYYY-MM-DD format
+  hasValue: 'all' | 'yes' | 'no';  // Filter by presence of billing date
+}
+
+/**
+ * Hours range options for filtering estimated hours
+ */
+export const HOURS_RANGE_OPTIONS = ['0-0.5', '0.5-1', '1-2', '2-4', '4+'] as const;
+export type HoursRange = (typeof HOURS_RANGE_OPTIONS)[number];
+
+/**
+ * Display names for hours ranges
+ */
+export const HOURS_RANGE_DISPLAY_NAMES: Record<HoursRange, string> = {
+  '0-0.5': '0 - 0.5 hr',
+  '0.5-1': '0.5 - 1 hr',
+  '1-2': '1 - 2 hr',
+  '2-4': '2 - 4 hr',
+  '4+': '4+ hr',
+};
+
+/**
  * Filter counts for each filter option
  * Used to display counts next to checkbox options
  */
@@ -27,6 +54,11 @@ export interface FilterCounts {
   urgency: Record<string, number>;   // { HIGH: 10, MEDIUM: 5, LOW: 2, PROMOTION: 1 }
   category: Record<string, number>;  // { Support: 15, Hosting: 8, ... }
   day: Record<string, number>;       // { Mon: 5, Tue: 3, ... }
+  hours: Record<string, number>;     // { '0-0.5': 10, '0.5-1': 5, ... }
+  billingDate: {                     // Counts for billing date presence
+    hasValue: number;                // Count of requests with billing date
+    noValue: number;                 // Count of requests without billing date
+  };
 }
 
 /**
@@ -44,6 +76,8 @@ export interface FilterPreset {
     sourceFilter: string[];
     dateRange: DateRangeFilter;
     dayFilter: string[];
+    billingDateFilter: BillingDateFilter;
+    hoursFilter: string[];
     hideNonBillable?: boolean;
   }>;
 }
@@ -58,6 +92,8 @@ export interface FilterPanelProps {
   sourceFilter: string[];
   dateRange: DateRangeFilter;
   dayFilter: string[];
+  billingDateFilter: BillingDateFilter;
+  hoursFilter: string[];
 
   // Filter options (available values)
   categoryOptions: string[];
@@ -75,6 +111,8 @@ export interface FilterPanelProps {
   onSourceFilterChange: (sources: string[]) => void;
   onDateRangeChange: (range: DateRangeFilter) => void;
   onDayFilterChange: (days: string[]) => void;
+  onBillingDateFilterChange: (filter: BillingDateFilter) => void;
+  onHoursFilterChange: (ranges: string[]) => void;
   onApplyPreset: (preset: FilterPreset) => void;
   onResetFilters: () => void;
 

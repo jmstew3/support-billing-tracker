@@ -13,10 +13,11 @@
 import * as React from 'react';
 import { Filter, Zap } from 'lucide-react';
 import type { FilterPanelProps, FilterPreset } from '../../types/filters';
-import { SOURCE_OPTIONS, SOURCE_DISPLAY_NAMES, DAY_OPTIONS } from '../../types/filters';
+import { SOURCE_OPTIONS, SOURCE_DISPLAY_NAMES, DAY_OPTIONS, HOURS_RANGE_OPTIONS, HOURS_RANGE_DISPLAY_NAMES, type HoursRange } from '../../types/filters';
 import { FilterSection } from './FilterSection';
 import { CheckboxFilterGroup } from './CheckboxFilterGroup';
 import { DateRangePicker } from './DateRangePicker';
+import { BillingDatePicker } from './BillingDatePicker';
 
 // Quick filter presets
 const FILTER_PRESETS: FilterPreset[] = [
@@ -60,6 +61,8 @@ export function FilterPanel({
   sourceFilter,
   dateRange,
   dayFilter,
+  billingDateFilter,
+  hoursFilter,
   categoryOptions,
   urgencyOptions,
   filterCounts,
@@ -69,6 +72,8 @@ export function FilterPanel({
   onSourceFilterChange,
   onDateRangeChange,
   onDayFilterChange,
+  onBillingDateFilterChange,
+  onHoursFilterChange,
   onApplyPreset,
   onResetFilters,
   formatUrgencyDisplay,
@@ -115,6 +120,13 @@ export function FilterPanel({
   const urgencyBadge = urgencyFilter.length;
   const dayBadge = dayFilter.length;
   const dateBadge = dateRange.from || dateRange.to ? 1 : 0;
+  const billingDateBadge = (billingDateFilter.from || billingDateFilter.to || billingDateFilter.hasValue !== 'all') ? 1 : 0;
+  const hoursBadge = hoursFilter.length;
+
+  // Format hours display
+  const formatHoursDisplay = (range: string) => {
+    return HOURS_RANGE_DISPLAY_NAMES[range as HoursRange] || range;
+  };
 
   return (
     <div className="relative" ref={popoverRef} onKeyDown={handleKeyDown}>
@@ -246,6 +258,27 @@ export function FilterPanel({
                     selectedValues={dayFilter}
                     counts={filterCounts.day}
                     onChange={onDayFilterChange}
+                    columns={2}
+                  />
+                </FilterSection>
+
+                {/* Billing Date Filter */}
+                <FilterSection title="Billing Date" badge={billingDateBadge}>
+                  <BillingDatePicker
+                    value={billingDateFilter}
+                    onChange={onBillingDateFilterChange}
+                    counts={filterCounts.billingDate}
+                  />
+                </FilterSection>
+
+                {/* Hours Filter */}
+                <FilterSection title="Hours" badge={hoursBadge}>
+                  <CheckboxFilterGroup
+                    options={[...HOURS_RANGE_OPTIONS]}
+                    selectedValues={hoursFilter}
+                    counts={filterCounts.hours}
+                    onChange={onHoursFilterChange}
+                    formatDisplayValue={formatHoursDisplay}
                     columns={2}
                   />
                 </FilterSection>
