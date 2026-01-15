@@ -208,8 +208,16 @@ export function FilterPanel({
             ) : (
               /* Filters Tab */
               <div>
+                {/* Date Range Filter - First and expanded by default */}
+                <FilterSection title="Date Range" badge={dateBadge}>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={onDateRangeChange}
+                  />
+                </FilterSection>
+
                 {/* Source Filter */}
-                <FilterSection title="Source" badge={sourceBadge}>
+                <FilterSection title="Source" badge={sourceBadge} defaultExpanded={false}>
                   <CheckboxFilterGroup
                     options={[...SOURCE_OPTIONS]}
                     selectedValues={sourceFilter}
@@ -220,16 +228,8 @@ export function FilterPanel({
                   />
                 </FilterSection>
 
-                {/* Date Range Filter */}
-                <FilterSection title="Date Range" badge={dateBadge}>
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={onDateRangeChange}
-                  />
-                </FilterSection>
-
                 {/* Category Filter */}
-                <FilterSection title="Category" badge={categoryBadge}>
+                <FilterSection title="Category" badge={categoryBadge} defaultExpanded={false}>
                   <CheckboxFilterGroup
                     options={categoryOptions}
                     selectedValues={categoryFilter}
@@ -240,7 +240,7 @@ export function FilterPanel({
                 </FilterSection>
 
                 {/* Urgency Filter */}
-                <FilterSection title="Urgency" badge={urgencyBadge}>
+                <FilterSection title="Urgency" badge={urgencyBadge} defaultExpanded={false}>
                   <CheckboxFilterGroup
                     options={urgencyOptions}
                     selectedValues={urgencyFilter}
@@ -263,7 +263,7 @@ export function FilterPanel({
                 </FilterSection>
 
                 {/* Billing Date Filter */}
-                <FilterSection title="Billing Date" badge={billingDateBadge}>
+                <FilterSection title="Billing Date" badge={billingDateBadge} defaultExpanded={false}>
                   <BillingDatePicker
                     value={billingDateFilter}
                     onChange={onBillingDateFilterChange}
@@ -272,7 +272,7 @@ export function FilterPanel({
                 </FilterSection>
 
                 {/* Hours Filter */}
-                <FilterSection title="Hours" badge={hoursBadge}>
+                <FilterSection title="Hours" badge={hoursBadge} defaultExpanded={false}>
                   <CheckboxFilterGroup
                     options={[...HOURS_RANGE_OPTIONS]}
                     selectedValues={hoursFilter}
