@@ -85,7 +85,7 @@ describe('SupportTableHeader', () => {
       </table>
     )
 
-    const dateButton = screen.getByRole('button', { name: /Date/i })
+    const dateButton = screen.getByRole('button', { name: 'Date' })
     await user.click(dateButton)
 
     expect(onSort).toHaveBeenCalledWith('Date')
