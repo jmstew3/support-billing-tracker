@@ -36,7 +36,7 @@ import { updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest } 
 
 // Types
 import type { ChatRequest } from '../../../types/request'
-import type { DateRangeFilter, FilterPreset } from '../types/filters'
+import type { DateRangeFilter, BillingDateFilter, FilterPreset } from '../types/filters'
 
 // Filter utilities
 import { useFilterCounts, calculateActiveFilterCount } from '../hooks/useFilterCounts'
@@ -94,6 +94,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const [sourceFilter, setSourceFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRangeFilter>({ from: null, to: null })
   const [dayFilter, setDayFilter] = useState<string[]>([])
+  const [billingDateFilter, setBillingDateFilter] = useState<BillingDateFilter>({ from: null, to: null, hasValue: 'all' })
+  const [hoursFilter, setHoursFilter] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState<string>('')
 
   // Bulk selection state
@@ -152,6 +154,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     sourceFilter,
     dateRange,
     dayFilter,
+    billingDateFilter,
+    hoursFilter,
     searchQuery,
     currentPage,
     pageSize,
@@ -198,7 +202,9 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     urgencyFilter,
     sourceFilter,
     dateRange,
-    dayFilter
+    dayFilter,
+    billingDateFilter,
+    hoursFilter
   })
 
   // ============================================================
@@ -438,6 +444,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     setSourceFilter([])
     setDateRange({ from: null, to: null })
     setDayFilter([])
+    setBillingDateFilter({ from: null, to: null, hasValue: 'all' })
+    setHoursFilter([])
     setSearchQuery('')
   }
 
@@ -448,6 +456,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     setSourceFilter([])
     setDateRange({ from: null, to: null })
     setDayFilter([])
+    setBillingDateFilter({ from: null, to: null, hasValue: 'all' })
+    setHoursFilter([])
 
     // Apply preset filters
     if (preset.filters.categoryFilter) {
@@ -464,6 +474,12 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     }
     if (preset.filters.dayFilter) {
       setDayFilter(preset.filters.dayFilter)
+    }
+    if (preset.filters.billingDateFilter) {
+      setBillingDateFilter(preset.filters.billingDateFilter)
+    }
+    if (preset.filters.hoursFilter) {
+      setHoursFilter(preset.filters.hoursFilter)
     }
 
     // Special handling for "Billable Only" preset
@@ -858,6 +874,8 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             dayFilter={dayFilter}
             categoryFilter={categoryFilter}
             urgencyFilter={urgencyFilter}
+            billingDateFilter={billingDateFilter}
+            hoursFilter={hoursFilter}
             filterCounts={filterCounts}
             activeFilterCount={activeFilterCount}
             onSourceFilterChange={(sources) => {
@@ -891,6 +909,20 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             onUrgencyFilterChange={(urgencies) => {
               preserveScrollPosition()
               setUrgencyFilter(urgencies)
+              setCurrentPage(1)
+              setSelectedRequestIds(new Set())
+              setSelectAll(false)
+            }}
+            onBillingDateFilterChange={(filter) => {
+              preserveScrollPosition()
+              setBillingDateFilter(filter)
+              setCurrentPage(1)
+              setSelectedRequestIds(new Set())
+              setSelectAll(false)
+            }}
+            onHoursFilterChange={(ranges) => {
+              preserveScrollPosition()
+              setHoursFilter(ranges)
               setCurrentPage(1)
               setSelectedRequestIds(new Set())
               setSelectAll(false)
