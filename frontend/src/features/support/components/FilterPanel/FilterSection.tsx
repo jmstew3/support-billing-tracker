@@ -49,8 +49,8 @@ export function FilterSection({
 
       <div
         ref={contentRef}
-        className={`overflow-hidden transition-all duration-200 ${
-          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        className={`transition-all duration-200 ${
+          isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
       >
         <div className="px-4 pb-3">{children}</div>
