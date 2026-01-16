@@ -85,7 +85,7 @@ List FluentSupport tickets with request details.
 
 ### Option 3: CLI (Production)
 ```bash
-curl -X POST https://velocity.peakonedigital.com/billing-overview-api/api/fluent/sync \
+curl -X POST https://billing.peakonedigital.com/api/fluent/sync \
   -u "admin:PeakonBilling2025" \
   -H "Content-Type: application/json" \
   -d '{"dateFilter":"2025-10-17"}'

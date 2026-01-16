@@ -26,8 +26,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * Get API base URL based on environment
    */
   const getApiUrl = () => {
-    if (window.location.hostname === 'velocity.peakonedigital.com') {
-      return 'https://velocity.peakonedigital.com/billing-overview-api/api';
+    if (window.location.hostname === 'billing.peakonedigital.com') {
+      return 'https://billing.peakonedigital.com/api';
     }
     return import.meta.env.VITE_API_URL || 'http://localhost:3011/api';
   };

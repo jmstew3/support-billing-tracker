@@ -34,8 +34,8 @@ export const conditionalAuth = async (req, res, next) => {
 
     // Check if request is from BasicAuth-protected production domain
     const isBasicAuthProtected =
-      host.includes('velocity.peakonedigital.com') ||
-      origin.includes('velocity.peakonedigital.com');
+      host.includes('billing.peakonedigital.com') ||
+      origin.includes('billing.peakonedigital.com');
 
     if (isBasicAuthProtected) {
       // Request came through Traefik BasicAuth - user is already authenticated

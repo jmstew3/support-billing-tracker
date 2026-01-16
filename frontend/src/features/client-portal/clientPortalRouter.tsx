@@ -10,29 +10,46 @@ import { ClientProjects } from './pages/ClientProjects';
 /**
  * Client Portal Router Configuration
  *
- * URL Structure:
+ * URL Structure depends on access method:
+ *
+ * Portal Subdomain (portal.peakonedigital.com):
+ * - /login -> Login page
+ * - / -> Dashboard (requires auth)
+ * - /dashboard -> Dashboard alias
+ * - /tickets -> Tickets list
+ * - /tickets/:ticketId -> Ticket detail
+ * - /sites -> Sites list
+ * - /projects -> Projects list
+ *
+ * Shared Domain (billing.peakonedigital.com):
  * - /portal/login -> Login page
  * - /portal -> Dashboard (requires auth)
- * - /portal/dashboard -> Dashboard alias (requires auth)
- * - /portal/tickets -> Tickets list (requires auth)
- * - /portal/tickets/:ticketId -> Ticket detail (requires auth)
- * - /portal/sites -> Sites list (requires auth)
- * - /portal/projects -> Projects list (requires auth)
+ * - /portal/dashboard -> Dashboard alias
+ * - /portal/tickets -> Tickets list
+ * - /portal/tickets/:ticketId -> Ticket detail
+ * - /portal/sites -> Sites list
+ * - /portal/projects -> Projects list
  */
 
-// Get base path from environment (for deployment at /billing-overview)
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+// Detect portal subdomain
+const isPortalSubdomain = typeof window !== 'undefined' && window.location.hostname === 'portal.peakonedigital.com';
+
+// Base path for router: '/' for subdomain, VITE_BASE_PATH for shared domain
+const basePath = isPortalSubdomain ? '/' : (import.meta.env.VITE_BASE_PATH || '/');
+
+// Route prefix: '' for subdomain (routes at root), '/portal' for shared domain
+const routePrefix = isPortalSubdomain ? '' : '/portal';
 
 export const clientPortalRouter = createBrowserRouter(
   [
     // Login page - no auth required
     {
-      path: '/portal/login',
+      path: `${routePrefix}/login`,
       element: <ClientLogin />,
     },
     // Protected routes with layout
     {
-      path: '/portal',
+      path: routePrefix || '/',
       element: <ClientLayout />,
       children: [
         {
@@ -63,8 +80,8 @@ export const clientPortalRouter = createBrowserRouter(
     },
     // Catch-all redirect to portal dashboard
     {
-      path: '/portal/*',
-      element: <Navigate to="/portal" replace />,
+      path: `${routePrefix}/*`,
+      element: <Navigate to={routePrefix || '/'} replace />,
     },
   ],
   {

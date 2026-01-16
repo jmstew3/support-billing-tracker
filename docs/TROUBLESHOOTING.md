@@ -21,16 +21,14 @@
 
 ### API 404 Error (Production Domain)
 
-**Issue:** Frontend shows 404 for API requests from `velocity.peakonedigital.com`
+**Issue:** Frontend shows 404 for API requests from `billing.peakonedigital.com`
 
-**Cause:** Frontend using incorrect API path after Traefik strips prefix
+**Cause:** Frontend using incorrect API path
 
-**Solution:** In `frontend/src/utils/api.ts`:
+**Solution:** In `frontend/src/config/apiConfig.ts`:
 ```javascript
-// Change from:
-'https://velocity.peakonedigital.com/billing-overview-api'
-// To:
-'https://velocity.peakonedigital.com/billing-overview-api/api'
+// Ensure production URL is correct:
+'https://billing.peakonedigital.com/api'
 ```
 
 Then restart: `docker-compose restart frontend`

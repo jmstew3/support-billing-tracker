@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Loader2 } from 'lucide-react';
 import { useClientAuth } from '../contexts/ClientAuthContext';
+import { getDashboardRoute } from '../utils/clientRoutes';
 import peakoneLogo from '../../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 /**
@@ -18,7 +19,7 @@ export function ClientLogin() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    navigate('/portal', { replace: true });
+    navigate(getDashboardRoute(), { replace: true });
     return null;
   }
 
@@ -29,7 +30,7 @@ export function ClientLogin() {
 
     try {
       await login(email, password);
-      navigate('/portal', { replace: true });
+      navigate(getDashboardRoute(), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

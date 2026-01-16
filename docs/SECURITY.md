@@ -16,7 +16,7 @@ The application is protected by HTTP Basic Authentication at the reverse proxy l
 > See `.env.docker.example` for configuration template.
 
 ### How It Works
-1. All requests to `velocity.peakonedigital.com/billing-overview` and `/billing-overview-api` are intercepted by Traefik
+1. All requests to `billing.peakonedigital.com` and `/api` are intercepted by Traefik
 2. Browser presents authentication dialog
 3. Credentials validated against bcrypt hash in environment variable
 4. If valid, request forwarded; if invalid, 401 Unauthorized returned

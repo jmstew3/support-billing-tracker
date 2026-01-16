@@ -23,7 +23,7 @@ export default defineConfig({
     host: '0.0.0.0',  // Listen on all network interfaces for Docker
     port: parseInt(process.env.VITE_PORT || '5173'),
     strictPort: true,
-    allowedHosts: ['velocity.peakonedigital.com', 'localhost'],
+    allowedHosts: ['billing.peakonedigital.com', 'portal.peakonedigital.com', 'localhost'],
     watch: {
       usePolling: true  // Required for Docker on some systems
     },

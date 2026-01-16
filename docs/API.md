@@ -3,7 +3,7 @@
 ## Base URL
 
 - **Development**: `http://localhost:3011/api`
-- **Production**: `https://velocity.peakonedigital.com/billing-overview-api/api`
+- **Production**: `https://billing.peakonedigital.com/api`
 
 ## Authentication
 

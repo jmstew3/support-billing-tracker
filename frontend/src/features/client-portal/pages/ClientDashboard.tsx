@@ -3,6 +3,7 @@ import { Loader2, Ticket, Globe, FolderKanban, ArrowRight, Clock } from 'lucide-
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { useClientAuth } from '../contexts/ClientAuthContext';
 import { useClientActivity } from '../hooks/useClientData';
+import { clientViewToRoute } from '../utils/clientRoutes';
 import { formatDistanceToNow } from 'date-fns';
 
 /**
@@ -61,7 +62,7 @@ export function ClientDashboard() {
         {/* Tickets Card */}
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => navigate('/portal/tickets')}
+          onClick={() => navigate(clientViewToRoute.tickets)}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -81,7 +82,7 @@ export function ClientDashboard() {
         {/* Websites Card */}
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => navigate('/portal/sites')}
+          onClick={() => navigate(clientViewToRoute.sites)}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -101,7 +102,7 @@ export function ClientDashboard() {
         {/* Projects Card */}
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => navigate('/portal/projects')}
+          onClick={() => navigate(clientViewToRoute.projects)}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -148,7 +149,7 @@ export function ClientDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Tickets</CardTitle>
             <button
-              onClick={() => navigate('/portal/tickets')}
+              onClick={() => navigate(clientViewToRoute.tickets)}
               className="text-xs text-primary hover:underline flex items-center gap-1"
             >
               View all
@@ -161,7 +162,7 @@ export function ClientDashboard() {
                 <div
                   key={ticket.id}
                   className="flex items-start justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/portal/tickets/${ticket.id}`)}
+                  onClick={() => navigate(`${clientViewToRoute.tickets}/${ticket.id}`)}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

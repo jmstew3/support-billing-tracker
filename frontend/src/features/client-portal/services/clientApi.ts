@@ -12,11 +12,6 @@ export const getClientApiUrl = (): string => {
     return 'https://portal.peakonedigital.com/api';
   }
 
-  // Production main domain (fallback)
-  if (hostname === 'velocity.peakonedigital.com') {
-    return 'https://velocity.peakonedigital.com/billing-overview-api/api';
-  }
-
   // Development
   return import.meta.env.VITE_API_URL || 'http://localhost:3011/api';
 };

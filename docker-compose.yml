@@ -69,17 +69,19 @@ services:
       - traefik-general
     labels:
       - "traefik.enable=true"
-      # Main API route
-      - "traefik.http.routers.billing-overview-api.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview-api`)"
-      - "traefik.http.routers.billing-overview-api.entrypoints=web"
-      - "traefik.http.services.billing-overview-api.loadbalancer.server.port=3011"
+      # Main API route (billing.peakonedigital.com/api)
+      - "traefik.http.routers.billing-api.rule=Host(`billing.peakonedigital.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.billing-api.entrypoints=web"
+      - "traefik.http.routers.billing-api.service=billing-api"
+      - "traefik.http.services.billing-api.loadbalancer.server.port=3011"
       - "traefik.docker.network=traefik-general"
-      - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
-      # Apply strip prefix middleware only (JWT auth handled by backend, removed file-based middlewares that may not exist)
-      - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
+      - "traefik.http.middlewares.billing-api-strip.stripprefix.prefixes=/api"
+      # Apply strip prefix middleware only (JWT auth handled by backend)
+      - "traefik.http.routers.billing-api.middlewares=billing-api-strip"
       # Client Portal API route
       - "traefik.http.routers.client-portal-api.rule=Host(`portal.peakonedigital.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.client-portal-api.entrypoints=web"
+      - "traefik.http.routers.client-portal-api.service=client-portal-api"
       - "traefik.http.services.client-portal-api.loadbalancer.server.port=3011"
       - "traefik.http.middlewares.client-portal-api-strip.stripprefix.prefixes=/api"
       - "traefik.http.routers.client-portal-api.middlewares=client-portal-api-strip"
@@ -126,7 +128,7 @@ services:
       VITE_HMR_PORT: ${VITE_HMR_PORT:-5173}
       VITE_HMR_HOST: ${VITE_HMR_HOST:-localhost}
       VITE_PUBLIC_API_URL: ${VITE_PUBLIC_API_URL:-}
-      VITE_BASE_PATH: ${VITE_BASE_PATH:-/billing-overview}
+      VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
     ports:
       - "${FRONTEND_PORT:-5173}:${VITE_PORT:-5173}"
     volumes:
@@ -138,14 +140,17 @@ services:
       - traefik-general
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.billing-overview.rule=Host(`velocity.peakonedigital.com`) && PathPrefix(`/billing-overview`)"
-      - "traefik.http.routers.billing-overview.entrypoints=web"
-      - "traefik.http.services.billing-overview.loadbalancer.server.port=${VITE_PORT:-5173}"
+      # Internal dashboard (billing.peakonedigital.com)
+      - "traefik.http.routers.billing.rule=Host(`billing.peakonedigital.com`)"
+      - "traefik.http.routers.billing.entrypoints=web"
+      - "traefik.http.routers.billing.service=billing"
+      - "traefik.http.services.billing.loadbalancer.server.port=${VITE_PORT:-5173}"
       - "traefik.docker.network=traefik-general"
       # No middleware - JWT auth handled by backend, login screen by frontend
-      # Client Portal frontend route
+      # Client Portal frontend route (portal.peakonedigital.com)
       - "traefik.http.routers.client-portal.rule=Host(`portal.peakonedigital.com`)"
       - "traefik.http.routers.client-portal.entrypoints=web"
+      - "traefik.http.routers.client-portal.service=client-portal"
       - "traefik.http.services.client-portal.loadbalancer.server.port=${VITE_PORT:-5173}"
     command: npm run dev:docker
 

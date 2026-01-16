@@ -5,6 +5,7 @@ import { ClientSidebar } from '../components/ClientSidebar';
 import { BillingDisclaimer } from '../components/BillingDisclaimer';
 import { useClientAuth } from '../contexts/ClientAuthContext';
 import { useTheme } from '../../../hooks/useTheme';
+import { getLoginRoute } from '../utils/clientRoutes';
 
 /**
  * Client Portal layout with sidebar, disclaimer, and content area
@@ -29,7 +30,7 @@ export function ClientLayout() {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/portal/login" replace />;
+    return <Navigate to={getLoginRoute()} replace />;
   }
 
   return (

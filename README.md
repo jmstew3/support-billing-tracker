@@ -74,7 +74,7 @@ The application is protected by HTTP Basic Authentication at the Traefik reverse
 #### Default Credentials
 - **Username:** `admin`
 - **Password:** `PeakonBilling2025`
-- **Production URL:** `https://velocity.peakonedigital.com/billing-overview`
+- **Production URL:** `https://billing.peakonedigital.com`
 
 #### Changing Authentication Credentials
 
@@ -121,7 +121,7 @@ To log out and test new credentials:
 - Browser receives 401 response and clears its credential cache
 - Works reliably in Chrome, Firefox, and Safari
 
-**Note:** Only works in production (velocity.peakonedigital.com). On localhost, BasicAuth is bypassed.
+**Note:** Only works in production (`billing.peakonedigital.com`). On localhost, BasicAuth is bypassed.
 
 #### Security Notes
 - ✅ Credentials are hashed using Apache APR1 (bcrypt variant)

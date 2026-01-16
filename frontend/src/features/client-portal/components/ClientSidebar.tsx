@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Globe, FolderKanban, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../../../components/ui/ThemeToggle';
 import { useClientAuth } from '../contexts/ClientAuthContext';
-import { clientRouteToView, clientViewToRoute, type ClientView } from '../utils/clientRoutes';
+import { clientRouteToView, clientViewToRoute, getLoginRoute, type ClientView } from '../utils/clientRoutes';
 import peakOneLogo from '../../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface ClientSidebarProps {
@@ -54,10 +54,10 @@ export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTh
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/portal/login');
+      navigate(getLoginRoute());
     } catch {
       // Logout failed - still navigate to login
-      navigate('/portal/login');
+      navigate(getLoginRoute());
     }
   };
 

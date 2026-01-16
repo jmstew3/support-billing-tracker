@@ -6,22 +6,22 @@
  * previously scattered across utils/api.ts, projectsApi.ts, and hostingApi.ts
  */
 
-const IS_PRODUCTION = window.location.hostname === 'velocity.peakonedigital.com';
+const IS_PRODUCTION = window.location.hostname === 'billing.peakonedigital.com';
 
 export const API_CONFIG = {
   // Base API URL for backend requests
   BASE_URL: IS_PRODUCTION
-    ? 'https://velocity.peakonedigital.com/billing-overview-api/api'
+    ? 'https://billing.peakonedigital.com/api'
     : (import.meta.env.VITE_API_URL || 'http://localhost:3011/api'),
 
   // Health check endpoint (public, no auth required)
   HEALTH_URL: IS_PRODUCTION
-    ? 'https://velocity.peakonedigital.com/billing-overview-api/health'
+    ? 'https://billing.peakonedigital.com/health'
     : 'http://localhost:3011/health',
 
   // Twenty CRM proxy base URL
   TWENTY_PROXY_BASE: IS_PRODUCTION
-    ? 'https://velocity.peakonedigital.com/billing-overview-api/api/twenty-proxy'
+    ? 'https://billing.peakonedigital.com/api/twenty-proxy'
     : 'http://localhost:3011/api/twenty-proxy',
 
   // Feature flags

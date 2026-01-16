@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, Clock, User, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { useClientTicket, useClientTicketMessages } from '../hooks/useClientData';
+import { clientViewToRoute } from '../utils/clientRoutes';
 import { format, formatDistanceToNow } from 'date-fns';
 
 const ticketStatusColors: Record<string, string> = {
@@ -73,7 +74,7 @@ export function ClientTicketDetail() {
           <p className="text-destructive mb-2">Failed to load ticket</p>
           <p className="text-sm text-muted-foreground">{ticketError?.message || 'Ticket not found'}</p>
           <button
-            onClick={() => navigate('/portal/tickets')}
+            onClick={() => navigate(clientViewToRoute.tickets)}
             className="mt-4 text-primary hover:underline flex items-center gap-1 mx-auto"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -88,7 +89,7 @@ export function ClientTicketDetail() {
     <div className="p-6 md:p-8 space-y-6">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/portal/tickets')}
+        onClick={() => navigate(clientViewToRoute.tickets)}
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />

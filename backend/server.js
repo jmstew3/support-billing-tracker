@@ -38,7 +38,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for UI frameworks
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://velocity.peakonedigital.com"],
+      connectSrc: ["'self'", "https://billing.peakonedigital.com", "https://portal.peakonedigital.com"],
       fontSrc: ["'self'", "https:", "data:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -69,7 +69,7 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3011',
-      'https://velocity.peakonedigital.com',
+      'https://billing.peakonedigital.com',
       'https://portal.peakonedigital.com',
       'http://portal.peakonedigital.com' // Local dev before HTTPS
       // SECURITY: HTTP removed for production - production must use HTTPS only

@@ -22,7 +22,7 @@ docker-compose up -d
 
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:3011/api
-# Production: https://velocity.peakonedigital.com/billing-overview
+# Production: https://billing.peakonedigital.com
 
 # Credentials (BasicAuth) - see .env
 # DO NOT commit actual credentials to documentation
