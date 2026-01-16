@@ -69,4 +69,19 @@ export const queryKeys = {
   statistics: {
     all: ['statistics'] as const,
   },
+
+  // Client Portal
+  clientPortal: {
+    all: ['clientPortal'] as const,
+    profile: () => [...queryKeys.clientPortal.all, 'profile'] as const,
+    activity: () => [...queryKeys.clientPortal.all, 'activity'] as const,
+    tickets: {
+      all: () => [...queryKeys.clientPortal.all, 'tickets'] as const,
+      list: (filters?: Record<string, unknown>) => [...queryKeys.clientPortal.tickets.all(), 'list', filters] as const,
+      detail: (id: number) => [...queryKeys.clientPortal.tickets.all(), 'detail', id] as const,
+      messages: (id: number) => [...queryKeys.clientPortal.tickets.all(), 'messages', id] as const,
+    },
+    sites: () => [...queryKeys.clientPortal.all, 'sites'] as const,
+    projects: () => [...queryKeys.clientPortal.all, 'projects'] as const,
+  },
 };
