@@ -41,6 +41,16 @@ cd request-extractor && python3 main.py
 
 # 4. Sync FluentSupport tickets
 ./scripts/sync-fluent-tickets.sh
+
+# 5. Seed test client user (for client portal testing)
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword thad_chat < backend/db/migrations/009d_seed_test_client_users.sql
+```
+
+### Client Portal Test Credentials
+```
+URL: http://localhost:5173/portal/login
+Email: john.smith@acmecorp.com
+Password: testpass123
 ```
 
 ## Architecture Overview
@@ -67,6 +77,7 @@ cd request-extractor && python3 main.py
 | **Support** | `'home'` | `SupportTickets.tsx` | Ticket tracking & analysis |
 | **Projects** | `'projects'` | `Projects.tsx` | Project revenue tracking |
 | **Turbo Hosting** | `'billing'` | `TurboHosting.tsx` | Hosting MRR tracking |
+| **Client Portal** | `/portal/*` | `ClientPortal/` | Client-facing ticket & site view |
 
 ## Key Configuration
 
