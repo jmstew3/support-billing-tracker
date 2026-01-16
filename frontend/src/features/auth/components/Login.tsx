@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LogIn, Loader2 } from 'lucide-react';
 import peakoneLogo from '../../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 export const Login = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +19,8 @@ export const Login = () => {
 
     try {
       await login(email, password);
-      // Navigation handled by App.tsx based on isAuthenticated
+      // Navigate to dashboard after successful login
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

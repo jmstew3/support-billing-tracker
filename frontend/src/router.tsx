@@ -5,17 +5,19 @@ import { TurboHosting } from './features/hosting/components/TurboHosting';
 import { Dashboard } from './features/dashboard/components/Dashboard';
 import { Invoices } from './features/invoices';
 import { Layout } from './components/Layout';
+import { Login } from './features/auth/components/Login';
 
 /**
  * Route configuration for the application
  *
  * URL Structure:
- * - / (root) -> Dashboard
- * - /overview -> Dashboard (alias)
- * - /support -> Support Tickets
- * - /projects -> Projects
- * - /billing -> Turbo Hosting
- * - /invoices -> Invoices
+ * - /login -> Login page (public)
+ * - / (root) -> Dashboard (protected)
+ * - /overview -> Dashboard (alias, protected)
+ * - /support -> Support Tickets (protected)
+ * - /projects -> Projects (protected)
+ * - /billing -> Turbo Hosting (protected)
+ * - /invoices -> Invoices (protected)
  */
 
 // Get base path from environment (for deployment at /billing-overview)
@@ -23,6 +25,12 @@ const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
 export const router = createBrowserRouter(
   [
+    // Public login route (outside Layout)
+    {
+      path: '/login',
+      element: <Login />,
+    },
+    // Protected routes (inside Layout with auth check)
     {
       element: <Layout />,
       children: [

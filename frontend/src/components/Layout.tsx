@@ -1,18 +1,38 @@
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import { Sidebar } from './shared/Sidebar';
 import { PeriodProvider } from '../contexts/PeriodContext';
 import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../contexts/AuthContext';
 import { routeToView } from '../router';
+import { Loader2 } from 'lucide-react';
 
 /**
  * Main application layout with Sidebar and content area
- * Wraps all authenticated routes
+ * Wraps all authenticated routes - redirects to /login if not authenticated
  */
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={48} className="animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   // Determine current view based on route
   const currentView = (routeToView[location.pathname] || 'overview') as 'home' | 'projects' | 'overview' | 'billing' | 'invoices';
