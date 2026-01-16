@@ -16,8 +16,8 @@ Comprehensive security audit of the support-billing-tracker application. The cod
 
 Both files contain **actual production credentials** committed to the repository:
 - JWT secrets (64-character hex strings)
-- Admin credentials: `admin@peakonedigital.com` / `PeakonBilling2025`
-- Database credentials: `thaduser` / `thadpassword`
+- Admin credentials: `admin@peakonedigital.com` / `[REDACTED]`
+- Database credentials: `[REDACTED]` / `[REDACTED]`
 - MySQL root password
 
 **Impact:** Anyone with repo access has full admin access to the system.
@@ -58,8 +58,8 @@ cachedBasicAuthUser = { id: 1, email: adminEmail, role: 'admin' };
 **Files:** `scripts/sync-fluent-tickets.sh`, `scripts/backup-mysql.sh`
 
 Scripts contain hardcoded fallback credentials:
-- `JWT_PASSWORD="PeakonBilling2025"`
-- `DB_USER="thaduser"` / `DB_PASSWORD="thadpassword"`
+- `JWT_PASSWORD="[REDACTED]"`
+- `DB_USER="[REDACTED]"` / `DB_PASSWORD="[REDACTED]"`
 
 **Remediation:** Remove hardcoded values; require environment variables with no fallbacks.
 
@@ -231,7 +231,7 @@ openssl rand -hex 32  # for JWT_SECRET
 openssl rand -hex 32  # for JWT_REFRESH_SECRET
 
 # Change database passwords in MySQL
-ALTER USER 'thaduser'@'%' IDENTIFIED BY 'NEW_SECURE_PASSWORD';
+ALTER USER 'your_db_user'@'%' IDENTIFIED BY 'NEW_SECURE_PASSWORD';
 
 # Update admin password via API or database
 # Update .env with all new values
