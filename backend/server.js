@@ -15,6 +15,7 @@ import { conditionalAuth } from './middleware/conditionalAuth.js';
 import { sanitizeErrorMessage } from './middleware/security.js';
 import logger from './services/logger.js';
 import requestLogger from './middleware/requestLogger.js';
+import scheduler from './services/scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -162,6 +163,15 @@ async function startServer() {
         security: 'Helmet enabled, request timeout 30s',
         message: `🚀 Server running on http://localhost:${PORT}`
       });
+
+      // Initialize scheduler for automated sync jobs
+      // Only in production or when explicitly enabled
+      if (process.env.NODE_ENV === 'production' || process.env.ENABLE_SCHEDULER === 'true') {
+        scheduler.initialize();
+        logger.info('Scheduler initialized for automated sync');
+      } else {
+        logger.info('Scheduler disabled in development mode (set ENABLE_SCHEDULER=true to enable)');
+      }
     });
 
     // Server-level timeouts for protection against slow HTTP attacks

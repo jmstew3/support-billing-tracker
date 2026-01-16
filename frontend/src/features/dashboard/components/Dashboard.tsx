@@ -7,6 +7,7 @@ import { useBillingCalculations } from '../hooks/useBillingCalculations';
 import { DashboardScorecards } from '../sections/DashboardScorecards';
 import { MonthlyBreakdownTable } from '../sections/MonthlyBreakdownTable';
 import { MobileMonthBreakdown } from '../sections/MobileMonthBreakdown';
+import { SyncStatusWidget } from '../sections/SyncStatusWidget';
 import { generateComprehensiveBilling } from '../../../services/billingApi';
 import { formatMonthLabel } from '../../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../../utils/csvExport';
@@ -304,19 +305,28 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
-          {/* Summary Scorecards */}
-          <DashboardScorecards
-            displayTotals={displayTotals}
-            totalFreeHoursSavings={totalFreeHoursSavings}
-            totalProjectCredits={totalProjectCredits}
-            totalHostingCreditsSavings={totalHostingCreditsSavings}
-            totalDiscounts={totalDiscounts}
-            averageTicketCost={averageTicketCost}
-            averageProjectCost={averageProjectCost}
-            averageHostingCost={averageHostingCost}
-            currentMonthString={selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : 'multi')}
-            billingSummary={billingSummary}
-          />
+          {/* Sync Status Widget + Summary Scorecards Row */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="lg:flex-1">
+              {/* Summary Scorecards */}
+              <DashboardScorecards
+                displayTotals={displayTotals}
+                totalFreeHoursSavings={totalFreeHoursSavings}
+                totalProjectCredits={totalProjectCredits}
+                totalHostingCreditsSavings={totalHostingCreditsSavings}
+                totalDiscounts={totalDiscounts}
+                averageTicketCost={averageTicketCost}
+                averageProjectCost={averageProjectCost}
+                averageHostingCost={averageHostingCost}
+                currentMonthString={selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : 'multi')}
+                billingSummary={billingSummary}
+              />
+            </div>
+            {/* FluentSupport Sync Status - Sidebar Widget */}
+            <div className="w-full lg:w-72 shrink-0">
+              <SyncStatusWidget />
+            </div>
+          </div>
 
           {/* Monthly Revenue by Category - RevenueTrackerCard */}
           <div className="w-full">

@@ -40,6 +40,7 @@ services:
       DB_NAME: ${DB_NAME:-support_billing_tracker}
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-development}
+      ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-false}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       DATA_PATH: ${DATA_PATH:-./data}
       # JWT Authentication
@@ -77,6 +78,27 @@ services:
       # Apply strip prefix middleware only (JWT auth handled by backend, removed file-based middlewares that may not exist)
       - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
     command: npm start
+
+  mysql-backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    container_name: support-billing-tracker-backup
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER:-thaduser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
+      MYSQL_DATABASE: ${DB_NAME:-support_billing_tracker}
+      TZ: America/New_York
+      BACKUP_ON_STARTUP: ${BACKUP_ON_STARTUP:-false}
+    volumes:
+      - ${BACKUP_PATH:-./mysql_data_backup}:/backups
+    networks:
+      - velocity-network
 
   frontend:
     build:

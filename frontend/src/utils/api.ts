@@ -386,10 +386,33 @@ export interface FluentSyncStatus {
   updated_at: string;
 }
 
+export interface SchedulerJobStatus {
+  type: string;
+  schedule: string;
+  description: string;
+  timezone: string;
+  lastRun: string | null;
+  lastStatus: 'success' | 'failed' | null;
+  lastError: string | null;
+}
+
+export interface SchedulerNextRun {
+  jobName: string;
+  nextRun: string;
+  description: string;
+}
+
+export interface SchedulerStatus {
+  schedulerActive: boolean;
+  jobs: Record<string, SchedulerJobStatus>;
+  nextRuns: SchedulerNextRun[];
+}
+
 export interface FluentSyncResponse {
   syncStatus: FluentSyncStatus | null;
   totalTickets: number;
   statusBreakdown: Array<{ ticket_status: string; count: number }>;
+  scheduler?: SchedulerStatus;
 }
 
 export interface FluentSyncResult {

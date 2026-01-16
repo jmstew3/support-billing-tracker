@@ -1,5 +1,6 @@
 import express from 'express';
 import FluentSyncService from '../services/FluentSyncService.js';
+import scheduler from '../services/scheduler.js';
 
 const router = express.Router();
 
@@ -29,15 +30,34 @@ router.post('/sync', async (req, res) => {
 
 /**
  * GET /api/fluent/status
- * Get the last sync status and statistics
+ * Get the last sync status, statistics, and scheduler info
  */
 router.get('/status', async (req, res) => {
   try {
-    const status = await FluentSyncService.getStatus();
-    res.json(status);
+    const syncStatus = await FluentSyncService.getStatus();
+    const schedulerStatus = scheduler.getStatus();
+
+    res.json({
+      ...syncStatus,
+      scheduler: schedulerStatus
+    });
 
   } catch (error) {
     console.error('[FluentSync] Failed to get status:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/fluent/scheduler
+ * Get scheduler status and next run times
+ */
+router.get('/scheduler', async (req, res) => {
+  try {
+    const status = scheduler.getStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('[FluentSync] Failed to get scheduler status:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
