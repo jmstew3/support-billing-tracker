@@ -10,11 +10,13 @@ import twentySyncRoutes from './routes/twenty-sync.js';
 import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
+import invoiceRoutes from './routes/invoices.js';
 import { authenticateToken } from './middleware/auth.js';
 import { conditionalAuth } from './middleware/conditionalAuth.js';
 import { sanitizeErrorMessage } from './middleware/security.js';
 import logger from './services/logger.js';
 import requestLogger from './middleware/requestLogger.js';
+import scheduler from './services/scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,8 +66,8 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3011',
-      'https://velocity.peakonedigital.com',
-      'http://velocity.peakonedigital.com'
+      'https://velocity.peakonedigital.com'
+      // SECURITY: HTTP removed - production must use HTTPS only
     ];
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
@@ -97,6 +99,7 @@ app.use('/api', conditionalAuth, requestRoutes);
 app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
 app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
 app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
+app.use('/api/invoices', conditionalAuth, invoiceRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -162,6 +165,15 @@ async function startServer() {
         security: 'Helmet enabled, request timeout 30s',
         message: `🚀 Server running on http://localhost:${PORT}`
       });
+
+      // Initialize scheduler for automated sync jobs
+      // Only in production or when explicitly enabled
+      if (process.env.NODE_ENV === 'production' || process.env.ENABLE_SCHEDULER === 'true') {
+        scheduler.initialize();
+        logger.info('Scheduler initialized for automated sync');
+      } else {
+        logger.info('Scheduler disabled in development mode (set ENABLE_SCHEDULER=true to enable)');
+      }
     });
 
     // Server-level timeouts for protection against slow HTTP attacks

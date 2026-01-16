@@ -17,6 +17,7 @@ import {
   sanitizeErrorMessage,
   escapeIdentifier
 } from '../middleware/security.js';
+import { parseCSVLine } from '../utils/csvParser.js';
 
 const router = express.Router();
 
@@ -691,15 +692,16 @@ router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
       if (!lines[i].trim()) continue;
 
       try {
-        const values = lines[i].match(/(".*?"|[^,]+)/g);
-        if (!values) {
+        // SECURITY: Use safe CSV parser instead of regex to prevent ReDoS
+        const values = parseCSVLine(lines[i]);
+        if (!values || values.length === 0) {
           skipped++;
           continue;
         }
 
         const row = {};
         headers.forEach((header, index) => {
-          row[header] = values[index]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '';
+          row[header] = values[index] || '';
         });
 
         // Validate required fields

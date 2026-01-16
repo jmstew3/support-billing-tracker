@@ -1,0 +1,4 @@
+# Don't copy backup files into the image
+*.sql
+*.sql.gz
+*.log

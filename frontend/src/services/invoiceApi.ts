@@ -1,0 +1,327 @@
+/**
+ * Invoice API Service
+ * Handles all invoice-related API calls
+ */
+
+import { authenticatedFetch } from '../utils/api';
+import { API_CONFIG } from '../config/apiConfig';
+
+const API_BASE_URL = API_CONFIG.BASE_URL;
+
+// Types
+export interface Customer {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string;
+  payment_terms: number;
+  qbo_customer_id: string | null;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoice_id: number;
+  item_type: 'support' | 'project' | 'hosting' | 'other';
+  description: string;
+  quantity: string;
+  unit_price: string;
+  amount: string;
+  sort_order: number;
+  request_ids: number[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceRequest {
+  id: number;
+  date: string;
+  time: string;
+  description: string;
+  category: string;
+  urgency: string;
+  estimated_hours: string;
+}
+
+export interface Invoice {
+  id: number;
+  customer_id: number;
+  invoice_number: string;
+  period_start: string;
+  period_end: string;
+  invoice_date: string;
+  due_date: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  subtotal: string;
+  tax_rate: string;
+  tax_amount: string;
+  total: string;
+  amount_paid: string;
+  balance_due: string;
+  payment_date: string | null;
+  notes: string | null;
+  internal_notes: string | null;
+  qbo_invoice_id: string | null;
+  qbo_sync_status: 'pending' | 'synced' | 'error' | 'not_applicable';
+  qbo_sync_date: string | null;
+  qbo_sync_error: string | null;
+  created_at: string;
+  updated_at: string;
+  customer_name?: string;
+  customer_email?: string;
+  items?: InvoiceItem[];
+  requests?: InvoiceRequest[];
+}
+
+export interface BillingSummary {
+  customerId: string;
+  periodStart: string;
+  periodEnd: string;
+  requestCount: number;
+  requests: InvoiceRequest[];
+  totalHours: number;
+  billableHours: number;
+  freeHoursApplied: number;
+  emergencyHours: number;
+  regularHours: number;
+  emergencyAmount: number;
+  regularAmount: number;
+  subtotal: number;
+}
+
+export interface GenerateInvoiceParams {
+  customerId: number;
+  periodStart: string;
+  periodEnd: string;
+  invoiceDate?: string;
+  dueDate?: string;
+  taxRate?: number;
+  notes?: string;
+}
+
+export interface InvoiceFilters {
+  customerId?: number;
+  status?: Invoice['status'];
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// API Functions
+
+/**
+ * List all customers
+ */
+export async function listCustomers(activeOnly = true): Promise<Customer[]> {
+  const response = await authenticatedFetch(
+    `${API_BASE_URL}/invoices/customers?active=${activeOnly}`
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to list customers: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.customers;
+}
+
+/**
+ * Get customer by ID
+ */
+export async function getCustomer(id: number): Promise<Customer> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/customers/${id}`);
+  if (!response.ok) {
+    throw new Error(`Failed to get customer: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get billing summary for a period
+ */
+export async function getBillingSummary(
+  customerId: number,
+  periodStart: string,
+  periodEnd: string
+): Promise<BillingSummary> {
+  const params = new URLSearchParams({
+    customerId: String(customerId),
+    periodStart,
+    periodEnd
+  });
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/billing-summary?${params}`);
+  if (!response.ok) {
+    throw new Error(`Failed to get billing summary: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * List invoices with filters
+ */
+export async function listInvoices(
+  filters: InvoiceFilters = {}
+): Promise<{ invoices: Invoice[]; total: number }> {
+  const params = new URLSearchParams();
+  if (filters.customerId) params.append('customerId', String(filters.customerId));
+  if (filters.status) params.append('status', filters.status);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  if (filters.limit) params.append('limit', String(filters.limit));
+  if (filters.offset) params.append('offset', String(filters.offset));
+
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices?${params}`);
+  if (!response.ok) {
+    throw new Error(`Failed to list invoices: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get invoice by ID
+ */
+export async function getInvoice(id: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}`);
+  if (!response.ok) {
+    throw new Error(`Failed to get invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Generate a new invoice
+ */
+export async function generateInvoice(
+  params: GenerateInvoiceParams
+): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/generate`, {
+    method: 'POST',
+    body: JSON.stringify(params)
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to generate invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Update invoice
+ */
+export async function updateInvoice(
+  id: number,
+  updates: Partial<Pick<Invoice, 'status' | 'notes' | 'internal_notes' | 'amount_paid' | 'payment_date'>>
+): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Delete draft invoice
+ */
+export async function deleteInvoice(id: number): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to delete invoice: ${response.statusText}`);
+  }
+}
+
+/**
+ * Mark invoice as sent
+ */
+export async function sendInvoice(id: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/send`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to send invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Mark invoice as paid
+ */
+export async function payInvoice(
+  id: number,
+  amount_paid: number,
+  payment_date?: string
+): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/pay`, {
+    method: 'POST',
+    body: JSON.stringify({ amount_paid, payment_date })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to record payment: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Export invoice as CSV
+ */
+export async function exportInvoiceCSV(id: number): Promise<string> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/export/csv`);
+  if (!response.ok) {
+    throw new Error(`Failed to export CSV: ${response.statusText}`);
+  }
+  return response.text();
+}
+
+/**
+ * Export invoice as JSON
+ */
+export async function exportInvoiceJSON(id: number): Promise<object> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/export/json`);
+  if (!response.ok) {
+    throw new Error(`Failed to export JSON: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Download file helper
+ */
+export function downloadFile(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export default {
+  listCustomers,
+  getCustomer,
+  getBillingSummary,
+  listInvoices,
+  getInvoice,
+  generateInvoice,
+  updateInvoice,
+  deleteInvoice,
+  sendInvoice,
+  payInvoice,
+  exportInvoiceCSV,
+  exportInvoiceJSON,
+  downloadFile
+};

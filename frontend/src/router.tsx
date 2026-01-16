@@ -3,6 +3,7 @@ import { SupportTickets } from './features/support/components/SupportTickets';
 import { Projects } from './features/projects/components/Projects';
 import { TurboHosting } from './features/hosting/components/TurboHosting';
 import { Dashboard } from './features/dashboard/components/Dashboard';
+import { Invoices } from './features/invoices';
 import { Layout } from './components/Layout';
 
 /**
@@ -14,6 +15,7 @@ import { Layout } from './components/Layout';
  * - /support -> Support Tickets
  * - /projects -> Projects
  * - /billing -> Turbo Hosting
+ * - /invoices -> Invoices
  */
 
 // Get base path from environment (for deployment at /billing-overview)
@@ -44,6 +46,10 @@ export const router = createBrowserRouter(
           path: '/billing',
           element: <TurboHosting />,
         },
+        {
+          path: '/invoices',
+          element: <Invoices />,
+        },
         // Catch-all redirect to Dashboard
         {
           path: '*',
@@ -58,18 +64,20 @@ export const router = createBrowserRouter(
 );
 
 // Route path to view mapping (for Sidebar active state)
-export const routeToView: Record<string, 'home' | 'projects' | 'overview' | 'billing'> = {
+export const routeToView: Record<string, 'home' | 'projects' | 'overview' | 'billing' | 'invoices'> = {
   '/': 'overview',
   '/overview': 'overview',
   '/support': 'home',
   '/projects': 'projects',
   '/billing': 'billing',
+  '/invoices': 'invoices',
 };
 
 // View to route mapping (for navigation)
-export const viewToRoute: Record<'home' | 'projects' | 'overview' | 'billing', string> = {
+export const viewToRoute: Record<'home' | 'projects' | 'overview' | 'billing' | 'invoices', string> = {
   overview: '/',
   home: '/support',
   projects: '/projects',
   billing: '/billing',
+  invoices: '/invoices',
 };

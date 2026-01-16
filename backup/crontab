@@ -1,0 +1,11 @@
+# MySQL Backup Cron Schedule
+#
+# Daily backup at 2:00 AM EST (7:00 AM UTC)
+# The backup script auto-detects if it's a weekly (Sunday) or monthly (1st) backup
+#
+# Format: minute hour day month weekday command
+
+# Run backup daily at 2:00 AM EST (adjust for your timezone)
+0 7 * * * root /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1
+
+# Empty line required at end of crontab

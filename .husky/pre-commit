@@ -1,2 +1,7 @@
 #!/bin/sh
+
+# Security check: Block .env and other sensitive files
+./scripts/pre-commit-hook.sh || exit 1
+
+# Run lint-staged
 npx lint-staged

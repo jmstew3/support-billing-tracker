@@ -15,7 +15,7 @@ export function Layout() {
   const location = useLocation();
 
   // Determine current view based on route
-  const currentView = routeToView[location.pathname] || 'overview';
+  const currentView = (routeToView[location.pathname] || 'overview') as 'home' | 'projects' | 'overview' | 'billing' | 'invoices';
 
   return (
     <PeriodProvider>
