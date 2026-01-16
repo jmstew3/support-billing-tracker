@@ -3,9 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Globe, FolderKanban, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../../../components/ui/ThemeToggle';
 import { useClientAuth } from '../contexts/ClientAuthContext';
+import { clientRouteToView, clientViewToRoute, type ClientView } from '../utils/clientRoutes';
 import peakOneLogo from '../../../assets/PeakOne Logo_onwhite_withtext.svg';
-
-type ClientView = 'dashboard' | 'tickets' | 'sites' | 'projects';
 
 interface ClientSidebarProps {
   isMobileOpen: boolean;
@@ -13,22 +12,6 @@ interface ClientSidebarProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
-
-// Route mappings for client portal
-export const clientRouteToView: Record<string, ClientView> = {
-  '/portal': 'dashboard',
-  '/portal/dashboard': 'dashboard',
-  '/portal/tickets': 'tickets',
-  '/portal/sites': 'sites',
-  '/portal/projects': 'projects',
-};
-
-export const clientViewToRoute: Record<ClientView, string> = {
-  dashboard: '/portal',
-  tickets: '/portal/tickets',
-  sites: '/portal/sites',
-  projects: '/portal/projects',
-};
 
 export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: ClientSidebarProps) {
   const navigate = useNavigate();
