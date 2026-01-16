@@ -11,6 +11,9 @@ import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
 import invoiceRoutes from './routes/invoices.js';
+import clientAuthRoutes from './routes/clientAuth.js';
+import clientRoutes from './routes/client.js';
+import adminClientsRoutes from './routes/adminClients.js';
 import { authenticateToken } from './middleware/auth.js';
 import { conditionalAuth } from './middleware/conditionalAuth.js';
 import { sanitizeErrorMessage } from './middleware/security.js';
@@ -66,8 +69,10 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3011',
-      'https://velocity.peakonedigital.com'
-      // SECURITY: HTTP removed - production must use HTTPS only
+      'https://velocity.peakonedigital.com',
+      'https://portal.peakonedigital.com',
+      'http://portal.peakonedigital.com' // Local dev before HTTPS
+      // SECURITY: HTTP removed for production - production must use HTTPS only
     ];
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
@@ -92,6 +97,14 @@ app.use(requestLogger);
 // Routes
 // Auth routes MUST come first and are NOT protected (to allow login)
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/client', clientAuthRoutes); // Client portal auth (separate from internal auth)
+
+// Client Portal routes (use JWT auth via clientAuth middleware)
+// These routes handle their own authentication and scoping
+app.use('/api/client', clientRoutes);
+
+// Admin routes for client management (requires internal auth + admin role)
+app.use('/api/admin/clients', conditionalAuth, adminClientsRoutes);
 
 // All other API routes use conditional authentication
 // (BasicAuth in production via Traefik, JWT for direct API access)
