@@ -6,7 +6,7 @@ import User from '../models/User.js';
  *
  * This middleware provides flexible authentication for environments with multiple auth layers:
  *
- * Production (velocity.peakonedigital.com):
+ * Production (billing.peakonedigital.com):
  *   - Protected by Traefik BasicAuth at reverse proxy level
  *   - This middleware trusts BasicAuth and looks up the configured admin user
  *   - Uses ADMIN_EMAIL env var to find user in database

@@ -70,7 +70,7 @@ Scripts contain hardcoded fallback credentials:
 ### 5. HTTP Allowed in Production CORS
 **File:** `backend/server.js:68`
 
-CORS whitelist includes `http://velocity.peakonedigital.com` (non-HTTPS).
+CORS whitelist previously included HTTP origins for the production domain (non-HTTPS).
 
 **Remediation:** Remove HTTP origin; keep only HTTPS for production.
 
