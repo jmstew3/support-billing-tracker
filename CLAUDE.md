@@ -8,6 +8,7 @@ Business intelligence dashboard for support request tracking and billing. Proces
 |----------|----------|
 | Security & Auth | `docs/SECURITY.md` |
 | FluentSupport Sync | `docs/FLUENT_SYNC.md` |
+| Invoicing & QBO | `docs/INVOICING.md` |
 | Troubleshooting | `docs/TROUBLESHOOTING.md` |
 | Changelog | `docs/CHANGELOG.md` |
 | API Documentation | `docs/API.md` |
