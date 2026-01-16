@@ -136,6 +136,36 @@ Local access (localhost:5173, localhost:3011) bypasses authentication. Only prod
 
 ---
 
+## 👤 Client Portal
+
+The client portal provides a separate, client-facing view for customers to view their support tickets and hosted sites.
+
+### Setup
+
+1. **Run the seed script** to create test client and user:
+```bash
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword thad_chat < backend/db/migrations/009d_seed_test_client_users.sql
+```
+
+2. **Access the portal**:
+```
+URL: http://localhost:5173/portal/login
+```
+
+### Test Credentials
+| Field | Value |
+|-------|-------|
+| Email | `john.smith@acmecorp.com` |
+| Password | `testpass123` |
+| Client | Acme Corp |
+
+### Notes
+- Client portal uses separate JWT authentication from the admin dashboard
+- Clients can only view their own data (tickets, sites, projects)
+- No billing/cost information is exposed to clients
+
+---
+
 ## 🔄 FluentSupport Ticket Sync
 
 The application automatically syncs support tickets from FluentSupport (WordPress plugin) into the database. This allows you to view both iMessage SMS requests and FluentSupport tickets in a unified dashboard.
