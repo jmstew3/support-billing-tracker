@@ -37,7 +37,10 @@ class ClientRepository {
   static async getTickets(clientId, options = {}) {
     if (!clientId) throw new Error('clientId is required for data scoping');
 
-    const { limit = 50, offset = 0, status = null } = options;
+    // Ensure limit and offset are integers (MySQL prepared statements are strict about types)
+    const limit = parseInt(options.limit, 10) || 50;
+    const offset = parseInt(options.offset, 10) || 0;
+    const status = options.status || null;
 
     try {
       let query = `
@@ -63,8 +66,9 @@ class ClientRepository {
         params.push(status);
       }
 
-      query += ' ORDER BY ft.created_at DESC LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      // Use template literals for LIMIT/OFFSET (already validated as integers)
+      // mysql2 execute() has issues with parameterized LIMIT/OFFSET
+      query += ` ORDER BY ft.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
       const [tickets] = await pool.execute(query, params);
 

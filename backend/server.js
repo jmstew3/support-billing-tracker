@@ -96,8 +96,9 @@ app.use(requestLogger);
 
 // Routes
 // Auth routes MUST come first and are NOT protected (to allow login)
-app.use('/api/auth', authRoutes);
-app.use('/api/auth/client', clientAuthRoutes); // Client portal auth (separate from internal auth)
+// IMPORTANT: More specific routes must come before less specific ones
+app.use('/api/auth/client', clientAuthRoutes); // Client portal auth (more specific, must be first)
+app.use('/api/auth', authRoutes); // Internal auth (less specific)
 
 // Client Portal routes (use JWT auth via clientAuth middleware)
 // These routes handle their own authentication and scoping
