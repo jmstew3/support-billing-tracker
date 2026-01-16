@@ -10,6 +10,7 @@ import twentySyncRoutes from './routes/twenty-sync.js';
 import fluentSyncRoutes from './routes/fluent-sync.js';
 import twentyProxyRoutes from './routes/twenty-proxy.js';
 import authRoutes from './routes/auth.js';
+import invoiceRoutes from './routes/invoices.js';
 import { authenticateToken } from './middleware/auth.js';
 import { conditionalAuth } from './middleware/conditionalAuth.js';
 import { sanitizeErrorMessage } from './middleware/security.js';
@@ -98,6 +99,7 @@ app.use('/api', conditionalAuth, requestRoutes);
 app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
 app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
 app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
+app.use('/api/invoices', conditionalAuth, invoiceRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
