@@ -64,8 +64,8 @@ app.use(cors({
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3011',
-      'https://velocity.peakonedigital.com',
-      'http://velocity.peakonedigital.com'
+      'https://velocity.peakonedigital.com'
+      // SECURITY: HTTP removed - production must use HTTPS only
     ];
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);

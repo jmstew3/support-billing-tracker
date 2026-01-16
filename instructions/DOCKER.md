@@ -118,10 +118,10 @@ docker-compose exec backend npm run import
 
 ```bash
 # Access MySQL shell
-docker-compose exec mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat
+docker-compose exec mysql mysql -u thaduser -pthadpassword thad_chat
 
 # Run SQL query
-docker-compose exec mysql mysql -u ***REMOVED*** -p***REMOVED*** thad_chat -e "SELECT COUNT(*) FROM requests;"
+docker-compose exec mysql mysql -u thaduser -pthadpassword thad_chat -e "SELECT COUNT(*) FROM requests;"
 
 # Backup database
 docker-compose exec mysql mysqldump -u root -prootpassword thad_chat > backup.sql
@@ -162,7 +162,7 @@ For production deployment:
 
 ```env
 MYSQL_ROOT_PASSWORD=secure_root_password
-MYSQL_USER=***REMOVED***
+MYSQL_USER=thaduser
 MYSQL_PASSWORD=secure_user_password
 NODE_ENV=production
 ```

@@ -341,8 +341,8 @@ docker-compose down -v
 |----------|-------------|---------|
 | `PORT` | Server port | `3011` |
 | `MYSQL_HOST` | Database host | `mysql` |
-| `MYSQL_USER` | Database user | `***REMOVED***` |
-| `MYSQL_PASSWORD` | Database password | `***REMOVED***` |
+| `MYSQL_USER` | Database user | `thaduser` |
+| `MYSQL_PASSWORD` | Database password | `thadpassword` |
 | `MYSQL_DATABASE` | Database name | `support_billing_tracker` |
 | `JWT_SECRET` | JWT signing key | `your-secret-key` |
 | `FRONTEND_URL` | CORS origin | `http://localhost:5173` |

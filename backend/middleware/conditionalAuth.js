@@ -53,15 +53,12 @@ export const conditionalAuth = async (req, res, next) => {
           };
           cacheExpiry = Date.now() + CACHE_TTL;
         } else {
-          // Fallback if user not found in database
-          console.warn(`[conditionalAuth] Admin user ${adminEmail} not found in database, using fallback`);
-          cachedBasicAuthUser = {
-            id: 1,
-            email: adminEmail,
-            role: 'admin',
-            authMethod: 'basicauth'
-          };
-          cacheExpiry = Date.now() + CACHE_TTL;
+          // SECURITY: Do NOT use fallback identity - require valid user in database
+          console.error(`[conditionalAuth] SECURITY: Admin user ${adminEmail} not found in database. Access denied.`);
+          return res.status(401).json({
+            error: 'Admin user not configured',
+            hint: 'Run database migrations or create admin user via API'
+          });
         }
       }
 

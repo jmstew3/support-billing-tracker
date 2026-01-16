@@ -6,8 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: support_billing_tracker
-      MYSQL_USER: ${MYSQL_USER:-***REMOVED***}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-***REMOVED***}
+      MYSQL_USER: ${MYSQL_USER:-thaduser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
     ports:
       - "127.0.0.1:${MYSQL_PORT:-3307}:3306"  # Localhost only - not accessible from network
     volumes:
@@ -35,8 +35,8 @@ services:
     environment:
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
-      DB_USER: ${MYSQL_USER:-***REMOVED***}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-***REMOVED***}
+      DB_USER: ${MYSQL_USER:-thaduser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
       DB_NAME: ${DB_NAME:-support_billing_tracker}
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-development}
@@ -48,7 +48,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@peakonedigital.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-***REMOVED***}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-PeakonBilling2025}
       # External APIs
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}

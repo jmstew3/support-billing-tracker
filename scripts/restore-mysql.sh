@@ -19,8 +19,8 @@ LOG_FILE="$BACKUP_DIR/backup.log"
 # Database configuration (matches docker-compose.yml)
 CONTAINER_NAME="support-billing-tracker-mysql"
 DB_NAME="support_billing_tracker"
-DB_USER="***REMOVED***"
-DB_PASSWORD="***REMOVED***"
+DB_USER="thaduser"
+DB_PASSWORD="thadpassword"
 
 # Colors for output
 RED='\033[0;31m'

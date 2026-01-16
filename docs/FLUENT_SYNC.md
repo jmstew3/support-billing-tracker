@@ -86,7 +86,7 @@ List FluentSupport tickets with request details.
 ### Option 3: CLI (Production)
 ```bash
 curl -X POST https://velocity.peakonedigital.com/billing-overview-api/api/fluent/sync \
-  -u "admin:***REMOVED***" \
+  -u "admin:PeakonBilling2025" \
   -H "Content-Type: application/json" \
   -d '{"dateFilter":"2025-10-17"}'
 ```
@@ -96,7 +96,7 @@ curl -X POST https://velocity.peakonedigital.com/billing-overview-api/api/fluent
 # 1. Get token
 TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' | jq -r .accessToken)
+  -d '{"email":"admin@peakonedigital.com","password":"PeakonBilling2025"}' | jq -r .accessToken)
 
 # 2. Sync
 curl -X POST http://localhost:3011/api/fluent/sync \

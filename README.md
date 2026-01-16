@@ -35,7 +35,7 @@ Docker Compose automatically loads the `.env` file from the project root.
 4. **Access the dashboard**:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3011/api
-- MySQL: localhost:3307 (user: ***REMOVED***, password: from .env)
+- MySQL: localhost:3307 (user: thaduser, password: from .env)
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
@@ -73,7 +73,7 @@ The application is protected by HTTP Basic Authentication at the Traefik reverse
 
 #### Default Credentials
 - **Username:** `admin`
-- **Password:** `***REMOVED***`
+- **Password:** `PeakonBilling2025`
 - **Production URL:** `https://velocity.peakonedigital.com/billing-overview`
 
 #### Changing Authentication Credentials
@@ -152,7 +152,7 @@ sed -i 's/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=2025-10-17/' .env
 docker-compose restart backend && sleep 3 && \
 TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}' \
+  -d '{"email":"admin@peakonedigital.com","password":"PeakonBilling2025"}' \
   | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4) && \
 curl -X POST http://localhost:3011/api/fluent/sync \
   -H "Content-Type: application/json" \
@@ -189,7 +189,7 @@ Get a JWT token for API access:
 ```bash
 curl -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"***REMOVED***"}'
+  -d '{"email":"admin@peakonedigital.com","password":"PeakonBilling2025"}'
 ```
 
 Copy the `accessToken` value from the response.
@@ -214,7 +214,7 @@ Check the sync status:
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec support-billing-tracker-mysql mysql -u ***REMOVED*** -p***REMOVED*** support_billing_tracker \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
   -e "SELECT COUNT(*) as total, MIN(date) as earliest, MAX(date) as latest FROM requests WHERE date >= '2025-10-17';"
 ```
 
@@ -575,14 +575,14 @@ Uses sophisticated pattern matching to identify:
 ```
 Host: 127.0.0.1 or localhost
 Port: 3307 (not 3306)
-User: ***REMOVED***
+User: thaduser
 Password: [from .env]
 Database: support_billing_tracker
 ```
 
 **Via MySQL Command Line**:
 ```bash
-mysql -h localhost -P 3307 -u ***REMOVED*** -p
+mysql -h localhost -P 3307 -u thaduser -p
 # Enter password from .env
 USE support_billing_tracker;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;

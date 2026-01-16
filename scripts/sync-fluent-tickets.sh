@@ -185,9 +185,23 @@ done
 
 log_info "Authenticating with API..."
 
-# Get credentials from .env.docker
-JWT_USERNAME=$(grep "^JWT_USERNAME=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' || echo "admin@peakonedigital.com")
-JWT_PASSWORD=$(grep "^JWT_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' || echo "***REMOVED***")
+# SECURITY: Get credentials from environment - no hardcoded fallbacks
+JWT_USERNAME=$(grep "^JWT_USERNAME=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+JWT_PASSWORD=$(grep "^JWT_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+
+# Also try ADMIN_EMAIL/ADMIN_PASSWORD if JWT_ vars not set
+if [ -z "$JWT_USERNAME" ]; then
+    JWT_USERNAME=$(grep "^ADMIN_EMAIL=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+fi
+if [ -z "$JWT_PASSWORD" ]; then
+    JWT_PASSWORD=$(grep "^ADMIN_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+fi
+
+# Require credentials - no hardcoded fallbacks for security
+if [ -z "$JWT_USERNAME" ] || [ -z "$JWT_PASSWORD" ]; then
+    log_error "Missing credentials. Set JWT_USERNAME/JWT_PASSWORD or ADMIN_EMAIL/ADMIN_PASSWORD in .env"
+    exit 1
+fi
 
 AUTH_RESPONSE=$(curl -s -X POST "$API_BASE_URL/auth/login" \
     -H "Content-Type: application/json" \
@@ -279,12 +293,21 @@ log_info "Verifying database records..."
 
 # Query database for FluentSupport tickets count
 MYSQL_CONTAINER="support-billing-tracker-mysql"
-MYSQL_USER="***REMOVED***"
-MYSQL_PASS="***REMOVED***"
-MYSQL_DB="support_billing_tracker"
+# SECURITY: Get database credentials from environment - no hardcoded fallbacks
+MYSQL_USER=$(grep "^MYSQL_USER=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+MYSQL_PASS=$(grep "^MYSQL_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+MYSQL_DB=$(grep "^MYSQL_DATABASE=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
 
-DB_COUNT=$(docker exec "$MYSQL_CONTAINER" mysql -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" \
-    -se "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '$DATE_FILTER';" 2>/dev/null || echo "0")
+# Use defaults only for container/db name, not credentials
+MYSQL_DB="${MYSQL_DB:-support_billing_tracker}"
+
+if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASS" ]; then
+    log_warning "Database credentials not found in .env - skipping verification"
+    DB_COUNT="(unknown)"
+else
+    DB_COUNT=$(docker exec "$MYSQL_CONTAINER" mysql -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" \
+        -se "SELECT COUNT(*) FROM requests WHERE source='fluent' AND date >= '$DATE_FILTER';" 2>/dev/null || echo "0")
+fi
 
 log_success "FluentSupport tickets in database (>= $DATE_FILTER): $DB_COUNT"
 

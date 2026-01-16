@@ -78,7 +78,7 @@ const passwordChangeLimiter = rateLimit({
  * Request body:
  * {
  *   "email": "admin@peakonedigital.com",
- *   "password": "***REMOVED***"
+ *   "password": "PeakonBilling2025"
  * }
  *
  * Response:
@@ -139,16 +139,20 @@ router.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
 
-    // Ensure JWT_REFRESH_SECRET is configured (security requirement)
+    // SECURITY: JWT_REFRESH_SECRET is required - no fallback to JWT_SECRET
     if (!process.env.JWT_REFRESH_SECRET) {
-      console.error('SECURITY WARNING: JWT_REFRESH_SECRET is not configured. Using JWT_SECRET as fallback.');
+      console.error('SECURITY ERROR: JWT_REFRESH_SECRET is not configured. Refresh tokens disabled.');
+      return res.status(500).json({
+        error: 'Server configuration error',
+        hint: 'JWT_REFRESH_SECRET must be configured. Generate with: openssl rand -hex 32'
+      });
     }
 
     // Generate refresh token (long-lived: 7 days)
     const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
     const refreshToken = jwt.sign(
       { id: user.id },
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET,
       { expiresIn: refreshExpiresIn }
     );
 
@@ -250,10 +254,16 @@ router.post('/refresh', authLimiter, async (req, res) => {
   }
 
   try {
+    // SECURITY: JWT_REFRESH_SECRET is required - no fallback
+    if (!process.env.JWT_REFRESH_SECRET) {
+      console.error('SECURITY ERROR: JWT_REFRESH_SECRET not configured');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+
     // Verify JWT signature first (fast check)
     const decoded = jwt.verify(
       refreshToken,
-      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
+      process.env.JWT_REFRESH_SECRET
     );
 
     // Check if refresh token exists and is valid in database
