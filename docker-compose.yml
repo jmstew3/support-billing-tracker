@@ -77,6 +77,12 @@ services:
       - "traefik.http.middlewares.billing-overview-api-strip.stripprefix.prefixes=/billing-overview-api"
       # Apply strip prefix middleware only (JWT auth handled by backend, removed file-based middlewares that may not exist)
       - "traefik.http.routers.billing-overview-api.middlewares=billing-overview-api-strip"
+      # Client Portal API route
+      - "traefik.http.routers.client-portal-api.rule=Host(`portal.peakonedigital.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.client-portal-api.entrypoints=web"
+      - "traefik.http.services.client-portal-api.loadbalancer.server.port=3011"
+      - "traefik.http.middlewares.client-portal-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.client-portal-api.middlewares=client-portal-api-strip"
     command: npm start
 
   mysql-backup:
@@ -137,6 +143,10 @@ services:
       - "traefik.http.services.billing-overview.loadbalancer.server.port=${VITE_PORT:-5173}"
       - "traefik.docker.network=traefik-general"
       # No middleware - JWT auth handled by backend, login screen by frontend
+      # Client Portal frontend route
+      - "traefik.http.routers.client-portal.rule=Host(`portal.peakonedigital.com`)"
+      - "traefik.http.routers.client-portal.entrypoints=web"
+      - "traefik.http.services.client-portal.loadbalancer.server.port=${VITE_PORT:-5173}"
     command: npm run dev:docker
 
 networks:
