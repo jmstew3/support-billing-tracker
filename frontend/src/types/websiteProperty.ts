@@ -12,6 +12,7 @@ export interface WebsiteProperty {
   hostingEnd: string | null; // ISO date string or null if still active
   hostingMrrAmount: number | null; // Dollar amount (e.g., 99)
   hostingStatus: 'ACTIVE' | 'INACTIVE';
+  parentCompanyId: string | null; // Twenty CRM company ID linking site to a brand/company
 }
 
 /**

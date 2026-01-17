@@ -5,6 +5,10 @@ import pool from '../db/config.js';
 
 const router = express.Router();
 
+// Twenty CRM API configuration
+const TWENTY_API_TOKEN = process.env.VITE_TWENTY_API_TOKEN || '';
+const TWENTY_BASE_URL = 'https://twenny.peakonedigital.com/rest';
+
 /**
  * Log client activity for audit
  */
@@ -142,15 +146,66 @@ router.get('/tickets/:id/messages', clientPortalAuth, async (req, res) => {
 
 /**
  * GET /api/client/sites
- * Get client's hosted websites
+ * Get client's hosted websites from Twenty CRM
+ * Filters by parentCompanyId matching the client's twenty_brand_id
  */
 router.get('/sites', clientPortalAuth, async (req, res) => {
   try {
-    const websites = await ClientRepository.getWebsites(req.clientScope.clientId);
+    // Get the client's twenty_brand_id for filtering
+    const profile = await ClientRepository.getProfile(req.clientScope.clientId);
+
+    if (!profile || !profile.twenty_brand_id) {
+      // Fallback to database-linked websites if no Twenty CRM brand ID
+      const websites = await ClientRepository.getWebsites(req.clientScope.clientId);
+      await logClientActivity(req, 'view_sites');
+      return res.json({ websites });
+    }
+
+    // Fetch all websiteProperties from Twenty CRM
+    const response = await fetch(`${TWENTY_BASE_URL}/websiteProperties?depth=1&limit=500`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${TWENTY_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Twenty API error: ${response.status} ${response.statusText}`);
+      // Fallback to database
+      const websites = await ClientRepository.getWebsites(req.clientScope.clientId);
+      await logClientActivity(req, 'view_sites');
+      return res.json({ websites });
+    }
+
+    const data = await response.json();
+    const rawProperties = data?.data?.websiteProperties || [];
+
+    // Filter by parentCompanyId matching client's twenty_brand_id
+    const clientWebsites = rawProperties
+      .filter(prop => prop.parentCompanyId === profile.twenty_brand_id)
+      .map(prop => {
+        // Format hosting status to match frontend expectations (Title Case)
+        let hostingStatus = 'Active'; // default
+        if (prop.hostingStatus) {
+          const status = prop.hostingStatus.toLowerCase();
+          hostingStatus = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        return {
+          id: prop.id,
+          website_url: prop.websiteUrl || null,
+          website_name: prop.name || null,
+          hosting_status: hostingStatus,
+          hosting_start: prop.hostingStart || null,
+          hosting_mrr: prop.hostingMrrAmount || null,
+          created_at: prop.createdAt || new Date().toISOString(),
+        };
+      });
 
     await logClientActivity(req, 'view_sites');
 
-    res.json({ websites });
+    res.json({ websites: clientWebsites });
   } catch (error) {
     console.error('Error fetching websites:', error);
     res.status(500).json({ error: 'Failed to fetch websites' });

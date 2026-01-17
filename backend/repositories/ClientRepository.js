@@ -1,5 +1,9 @@
 import pool from '../db/config.js';
 
+// Twenty CRM API configuration
+const TWENTY_API_TOKEN = process.env.VITE_TWENTY_API_TOKEN || '';
+const TWENTY_BASE_URL = 'https://twenny.peakonedigital.com/rest';
+
 /**
  * ClientRepository - Secure data access layer for client portal
  * All queries are automatically scoped to client_id for data isolation
@@ -16,7 +20,7 @@ class ClientRepository {
 
     try {
       const [clients] = await pool.execute(
-        `SELECT id, company_name, contact_email, contact_phone, created_at
+        `SELECT id, company_name, contact_email, contact_phone, twenty_brand_id, created_at
          FROM clients
          WHERE id = ? AND is_active = TRUE`,
         [clientId]
@@ -185,6 +189,39 @@ class ClientRepository {
   }
 
   /**
+   * Get website count from Twenty CRM by parentCompanyId
+   * @param {string} twentyBrandId - Twenty CRM company ID
+   * @returns {Promise<number>} Website count
+   */
+  static async getWebsiteCountFromTwenty(twentyBrandId) {
+    if (!twentyBrandId) return 0;
+
+    try {
+      const response = await fetch(`${TWENTY_BASE_URL}/websiteProperties?depth=1&limit=500`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${TWENTY_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Twenty API error: ${response.status}`);
+        return 0;
+      }
+
+      const data = await response.json();
+      const rawProperties = data?.data?.websiteProperties || [];
+
+      // Filter by parentCompanyId and count
+      return rawProperties.filter(prop => prop.parentCompanyId === twentyBrandId).length;
+    } catch (error) {
+      console.error('Error fetching website count from Twenty:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Get client activity summary
    * @param {number} clientId - Client ID (REQUIRED for scoping)
    * @returns {Promise<Object>} Activity summary
@@ -193,6 +230,9 @@ class ClientRepository {
     if (!clientId) throw new Error('clientId is required for data scoping');
 
     try {
+      // Get client profile for Twenty brand ID
+      const profile = await this.getProfile(clientId);
+
       // Get ticket counts by status
       const [ticketCounts] = await pool.execute(
         `SELECT
@@ -215,11 +255,17 @@ class ClientRepository {
         [clientId]
       );
 
-      // Get website count
-      const [websiteCount] = await pool.execute(
-        `SELECT COUNT(*) as count FROM client_website_links WHERE client_id = ?`,
-        [clientId]
-      );
+      // Get website count from Twenty CRM if brand ID exists, otherwise from database
+      let websiteCount = 0;
+      if (profile?.twenty_brand_id) {
+        websiteCount = await this.getWebsiteCountFromTwenty(profile.twenty_brand_id);
+      } else {
+        const [dbCount] = await pool.execute(
+          `SELECT COUNT(*) as count FROM client_website_links WHERE client_id = ?`,
+          [clientId]
+        );
+        websiteCount = dbCount[0].count;
+      }
 
       // Get project count
       const [projectCount] = await pool.execute(
@@ -242,7 +288,7 @@ class ClientRepository {
           recent: recentTickets
         },
         websites: {
-          total: websiteCount[0].count
+          total: websiteCount
         },
         projects: {
           total: projectCount[0].count

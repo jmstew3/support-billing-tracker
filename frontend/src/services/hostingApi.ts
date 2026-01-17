@@ -51,6 +51,7 @@ export async function fetchWebsiteProperties(): Promise<WebsiteProperty[]> {
         hostingEnd: prop.hostingEnd || null,
         hostingMrrAmount: prop.hostingMrrAmount || null,
         hostingStatus: prop.hostingStatus || 'INACTIVE',
+        parentCompanyId: prop.parentCompanyId || null, // Company link for filtering by client
       }));
 
     return properties;
