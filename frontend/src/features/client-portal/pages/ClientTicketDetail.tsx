@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, Clock, User, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { useClientTicket, useClientTicketMessages } from '../hooks/useClientData';
+import { useClientAuth } from '../contexts/ClientAuthContext';
 import { clientViewToRoute } from '../utils/clientRoutes';
 import { format, formatDistanceToNow } from 'date-fns';
+import { ClientPageHeader } from '../components/ClientPageHeader';
 
 const ticketStatusColors: Record<string, string> = {
   'Open': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
@@ -49,12 +52,21 @@ function stripHtmlTags(text: string): string {
 export function ClientTicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
+  const { user } = useClientAuth();
   const parsedTicketId = ticketId ? parseInt(ticketId, 10) : null;
 
   const { data: ticket, isLoading: ticketLoading, error: ticketError } = useClientTicket(parsedTicketId);
   const { data: messagesData, isLoading: messagesLoading } = useClientTicketMessages(parsedTicketId);
 
   const messages = messagesData?.messages ?? [];
+
+  // Update document title for portal
+  useEffect(() => {
+    const companyName = user?.clientName || 'Client';
+    const ticketNum = ticket?.ticket_number ? `#${ticket.ticket_number}` : 'Ticket';
+    document.title = `${ticketNum} | ${companyName} Portal`;
+    return () => { document.title = 'Velocity Billing Dashboard'; };
+  }, [user?.clientName, ticket?.ticket_number]);
 
   if (ticketLoading) {
     return (
@@ -86,7 +98,14 @@ export function ClientTicketDetail() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div>
+      {/* Page Header with Mobile Navigation */}
+      <ClientPageHeader
+        title={`Ticket #${ticket.ticket_number}`}
+        subtitle={ticket.title}
+      />
+
+      <div className="p-6 md:p-8 space-y-6">
       {/* Back Button */}
       <button
         onClick={() => navigate(clientViewToRoute.tickets)}
@@ -221,6 +240,7 @@ export function ClientTicketDetail() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

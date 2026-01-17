@@ -15,7 +15,7 @@ class ClientUser {
   static async findByEmail(email) {
     try {
       const [users] = await pool.execute(
-        `SELECT cu.*, c.company_name, c.fluent_customer_id, c.twenty_brand_id
+        `SELECT cu.*, c.company_name, c.logo_url, c.fluent_customer_id, c.twenty_brand_id
          FROM client_users cu
          JOIN clients c ON cu.client_id = c.id
          WHERE cu.email = ? AND cu.is_active = TRUE AND c.is_active = TRUE`,
@@ -36,7 +36,7 @@ class ClientUser {
   static async findById(id) {
     try {
       const [users] = await pool.execute(
-        `SELECT cu.*, c.company_name, c.fluent_customer_id, c.twenty_brand_id
+        `SELECT cu.*, c.company_name, c.logo_url, c.fluent_customer_id, c.twenty_brand_id
          FROM client_users cu
          JOIN clients c ON cu.client_id = c.id
          WHERE cu.id = ? AND cu.is_active = TRUE AND c.is_active = TRUE`,
