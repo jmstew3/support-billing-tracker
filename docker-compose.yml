@@ -75,16 +75,13 @@ services:
       - "traefik.http.routers.billing-api.service=billing-api"
       - "traefik.http.services.billing-api.loadbalancer.server.port=3011"
       - "traefik.docker.network=traefik-general"
-      - "traefik.http.middlewares.billing-api-strip.stripprefix.prefixes=/api"
-      # Apply strip prefix middleware only (JWT auth handled by backend)
-      - "traefik.http.routers.billing-api.middlewares=billing-api-strip"
+      # No strip prefix - backend expects /api prefix in routes
       # Client Portal API route
       - "traefik.http.routers.client-portal-api.rule=Host(`portal.peakonedigital.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.client-portal-api.entrypoints=web"
       - "traefik.http.routers.client-portal-api.service=client-portal-api"
       - "traefik.http.services.client-portal-api.loadbalancer.server.port=3011"
-      - "traefik.http.middlewares.client-portal-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.client-portal-api.middlewares=client-portal-api-strip"
+      # No strip prefix - backend expects /api prefix in routes
     command: npm start
 
   mysql-backup:
