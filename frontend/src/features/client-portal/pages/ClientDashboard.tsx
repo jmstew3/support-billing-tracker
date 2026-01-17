@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Ticket, Globe, FolderKanban, ArrowRight, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
@@ -5,6 +6,7 @@ import { useClientAuth } from '../contexts/ClientAuthContext';
 import { useClientActivity } from '../hooks/useClientData';
 import { clientViewToRoute } from '../utils/clientRoutes';
 import { formatDistanceToNow } from 'date-fns';
+import { ClientPageHeader } from '../components/ClientPageHeader';
 
 /**
  * Client Portal Dashboard
@@ -14,6 +16,13 @@ export function ClientDashboard() {
   const navigate = useNavigate();
   const { user } = useClientAuth();
   const { data: activity, isLoading, error } = useClientActivity();
+
+  // Update document title for portal
+  useEffect(() => {
+    const companyName = user?.clientName || 'Client';
+    document.title = `Dashboard | ${companyName} Portal`;
+    return () => { document.title = 'Velocity Billing Dashboard'; };
+  }, [user?.clientName]);
 
   if (isLoading) {
     return (
@@ -46,16 +55,14 @@ export function ClientDashboard() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      {/* Welcome Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome{user?.clientName ? `, ${user.clientName}` : ''}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Here's an overview of your account activity
-        </p>
-      </div>
+    <div>
+      {/* Page Header with Mobile Navigation */}
+      <ClientPageHeader
+        title={`Welcome to ${user?.clientName || 'Your'} Portal`}
+        subtitle="Here's an overview of your account activity"
+      />
+
+      <div className="p-6 md:p-8 space-y-6">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -192,6 +199,7 @@ export function ClientDashboard() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

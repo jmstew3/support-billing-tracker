@@ -1,7 +1,10 @@
-import { Loader2, FolderKanban, CheckCircle, Clock, Pause, Play } from 'lucide-react';
+import { useEffect } from 'react';
+import { Loader2, FolderKanban, CheckCircle, Clock, Pause, Play, Mail } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { useClientProjects } from '../hooks/useClientData';
+import { useClientAuth } from '../contexts/ClientAuthContext';
 import { format } from 'date-fns';
+import { ClientPageHeader } from '../components/ClientPageHeader';
 
 const projectStatusConfig: Record<string, { bg: string; text: string; icon: typeof CheckCircle }> = {
   'Active': {
@@ -36,9 +39,17 @@ const projectStatusConfig: Record<string, { bg: string; text: string; icon: type
  * Shows all projects associated with the client
  */
 export function ClientProjects() {
+  const { user } = useClientAuth();
   const { data, isLoading, error } = useClientProjects();
 
   const projects = data?.projects ?? [];
+
+  // Update document title for portal
+  useEffect(() => {
+    const companyName = user?.clientName || 'Client';
+    document.title = `Projects | ${companyName} Portal`;
+    return () => { document.title = 'Velocity Billing Dashboard'; };
+  }, [user?.clientName]);
 
   if (isLoading) {
     return (
@@ -63,30 +74,45 @@ export function ClientProjects() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-        <p className="text-muted-foreground mt-1">Your active and completed projects</p>
-      </div>
+    <div>
+      {/* Page Header with Mobile Navigation */}
+      <ClientPageHeader
+        title="Projects"
+        subtitle="Your active and completed projects"
+      />
 
+      <div className="p-6 md:p-8 space-y-6">
       {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FolderKanban className="h-4 w-4" />
-            {projects.length} project{projects.length !== 1 ? 's' : ''} total
-          </CardTitle>
-        </CardHeader>
-      </Card>
+      {projects.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FolderKanban className="h-4 w-4" />
+              {projects.length} project{projects.length !== 1 ? 's' : ''} total
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      )}
 
       {/* Projects List */}
       {projects.length === 0 ? (
         <Card>
           <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <FolderKanban className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No projects found</p>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+                <FolderKanban className="h-8 w-8 text-muted-foreground/70" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-2">No projects yet</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                You don't currently have any active projects. Contact us if you'd like to discuss a new project or development work.
+              </p>
+              <a
+                href="mailto:support@peakonedigital.com?subject=Project%20Inquiry"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                Start a Project
+              </a>
             </div>
           </CardContent>
         </Card>
@@ -122,6 +148,7 @@ export function ClientProjects() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

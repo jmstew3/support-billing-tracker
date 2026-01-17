@@ -156,6 +156,7 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
         name: clientUser.name,
         clientId: clientUser.client_id,
         clientName: clientUser.company_name,
+        clientLogoUrl: clientUser.logo_url || null,
         role: 'client'
       }
     });
@@ -244,6 +245,7 @@ router.get('/me', authenticateClientToken, async (req, res) => {
       name: clientUser.name,
       clientId: clientUser.client_id,
       clientName: clientUser.company_name,
+      clientLogoUrl: clientUser.logo_url || null,
       lastLoginAt: clientUser.last_login_at,
       createdAt: clientUser.created_at
     });
