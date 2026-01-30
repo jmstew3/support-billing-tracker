@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 import { ArrowRight, X } from 'lucide-react';
-import { format, parseISO, isValid, startOfWeek, startOfMonth, subDays } from 'date-fns';
+import { format, parseISO, isValid, startOfWeek, startOfMonth, endOfMonth, subDays, subMonths } from 'date-fns';
 import { Calendar } from '../../../../components/ui/calendar';
 import type { DateRangeFilter } from '../../types/filters';
 
@@ -85,6 +85,13 @@ export function DateRangePicker({
       case 'last30': {
         const thirtyDaysAgo = subDays(today, 29);
         onChange({ from: format(thirtyDaysAgo, 'yyyy-MM-dd'), to: todayStr });
+        break;
+      }
+      case 'lastMonth': {
+        const lastMonth = subMonths(today, 1);
+        const lastMonthStart = startOfMonth(lastMonth);
+        const lastMonthEnd = endOfMonth(lastMonth);
+        onChange({ from: format(lastMonthStart, 'yyyy-MM-dd'), to: format(lastMonthEnd, 'yyyy-MM-dd') });
         break;
       }
     }
@@ -187,6 +194,7 @@ export function DateRangePicker({
           { id: 'thisWeek', label: 'This Week' },
           { id: 'last7', label: 'Last 7 Days' },
           { id: 'thisMonth', label: 'This Month' },
+          { id: 'lastMonth', label: 'Last Month' },
           { id: 'last30', label: 'Last 30 Days' },
         ].map((preset) => (
           <button
