@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { ClientSidebar } from '../components/ClientSidebar';
 import { BillingDisclaimer } from '../components/BillingDisclaimer';
 import { useClientAuth } from '../contexts/ClientAuthContext';
+import { useClientActivity } from '../hooks/useClientData';
 import { useTheme } from '../../../hooks/useTheme';
 import { getLoginRoute } from '../utils/clientRoutes';
 
@@ -15,6 +16,7 @@ export function ClientLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, isLoading } = useClientAuth();
+  const { data: activity } = useClientActivity();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -40,6 +42,7 @@ export function ClientLayout() {
         setIsMobileOpen={setIsMobileMenuOpen}
         theme={theme}
         onToggleTheme={toggleTheme}
+        activitySummary={activity}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Persistent disclaimer banner */}

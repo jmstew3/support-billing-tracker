@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Search, ChevronLeft, ChevronRight, Clock, ExternalLink } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { useClientTickets } from '../hooks/useClientData';
+import { useClientAuth } from '../contexts/ClientAuthContext';
 import { formatDistanceToNow, format } from 'date-fns';
+import { ClientPageHeader } from '../components/ClientPageHeader';
 
 const TICKETS_PER_PAGE = 10;
 
@@ -31,9 +33,17 @@ const priorityColors: Record<string, string> = {
  */
 export function ClientTickets() {
   const navigate = useNavigate();
+  const { user } = useClientAuth();
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Update document title for portal
+  useEffect(() => {
+    const companyName = user?.clientName || 'Client';
+    document.title = `Tickets | ${companyName} Portal`;
+    return () => { document.title = 'Velocity Billing Dashboard'; };
+  }, [user?.clientName]);
 
   const { data, isLoading, error } = useClientTickets({
     limit: TICKETS_PER_PAGE,
@@ -77,13 +87,14 @@ export function ClientTickets() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Support Tickets</h1>
-        <p className="text-muted-foreground mt-1">View and track your support requests</p>
-      </div>
+    <div>
+      {/* Page Header with Mobile Navigation */}
+      <ClientPageHeader
+        title="Support Tickets"
+        subtitle="View and track your support requests"
+      />
 
+      <div className="p-6 md:p-8 space-y-6">
       {/* Filters */}
       <Card>
         <CardContent className="pt-4">
@@ -236,6 +247,7 @@ export function ClientTickets() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

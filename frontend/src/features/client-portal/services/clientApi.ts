@@ -97,6 +97,7 @@ export interface ClientUser {
   name: string | null;
   clientId: number;
   clientName: string;
+  clientLogoUrl: string | null;
   role: 'client';
 }
 

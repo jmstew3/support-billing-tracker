@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Globe, FolderKanban, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { ThemeToggle } from '../../../components/ui/ThemeToggle';
 import { useClientAuth } from '../contexts/ClientAuthContext';
 import { clientRouteToView, clientViewToRoute, getLoginRoute, type ClientView } from '../utils/clientRoutes';
+import type { ClientActivitySummary } from '../services/clientApi';
 import peakOneLogo from '../../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface ClientSidebarProps {
@@ -11,9 +12,10 @@ interface ClientSidebarProps {
   setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  activitySummary?: ClientActivitySummary;
 }
 
-export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: ClientSidebarProps) {
+export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTheme, activitySummary }: ClientSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -39,12 +41,25 @@ export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTh
     return () => window.removeEventListener('resize', handleResize);
   }, [setIsMobileOpen]);
 
-  const menuItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tickets' as const, label: 'Tickets', icon: Ticket },
-    { id: 'sites' as const, label: 'Sites', icon: Globe },
-    { id: 'projects' as const, label: 'Projects', icon: FolderKanban },
-  ];
+  // Build menu items based on activity data - hide empty sections
+  const menuItems = useMemo(() => {
+    const items: Array<{ id: ClientView; label: string; icon: typeof LayoutDashboard }> = [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'tickets', label: 'Tickets', icon: Ticket },
+    ];
+
+    // Only show Sites if client has websites
+    if (!activitySummary || activitySummary.websites.total > 0) {
+      items.push({ id: 'sites', label: 'Sites', icon: Globe });
+    }
+
+    // Only show Projects if client has projects
+    if (!activitySummary || activitySummary.projects.total > 0) {
+      items.push({ id: 'projects', label: 'Projects', icon: FolderKanban });
+    }
+
+    return items;
+  }, [activitySummary]);
 
   const handleNavigation = (view: ClientView) => {
     const route = clientViewToRoute[view];
@@ -84,13 +99,23 @@ export function ClientSidebar({ isMobileOpen, setIsMobileOpen, theme, onToggleTh
         {/* Header */}
         <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
           {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">Client Portal</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+              {user?.clientLogoUrl ? (
+                <img
+                  src={user.clientLogoUrl}
+                  alt={user.clientName}
+                  className="h-6 w-auto max-w-[120px] object-contain"
+                />
+              ) : (
+                <span className="text-sm font-semibold text-foreground truncate">
+                  {user?.clientName || 'Client Portal'}
+                </span>
+              )}
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden sm:block p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105"
+            className="hidden sm:block p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105 flex-shrink-0"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
