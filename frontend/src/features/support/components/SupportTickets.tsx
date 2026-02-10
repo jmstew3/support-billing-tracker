@@ -94,7 +94,10 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const [sourceFilter, setSourceFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRangeFilter>({ from: null, to: null })
   const [dayFilter, setDayFilter] = useState<string[]>([])
-  const [billingDateFilter, setBillingDateFilter] = useState<BillingDateFilter>({ from: null, to: null, hasValue: 'all' })
+  const [billingDateFilter, setBillingDateFilter] = useState<BillingDateFilter>(() => {
+    const saved = localStorage.getItem('billingDateFilter')
+    return saved !== null ? JSON.parse(saved) : { from: null, to: null, hasValue: 'all' }
+  })
   const [hoursFilter, setHoursFilter] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState<string>('')
 
@@ -376,6 +379,10 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   useEffect(() => {
     localStorage.setItem('hideNonBillable', JSON.stringify(hideNonBillable))
   }, [hideNonBillable])
+
+  useEffect(() => {
+    localStorage.setItem('billingDateFilter', JSON.stringify(billingDateFilter))
+  }, [billingDateFilter])
 
   // ============================================================
   // REGISTER AVAILABLE DATA WITH PERIOD CONTEXT
