@@ -78,7 +78,7 @@ const passwordChangeLimiter = rateLimit({
  * Request body:
  * {
  *   "email": "admin@peakonedigital.com",
- *   "password": "PeakonBilling2025"
+ *   "password": "your_password"
  * }
  *
  * Response:

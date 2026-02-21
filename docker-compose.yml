@@ -49,7 +49,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@peakonedigital.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-PeakonBilling2025}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
       # External APIs
       VITE_TWENTY_API_URL: ${VITE_TWENTY_API_URL:-http://localhost:3000}
       VITE_TWENTY_API_TOKEN: ${VITE_TWENTY_API_TOKEN:-}
