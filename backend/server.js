@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -152,6 +153,32 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Seed a default admin user in development if none exists
+const DEV_ADMIN_EMAIL = 'admin@localhost';
+const DEV_ADMIN_PASSWORD = 'admin';
+
+async function seedDevAdmin() {
+  if (process.env.NODE_ENV !== 'development') return;
+
+  try {
+    const [admins] = await pool.execute(
+      'SELECT id FROM users WHERE role = ? AND is_active = TRUE LIMIT 1',
+      ['admin']
+    );
+    if (admins.length > 0) return;
+
+    const hash = await bcrypt.hash(DEV_ADMIN_PASSWORD, 10);
+
+    await pool.execute(
+      'INSERT INTO users (email, password_hash, role, is_active) VALUES (?, ?, ?, ?)',
+      [DEV_ADMIN_EMAIL, hash, 'admin', true]
+    );
+    logger.info(`Dev admin seeded — login with ${DEV_ADMIN_EMAIL} / ${DEV_ADMIN_PASSWORD}`);
+  } catch (error) {
+    logger.warn('Dev admin seed skipped', { error: error.message });
+  }
+}
+
 // Start server
 async function startServer() {
   try {
@@ -169,6 +196,9 @@ async function startServer() {
     // Initialize database schema
     await initializeDatabase();
     logger.info('Database initialized successfully');
+
+    // Ensure a usable admin account exists in dev
+    await seedDevAdmin();
 
     // Start listening with server-level timeout configuration
     const server = app.listen(PORT, () => {

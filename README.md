@@ -37,6 +37,12 @@ Docker Compose automatically loads the `.env` file from the project root.
 - Backend API: http://localhost:3011/api
 - MySQL: localhost:3307 (user: thaduser, password: from .env)
 
+**Dev login credentials** (auto-seeded on first startup):
+- Email: `admin@peakonedigital.com`
+- Password: `admin`
+
+If the database is fresh (no users), a dev admin is created automatically with `admin@localhost` / `admin`.
+
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
 ### Manual Setup (Without Docker)
