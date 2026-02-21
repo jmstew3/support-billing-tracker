@@ -5,7 +5,7 @@
 --
 -- Velocity Portal Credentials:
 --   Email: thad@velocity-seo.com
---   Password: VelocityPortal2025!
+--   Password: (set via environment, reset after seeding)
 --
 -- Note: Update the fluent_customer_id with Velocity's actual ID from fluent_tickets
 --       if you want to link their existing support tickets
@@ -26,8 +26,7 @@ ON DUPLICATE KEY UPDATE
   contact_email = VALUES(contact_email);
 
 -- 2. Create Velocity client user for portal login
--- Password: VelocityPortal2025! (bcrypt hash with 10 rounds)
--- Generate with: const bcrypt = require('bcryptjs'); bcrypt.hashSync('VelocityPortal2025!', 10)
+-- Password hash generated with bcrypt (10 rounds)
 INSERT INTO client_users (client_id, email, password_hash, name, is_active)
 SELECT
   c.id,
@@ -65,8 +64,7 @@ SELECT
   c.id as client_id,
   c.company_name,
   c.logo_url,
-  cu.email as user_email,
-  'VelocityPortal2025!' as password
+  cu.email as user_email
 FROM clients c
 LEFT JOIN client_users cu ON c.id = cu.client_id
 WHERE c.company_name = 'Velocity';

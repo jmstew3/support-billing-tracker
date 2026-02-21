@@ -16,9 +16,16 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
  * - Client portal (client_users table)
  */
 async function seedJustinUser() {
-  const email = 'justin@peakonedigital.com';
-  const password = 'P3ak1digit@l2o26$';
+  const email = process.env.ADMIN_EMAIL || 'justin@peakonedigital.com';
+  const password = process.env.ADMIN_PASSWORD;
   const name = 'Justin';
+
+  if (!password) {
+    console.error('Error: ADMIN_PASSWORD environment variable is required.');
+    console.error('Set it in your .env file or pass it directly:');
+    console.error('  ADMIN_PASSWORD=yourpassword node backend/db/seed_justin_user.js');
+    process.exit(1);
+  }
 
   try {
     console.log('Seeding justin@peakonedigital.com...');
@@ -86,10 +93,9 @@ async function seedJustinUser() {
       console.log('Created client portal user');
     }
 
-    console.log('\nSuccess! justin@peakonedigital.com can now log into:');
+    console.log(`\nSuccess! ${email} can now log into:`);
     console.log('  - Billing Dashboard: https://billing.peakonedigital.com');
     console.log('  - Client Portal: https://portal.peakonedigital.com');
-    console.log('  - Password: P3ak1digit@l2o26$');
 
   } catch (error) {
     console.error('Error seeding user:', error);

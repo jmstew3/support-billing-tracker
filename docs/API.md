@@ -14,7 +14,7 @@ Content-Type: application/json
 
 {
   "email": "admin@peakonedigital.com",
-  "password": "PeakonBilling2025"
+  "password": "YOUR_ADMIN_PASSWORD"
 }
 ```
 

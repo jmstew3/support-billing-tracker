@@ -73,7 +73,7 @@ The application is protected by HTTP Basic Authentication at the Traefik reverse
 
 #### Default Credentials
 - **Username:** `admin`
-- **Password:** `PeakonBilling2025`
+- **Password:** Set via `BASIC_AUTH_USERS` in `.env` (see below)
 - **Production URL:** `https://billing.peakonedigital.com`
 
 #### Changing Authentication Credentials
@@ -156,7 +156,7 @@ URL: http://localhost:5173/portal/login
 | Field | Value |
 |-------|-------|
 | Email | `john.smith@acmecorp.com` |
-| Password | `testpass123` |
+| Password | Set via `SEED_TEST_PASSWORD` env var |
 | Client | Acme Corp |
 
 ### Notes
@@ -182,7 +182,7 @@ sed -i 's/VITE_FLUENT_DATE_FILTER=.*/VITE_FLUENT_DATE_FILTER=2025-10-17/' .env
 docker-compose restart backend && sleep 3 && \
 TOKEN=$(curl -s -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"PeakonBilling2025"}' \
+  -d '{"email":"admin@peakonedigital.com","password":"YOUR_ADMIN_PASSWORD"}' \
   | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4) && \
 curl -X POST http://localhost:3011/api/fluent/sync \
   -H "Content-Type: application/json" \
@@ -219,7 +219,7 @@ Get a JWT token for API access:
 ```bash
 curl -X POST http://localhost:3011/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@peakonedigital.com","password":"PeakonBilling2025"}'
+  -d '{"email":"admin@peakonedigital.com","password":"YOUR_ADMIN_PASSWORD"}'
 ```
 
 Copy the `accessToken` value from the response.

@@ -1,6 +1,6 @@
 -- Migration: Seed Velocity client portal user
 -- Creates thad@velocity-seo.com user for Velocity client (fluent_customer_id=7)
--- Password: VelocityPortal2025!
+-- Password: (set via environment, reset after seeding)
 
 INSERT INTO client_users (client_id, email, password_hash, name, is_active)
 SELECT

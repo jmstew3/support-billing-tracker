@@ -122,9 +122,9 @@ Fix: Remove from git, rotate all secrets, use vault
 **SEC-002: Credentials in Documentation**
 ```
 Files: CLAUDE.md:21, docs/SECURITY.md
-Content: "Username: admin, Password: PeakonBilling2025"
+Content: "Username: admin, Password: [was hardcoded, now remediated]"
 Risk: Attacker access to production
-Fix: Remove passwords, use placeholder examples
+Fix: Remove passwords, use placeholder examples [REMEDIATED]
 ```
 
 **SEC-003: Dependency Vulnerabilities**

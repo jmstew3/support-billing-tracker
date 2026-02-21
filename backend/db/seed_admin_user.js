@@ -17,7 +17,11 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
 async function seedAdminUser() {
   try {
     const email = process.env.ADMIN_EMAIL || 'admin@peakonedigital.com';
-    const password = process.env.ADMIN_PASSWORD || 'PeakonBilling2025';
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) {
+      console.error('Error: ADMIN_PASSWORD environment variable is required.');
+      process.exit(1);
+    }
 
     // Check if admin user already exists
     const [existing] = await pool.execute(
