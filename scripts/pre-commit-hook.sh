@@ -32,7 +32,7 @@ BLOCKED_FILES=()
 
 for pattern in "${BLOCKED_PATTERNS[@]}"; do
     while IFS= read -r file; do
-        if [[ -n "$file" ]]; then
+        if [[ -n "$file" && "$file" != ".env.example" ]]; then
             BLOCKED_FILES+=("$file")
         fi
     done < <(git diff --cached --name-only | grep -E "$pattern" 2>/dev/null)
