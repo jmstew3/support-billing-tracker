@@ -40,7 +40,7 @@ export const conditionalAuth = async (req, res, next) => {
     if (isBasicAuthProtected) {
       // Request came through Traefik BasicAuth - user is already authenticated
       // Look up admin user from database (with caching to reduce DB load)
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@peakonedigital.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@yourdomain.com';
 
       if (!cachedBasicAuthUser || Date.now() > cacheExpiry) {
         const user = await User.findByEmail(adminEmail);

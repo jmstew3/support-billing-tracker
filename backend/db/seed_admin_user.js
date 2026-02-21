@@ -21,7 +21,7 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
  *   --help              Show usage
  *
  * Env vars:
- *   ADMIN_EMAIL          Default email (fallback: admin@peakonedigital.com)
+ *   ADMIN_EMAIL          Default email (fallback: admin@yourdomain.com)
  *   ADMIN_PASSWORD       Required — password to set
  *   ADMIN_NAME           Default display name
  */
@@ -59,7 +59,7 @@ function printUsage() {
   console.log(`Usage: node db/seed_admin_user.js [options]
 
 Options:
-  --email <email>     Email address (default: ADMIN_EMAIL or admin@peakonedigital.com)
+  --email <email>     Email address (default: ADMIN_EMAIL or admin@yourdomain.com)
   --name <name>       Display name (default: ADMIN_NAME or parsed from email)
   --portal            Also create/update client portal user
   --company <name>    Company name for portal (default: "PeakOne Digital")
@@ -84,7 +84,7 @@ async function seedAdminUser() {
     process.exit(0);
   }
 
-  const email = args.email || process.env.ADMIN_EMAIL || 'admin@peakonedigital.com';
+  const email = args.email || process.env.ADMIN_EMAIL || 'admin@yourdomain.com';
   const password = process.env.ADMIN_PASSWORD;
   const name = args.name || process.env.ADMIN_NAME || email.split('@')[0];
   const company = args.company || 'PeakOne Digital';

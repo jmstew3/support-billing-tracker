@@ -75,7 +75,7 @@ export const Login = () => {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="admin@peakonedigital.com"
+                placeholder="you@example.com"
                 autoComplete="email"
               />
             </div>
