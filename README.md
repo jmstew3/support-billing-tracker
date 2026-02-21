@@ -136,6 +136,18 @@ Local access (localhost:5173, localhost:3011) bypasses authentication. Only prod
 
 ---
 
+## 🔑 Admin User Setup
+
+The admin dashboard uses its own login system. To create or update the admin user:
+
+```bash
+docker compose exec backend node db/seed_justin_user.js
+```
+
+This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` file. If the user already exists, it updates the password; otherwise it creates a new user.
+
+---
+
 ## 👤 Client Portal
 
 The client portal provides a separate, client-facing view for customers to view their support tickets and hosted sites.
