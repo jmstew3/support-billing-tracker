@@ -138,13 +138,23 @@ Local access (localhost:5173, localhost:3011) bypasses authentication. Only prod
 
 ## 🔑 Admin User Setup
 
-The admin dashboard uses its own login system. To create or update the admin user:
+The admin dashboard uses its own login system. To create or update an admin user:
 
 ```bash
-docker compose exec backend node db/seed_justin_user.js
+# Create/update admin using .env values (ADMIN_EMAIL, ADMIN_PASSWORD)
+docker compose exec backend node db/seed_admin_user.js
+
+# Create/update with explicit email and name
+docker compose exec backend node db/seed_admin_user.js --email sarah@example.com --name Sarah
+
+# Also set up client portal access
+docker compose exec backend node db/seed_admin_user.js --portal --company "PeakOne Digital"
+
+# Show all options
+docker compose exec backend node db/seed_admin_user.js --help
 ```
 
-This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` file. If the user already exists, it updates the password; otherwise it creates a new user.
+This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` file. If the user already exists, it updates the password; otherwise it creates a new user. Use `--portal` to also create a client portal login.
 
 ---
 
