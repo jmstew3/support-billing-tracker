@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Test Twenty API using environment variables
-# To use: Ensure VITE_TWENTY_API_TOKEN is set in .env.docker
+# To use: Ensure VITE_TWENTY_API_TOKEN is set in .env
 
-# Load environment variables from .env.docker
-if [ -f .env.docker ]; then
-    export $(grep -v '^#' .env.docker | xargs)
+# Load environment variables from .env
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
 fi
 
 # Check if API token is set
 if [ -z "$VITE_TWENTY_API_TOKEN" ]; then
     echo "❌ ERROR: VITE_TWENTY_API_TOKEN not found in environment variables"
-    echo "Please set VITE_TWENTY_API_TOKEN in .env.docker file"
+    echo "Please set VITE_TWENTY_API_TOKEN in .env file"
     exit 1
 fi
 
