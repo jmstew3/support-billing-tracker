@@ -46,15 +46,16 @@ const PeriodContext = createContext<PeriodContextValue | undefined>(undefined);
 
 // Provider component
 export function PeriodProvider({ children }: { children: React.ReactNode }) {
-  // State
-  const [selectedYear, setSelectedYear] = useState<number>(2025);
+  // State - use current year as default
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all'); // Deprecated
   const [selectedMonths, setSelectedMonthsState] = useState<number[] | 'all'>('all'); // New
   const [selectedDay, setSelectedDay] = useState<string | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
 
   // Available data (provided by pages)
-  const [availableYears, setAvailableYears] = useState<number[]>([2025]);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [availableMonths, setAvailableMonths] = useState<number[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
