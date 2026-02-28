@@ -9,6 +9,11 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
+// SECURITY: Require database credentials in production
+if (process.env.NODE_ENV === 'production' && !process.env.DB_PASSWORD) {
+  throw new Error('DB_PASSWORD environment variable is required in production. Set it in .env or environment.');
+}
+
 // Create connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',

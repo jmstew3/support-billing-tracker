@@ -4,6 +4,12 @@ import rateLimit from 'express-rate-limit';
 import ClientUser from '../models/ClientUser.js';
 import { authenticateClientToken } from '../middleware/clientAuth.js';
 import pool from '../db/config.js';
+import logger from '../services/logger.js';
+import {
+  getClientRefreshTokenCookieOptions,
+  getClientClearCookieOptions,
+  CLIENT_REFRESH_TOKEN_COOKIE
+} from '../utils/cookies.js';
 
 const router = express.Router();
 
@@ -70,7 +76,7 @@ async function logClientAudit(clientUserId, clientId, action, details = {}) {
       ]
     );
   } catch (error) {
-    console.error('Error logging client audit:', error);
+    logger.error('Error logging client audit', { error: error.message });
     // Don't throw - audit logging should not block operations
   }
 }
@@ -125,7 +131,7 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
 
     // Generate refresh token
     if (!process.env.JWT_REFRESH_SECRET) {
-      console.error('SECURITY ERROR: JWT_REFRESH_SECRET is not configured.');
+      logger.error('SECURITY ERROR: JWT_REFRESH_SECRET is not configured.');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -146,10 +152,12 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
-    // Return tokens and client user info (without sensitive data)
+    // Set refresh token as HttpOnly cookie (prevents XSS theft)
+    res.cookie(CLIENT_REFRESH_TOKEN_COOKIE, refreshToken, getClientRefreshTokenCookieOptions(refreshExpiresIn));
+
+    // Return access token and client user info (refresh token only in cookie, not body)
     res.json({
       accessToken,
-      refreshToken,
       user: {
         id: clientUser.id,
         email: clientUser.email,
@@ -161,7 +169,7 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Client login error:', error);
+    logger.error('Client login error', { error: error.message });
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -171,8 +179,8 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
  * Invalidate client refresh token
  */
 router.post('/logout', clientAuthLimiter, async (req, res) => {
-  // For client portal, we don't store refresh tokens in DB (simpler implementation)
-  // Just return success - client should discard tokens
+  // Clear the refresh token cookie
+  res.clearCookie(CLIENT_REFRESH_TOKEN_COOKIE, getClientClearCookieOptions());
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -181,7 +189,8 @@ router.post('/logout', clientAuthLimiter, async (req, res) => {
  * Get new access token using refresh token
  */
 router.post('/refresh', clientAuthLimiter, async (req, res) => {
-  const { refreshToken } = req.body;
+  // Read refresh token from HttpOnly cookie (preferred) or request body (legacy fallback)
+  const refreshToken = req.cookies?.[CLIENT_REFRESH_TOKEN_COOKIE] || req.body?.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token required' });
@@ -189,7 +198,7 @@ router.post('/refresh', clientAuthLimiter, async (req, res) => {
 
   try {
     if (!process.env.JWT_REFRESH_SECRET) {
-      console.error('SECURITY ERROR: JWT_REFRESH_SECRET not configured');
+      logger.error('SECURITY ERROR: JWT_REFRESH_SECRET not configured');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -222,7 +231,7 @@ router.post('/refresh', clientAuthLimiter, async (req, res) => {
 
     res.json({ accessToken });
   } catch (error) {
-    console.error('Client token refresh error:', error);
+    logger.error('Client token refresh error', { error: error.message });
     return res.status(403).json({ error: 'Invalid or expired refresh token' });
   }
 });
@@ -250,7 +259,7 @@ router.get('/me', authenticateClientToken, async (req, res) => {
       createdAt: clientUser.created_at
     });
   } catch (error) {
-    console.error('Error fetching client user:', error);
+    logger.error('Error fetching client user', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch user information' });
   }
 });

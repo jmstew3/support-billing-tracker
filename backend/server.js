@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -71,9 +72,7 @@ app.use(cors({
       'http://localhost:3001',
       'http://localhost:3011',
       'https://billing.peakonedigital.com',
-      'https://portal.peakonedigital.com',
-      'http://portal.peakonedigital.com' // Local dev before HTTPS
-      // SECURITY: HTTP removed for production - production must use HTTPS only
+      'https://portal.peakonedigital.com'
     ];
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
@@ -86,6 +85,9 @@ app.use(cors({
   },
   credentials: true
 }));
+// Cookie parser for HttpOnly refresh token cookies
+app.use(cookieParser());
+
 // Request body size limits - prevent DoS attacks via large payloads
 // 2MB for JSON (CSV imports may be large but 1000 row limit in route handles this)
 // 1MB for URL-encoded form data

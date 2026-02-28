@@ -15,12 +15,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BACKUP_DIR="$PROJECT_DIR/mysql_data_backup"
 LOG_FILE="$BACKUP_DIR/backup.log"
+ENV_FILE="$PROJECT_DIR/.env"
 
-# Database configuration (matches docker-compose.yml)
+# Container and database name (non-sensitive defaults OK)
 CONTAINER_NAME="support-billing-tracker-mysql"
 DB_NAME="support_billing_tracker"
-DB_USER="thaduser"
-DB_PASSWORD="thadpassword"
+
+# SECURITY: Load database credentials from environment - no hardcoded fallbacks
+if [ -f "$ENV_FILE" ]; then
+    DB_USER=$(grep "^MYSQL_USER=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+    DB_PASSWORD=$(grep "^MYSQL_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+    DB_NAME_ENV=$(grep "^MYSQL_DATABASE=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
+    [ -n "$DB_NAME_ENV" ] && DB_NAME="$DB_NAME_ENV"
+fi
+
+# Require credentials - exit if not configured
+if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
+    echo -e "\033[0;31m[ERROR]\033[0m Database credentials not found."
+    echo "Set MYSQL_USER and MYSQL_PASSWORD in $ENV_FILE"
+    exit 1
+fi
 
 # Colors for output
 RED='\033[0;31m'

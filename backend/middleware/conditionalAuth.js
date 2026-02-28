@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import logger from '../services/logger.js';
 
 /**
  * Conditional Authentication Middleware
@@ -54,7 +55,7 @@ export const conditionalAuth = async (req, res, next) => {
           cacheExpiry = Date.now() + CACHE_TTL;
         } else {
           // SECURITY: Do NOT use fallback identity - require valid user in database
-          console.error(`[conditionalAuth] SECURITY: Admin user ${adminEmail} not found in database. Access denied.`);
+          logger.error(`[conditionalAuth] SECURITY: Admin user ${adminEmail} not found in database. Access denied.`);
           return res.status(401).json({
             error: 'Admin user not configured',
             hint: 'Run database migrations or create admin user via API'
@@ -105,7 +106,7 @@ export const conditionalAuth = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(403).json({ error: 'Token expired' });
     }
-    console.error('Authentication error:', error);
+    logger.error('Authentication error', { error: error.message });
     return res.status(500).json({ error: 'Authentication failed' });
   }
 };

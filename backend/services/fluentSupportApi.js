@@ -1,4 +1,6 @@
 import axios from 'axios';
+import logger from './logger.js';
+import { validateFluentTickets } from './apiSchemas.js';
 
 /**
  * FluentSupport API Service
@@ -104,7 +106,8 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
       }
     }
 
-    return allTickets;
+    // Validate API response data at integration boundary
+    return validateFluentTickets(allTickets);
 
   } catch (error) {
     throw new Error(`FluentSupport API error: ${error.message}`);
@@ -214,7 +217,7 @@ function parseFluentSupportHTML(htmlContent) {
       }
     }
   } catch (error) {
-    console.error('[FluentSupport] Error parsing HTML:', error.message);
+    logger.error('[FluentSupport] Error parsing HTML', { error: error.message });
   }
 
   // Extract URLs from both subject and description
@@ -240,7 +243,7 @@ export function transformFluentTicket(ticket) {
    */
   const mapPriority = (priority) => {
     if (!priority) {
-      console.log('[FluentSupport] No priority provided, defaulting to MEDIUM');
+      logger.info('[FluentSupport] No priority provided, defaulting to MEDIUM');
       return 'MEDIUM';
     }
 
@@ -249,20 +252,20 @@ export function transformFluentTicket(ticket) {
 
     // Map FluentSupport priority values to our urgency levels
     if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
-      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency HIGH`);
+      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency HIGH`);
       return 'HIGH';
     }
     if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
-      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency MEDIUM`);
+      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency MEDIUM`);
       return 'MEDIUM';
     }
     if (normalizedPriority === 'low') {
-      console.log(`[FluentSupport] Mapping priority "${priority}" → urgency LOW`);
+      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency LOW`);
       return 'LOW';
     }
 
     // Unknown priority value - log warning and default to MEDIUM
-    console.warn(`[FluentSupport] Unknown priority "${priority}" - defaulting to MEDIUM`);
+    logger.warn(`[FluentSupport] Unknown priority "${priority}" - defaulting to MEDIUM`);
     return 'MEDIUM';
   };
 
@@ -305,7 +308,7 @@ export function transformFluentTicket(ticket) {
       return category;
     }
 
-    console.warn(`[FluentSupport] Invalid category "${category}" - not in CATEGORY_OPTIONS, defaulting to Support`);
+    logger.warn(`[FluentSupport] Invalid category "${category}" - not in CATEGORY_OPTIONS, defaulting to Support`);
     return 'Support';
   };
 
@@ -316,7 +319,7 @@ export function transformFluentTicket(ticket) {
    */
   const mapFluentCategory = (productTitle) => {
     if (!productTitle) {
-      console.log('[FluentSupport] No product title provided, defaulting to Support');
+      logger.info('[FluentSupport] No product title provided, defaulting to Support');
       return 'Support';
     }
 
@@ -340,11 +343,11 @@ export function transformFluentTicket(ticket) {
     const mappedCategory = mapping[capitalizedTitle];
 
     if (!mappedCategory) {
-      console.warn(`[FluentSupport] Unknown product "${productTitle}" (normalized: "${capitalizedTitle}") - defaulting to Support`);
+      logger.warn(`[FluentSupport] Unknown product "${productTitle}" (normalized: "${capitalizedTitle}") - defaulting to Support`);
       return validateCategory('Support');
     }
 
-    console.log(`[FluentSupport] Mapping product "${productTitle}" → category "${mappedCategory}"`);
+    logger.debug(`[FluentSupport] Mapping product "${productTitle}" → category "${mappedCategory}"`);
     return validateCategory(mappedCategory);
   };
 
@@ -372,7 +375,7 @@ export function transformFluentTicket(ticket) {
   // Build final description
   const description = cleanDescription ? `${subject}: ${cleanDescription}` : subject;
 
-  console.log(`[FluentSupport] Ticket ${ticket.id}: Found ${allUrls.length} URLs, primary: ${websiteUrl}`);
+  logger.debug(`[FluentSupport] Ticket ${ticket.id}: Found ${allUrls.length} URLs, primary: ${websiteUrl}`);
 
   return {
     date,

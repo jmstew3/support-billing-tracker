@@ -3,6 +3,7 @@ import { fetchFluentTickets, transformFluentTicket } from './fluentSupportApi.js
 import RequestRepository from '../repositories/RequestRepository.js';
 import FluentTicketRepository from '../repositories/FluentTicketRepository.js';
 import FluentSyncStatusRepository from '../repositories/FluentSyncStatusRepository.js';
+import logger from './logger.js';
 
 /**
  * FluentSyncService
@@ -40,10 +41,13 @@ class FluentSyncService {
         ticketsDeleted: 0
       };
 
-      // Process each ticket
+      // Batch-fetch all existing fluent tickets to avoid N+1 lookups
+      const existingTicketsMap = await this._batchFetchExisting(connection, tickets);
+
+      // Process each ticket (creates/updates still individual due to complex logic)
       for (const ticket of tickets) {
         try {
-          const processResult = await this._processTicket(connection, ticket, dateFilter);
+          const processResult = await this._processTicket(connection, ticket, dateFilter, existingTicketsMap);
 
           switch (processResult) {
             case 'added':
@@ -60,7 +64,7 @@ class FluentSyncService {
               break;
           }
         } catch (ticketError) {
-          console.error(`[FluentSyncService] Error processing ticket ${ticket.id}:`, ticketError.message);
+          logger.error(`[FluentSyncService] Error processing ticket ${ticket.id}`, { error: ticketError.message });
           result.ticketsSkipped++;
         }
       }
@@ -91,7 +95,7 @@ class FluentSyncService {
         try {
           await FluentSyncStatusRepository.markFailed(connection, error.message);
         } catch (updateError) {
-          console.error('[FluentSyncService] Failed to update sync status:', updateError.message);
+          logger.error('[FluentSyncService] Failed to update sync status', { error: updateError.message });
         }
       }
 
@@ -106,6 +110,43 @@ class FluentSyncService {
   }
 
   /**
+   * Batch-fetch all existing fluent ticket records for a set of tickets
+   * Eliminates N+1 query pattern by doing a single SELECT ... WHERE IN
+   * @private
+   * @param {Object} connection - MySQL connection
+   * @param {Array} tickets - Array of FluentSupport tickets
+   * @returns {Promise<Map>} Map of fluent_id → existing record
+   */
+  async _batchFetchExisting(connection, tickets) {
+    const map = new Map();
+    if (tickets.length === 0) return map;
+
+    // Collect all fluent IDs from incoming tickets
+    const fluentIds = tickets
+      .map(t => {
+        const data = transformFluentTicket(t);
+        return data.fluent_id;
+      })
+      .filter(Boolean)
+      .map(id => id.toString());
+
+    if (fluentIds.length === 0) return map;
+
+    // Batch query - fetch all in one go
+    const placeholders = fluentIds.map(() => '?').join(', ');
+    const [rows] = await connection.query(
+      `SELECT id, request_id, fluent_id FROM fluent_tickets WHERE fluent_id IN (${placeholders})`,
+      fluentIds
+    );
+
+    for (const row of rows) {
+      map.set(row.fluent_id.toString(), row);
+    }
+
+    return map;
+  }
+
+  /**
    * Process a single ticket (create, update, or delete)
    * Only closed tickets with resolved_at are tracked. Open tickets are skipped
    * unless they previously existed (reopened → mark deleted).
@@ -113,9 +154,10 @@ class FluentSyncService {
    * @param {Object} connection - MySQL connection
    * @param {Object} ticket - FluentSupport ticket
    * @param {string} dateFilter - Date filter (YYYY-MM-DD)
+   * @param {Map} existingTicketsMap - Pre-fetched map of fluent_id → existing record
    * @returns {Promise<string>} 'added', 'updated', 'deleted', or 'skipped'
    */
-  async _processTicket(connection, ticket, dateFilter) {
+  async _processTicket(connection, ticket, dateFilter, existingTicketsMap) {
     const requestData = transformFluentTicket(ticket);
 
     if (!requestData.fluent_id) {
@@ -125,11 +167,8 @@ class FluentSyncService {
     const isClosed = ticket.status === 'closed';
     const resolvedAt = ticket.resolved_at || null;
 
-    // Check if ticket already exists
-    const existing = await FluentTicketRepository.findByFluentIdWithConnection(
-      connection,
-      requestData.fluent_id
-    );
+    // Use pre-fetched lookup instead of individual query
+    const existing = existingTicketsMap.get(requestData.fluent_id.toString()) || null;
 
     if (existing) {
       if (isClosed) {

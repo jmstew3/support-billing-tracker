@@ -65,8 +65,8 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const login = async (email: string, password: string) => {
     const response = await clientAuthApi.login(email, password);
 
-    // Store tokens
-    setClientTokens(response.accessToken, response.refreshToken);
+    // Store access token (refresh token is now in HttpOnly cookie)
+    setClientTokens(response.accessToken);
 
     // Set user
     setUser(response.user);

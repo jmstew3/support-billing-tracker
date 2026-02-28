@@ -50,7 +50,6 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
   if (response.status === 401) {
     console.warn('Received 401 Unauthorized - clearing auth state');
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
 
     // Reload page to trigger login screen
     window.location.reload();
@@ -62,7 +61,6 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
   if (response.status === 403) {
     console.warn('Received 403 Forbidden - token invalid, clearing auth state');
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
 
     // Reload page to trigger login screen
     window.location.reload();

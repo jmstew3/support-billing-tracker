@@ -59,7 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Clear invalid tokens
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -82,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include', // Send/receive cookies
       body: JSON.stringify({ email, password })
     });
 
@@ -111,9 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const data = await response.json();
 
-    // Store tokens
+    // Store access token only (refresh token is now in HttpOnly cookie)
     localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
 
     // Set user
     setUser(data.user);
@@ -123,16 +122,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * Logout and clear tokens
    */
   const logout = async () => {
-    const refreshTokenValue = localStorage.getItem('refreshToken');
-
     try {
       // Call logout endpoint to invalidate refresh token
+      // Cookie is sent automatically with credentials: 'include'
       await fetch(`${getApiUrl()}/auth/logout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ refreshToken: refreshTokenValue })
+        credentials: 'include', // Send HttpOnly cookie
       });
     } catch {
       // Logout failed
@@ -140,26 +138,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Clear local storage and state
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 
   /**
-   * Refresh access token using refresh token
+   * Refresh access token using refresh token (in HttpOnly cookie)
    */
   const refreshToken = async () => {
-    const refreshTokenValue = localStorage.getItem('refreshToken');
-    if (!refreshTokenValue) {
-      throw new Error('No refresh token available');
-    }
-
     try {
       const response = await fetch(`${getApiUrl()}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ refreshToken: refreshTokenValue })
+        credentials: 'include', // Send HttpOnly cookie
       });
 
       if (!response.ok) {
@@ -174,7 +166,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       // Clear invalid tokens
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       setUser(null);
       throw error;
     }

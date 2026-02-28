@@ -68,6 +68,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
         <div
           className="sm:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -102,7 +103,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
         </div>
 
       {/* Navigation menu */}
-      <nav className="flex-1 py-3">
+      <nav className="flex-1 py-3" aria-label="Main navigation">
         <ul className="space-y-0.5 px-2">
           {menuItems.map((item) => {
             const Icon = item.icon;

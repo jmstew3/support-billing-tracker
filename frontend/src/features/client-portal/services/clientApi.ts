@@ -16,9 +16,8 @@ export const getClientApiUrl = (): string => {
   return import.meta.env.VITE_API_URL || 'http://localhost:3011/api';
 };
 
-// Storage keys for client tokens (separate from internal auth)
+// Storage key for client access token (refresh token is now in HttpOnly cookie)
 const CLIENT_ACCESS_TOKEN_KEY = 'clientAccessToken';
-const CLIENT_REFRESH_TOKEN_KEY = 'clientRefreshToken';
 
 /**
  * Get stored client access token
@@ -28,18 +27,10 @@ export const getClientAccessToken = (): string | null => {
 };
 
 /**
- * Get stored client refresh token
+ * Store client access token (refresh token handled via HttpOnly cookie)
  */
-export const getClientRefreshToken = (): string | null => {
-  return localStorage.getItem(CLIENT_REFRESH_TOKEN_KEY);
-};
-
-/**
- * Store client tokens
- */
-export const setClientTokens = (accessToken: string, refreshToken: string): void => {
+export const setClientTokens = (accessToken: string): void => {
   localStorage.setItem(CLIENT_ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(CLIENT_REFRESH_TOKEN_KEY, refreshToken);
 };
 
 /**
@@ -47,7 +38,6 @@ export const setClientTokens = (accessToken: string, refreshToken: string): void
  */
 export const clearClientTokens = (): void => {
   localStorage.removeItem(CLIENT_ACCESS_TOKEN_KEY);
-  localStorage.removeItem(CLIENT_REFRESH_TOKEN_KEY);
 };
 
 /**
@@ -67,6 +57,7 @@ export const clientFetch = async <T>(
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include', // Send HttpOnly cookies
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
@@ -103,7 +94,6 @@ export interface ClientUser {
 
 export interface ClientLoginResponse {
   accessToken: string;
-  refreshToken: string;
   user: ClientUser;
 }
 
@@ -115,6 +105,7 @@ export const clientAuthApi = {
     const response = await fetch(`${getClientApiUrl()}/auth/client/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Receive HttpOnly cookie
       body: JSON.stringify({ email, password }),
     });
 
@@ -140,6 +131,7 @@ export const clientAuthApi = {
       await fetch(`${getClientApiUrl()}/auth/client/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Send HttpOnly cookie for server-side cleanup
       });
     } catch {
       // Ignore logout errors
@@ -148,18 +140,13 @@ export const clientAuthApi = {
   },
 
   /**
-   * Refresh access token
+   * Refresh access token (refresh token sent via HttpOnly cookie)
    */
   refresh: async (): Promise<{ accessToken: string }> => {
-    const refreshToken = getClientRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token');
-    }
-
     const response = await fetch(`${getClientApiUrl()}/auth/client/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include', // Send HttpOnly cookie
     });
 
     if (!response.ok) {

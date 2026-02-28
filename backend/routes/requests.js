@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import pool from '../db/config.js';
 import Request from '../models/Request.js';
 import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
+import logger from '../services/logger.js';
 import {
   bulkOperationLimiter,
   dataTransferLimiter,
@@ -20,6 +21,15 @@ import {
 import { parseCSVLine } from '../utils/csvParser.js';
 
 const router = express.Router();
+
+// Rate limiter for read operations (prevents data scraping)
+const readRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 read requests per minute per IP
+  message: 'Too many requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Rate limiter for DELETE operations
 const deleteRateLimiter = rateLimit({
@@ -52,7 +62,7 @@ router.get('/health', async (req, res) => {
 });
 
 // GET all requests with pagination support
-router.get('/requests', async (req, res) => {
+router.get('/requests', readRateLimiter, async (req, res) => {
   try {
     const {
       status: rawStatus,
@@ -187,13 +197,13 @@ router.get('/requests', async (req, res) => {
       res.json(transformedRows);
     }
   } catch (error) {
-    console.error('Error fetching requests:', error);
+    logger.error('Error fetching requests', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
 
 // GET single request
-router.get('/requests/:id', async (req, res) => {
+router.get('/requests/:id', readRateLimiter, async (req, res) => {
   try {
     const id = validateId(req.params.id);
     if (!id) {
@@ -228,7 +238,7 @@ router.get('/requests/:id', async (req, res) => {
 
     res.json(transformedRow);
   } catch (error) {
-    console.error('Error fetching request:', error);
+    logger.error('Error fetching request', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch request' });
   }
 });
@@ -244,7 +254,7 @@ router.post('/requests', async (req, res) => {
       message: 'Request created successfully'
     });
   } catch (error) {
-    console.error('Error creating request:', error);
+    logger.error('Error creating request', { error: error.message });
     res.status(500).json({ error: 'Failed to create request' });
   }
 });
@@ -327,7 +337,7 @@ router.put('/requests/:id', async (req, res) => {
 
     res.json({ message: 'Request updated successfully' });
   } catch (error) {
-    console.error('Error updating request:', error);
+    logger.error('Error updating request', { error: error.message });
     res.status(500).json({ error: 'Failed to update request' });
   }
 });
@@ -381,7 +391,7 @@ router.delete('/requests/:id', deleteRateLimiter, async (req, res) => {
       res.json({ message: 'Request marked as deleted' });
     }
   } catch (error) {
-    console.error('Error deleting request:', error);
+    logger.error('Error deleting request', { error: error.message });
     res.status(500).json({ error: 'Failed to delete request' });
   }
 });
@@ -458,13 +468,13 @@ router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
       affectedRows: result.affectedRows
     });
   } catch (error) {
-    console.error('Error bulk updating requests:', error);
+    logger.error('Error bulk updating requests', { error: error.message });
     res.status(500).json({ error: 'Failed to bulk update requests' });
   }
 });
 
 // GET request statistics
-router.get('/statistics', async (req, res) => {
+router.get('/statistics', readRateLimiter, async (req, res) => {
   try {
     // Get category distribution
     const [categories] = await pool.execute(
@@ -500,7 +510,7 @@ router.get('/statistics', async (req, res) => {
       totals
     });
   } catch (error) {
-    console.error('Error fetching statistics:', error);
+    logger.error('Error fetching statistics', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
@@ -560,7 +570,7 @@ router.post('/import-csv', dataTransferLimiter, async (req, res) => {
       errors: errors.slice(0, 10) // Return first 10 errors only
     });
   } catch (error) {
-    console.error('Error importing CSV:', error);
+    logger.error('Error importing CSV', { error: error.message });
     res.status(500).json({ error: 'Failed to import CSV data' });
   }
 });
@@ -606,7 +616,7 @@ router.get('/export-csv', dataTransferLimiter, async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="thad_requests_export.csv"');
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting CSV:', error);
+    logger.error('Error exporting CSV', { error: error.message });
     res.status(500).json({ error: 'Failed to export CSV' });
   }
 });
@@ -678,7 +688,7 @@ router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
     await connection.query(
       `CREATE TABLE ${escapedBackupTable} AS SELECT * FROM requests`
     );
-    console.log(`[save-csv] Created backup table: ${backupTableName} with ${previousCount} records`);
+    logger.info(`[save-csv] Created backup table: ${backupTableName} with ${previousCount} records`);
 
     // Clear existing data
     await connection.query('DELETE FROM requests');
@@ -733,7 +743,7 @@ router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
     // Commit transaction
     await connection.commit();
 
-    console.log(`[save-csv] Import complete: ${imported} imported, ${skipped} skipped`);
+    logger.info(`[save-csv] Import complete: ${imported} imported, ${skipped} skipped`);
 
     // Audit log the destructive data replacement
     await AuditLogRepository.logFromRequest(req, AuditActions.DATA_BACKUP, {
@@ -763,13 +773,13 @@ router.post('/save-csv', destructiveOperationLimiter, async (req, res) => {
     if (connection) {
       try {
         await connection.rollback();
-        console.log('[save-csv] Transaction rolled back due to error');
+        logger.info('[save-csv] Transaction rolled back due to error');
       } catch (rollbackError) {
-        console.error('[save-csv] Rollback failed:', rollbackError);
+        logger.error('[save-csv] Rollback failed', { error: rollbackError.message });
       }
     }
 
-    console.error('Error saving CSV:', error);
+    logger.error('Error saving CSV', { error: error.message });
     res.status(500).json({
       error: 'Failed to save CSV data. No changes were made.',
       details: sanitizeErrorMessage(error, process.env.NODE_ENV === 'development')
@@ -808,7 +818,7 @@ router.get('/backups', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error listing backups:', error);
+    logger.error('Error listing backups', { error: error.message });
     res.status(500).json({ error: 'Failed to list backups' });
   }
 });
@@ -897,12 +907,12 @@ router.post('/restore-backup', destructiveOperationLimiter, async (req, res) => 
     if (connection) {
       try {
         await connection.rollback();
-        console.log('[restore-backup] Transaction rolled back due to error');
+        logger.info('[restore-backup] Transaction rolled back due to error');
       } catch (rollbackError) {
-        console.error('[restore-backup] Rollback failed:', rollbackError);
+        logger.error('[restore-backup] Rollback failed', { error: rollbackError.message });
       }
     }
-    console.error('Error restoring backup:', error);
+    logger.error('Error restoring backup', { error: error.message });
     res.status(500).json({
       error: 'Failed to restore backup. No changes were made.',
       details: sanitizeErrorMessage(error, process.env.NODE_ENV === 'development')

@@ -42,7 +42,6 @@ export {
 export {
   getClientApiUrl,
   getClientAccessToken,
-  getClientRefreshToken,
   setClientTokens,
   clearClientTokens,
   clientFetch,

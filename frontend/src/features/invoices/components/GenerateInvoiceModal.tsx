@@ -150,13 +150,18 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative bg-background border border-border rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col mx-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="generate-invoice-title"
+        className="relative bg-background border border-border rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col mx-4"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
+          <h2 id="generate-invoice-title" className="text-xl font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Generate Invoice
           </h2>

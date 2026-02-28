@@ -6,6 +6,12 @@ import RefreshTokenRepository from '../repositories/RefreshTokenRepository.js';
 import AuditLogRepository, { AuditActions } from '../repositories/AuditLogRepository.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validatePassword } from '../middleware/security.js';
+import logger from '../services/logger.js';
+import {
+  getRefreshTokenCookieOptions,
+  getClearCookieOptions,
+  REFRESH_TOKEN_COOKIE
+} from '../utils/cookies.js';
 
 const router = express.Router();
 
@@ -141,7 +147,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // SECURITY: JWT_REFRESH_SECRET is required - no fallback to JWT_SECRET
     if (!process.env.JWT_REFRESH_SECRET) {
-      console.error('SECURITY ERROR: JWT_REFRESH_SECRET is not configured. Refresh tokens disabled.');
+      logger.error('SECURITY ERROR: JWT_REFRESH_SECRET is not configured. Refresh tokens disabled.');
       return res.status(500).json({
         error: 'Server configuration error',
         hint: 'JWT_REFRESH_SECRET must be configured. Generate with: openssl rand -hex 32'
@@ -170,7 +176,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         ipAddress: req.ip || null
       });
     } catch (tokenError) {
-      console.error('Failed to store refresh token:', tokenError);
+      logger.error('Failed to store refresh token', { error: tokenError.message });
       // Continue anyway - user can still use access token
     }
 
@@ -187,10 +193,13 @@ router.post('/login', loginLimiter, async (req, res) => {
       status: 'success'
     });
 
-    // Return tokens and user info (without password)
+    // Set refresh token as HttpOnly cookie (prevents XSS theft)
+    const refreshExpiresInValue = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions(refreshExpiresInValue));
+
+    // Return access token and user info (refresh token only in cookie, not body)
     res.json({
       accessToken,
-      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -198,7 +207,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', { error: error.message });
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -218,17 +227,20 @@ router.post('/login', loginLimiter, async (req, res) => {
  * }
  */
 router.post('/logout', authLimiter, async (req, res) => {
-  const { refreshToken } = req.body;
+  // Read refresh token from HttpOnly cookie (preferred) or request body (legacy fallback)
+  const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] || req.body?.refreshToken;
 
   if (refreshToken) {
     try {
       await RefreshTokenRepository.revoke(refreshToken);
     } catch (error) {
-      console.error('Error revoking refresh token:', error);
+      logger.error('Error revoking refresh token', { error: error.message });
       // Continue anyway - logout should succeed
     }
   }
 
+  // Clear the refresh token cookie
+  res.clearCookie(REFRESH_TOKEN_COOKIE, getClearCookieOptions());
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -247,7 +259,8 @@ router.post('/logout', authLimiter, async (req, res) => {
  * }
  */
 router.post('/refresh', authLimiter, async (req, res) => {
-  const { refreshToken } = req.body;
+  // Read refresh token from HttpOnly cookie (preferred) or request body (legacy fallback)
+  const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] || req.body?.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token required' });
@@ -256,7 +269,7 @@ router.post('/refresh', authLimiter, async (req, res) => {
   try {
     // SECURITY: JWT_REFRESH_SECRET is required - no fallback
     if (!process.env.JWT_REFRESH_SECRET) {
-      console.error('SECURITY ERROR: JWT_REFRESH_SECRET not configured');
+      logger.error('SECURITY ERROR: JWT_REFRESH_SECRET not configured');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -293,7 +306,7 @@ router.post('/refresh', authLimiter, async (req, res) => {
 
     res.json({ accessToken });
   } catch (error) {
-    console.error('Token refresh error:', error);
+    logger.error('Token refresh error', { error: error.message });
 
     // Revoke invalid token from database
     try {
@@ -335,7 +348,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       last_login_at: user.last_login_at
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logger.error('Error fetching user', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch user information' });
   }
 });
@@ -388,9 +401,9 @@ router.post('/change-password', passwordChangeLimiter, authenticateToken, async 
     let revokedCount = 0;
     try {
       revokedCount = await RefreshTokenRepository.revokeAllForUser(user.id);
-      console.log(`Password changed for user ${user.id}, revoked ${revokedCount} refresh tokens`);
+      logger.info(`Password changed for user ${user.id}, revoked ${revokedCount} refresh tokens`);
     } catch (revokeError) {
-      console.error('Failed to revoke tokens after password change:', revokeError);
+      logger.error('Failed to revoke tokens after password change', { error: revokeError.message });
       // Continue anyway - password was changed successfully
     }
 
@@ -404,7 +417,7 @@ router.post('/change-password', passwordChangeLimiter, authenticateToken, async 
 
     res.json({ message: 'Password changed successfully. Please login again on all devices.' });
   } catch (error) {
-    console.error('Password change error:', error);
+    logger.error('Password change error', { error: error.message });
     res.status(500).json({ error: 'Failed to change password' });
   }
 });
@@ -429,7 +442,7 @@ router.post('/logout-all', authLimiter, authenticateToken, async (req, res) => {
       sessionsRevoked: revokedCount
     });
   } catch (error) {
-    console.error('Logout all error:', error);
+    logger.error('Logout all error', { error: error.message });
     res.status(500).json({ error: 'Failed to logout from all devices' });
   }
 });
@@ -458,7 +471,7 @@ router.get('/sessions', authLimiter, authenticateToken, async (req, res) => {
 
     res.json({ sessions });
   } catch (error) {
-    console.error('Get sessions error:', error);
+    logger.error('Get sessions error', { error: error.message });
     res.status(500).json({ error: 'Failed to fetch sessions' });
   }
 });
@@ -489,7 +502,7 @@ router.delete('/sessions/:sessionId', authLimiter, authenticateToken, async (req
 
     res.json({ message: 'Session revoked successfully' });
   } catch (error) {
-    console.error('Revoke session error:', error);
+    logger.error('Revoke session error', { error: error.message });
     res.status(500).json({ error: 'Failed to revoke session' });
   }
 });
