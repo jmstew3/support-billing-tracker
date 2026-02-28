@@ -42,7 +42,7 @@ export function ClientLogin() {
     <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
       <div className="w-full max-w-md">
         {/* Card Container */}
-        <div className="bg-card border border-border shadow-lg p-8 rounded-lg">
+        <div className="bg-card border border-border shadow-lg p-8">
           {/* Header */}
           <div className="mb-10 text-center">
             <div className="mb-8 flex justify-center">
@@ -62,7 +62,7 @@ export function ClientLogin() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/50 rounded-md text-destructive text-sm">
+            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/50 text-destructive text-sm">
               {error}
             </div>
           )}
@@ -84,7 +84,7 @@ export function ClientLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="your@email.com"
                 autoComplete="email"
               />
@@ -105,7 +105,7 @@ export function ClientLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your password"
                 autoComplete="current-password"
               />
@@ -115,7 +115,7 @@ export function ClientLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
             >
               {isLoading ? (
                 <>

@@ -39,6 +39,12 @@ export function Layout() {
 
   return (
     <PeriodProvider>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <div className="flex h-screen overflow-hidden">
         <Sidebar
           currentView={currentView}
@@ -47,7 +53,7 @@ export function Layout() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
-        <main className="flex-1 overflow-auto">
+        <main id="main-content" className="flex-1 overflow-auto">
           <Outlet context={{ toggleMobileMenu: () => setIsMobileMenuOpen(!isMobileMenuOpen) }} />
         </main>
       </div>

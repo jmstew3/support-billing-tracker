@@ -50,7 +50,7 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
       />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8">
           {view === 'list' ? (
             <InvoiceList
@@ -66,7 +66,7 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
             />
           ) : null}
         </div>
-      </main>
+      </div>
 
       {/* Generate Invoice Modal */}
       <GenerateInvoiceModal

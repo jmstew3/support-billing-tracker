@@ -116,6 +116,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
                   className={`
                     relative w-full flex items-center gap-3 px-3 py-3 rounded-md min-h-[44px]
                     text-sm font-medium transition-all duration-200
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
                     ${
                       isActive
                         ? 'bg-primary/10 text-primary'
@@ -150,7 +151,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
           {isCollapsed ? (
             <button
               onClick={onToggleTheme}
-              className="w-full p-2 rounded-md text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px] group"
+              className="w-full p-2 rounded-md text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
@@ -159,7 +160,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
           ) : (
             <button
               onClick={onToggleTheme}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-200 min-h-[44px] group"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-200 min-h-[44px] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               <span className="text-xs">Theme:</span>
@@ -173,7 +174,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
           {isCollapsed ? (
             <button
               onClick={handleLogout}
-              className="w-full p-2 rounded-md hover:bg-destructive/10 text-destructive transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px]"
+              className="w-full p-2 rounded-md hover:bg-destructive/10 text-destructive transition-all duration-150 hover:scale-105 flex items-center justify-center min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title="Log Out"
               aria-label="Log Out"
             >
@@ -182,7 +183,7 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
           ) : (
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <LogOut size={18} className="flex-shrink-0" />
               <span>Log Out</span>
