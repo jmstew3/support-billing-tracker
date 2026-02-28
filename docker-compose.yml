@@ -3,6 +3,13 @@ services:
     image: mysql:8.4
     container_name: support-billing-tracker-mysql
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: '1.0'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: support_billing_tracker
@@ -29,6 +36,13 @@ services:
       dockerfile: Dockerfile
     container_name: support-billing-tracker-backend
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql:
         condition: service_healthy
@@ -91,6 +105,12 @@ services:
       dockerfile: Dockerfile
     container_name: support-billing-tracker-backup
     restart: unless-stopped
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql:
         condition: service_healthy
@@ -113,6 +133,12 @@ services:
       target: development
     container_name: support-billing-tracker-frontend
     restart: unless-stopped
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - backend
     environment:
