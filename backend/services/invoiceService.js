@@ -150,8 +150,27 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
 
     const customer = customers[0];
 
-    // Get billing summary
-    const summary = await getBillingSummary(customerId, periodStart, periodEnd);
+    // Get billing summary using the existing connection (avoids redundant pool connection)
+    const [summaryRequests] = await connection.query(
+      `SELECT * FROM requests
+       WHERE customer_id = ?
+       AND date >= ? AND date <= ?
+       AND status = 'active'
+       AND invoice_id IS NULL
+       AND category NOT IN ('Non-billable', 'Migration')
+       ORDER BY date, time`,
+      [customerId, periodStart, periodEnd]
+    );
+
+    const billing = calculateBilling(summaryRequests, periodStart);
+    const summary = {
+      customerId,
+      periodStart,
+      periodEnd,
+      requestCount: summaryRequests.length,
+      requests: summaryRequests,
+      ...billing
+    };
 
     if (summary.requestCount === 0) {
       throw new Error('No billable requests found for this period');

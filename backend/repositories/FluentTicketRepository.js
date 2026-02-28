@@ -211,6 +211,30 @@ class FluentTicketRepository {
     );
     return rows[0] || null;
   }
+
+  /**
+   * Batch lookup fluent tickets by multiple fluent IDs
+   * Eliminates N+1 query pattern by using WHERE fluent_id IN (?)
+   * @param {Object} connection - MySQL connection (for transactions)
+   * @param {string[]} fluentIds - Array of FluentSupport ticket IDs
+   * @returns {Promise<Map<string, Object>>} Map of fluent_id → record
+   */
+  async findByFluentIdsBatch(connection, fluentIds) {
+    const map = new Map();
+    if (!fluentIds || fluentIds.length === 0) return map;
+
+    const placeholders = fluentIds.map(() => '?').join(', ');
+    const [rows] = await connection.query(
+      `SELECT id, request_id, fluent_id FROM fluent_tickets WHERE fluent_id IN (${placeholders})`,
+      fluentIds
+    );
+
+    for (const row of rows) {
+      map.set(row.fluent_id.toString(), row);
+    }
+
+    return map;
+  }
 }
 
 export default new FluentTicketRepository();

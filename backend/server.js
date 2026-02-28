@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -93,6 +94,30 @@ app.use(cookieParser());
 // 1MB for URL-encoded form data
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Response compression - ~70% reduction in JSON payload sizes
+app.use(compression());
+
+// Cache-Control headers middleware
+// Sets appropriate caching for read-only vs mutation endpoints
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    // Cache read-only statistics and billing summary endpoints for 5 minutes
+    const cacheablePatterns = ['/api/statistics', '/api/invoices/billing-summary'];
+    const isCacheable = cacheablePatterns.some(pattern => req.path.startsWith(pattern));
+
+    if (isCacheable) {
+      res.set('Cache-Control', 'public, max-age=300');
+    } else {
+      // Other GET requests: short cache or revalidation
+      res.set('Cache-Control', 'no-cache');
+    }
+  } else {
+    // POST, PUT, DELETE - no caching for mutation endpoints
+    res.set('Cache-Control', 'no-store');
+  }
+  next();
+});
 
 // Request logging middleware
 app.use(requestLogger);

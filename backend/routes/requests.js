@@ -476,32 +476,47 @@ router.post('/requests/bulk-update', bulkOperationLimiter, async (req, res) => {
 // GET request statistics
 router.get('/statistics', readRateLimiter, async (req, res) => {
   try {
-    // Get category distribution
-    const [categories] = await pool.execute(
-      `SELECT category, COUNT(*) as count, SUM(estimated_hours) as total_hours
-       FROM requests WHERE status = 'active' GROUP BY category`
-    );
+    // Run all statistics queries in parallel for better performance
+    const [
+      [categories],
+      [urgencies],
+      [monthly],
+      [totalsRows]
+    ] = await Promise.all([
+      // Category distribution
+      pool.execute(
+        `SELECT category, COUNT(*) as count, SUM(estimated_hours) as total_hours
+         FROM requests WHERE status = 'active' GROUP BY category`
+      ),
+      // Urgency distribution
+      pool.execute(
+        `SELECT urgency, COUNT(*) as count
+         FROM requests WHERE status = 'active' GROUP BY urgency`
+      ),
+      // Monthly distribution
+      pool.execute(
+        `SELECT month, COUNT(*) as count
+         FROM requests WHERE status = 'active' GROUP BY month ORDER BY month`
+      ),
+      // Combined total statistics with status breakdown in a single query
+      pool.execute(
+        `SELECT
+          COUNT(*) as total_requests,
+          SUM(CASE WHEN status = 'active' THEN estimated_hours ELSE 0 END) as total_hours,
+          COUNT(DISTINCT CASE WHEN status = 'active' THEN DATE(date) END) as unique_days,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+          SUM(CASE WHEN status = 'deleted' THEN 1 ELSE 0 END) as deleted,
+          SUM(CASE WHEN status = 'ignored' THEN 1 ELSE 0 END) as ignored
+         FROM requests`
+      )
+    ]);
 
-    // Get urgency distribution
-    const [urgencies] = await pool.execute(
-      `SELECT urgency, COUNT(*) as count
-       FROM requests WHERE status = 'active' GROUP BY urgency`
-    );
-
-    // Get monthly distribution
-    const [monthly] = await pool.execute(
-      `SELECT month, COUNT(*) as count
-       FROM requests WHERE status = 'active' GROUP BY month ORDER BY month`
-    );
-
-    // Get total statistics
-    const [[totals]] = await pool.execute(
-      `SELECT
-        COUNT(*) as total_requests,
-        SUM(estimated_hours) as total_hours,
-        COUNT(DISTINCT DATE(date)) as unique_days
-       FROM requests WHERE status = 'active'`
-    );
+    const totalsRow = totalsRows[0];
+    const totals = {
+      total_requests: totalsRow.active,
+      total_hours: totalsRow.total_hours,
+      unique_days: totalsRow.unique_days
+    };
 
     res.json({
       categories,
@@ -575,7 +590,7 @@ router.post('/import-csv', dataTransferLimiter, async (req, res) => {
   }
 });
 
-// GET export as CSV (rate limited)
+// GET export as CSV (rate limited) - chunked streaming for memory efficiency
 router.get('/export-csv', dataTransferLimiter, async (req, res) => {
   try {
     const status = validateStatus(req.query.status);
@@ -590,34 +605,47 @@ router.get('/export-csv', dataTransferLimiter, async (req, res) => {
 
     query += ' ORDER BY date DESC, time DESC';
 
-    const [rows] = await pool.execute(query, params);
-
-    // Convert to CSV format
-    const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
-    const csvRows = [headers.join(',')];
-
-    for (const row of rows) {
-      const csvRow = [
-        row.date.toISOString().split('T')[0],
-        row.time,
-        row.month,
-        row.request_type,
-        row.category,
-        `"${(row.description || '').replace(/"/g, '""')}"`,
-        row.urgency,
-        row.effort
-      ];
-      csvRows.push(csvRow.join(','));
-    }
-
-    const csv = csvRows.join('\n');
-
+    // Set response headers for CSV download before streaming
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="thad_requests_export.csv"');
-    res.send(csv);
+
+    // Write CSV header row
+    const headers = ['date', 'time', 'month', 'request_type', 'category', 'description', 'urgency', 'effort'];
+    res.write(headers.join(',') + '\n');
+
+    // Fetch rows and write in chunks rather than building entire string in memory
+    const [rows] = await pool.execute(query, params);
+
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+      const chunk = rows.slice(i, i + CHUNK_SIZE);
+      let chunkStr = '';
+
+      for (const row of chunk) {
+        const csvRow = [
+          row.date.toISOString().split('T')[0],
+          row.time,
+          row.month,
+          row.request_type,
+          row.category,
+          `"${(row.description || '').replace(/"/g, '""')}"`,
+          row.urgency,
+          row.effort
+        ];
+        chunkStr += csvRow.join(',') + '\n';
+      }
+
+      res.write(chunkStr);
+    }
+
+    res.end();
   } catch (error) {
     logger.error('Error exporting CSV', { error: error.message });
-    res.status(500).json({ error: 'Failed to export CSV' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export CSV' });
+    } else {
+      res.end();
+    }
   }
 });
 
