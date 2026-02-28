@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { LoadingState } from '../../../components/ui/LoadingState';
 import { PageHeader } from '../../../components/shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
@@ -11,7 +12,8 @@ import { SyncStatusWidget } from '../sections/SyncStatusWidget';
 import { generateComprehensiveBilling } from '../../../services/billingApi';
 import { formatMonthLabel } from '../../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../../utils/csvExport';
-import type { BillingSummary, MonthlyBillingSummary } from '../../../types/billing';
+import { queryKeys } from '../../../lib/queryClient';
+import type { MonthlyBillingSummary } from '../../../types/billing';
 
 interface DashboardProps {
   onToggleMobileMenu?: () => void;
@@ -19,50 +21,45 @@ interface DashboardProps {
 
 export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   const { selectedYear, selectedMonths, selectedDay, getMonthStrings, setAvailableData } = usePeriod();
-  const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Track which sections are expanded
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Map<string, Set<string>>>(new Map());
 
-  // Load comprehensive billing data on mount
-  useEffect(() => {
-    loadBillingData();
-  }, []);
+  // Load comprehensive billing data with React Query
+  const {
+    data: billingSummary,
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchBillingData,
+  } = useQuery({
+    queryKey: queryKeys.billing.summary(),
+    queryFn: generateComprehensiveBilling,
+  });
 
-  async function loadBillingData() {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await generateComprehensiveBilling();
-      setBillingSummary(data);
+  // Register available data with context when billingSummary changes
+  useMemo(() => {
+    if (!billingSummary) return;
 
-      // Register available data with context
-      const months = data.monthlyBreakdown.map(m => {
-        const [, month] = m.month.split('-').map(Number);
-        return month;
-      });
-      const years = Array.from(new Set(data.monthlyBreakdown.map(m => parseInt(m.month.split('-')[0]))));
-      setAvailableData(years, months, []);
+    const months = billingSummary.monthlyBreakdown.map(m => {
+      const [, month] = m.month.split('-').map(Number);
+      return month;
+    });
+    const years = Array.from(new Set(billingSummary.monthlyBreakdown.map(m => parseInt(m.month.split('-')[0]))));
+    setAvailableData(years, months, []);
 
-      // Start with all months expanded (Level 1 visible)
-      const allMonths = new Set(data.monthlyBreakdown.map((m) => m.month));
-      setExpandedMonths(allMonths);
+    // Start with all months expanded (Level 1 visible)
+    const allMonths = new Set(billingSummary.monthlyBreakdown.map((m) => m.month));
+    setExpandedMonths(allMonths);
 
-      // Start with all sections (tickets/projects/hosting) collapsed (Level 2 visible but contents hidden)
-      setExpandedSections(new Map());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load billing data');
-      console.error('Error loading billing data:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+    // Start with all sections (tickets/projects/hosting) collapsed (Level 2 visible but contents hidden)
+    setExpandedSections(new Map());
+  }, [billingSummary, setAvailableData]);
+
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load billing data' : null;
 
   // Toggle month expansion
-  const toggleMonth = (month: string) => {
+  const toggleMonth = useCallback((month: string) => {
     setExpandedMonths((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(month)) {
@@ -72,10 +69,10 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       }
       return newSet;
     });
-  };
+  }, []);
 
   // Toggle section expansion (tickets, projects, hosting within a month)
-  const toggleSection = (month: string, section: 'tickets' | 'projects' | 'hosting') => {
+  const toggleSection = useCallback((month: string, section: 'tickets' | 'projects' | 'hosting') => {
     setExpandedSections((prev) => {
       const newMap = new Map(prev);
       if (!newMap.has(month)) {
@@ -90,17 +87,15 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       newMap.set(month, monthSections);
       return newMap;
     });
-  };
+  }, []);
 
   // Check if section is expanded
-  const isSectionExpanded = (month: string, section: 'tickets' | 'projects' | 'hosting') => {
+  const isSectionExpanded = useCallback((month: string, section: 'tickets' | 'projects' | 'hosting') => {
     return expandedSections.get(month)?.has(section) || false;
-  };
-
-  // Note: formatMonthLabel now imported from utils/formatting
+  }, [expandedSections]);
 
   // Helper function to filter line items within a month by specific day
-  const filterDayData = (monthData: MonthlyBillingSummary, day: string): MonthlyBillingSummary => {
+  const filterDayData = useCallback((monthData: MonthlyBillingSummary, day: string): MonthlyBillingSummary => {
     // Filter tickets by date
     const filteredTickets = monthData.ticketDetails.filter(t => t.date === day);
     const ticketsGrossRevenue = filteredTickets.reduce((sum, t) => sum + t.amount, 0);
@@ -154,11 +149,11 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
       hostingCreditsApplied,
       totalRevenue: ticketsRevenue + projectsRevenue + hostingRevenue
     };
-  };
+  }, []);
 
   // Filter data based on selected month(s) and day from context
   // Convert context values to month string format (YYYY-MM)
-  const selectedMonthStrings = getMonthStrings();
+  const selectedMonthStrings = useMemo(() => getMonthStrings(), [getMonthStrings]);
 
   const filteredData = useMemo(() => {
     if (!billingSummary) return [];
@@ -174,7 +169,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     }
 
     return data;
-  }, [billingSummary, selectedMonthStrings, selectedDay]);
+  }, [billingSummary, selectedMonthStrings, selectedDay, filterDayData]);
 
   // Calculate all billing metrics using custom hook
   const {
@@ -187,13 +182,13 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     totalHostingCreditsSavings,
     totalDiscounts
   } = useBillingCalculations({
-    billingSummary,
+    billingSummary: billingSummary ?? null,
     filteredData,
     currentMonthString: selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : 'multi')
   });
 
   // Handle Monthly Breakdown export
-  const handleExportMonthlyBreakdown = () => {
+  const handleExportMonthlyBreakdown = useCallback(() => {
     if (!filteredData || filteredData.length === 0) return;
 
     const exportData: MonthlyBreakdownExportData = {
@@ -262,7 +257,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
     // Determine period for filename
     const selectedPeriod = selectedMonthStrings === 'all' ? 'all' : (selectedMonths.length === 1 ? selectedMonthStrings[0] : `${selectedMonthStrings[0]}-to-${selectedMonthStrings[selectedMonthStrings.length - 1]}`);
     exportMonthlyBreakdownDetailedData(exportData, selectedPeriod);
-  };
+  }, [filteredData, displayTotals, selectedMonthStrings, selectedMonths]);
 
   if (loading) {
     return <LoadingState variant="overview" />;
@@ -276,7 +271,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
             <p className="text-destructive font-semibold mb-2">Error Loading Data</p>
             <p className="text-sm text-muted-foreground">{error}</p>
             <button
-              onClick={loadBillingData}
+              onClick={() => refetchBillingData()}
               className="mt-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Retry

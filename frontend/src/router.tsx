@@ -1,11 +1,43 @@
+/* eslint-disable react-refresh/only-export-components */
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { SupportTickets } from './features/support/components/SupportTickets';
-import { Projects } from './features/projects/components/Projects';
-import { TurboHosting } from './features/hosting/components/TurboHosting';
-import { Dashboard } from './features/dashboard/components/Dashboard';
-import { Invoices } from './features/invoices';
 import { Layout } from './components/Layout';
 import { Login } from './features/auth/components/Login';
+
+// Lazy-loaded page components for code splitting
+const Dashboard = lazy(() => import('./features/dashboard/components/Dashboard').then(m => ({ default: m.Dashboard })));
+const SupportTickets = lazy(() => import('./features/support/components/SupportTickets').then(m => ({ default: m.SupportTickets })));
+const Projects = lazy(() => import('./features/projects/components/Projects').then(m => ({ default: m.Projects })));
+const TurboHosting = lazy(() => import('./features/hosting/components/TurboHosting').then(m => ({ default: m.TurboHosting })));
+const Invoices = lazy(() => import('./features/invoices').then(m => ({ default: m.Invoices })));
+
+/**
+ * Loading fallback component displayed inside the layout while lazy pages load.
+ * Uses Tailwind classes for a centered spinner animation.
+ */
+function PageLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[200px]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Wraps a lazy component with Suspense boundary.
+ * The Suspense is placed inside the Layout so the sidebar remains visible during loading.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withSuspense(Component: React.LazyExoticComponent<React.ComponentType<any>>) {
+  return (
+    <Suspense fallback={<PageLoadingFallback />}>
+      <Component />
+    </Suspense>
+  );
+}
 
 /**
  * Route configuration for the application
@@ -36,27 +68,27 @@ export const router = createBrowserRouter(
       children: [
         {
           path: '/',
-          element: <Dashboard />,
+          element: withSuspense(Dashboard),
         },
         {
           path: '/overview',
-          element: <Dashboard />,
+          element: withSuspense(Dashboard),
         },
         {
           path: '/support',
-          element: <SupportTickets />,
+          element: withSuspense(SupportTickets),
         },
         {
           path: '/projects',
-          element: <Projects />,
+          element: withSuspense(Projects),
         },
         {
           path: '/billing',
-          element: <TurboHosting />,
+          element: withSuspense(TurboHosting),
         },
         {
           path: '/invoices',
-          element: <Invoices />,
+          element: withSuspense(Invoices),
         },
         // Catch-all redirect to Dashboard
         {

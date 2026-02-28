@@ -5,19 +5,21 @@
  * Centralizes data loading, filtering, sorting, and pagination for Support Tickets page
  *
  * Responsibilities:
- * - Load requests from API (SMS + Tickets)
+ * - Load requests from API (SMS + Tickets) via React Query
  * - Filter requests by date/category/urgency/source/search
  * - Sort requests with multi-level chronological fallback
  * - Paginate filtered/sorted results
  * - Separate billable vs non-billable vs archived requests
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { ChatRequest } from '../../../types/request'
 import type { DateRangeFilter, BillingDateFilter } from '../types/filters'
 import { fetchRequests, checkAPIHealth } from '../../../utils/api'
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
+import { queryKeys } from '../../../lib/queryClient'
 
 interface UseSupportDataProps {
   // Date filters
@@ -76,6 +78,28 @@ interface UseSupportDataReturn {
   reloadData: () => Promise<void>
 }
 
+/**
+ * Fetches support requests from the API.
+ * Checks API health first, then fetches all requests.
+ */
+async function fetchSupportRequests(): Promise<{ requests: ChatRequest[]; apiAvailable: boolean }> {
+  const apiHealthy = await checkAPIHealth()
+
+  if (apiHealthy) {
+    const apiRequests = await fetchRequests({ status: 'all' })
+
+    // Default existing data to 'sms' source if not specified
+    const requestsWithSource = apiRequests.map(req => ({
+      ...req,
+      source: req.source || 'sms'
+    }))
+
+    return { requests: requestsWithSource, apiAvailable: true }
+  }
+
+  throw new Error('API is not available')
+}
+
 export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn {
   const {
     selectedYear,
@@ -96,67 +120,44 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
     pageSize
   } = props
 
-  // State
-  const [requests, setRequests] = useState<ChatRequest[]>([])
-  const [loading, setLoading] = useState(true)
-  const [apiAvailable, setApiAvailable] = useState(false)
+  // Local state for optimistic updates
+  const [localRequests, setLocalRequests] = useState<ChatRequest[] | null>(null)
 
-  // Load data function
-  const loadData = async () => {
-    console.log('useSupportData: Loading data...')
-    try {
-      // Check if API is available
-      const apiHealthy = await checkAPIHealth()
-      console.log('useSupportData: API health check result:', apiHealthy)
+  // Use React Query for data fetching
+  const {
+    data: queryData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.requests.all,
+    queryFn: fetchSupportRequests,
+  })
 
-      if (apiHealthy) {
-        // Use API to load data
-        console.log('useSupportData: Loading from API...')
-        setApiAvailable(true)
+  // Use local state if available (for optimistic updates), otherwise use query data
+  // Wrapped in useMemo to stabilize reference for downstream useMemo dependencies
+  const requests = useMemo(
+    () => localRequests ?? queryData?.requests ?? [],
+    [localRequests, queryData?.requests]
+  )
+  const apiAvailable = queryData?.apiAvailable ?? false
+  const loading = isLoading
 
-        // Fetch all requests regardless of status
-        const apiRequests = await fetchRequests({ status: 'all' })
-        console.log('useSupportData: Received from API:', { count: apiRequests.length })
-
-        // Default existing data to 'sms' source if not specified
-        const requestsWithSource = apiRequests.map(req => ({
-          ...req,
-          source: req.source || 'sms'
-        }))
-
-        console.log(`useSupportData: Total requests: ${requestsWithSource.length}`)
-
-        // Keep ALL requests (including deleted) for archive functionality
-        setRequests(requestsWithSource)
-      } else {
-        throw new Error('API is not available')
+  // Provide setRequests for optimistic updates from parent components
+  const setRequests: React.Dispatch<React.SetStateAction<ChatRequest[]>> = useCallback((action) => {
+    setLocalRequests(prev => {
+      const currentRequests = prev ?? queryData?.requests ?? []
+      if (typeof action === 'function') {
+        return action(currentRequests)
       }
+      return action
+    })
+  }, [queryData?.requests])
 
-      setLoading(false)
-    } catch (error) {
-      console.error('useSupportData: Error loading data:', error)
-      setApiAvailable(false)
-
-      // Use sample data for development
-      const sampleData: ChatRequest[] = [
-        {
-          Date: '2025-05-15',
-          Time: '07:14 AM',
-          Request_Summary: 'Sample request - API connection failed',
-          Urgency: 'HIGH',
-          Category: 'Support',
-          EstimatedHours: 0.5
-        }
-      ]
-      setRequests(sampleData)
-      setLoading(false)
-    }
-  }
-
-  // Load data on mount
-  useEffect(() => {
-    loadData()
-  }, [])
+  // Reload data function
+  const reloadData = useCallback(async () => {
+    setLocalRequests(null) // Clear optimistic state
+    await refetch()
+  }, [refetch])
 
   // Billable requests (active status, not Non-billable or Migration)
   const billableRequests = useMemo(() => {
@@ -405,6 +406,6 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
 
     // Data management
     setRequests,
-    reloadData: loadData
+    reloadData
   }
 }

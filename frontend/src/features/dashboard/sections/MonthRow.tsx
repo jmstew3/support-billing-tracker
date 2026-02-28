@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatCurrencyAccounting } from '../../../utils/formatting';
 import { TicketsSection } from './TicketsSection';
@@ -42,7 +43,7 @@ interface MonthRowProps {
  *
  * Extracted from Dashboard.tsx lines 493-583
  */
-export function MonthRow({
+export const MonthRow = memo(function MonthRow({
   monthData,
   isExpanded,
   onToggleMonth,
@@ -132,4 +133,4 @@ export function MonthRow({
       )}
     </>
   );
-}
+});
