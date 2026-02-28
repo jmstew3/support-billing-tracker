@@ -19,6 +19,18 @@ export default defineConfig({
       'tailwind-merge'
     ]
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'tanstack': ['@tanstack/react-query'],
+          'charts': ['recharts'],
+          'utils': ['date-fns', 'lucide-react'],
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',  // Listen on all network interfaces for Docker
     port: parseInt(process.env.VITE_PORT || '5173'),

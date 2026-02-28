@@ -21,7 +21,7 @@
     "lint-staged": "^15.4.1"
   },
   "lint-staged": {
-    "frontend/src/**/*.{ts,tsx}": "cd frontend && eslint --fix --config eslint.config.mjs",
-    "backend/**/*.js": "cd backend && eslint --fix"
+    "frontend/src/**/*.{ts,tsx}": "bash -c 'cd frontend && npx eslint --fix --config eslint.config.js \"$@\"' --",
+    "backend/**/*.js": "bash -c 'cd backend && npx eslint --fix \"$@\"' --"
   }
 }

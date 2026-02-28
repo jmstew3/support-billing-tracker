@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '../../../components/shared/PageHeader';
 import { usePeriod } from '../../../contexts/PeriodContext';
 import { Scorecard } from '../../../components/ui/Scorecard';
@@ -13,47 +13,42 @@ import {
   generateMonthlyBreakdown,
   calculateCreditProgress,
 } from '../../../services/hostingApi';
-import type { WebsiteProperty, MonthlyHostingSummary } from '../../../types/websiteProperty';
+import { queryKeys } from '../../../lib/queryClient';
+import type { MonthlyHostingSummary } from '../../../types/websiteProperty';
 
 interface TurboHostingProps {
   onToggleMobileMenu?: () => void;
+}
+
+/**
+ * Fetches hosting data and computes monthly breakdown in one query function.
+ */
+async function fetchHostingData(): Promise<MonthlyHostingSummary[]> {
+  const fetchedProperties = await fetchWebsiteProperties();
+  return generateMonthlyBreakdown(fetchedProperties);
 }
 
 export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
   // Use PeriodContext for month selection
   const { selectedYear, selectedMonth: contextMonth } = usePeriod();
 
-  const [, setProperties] = useState<WebsiteProperty[]>([]);
-  const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyHostingSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Convert PeriodContext month format to TurboHosting format (YYYY-MM or 'all')
   const selectedMonthStr = contextMonth === 'all'
     ? 'all'
     : `${selectedYear}-${String(contextMonth).padStart(2, '0')}`;
 
-  // Load website properties on mount
-  useEffect(() => {
-    loadHostingData();
-  }, []);
+  // Load hosting data with React Query
+  const {
+    data: monthlyBreakdown = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchHostingData,
+  } = useQuery({
+    queryKey: queryKeys.hosting.properties(),
+    queryFn: fetchHostingData,
+  });
 
-  async function loadHostingData() {
-    try {
-      setLoading(true);
-      setError(null);
-      const fetchedProperties = await fetchWebsiteProperties();
-      setProperties(fetchedProperties);
-
-      const breakdown = generateMonthlyBreakdown(fetchedProperties);
-      setMonthlyBreakdown(breakdown);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load hosting data');
-      console.error('Error loading hosting data:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load hosting data' : null;
 
   // Calculate metrics for selected month or all months
   const currentSummary = selectedMonthStr === 'all'
@@ -72,8 +67,6 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
 
   const creditProgress = calculateCreditProgress(currentSummary.activeSites);
 
-  // Note: formatMonthLabel now imported from utils/formatting
-
   if (loading) {
     return <LoadingState variant="hosting" />;
   }
@@ -86,7 +79,7 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
             <p className="text-destructive font-semibold mb-2">Error Loading Data</p>
             <p className="text-sm text-muted-foreground">{error}</p>
             <button
-              onClick={loadHostingData}
+              onClick={() => refetchHostingData()}
               className="mt-4 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Retry

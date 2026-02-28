@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Search, DollarSign, FolderKanban } from 'lucide-react';
 import { PageHeader } from '../../../components/shared/PageHeader';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
@@ -8,6 +9,7 @@ import { Scorecard } from '../../../components/ui/Scorecard';
 import { LoadingState } from '../../../components/ui/LoadingState';
 import { fetchProjects, formatCurrency, convertMicrosToDollars } from '../../../services/projectsApi';
 import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FORMS_PER_MONTH, FREE_BASIC_FORM_START_DATE, FREE_BASIC_FORMS_PER_MONTH } from '../../../config/pricing';
+import { queryKeys } from '../../../lib/queryClient';
 import type { Project, ProjectFilters } from '../../../types/project';
 
 interface ProjectsProps {
@@ -15,10 +17,6 @@ interface ProjectsProps {
 }
 
 export function Projects({ onToggleMobileMenu }: ProjectsProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Filter states - shows billable projects (READY, INVOICED, PAID)
   const [filters, setFilters] = useState<ProjectFilters>({
     hostingStatus: 'ALL',
@@ -27,24 +25,23 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
     searchQuery: '',
   });
 
-  // Fetch projects on component mount
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  // Fetch projects with React Query
+  const {
+    data: projects = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchProjects,
+  } = useQuery({
+    queryKey: queryKeys.projects.all,
+    queryFn: () => fetchProjects(),
+  });
 
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchProjects();
-      setProjects(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
-      console.error('Error loading projects:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Failed to load projects' : null;
+
+  // Memoized filter change handler
+  const handleFilterChange = useCallback((newFilters: Partial<ProjectFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  }, []);
 
   // Filter projects to show billable statuses (READY, INVOICED, PAID)
   const readyProjects = useMemo(() => {
@@ -187,7 +184,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
             <h3 className="text-lg font-semibold text-foreground mb-2">Failed to Load Projects</h3>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
             <button
-              onClick={loadProjects}
+              onClick={() => refetchProjects()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Try Again
@@ -273,7 +270,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
               type="text"
               placeholder="Search projects..."
               value={filters.searchQuery}
-              onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
+              onChange={(e) => handleFilterChange({ searchQuery: e.target.value })}
               className="flex h-9 w-full border border-input bg-transparent px-3 pl-8 py-1 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
@@ -281,7 +278,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
           {/* Hosting Status Filter */}
           <select
             value={filters.hostingStatus}
-            onChange={(e) => setFilters({ ...filters, hostingStatus: e.target.value as ProjectFilters['hostingStatus'] })}
+            onChange={(e) => handleFilterChange({ hostingStatus: e.target.value as ProjectFilters['hostingStatus'] })}
             className="flex h-9 items-center justify-between border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="ALL">All Status</option>
@@ -292,7 +289,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
           {/* Category Filter */}
           <select
             value={filters.projectCategory}
-            onChange={(e) => setFilters({ ...filters, projectCategory: e.target.value as ProjectFilters['projectCategory'] })}
+            onChange={(e) => handleFilterChange({ projectCategory: e.target.value as ProjectFilters['projectCategory'] })}
             className="flex h-9 items-center justify-between border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="ALL">All Categories</option>
@@ -306,7 +303,7 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
           {/* Clear Filters */}
           {(filters.hostingStatus !== 'ALL' || filters.projectCategory !== 'ALL' || filters.searchQuery !== '') && (
             <button
-              onClick={() => setFilters({ ...filters, hostingStatus: 'ALL', projectCategory: 'ALL', searchQuery: '' })}
+              onClick={() => handleFilterChange({ hostingStatus: 'ALL', projectCategory: 'ALL', searchQuery: '' })}
               className="inline-flex items-center justify-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-transparent hover:bg-accent hover:text-accent-foreground h-9 px-4"
             >
               Clear

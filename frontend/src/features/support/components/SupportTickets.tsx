@@ -6,7 +6,7 @@
  * This orchestrator component delegates to specialized child components.
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { LoadingState } from '../../../components/ui/LoadingState'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 
@@ -418,32 +418,34 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // EVENT HANDLERS - Calendar interactions
   // ============================================================
 
-  const handleCalendarDateClick = (date: string) => {
+  const handleCalendarDateClick = useCallback((date: string) => {
     setDay(date)
     setViewMode('day')
     setCurrentPage(1)
-  }
+  }, [setDay, setViewMode])
 
-  const handleBackToCalendar = () => {
+  const handleBackToCalendar = useCallback(() => {
     setDay('all')
     setViewMode('month')
-  }
+  }, [setDay, setViewMode])
 
   // ============================================================
   // EVENT HANDLERS - Table sorting and filtering
   // ============================================================
 
-  const handleSort = (column: string) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
+  const handleSort = useCallback((column: string) => {
+    setSortColumn(prev => {
+      if (prev === column) {
+        setSortDirection(d => d === 'asc' ? 'desc' : 'asc')
+        return prev
+      }
       setSortDirection('asc')
-    }
+      return column
+    })
     setCurrentPage(1)
-  }
+  }, [])
 
-  const resetTableFilters = () => {
+  const resetTableFilters = useCallback(() => {
     setSortColumn(null)
     setSortDirection('asc')
     setCategoryFilter([])
@@ -454,7 +456,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
     setBillingDateFilter({ from: null, to: null, hasValue: 'all' })
     setHoursFilter([])
     setSearchQuery('')
-  }
+  }, [])
 
   const handleApplyPreset = (preset: FilterPreset) => {
     // Reset all filters first
@@ -507,24 +509,24 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // EVENT HANDLERS - Pagination
   // ============================================================
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page)
     setSelectedRequestIds(new Set())
     setSelectAll(false)
-  }
+  }, [])
 
-  const handlePageSizeChange = (size: number | 'all') => {
+  const handlePageSizeChange = useCallback((size: number | 'all') => {
     setPageSize(typeof size === 'number' ? size : 999999)
     setCurrentPage(1)
     setSelectedRequestIds(new Set())
     setSelectAll(false)
-  }
+  }, [])
 
   // ============================================================
   // EVENT HANDLERS - Selection and bulk actions
   // ============================================================
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     if (selectAll) {
       setSelectedRequestIds(new Set())
       setSelectAll(false)
@@ -543,7 +545,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
       setSelectedRequestIds(newSelectedIds)
       setSelectAll(true)
     }
-  }
+  }, [selectAll, paginatedRequests, requests])
 
   const handleSelectRequest = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
@@ -730,13 +732,13 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   // EVENT HANDLERS - FluentSupport Sync
   // ============================================================
 
-  const handleSyncComplete = async () => {
+  const handleSyncComplete = useCallback(async () => {
     // Reload request data to include new FluentSupport tickets
     await reloadData()
 
     // Trigger refresh of sync status component
     setSyncRefreshTrigger(prev => prev + 1)
-  }
+  }, [reloadData])
 
   // ============================================================
   // UTILITY FUNCTIONS
