@@ -4,6 +4,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
 import { useSupportData } from '../useSupportData'
 import type { ChatRequest } from '../../../../types/request'
 import * as api from '../../../../utils/api'
@@ -41,6 +43,18 @@ const mockRequests: ChatRequest[] = [
   createMockRequest({ Date: '2025-06-28', Time: '3:00 PM', Urgency: 'MEDIUM', Category: 'Support', source: 'ticket' }),
 ]
 
+// Create a wrapper with QueryClientProvider for renderHook
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  })
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children)
+  }
+}
+
 describe('useSupportData', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -71,7 +85,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       // Initially loading
       expect(result.current.loading).toBe(true)
@@ -112,7 +126,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -121,7 +135,7 @@ describe('useSupportData', () => {
       expect(result.current.requests[0].source).toBe('sms')
     })
 
-    it('should handle API failure with sample data', async () => {
+    it('should handle API failure gracefully', async () => {
       vi.mocked(api.checkAPIHealth).mockResolvedValue(false)
 
       const { result } = renderHook(() => useSupportData({
@@ -141,15 +155,15 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
       })
 
+      // With React Query, a failed fetch results in empty data and apiAvailable=false
       expect(result.current.apiAvailable).toBe(false)
-      expect(result.current.requests).toHaveLength(1)
-      expect(result.current.requests[0].Request_Summary).toContain('Sample request')
+      expect(result.current.requests).toHaveLength(0)
     })
   })
 
@@ -177,7 +191,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -210,7 +224,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -241,7 +255,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -278,7 +292,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -317,7 +331,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -345,7 +359,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -376,7 +390,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -407,7 +421,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -438,7 +452,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -469,7 +483,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -506,7 +520,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -537,7 +551,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -568,7 +582,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -607,7 +621,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -636,7 +650,7 @@ describe('useSupportData', () => {
         sortDirection: 'desc', // HIGH first
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -667,7 +681,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -706,7 +720,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -756,7 +770,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -786,7 +800,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 2,
         pageSize: 20
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
@@ -815,7 +829,7 @@ describe('useSupportData', () => {
         sortDirection: 'asc',
         currentPage: 1,
         pageSize: 25 // Same as total count
-      }))
+      }), { wrapper: createWrapper() })
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false)
