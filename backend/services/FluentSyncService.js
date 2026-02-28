@@ -111,15 +111,14 @@ class FluentSyncService {
 
   /**
    * Batch-fetch all existing fluent ticket records for a set of tickets
-   * Eliminates N+1 query pattern by doing a single SELECT ... WHERE IN
+   * Eliminates N+1 query pattern by using repository batch lookup
    * @private
    * @param {Object} connection - MySQL connection
    * @param {Array} tickets - Array of FluentSupport tickets
    * @returns {Promise<Map>} Map of fluent_id → existing record
    */
   async _batchFetchExisting(connection, tickets) {
-    const map = new Map();
-    if (tickets.length === 0) return map;
+    if (tickets.length === 0) return new Map();
 
     // Collect all fluent IDs from incoming tickets
     const fluentIds = tickets
@@ -130,20 +129,10 @@ class FluentSyncService {
       .filter(Boolean)
       .map(id => id.toString());
 
-    if (fluentIds.length === 0) return map;
+    if (fluentIds.length === 0) return new Map();
 
-    // Batch query - fetch all in one go
-    const placeholders = fluentIds.map(() => '?').join(', ');
-    const [rows] = await connection.query(
-      `SELECT id, request_id, fluent_id FROM fluent_tickets WHERE fluent_id IN (${placeholders})`,
-      fluentIds
-    );
-
-    for (const row of rows) {
-      map.set(row.fluent_id.toString(), row);
-    }
-
-    return map;
+    // Use repository batch method for single query lookup
+    return FluentTicketRepository.findByFluentIdsBatch(connection, fluentIds);
   }
 
   /**

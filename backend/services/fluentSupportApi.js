@@ -12,6 +12,48 @@ import { validateFluentTickets } from './apiSchemas.js';
  * Endpoint: /wp-json/fluent-support/v2/tickets
  */
 
+/**
+ * Retry helper with exponential backoff
+ * Only retries on network errors and 5xx status codes, NOT on 4xx
+ * @param {Function} fn - Async function to retry
+ * @param {number} maxAttempts - Maximum number of attempts (default: 3)
+ * @param {number} baseDelayMs - Base delay in ms for exponential backoff (default: 1000)
+ * @returns {Promise<*>} Result of the function call
+ */
+async function withRetry(fn, maxAttempts = 3, baseDelayMs = 1000) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry on 4xx client errors
+      if (error.response && error.response.status >= 400 && error.response.status < 500) {
+        throw error;
+      }
+
+      // Only retry on network errors (no response) or 5xx server errors
+      const isRetryable = !error.response || (error.response.status >= 500);
+
+      if (!isRetryable || attempt === maxAttempts) {
+        throw error;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
+      logger.warn(`[FluentSupport] Request failed (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms`, {
+        error: error.message,
+        status: error.response?.status
+      });
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
 // Get FluentSupport config from environment
 const FLUENT_API_URL = process.env.VITE_FLUENT_API_URL || '';
 const FLUENT_USERNAME = process.env.VITE_FLUENT_API_USERNAME || '';
@@ -54,10 +96,10 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
         url += `&mailbox_id=${FLUENT_MAILBOX_ID}`;
       }
 
-      const response = await axios.get(url, {
+      const response = await withRetry(() => axios.get(url, {
         headers,
         timeout: 30000 // 30 second timeout
-      });
+      }));
 
       let tickets = [];
       if (Array.isArray(response.data)) {
@@ -135,7 +177,10 @@ export async function fetchFluentTicket(ticketId) {
     const baseUrl = FLUENT_API_URL.replace(/\/$/, '');
     const url = `${baseUrl}/wp-json/fluent-support/v2/ticket/${ticketId}`;
 
-    const response = await axios.get(url, { headers });
+    const response = await withRetry(() => axios.get(url, {
+      headers,
+      timeout: 30000 // 30 second timeout
+    }));
 
     return response.data;
 
