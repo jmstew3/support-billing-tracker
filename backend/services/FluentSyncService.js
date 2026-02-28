@@ -36,13 +36,14 @@ class FluentSyncService {
         ticketsFetched: tickets.length,
         ticketsAdded: 0,
         ticketsUpdated: 0,
-        ticketsSkipped: 0
+        ticketsSkipped: 0,
+        ticketsDeleted: 0
       };
 
       // Process each ticket
       for (const ticket of tickets) {
         try {
-          const processResult = await this._processTicket(connection, ticket);
+          const processResult = await this._processTicket(connection, ticket, dateFilter);
 
           switch (processResult) {
             case 'added':
@@ -50,6 +51,9 @@ class FluentSyncService {
               break;
             case 'updated':
               result.ticketsUpdated++;
+              break;
+            case 'deleted':
+              result.ticketsDeleted++;
               break;
             case 'skipped':
               result.ticketsSkipped++;
@@ -102,18 +106,24 @@ class FluentSyncService {
   }
 
   /**
-   * Process a single ticket (create or update)
+   * Process a single ticket (create, update, or delete)
+   * Only closed tickets with resolved_at are tracked. Open tickets are skipped
+   * unless they previously existed (reopened → mark deleted).
    * @private
    * @param {Object} connection - MySQL connection
    * @param {Object} ticket - FluentSupport ticket
-   * @returns {Promise<string>} 'added', 'updated', or 'skipped'
+   * @param {string} dateFilter - Date filter (YYYY-MM-DD)
+   * @returns {Promise<string>} 'added', 'updated', 'deleted', or 'skipped'
    */
-  async _processTicket(connection, ticket) {
+  async _processTicket(connection, ticket, dateFilter) {
     const requestData = transformFluentTicket(ticket);
 
     if (!requestData.fluent_id) {
       return 'skipped';
     }
+
+    const isClosed = ticket.status === 'closed';
+    const resolvedAt = ticket.resolved_at || null;
 
     // Check if ticket already exists
     const existing = await FluentTicketRepository.findByFluentIdWithConnection(
@@ -122,13 +132,52 @@ class FluentSyncService {
     );
 
     if (existing) {
-      // Update existing ticket
-      await this._updateExistingTicket(connection, existing, requestData);
-      return 'updated';
+      if (isClosed) {
+        // Existing ticket is now closed — update with resolved_at date
+        await this._updateExistingTicket(connection, existing, requestData);
+        return 'updated';
+      } else {
+        // Existing ticket has been reopened — mark the request as deleted
+        if (existing.request_id) {
+          await RequestRepository.updateWithConnection(connection, existing.request_id, {
+            status: 'deleted'
+          });
+        }
+        // Update fluent_tickets metadata to reflect current status
+        const meta = requestData.fluent_metadata;
+        await FluentTicketRepository.updateWithConnection(connection, existing.id, {
+          ticket_number: meta.ticket_number,
+          created_at: meta.created_at,
+          resolved_at: null,
+          updated_at: meta.updated_at,
+          ticket_status: meta.ticket_status,
+          customer_id: meta.customer_id,
+          customer_name: meta.customer_name,
+          customer_email: meta.customer_email,
+          mailbox_id: meta.mailbox_id,
+          title: requestData.description.substring(0, 255),
+          customer_message: meta.customer_message,
+          priority: meta.priority,
+          product_id: meta.product_id,
+          product_name: meta.product_name,
+          agent_id: meta.agent_id,
+          agent_name: meta.agent_name,
+          raw_data: meta.raw_data
+        });
+        return 'deleted';
+      }
     } else {
-      // Create new ticket
-      await this._createNewTicket(connection, requestData);
-      return 'added';
+      // New ticket
+      if (isClosed && resolvedAt) {
+        // Check resolved_at against dateFilter
+        const resolvedDate = new Date(resolvedAt).toISOString().split('T')[0];
+        if (resolvedDate >= dateFilter) {
+          await this._createNewTicket(connection, requestData);
+          return 'added';
+        }
+      }
+      // New ticket that's not closed, or closed before dateFilter — skip
+      return 'skipped';
     }
   }
 
@@ -152,7 +201,8 @@ class FluentSyncService {
         urgency: requestData.urgency,
         effort: requestData.effort,
         source: requestData.source,
-        website_url: requestData.website_url
+        website_url: requestData.website_url,
+        status: 'active' // Re-activate in case it was previously deleted (reopened then re-closed)
       });
     }
 
@@ -161,6 +211,7 @@ class FluentSyncService {
     await FluentTicketRepository.updateWithConnection(connection, fluentTicketId, {
       ticket_number: meta.ticket_number,
       created_at: meta.created_at,
+      resolved_at: meta.resolved_at,
       updated_at: meta.updated_at,
       ticket_status: meta.ticket_status,
       customer_id: meta.customer_id,
@@ -205,6 +256,7 @@ class FluentSyncService {
       fluent_id: requestData.fluent_id,
       ticket_number: meta.ticket_number,
       created_at: meta.created_at,
+      resolved_at: meta.resolved_at,
       updated_at: meta.updated_at,
       ticket_status: meta.ticket_status,
       customer_id: meta.customer_id,

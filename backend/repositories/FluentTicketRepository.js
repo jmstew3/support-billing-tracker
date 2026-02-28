@@ -43,6 +43,7 @@ class FluentTicketRepository {
       fluent_id,
       ticket_number,
       created_at,
+      resolved_at,
       updated_at,
       ticket_status,
       customer_id,
@@ -62,16 +63,17 @@ class FluentTicketRepository {
 
     const [result] = await connection.query(
       `INSERT INTO fluent_tickets (
-        fluent_id, ticket_number, created_at, updated_at_fluent,
+        fluent_id, ticket_number, created_at, resolved_at, updated_at_fluent,
         ticket_status, customer_id, customer_name, customer_email,
         mailbox_id, title, customer_message, priority,
         product_id, product_name, agent_id, agent_name,
         raw_data, request_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         fluent_id,
         ticket_number,
         created_at,
+        resolved_at || null,
         updated_at,
         ticket_status,
         customer_id,
@@ -104,6 +106,7 @@ class FluentTicketRepository {
     const {
       ticket_number,
       created_at,
+      resolved_at,
       updated_at,
       ticket_status,
       customer_id,
@@ -122,7 +125,7 @@ class FluentTicketRepository {
 
     const [result] = await connection.query(
       `UPDATE fluent_tickets
-       SET ticket_number = ?, created_at = ?, updated_at_fluent = ?,
+       SET ticket_number = ?, created_at = ?, resolved_at = ?, updated_at_fluent = ?,
            ticket_status = ?, customer_id = ?, customer_name = ?,
            customer_email = ?, mailbox_id = ?, title = ?,
            customer_message = ?, priority = ?, product_id = ?,
@@ -132,6 +135,7 @@ class FluentTicketRepository {
       [
         ticket_number,
         created_at,
+        resolved_at !== undefined ? resolved_at : null,
         updated_at,
         ticket_status,
         customer_id,
