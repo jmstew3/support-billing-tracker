@@ -15,6 +15,7 @@ const FLUENT_API_URL = process.env.VITE_FLUENT_API_URL || '';
 const FLUENT_USERNAME = process.env.VITE_FLUENT_API_USERNAME || '';
 const FLUENT_PASSWORD = process.env.VITE_FLUENT_API_PASSWORD || '';
 const FLUENT_DATE_FILTER = process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
+const FLUENT_MAILBOX_ID = process.env.VITE_FLUENT_MAILBOX_ID || '';
 
 /**
  * Fetch all tickets from FluentSupport API
@@ -46,7 +47,10 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
     const perPage = 100; // Adjust based on API limits
 
     while (hasMore) {
-      const url = `${endpoint}?per_page=${perPage}&page=${page}`;
+      let url = `${endpoint}?per_page=${perPage}&page=${page}`;
+      if (FLUENT_MAILBOX_ID) {
+        url += `&mailbox_id=${FLUENT_MAILBOX_ID}`;
+      }
 
       const response = await axios.get(url, {
         headers,
@@ -72,14 +76,21 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
       if (tickets.length === 0) {
         hasMore = false;
       } else {
-        // Filter tickets by date (server-side filtering may not be available)
+        // Filter tickets:
+        // - Closed tickets: keep if resolved_at >= dateFilter
+        // - Open/non-closed tickets: pass through (sync service needs these to detect reopened tickets)
         const filteredTickets = tickets.filter(ticket => {
-          const createdAt = ticket.created_at || ticket.created_date || ticket.date_created;
-          if (!createdAt) return false;
+          const isClosed = ticket.status === 'closed';
 
-          // Compare dates (FluentSupport typically uses MySQL datetime format)
-          const ticketDate = new Date(createdAt).toISOString().split('T')[0];
-          return ticketDate >= dateFilter;
+          if (isClosed) {
+            const resolvedAt = ticket.resolved_at;
+            if (!resolvedAt) return false;
+            const resolvedDate = new Date(resolvedAt).toISOString().split('T')[0];
+            return resolvedDate >= dateFilter;
+          }
+
+          // Non-closed tickets pass through for sync service to handle
+          return true;
         });
 
         allTickets = allTickets.concat(filteredTickets);
@@ -337,11 +348,13 @@ export function transformFluentTicket(ticket) {
     return validateCategory(mappedCategory);
   };
 
-  // Parse creation date
+  // Use resolved_at as primary date for closed tickets, fallback to created_at
+  const isClosed = ticket.status === 'closed';
   const createdAt = ticket.created_at || ticket.created_date || ticket.date_created;
-  const creationDate = createdAt ? new Date(createdAt) : new Date();
-  const date = creationDate.toISOString().split('T')[0];
-  const time = creationDate.toTimeString().split(' ')[0]; // HH:MM:SS format
+  const primaryDateSource = (isClosed && ticket.resolved_at) ? ticket.resolved_at : createdAt;
+  const primaryDate = primaryDateSource ? new Date(primaryDateSource) : new Date();
+  const date = primaryDate.toISOString().split('T')[0];
+  const time = primaryDate.toTimeString().split(' ')[0]; // HH:MM:SS format
 
   // Parse HTML content to get clean subject and description
   const htmlContent = ticket.customer_message || ticket.content || ticket.message || '';
@@ -378,6 +391,7 @@ export function transformFluentTicket(ticket) {
     fluent_metadata: {
       ticket_number: ticket.ticket_hash || ticket.serial_number || ticket.id,
       created_at: createdAt,
+      resolved_at: ticket.resolved_at || null,
       updated_at: ticket.updated_at || ticket.last_updated,
       ticket_status: ticket.status,
       customer_id: ticket.customer_id,
