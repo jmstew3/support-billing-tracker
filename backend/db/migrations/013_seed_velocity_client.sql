@@ -1,12 +1,9 @@
 -- Migration: Seed Velocity as a client in the portal
--- Description: Creates Velocity client record with user login and sample data
+-- Description: Creates Velocity client record (user login handled by seed_velocity_user.js)
 -- Run AFTER: 009_create_client_portal_tables.sql, 010_add_client_logo.sql
 -- Date: 2025-01-16
 --
--- Velocity Portal Credentials:
---   Email: thad@velocity-seo.com
---   Password: (set via environment, reset after seeding)
---
+-- Note: Run `node backend/db/seed_velocity_user.js` separately to create the portal login.
 -- Note: Update the fluent_customer_id with Velocity's actual ID from fluent_tickets
 --       if you want to link their existing support tickets
 
@@ -25,20 +22,7 @@ ON DUPLICATE KEY UPDATE
   company_name = VALUES(company_name),
   contact_email = VALUES(contact_email);
 
--- 2. Create Velocity client user for portal login
--- Password hash generated with bcrypt (10 rounds)
-INSERT INTO client_users (client_id, email, password_hash, name, is_active)
-SELECT
-  c.id,
-  'thad@velocity-seo.com',
-  '$2b$10$4undVDems.IHhAb34WUvz.DGio/8xQx8UwZ0T0DW8T8WIbB7L.a6q',
-  'Velocity Admin',
-  TRUE
-FROM clients c
-WHERE c.company_name = 'Velocity'
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
--- 3. Add sample websites for Velocity (if they have any)
+-- 2. Add sample websites for Velocity (if they have any)
 -- Uncomment and modify as needed
 -- INSERT INTO client_website_links (client_id, twenty_website_property_id, website_url, website_name, hosting_status)
 -- SELECT
@@ -51,7 +35,7 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 -- WHERE c.company_name = 'Velocity'
 -- ON DUPLICATE KEY UPDATE website_name = VALUES(website_name);
 
--- 4. Update any existing fluent_tickets with Velocity's customer_id to link to this client
+-- 3. Update any existing fluent_tickets with Velocity's customer_id to link to this client
 -- UPDATE fluent_tickets ft
 -- JOIN clients c ON c.company_name = 'Velocity'
 -- SET ft.client_id = c.id
@@ -63,8 +47,6 @@ SELECT
   'Velocity client seeded' as status,
   c.id as client_id,
   c.company_name,
-  c.logo_url,
-  cu.email as user_email
+  c.logo_url
 FROM clients c
-LEFT JOIN client_users cu ON c.id = cu.client_id
 WHERE c.company_name = 'Velocity';
