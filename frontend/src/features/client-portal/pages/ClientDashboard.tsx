@@ -54,6 +54,9 @@ export function ClientDashboard() {
     'Closed': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
   };
 
+  const showWebsites = (activity?.websites.total ?? 0) > 0;
+  const showProjects = (activity?.projects.total ?? 0) > 0;
+
   return (
     <div>
       {/* Page Header with Mobile Navigation */}
@@ -65,7 +68,11 @@ export function ClientDashboard() {
       <div className="p-6 md:p-8 space-y-6">
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${
+        showWebsites && showProjects ? 'md:grid-cols-3' :
+        showWebsites || showProjects ? 'md:grid-cols-2' :
+        'md:grid-cols-1'
+      }`}>
         {/* Tickets Card */}
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
@@ -86,7 +93,8 @@ export function ClientDashboard() {
           </CardContent>
         </Card>
 
-        {/* Websites Card */}
+        {/* Websites Card - only shown when client has websites */}
+        {showWebsites && (
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
           onClick={() => navigate(clientViewToRoute.sites)}
@@ -105,8 +113,10 @@ export function ClientDashboard() {
             </div>
           </CardContent>
         </Card>
+        )}
 
-        {/* Projects Card */}
+        {/* Projects Card - only shown when client has projects */}
+        {showProjects && (
         <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
           onClick={() => navigate(clientViewToRoute.projects)}
@@ -125,6 +135,7 @@ export function ClientDashboard() {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Ticket Status Breakdown */}

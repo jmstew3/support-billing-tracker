@@ -25,7 +25,6 @@ dotenv.config({ path: join(__dirname, '..', '.env') });
  *   ADMIN_PASSWORD       Required — password to set
  *   ADMIN_NAME           Default display name
  */
-
 function parseArgs(argv) {
   const args = { portal: false };
   let i = 2; // skip node + script path
