@@ -34,10 +34,9 @@ export function formatMonthLabel(monthStr: string): string {
  * and plain date (2025-07-01) formats without UTC midnight offset issues.
  */
 function parseDateSafe(dateString: string): Date {
-  if (dateString.includes('T')) {
-    return new Date(dateString);
-  }
-  return new Date(dateString + 'T00:00:00');
+  const dateOnly = dateString.split('T')[0];
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 /**

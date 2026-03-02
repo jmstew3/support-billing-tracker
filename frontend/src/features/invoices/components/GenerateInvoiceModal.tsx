@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, FileText, Calculator, AlertCircle, Headphones, FolderKanban, Server } from 'lucide-react';
+import { X, FileText, AlertCircle, Headphones, FolderKanban, Server } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -391,20 +391,84 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
             </div>
           )}
 
-          {/* Loading */}
-          {loading && (
+          {/* Loading Skeletons */}
+          {supportLoading && (
             <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center text-muted-foreground">
-                  <Calculator className="h-5 w-5 mr-2 animate-pulse" />
-                  Loading billing data...
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Headphones className="h-4 w-4 text-blue-500 animate-pulse" />
+                  <span className="text-muted-foreground">Loading Support Hours...</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="p-3 bg-muted/50 rounded">
+                      <div className="h-3 bg-muted rounded w-20 mb-2 animate-pulse" />
+                      <div className="h-6 bg-muted rounded w-16 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-4 bg-muted/50 rounded animate-pulse" style={{ width: `${85 - i * 15}%` }} />
+                  ))}
                 </div>
               </CardContent>
             </Card>
           )}
 
+          {comprehensiveLoading && (
+            <>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FolderKanban className="h-4 w-4 text-purple-500 animate-pulse" />
+                    <span className="text-muted-foreground">Loading Projects...</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded">
+                        <div className="h-4 bg-muted rounded animate-pulse" style={{ width: `${40 + i * 10}%` }} />
+                        <div className="h-4 bg-muted rounded w-20 animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Server className="h-4 w-4 text-emerald-500 animate-pulse" />
+                    <span className="text-muted-foreground">Loading Hosting...</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-3 bg-muted/50 rounded">
+                        <div className="h-3 bg-muted rounded w-16 mb-2 animate-pulse" />
+                        <div className="h-6 bg-muted rounded w-20 animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Comprehensive billing error */}
+          {comprehensiveError && !comprehensiveLoading && (
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-700 dark:text-yellow-300 text-sm flex items-center gap-1.5">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              Projects/Hosting data unavailable: {comprehensiveError}
+            </div>
+          )}
+
           {/* Support Section */}
-          {!loading && includeSupport && hasSupportData && billingSummary && (
+          {!supportLoading && includeSupport && hasSupportData && billingSummary && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -544,7 +608,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           )}
 
           {/* Projects Section */}
-          {!loading && includeProjects && hasProjectData && monthlyBillingData && (
+          {!comprehensiveLoading && includeProjects && hasProjectData && monthlyBillingData && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -608,7 +672,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           )}
 
           {/* Hosting Section */}
-          {!loading && includeHosting && hasHostingData && monthlyBillingData && (
+          {!comprehensiveLoading && includeHosting && hasHostingData && monthlyBillingData && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">

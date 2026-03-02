@@ -22,6 +22,7 @@ import {
   getInvoice,
   sendInvoice,
   payInvoice,
+  updateInvoice,
   updateInvoiceItem,
   unlinkRequest,
   linkRequest,
@@ -35,6 +36,7 @@ import {
 } from '../../../services/invoiceApi';
 import { formatDateFull } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
+import { DateInput } from '../../../components/shared/DateInput';
 
 interface InvoiceDetailProps {
   invoiceId: number;
@@ -58,6 +60,11 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
   });
   const [unbilledRequests, setUnbilledRequests] = useState<InvoiceRequest[]>([]);
   const [showAddRequests, setShowAddRequests] = useState(false);
+
+  // Period editing state
+  const [editingPeriod, setEditingPeriod] = useState(false);
+  const [editPeriodStart, setEditPeriodStart] = useState('');
+  const [editPeriodEnd, setEditPeriodEnd] = useState('');
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -259,6 +266,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     setEditMode(!editMode);
     setEditingItem(null);
     setShowAddRequests(false);
+    setEditingPeriod(false);
   }
 
   function toggleAddRequests() {
@@ -266,6 +274,29 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       loadUnbilledRequests();
     }
     setShowAddRequests(!showAddRequests);
+  }
+
+  function startEditPeriod() {
+    if (!invoice) return;
+    setEditPeriodStart(invoice.period_start.split('T')[0]);
+    setEditPeriodEnd(invoice.period_end.split('T')[0]);
+    setEditingPeriod(true);
+  }
+
+  async function savePeriod() {
+    if (!invoice || !editPeriodStart || !editPeriodEnd) return;
+    try {
+      const updated = await updateInvoice(invoice.id, {
+        period_start: editPeriodStart,
+        period_end: editPeriodEnd,
+      });
+      setInvoice(updated);
+      setEditingPeriod(false);
+      addToast('success', 'Invoice period updated');
+      onUpdate();
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to update period');
+    }
   }
 
   if (loading) {
@@ -449,7 +480,52 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                   <span className="text-muted-foreground">Due Date:</span>
                   <span>{formatDate(invoice.due_date)}</span>
                   <span className="text-muted-foreground">Period:</span>
-                  <span>{formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}</span>
+                  {editingPeriod ? (
+                    <div className="flex flex-col gap-2 col-span-1">
+                      <div className="flex items-center gap-2">
+                        <DateInput
+                          value={editPeriodStart}
+                          onChange={setEditPeriodStart}
+                          label="Period Start"
+                          className="w-36"
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <DateInput
+                          value={editPeriodEnd}
+                          onChange={setEditPeriodEnd}
+                          label="Period End"
+                          className="w-36"
+                        />
+                        <button
+                          onClick={savePeriod}
+                          className="p-1 hover:bg-muted rounded text-green-600"
+                          title="Save period"
+                        >
+                          <Save className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingPeriod(false)}
+                          className="p-1 hover:bg-muted rounded text-muted-foreground"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
+                      {editMode && (
+                        <button
+                          onClick={startEditPeriod}
+                          className="p-0.5 hover:bg-muted rounded text-yellow-600 ml-1"
+                          title="Edit period"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

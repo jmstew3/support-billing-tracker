@@ -472,7 +472,7 @@ export async function listInvoices(filters = {}) {
 export async function updateInvoice(invoiceId, updates) {
   const connection = await pool.getConnection();
   try {
-    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date'];
+    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date', 'period_start', 'period_end'];
     const updateFields = [];
     const params = [];
 

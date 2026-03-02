@@ -233,7 +233,7 @@ export async function generateInvoice(
  */
 export async function updateInvoice(
   id: number,
-  updates: Partial<Pick<Invoice, 'status' | 'notes' | 'internal_notes' | 'amount_paid' | 'payment_date'>>
+  updates: Partial<Pick<Invoice, 'status' | 'notes' | 'internal_notes' | 'amount_paid' | 'payment_date' | 'period_start' | 'period_end'>>
 ): Promise<Invoice> {
   const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}`, {
     method: 'PUT',
