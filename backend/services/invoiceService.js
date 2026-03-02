@@ -474,9 +474,14 @@ export async function listInvoices(filters = {}) {
 export async function updateInvoice(invoiceId, updates) {
   const connection = await pool.getConnection();
   try {
-    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date', 'period_start', 'period_end'];
+    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date', 'period_start', 'period_end', 'hosting_detail_snapshot'];
     const updateFields = [];
     const params = [];
+
+    // JSON-serialize hosting_detail_snapshot if present and not already a string
+    if (updates.hosting_detail_snapshot !== undefined && typeof updates.hosting_detail_snapshot !== 'string') {
+      updates.hosting_detail_snapshot = JSON.stringify(updates.hosting_detail_snapshot);
+    }
 
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {

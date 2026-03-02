@@ -39,6 +39,7 @@ import {
 import { formatDateFull } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
 import { DateInput } from '../../../components/shared/DateInput';
+import { fetchWebsiteProperties, calculateMonthlyHosting } from '../../../services/hostingApi';
 
 interface InvoiceDetailProps {
   invoiceId: number;
@@ -99,7 +100,34 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     try {
       setLoading(true);
       setError(null);
-      const data = await getInvoice(invoiceId);
+      let data = await getInvoice(invoiceId);
+
+      // Auto-populate hosting detail snapshot if missing
+      const hasHostingItem = data.items?.some((i: InvoiceItem) => i.item_type === 'hosting');
+      if (hasHostingItem && !data.hosting_detail_snapshot) {
+        try {
+          const targetMonth = data.period_start?.slice(0, 7); // YYYY-MM
+          if (targetMonth) {
+            const properties = await fetchWebsiteProperties();
+            const summary = calculateMonthlyHosting(properties, targetMonth);
+            const snapshot = summary.charges.map(h => ({
+              siteName: h.siteName,
+              websiteUrl: h.websiteUrl,
+              billingType: h.billingType,
+              daysActive: h.daysActive,
+              daysInMonth: h.daysInMonth,
+              grossAmount: h.grossAmount,
+              creditApplied: h.creditApplied,
+              creditAmount: h.creditAmount,
+              netAmount: h.netAmount,
+            }));
+            data = await updateInvoice(data.id, { hosting_detail_snapshot: snapshot });
+          }
+        } catch (snapshotErr) {
+          console.warn('Failed to auto-populate hosting snapshot:', snapshotErr);
+        }
+      }
+
       setInvoice(data);
       setPaymentAmount(data.balance_due);
       setPaymentDate(new Date().toISOString().split('T')[0]);
