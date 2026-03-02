@@ -167,6 +167,9 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
   try {
     await connection.beginTransaction();
 
+    const includeSupport = options.includeSupport !== false;
+    const additionalItems = Array.isArray(options.additionalItems) ? options.additionalItems : [];
+
     // Get customer info
     const [customers] = await connection.query(
       'SELECT * FROM customers WHERE id = ?',
@@ -179,30 +182,42 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
 
     const customer = customers[0];
 
-    // Get billing summary using the existing connection (avoids redundant pool connection)
-    const [summaryRequests] = await connection.query(
-      `SELECT * FROM requests
-       WHERE customer_id = ?
-       AND date >= ? AND date <= ?
-       AND status = 'active'
-       AND invoice_id IS NULL
-       AND category NOT IN ('Non-billable', 'Migration')
-       ORDER BY date, time`,
-      [customerId, periodStart, periodEnd]
-    );
+    // Get billing summary (only if support is included)
+    let summary;
+    if (includeSupport) {
+      const [summaryRequests] = await connection.query(
+        `SELECT * FROM requests
+         WHERE customer_id = ?
+         AND date >= ? AND date <= ?
+         AND status = 'active'
+         AND invoice_id IS NULL
+         AND category NOT IN ('Non-billable', 'Migration')
+         ORDER BY date, time`,
+        [customerId, periodStart, periodEnd]
+      );
 
-    const billing = calculateBilling(summaryRequests, periodStart);
-    const summary = {
-      customerId,
-      periodStart,
-      periodEnd,
-      requestCount: summaryRequests.length,
-      requests: summaryRequests,
-      ...billing
-    };
+      const billing = calculateBilling(summaryRequests, periodStart);
+      summary = {
+        customerId,
+        periodStart,
+        periodEnd,
+        requestCount: summaryRequests.length,
+        requests: summaryRequests,
+        ...billing
+      };
+    } else {
+      summary = {
+        customerId, periodStart, periodEnd,
+        requestCount: 0, requests: [],
+        totalHours: 0, billableHours: 0, freeHoursApplied: 0,
+        emergencyHours: 0, sameDayHours: 0, regularHours: 0,
+        billableEmergencyHours: 0, billableSameDayHours: 0, billableRegularHours: 0,
+        emergencyAmount: 0, sameDayAmount: 0, regularAmount: 0, subtotal: 0
+      };
+    }
 
-    if (summary.requestCount === 0) {
-      throw new Error('No billable requests found for this period');
+    if (summary.requestCount === 0 && additionalItems.length === 0) {
+      throw new Error('No billable items found for this period');
     }
 
     // Generate invoice number
@@ -214,10 +229,14 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
       Date.now() + (customer.payment_terms * 24 * 60 * 60 * 1000)
     ).toISOString().split('T')[0];
 
+    // Calculate combined subtotal
+    const additionalSubtotal = additionalItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+    const combinedSubtotal = summary.subtotal + additionalSubtotal;
+
     // Calculate tax (default 0)
     const taxRate = options.taxRate || 0;
-    const taxAmount = summary.subtotal * taxRate;
-    const total = summary.subtotal + taxAmount;
+    const taxAmount = combinedSubtotal * taxRate;
+    const total = combinedSubtotal + taxAmount;
 
     // Create invoice
     const [invoiceResult] = await connection.query(
@@ -226,7 +245,7 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
         status, subtotal, tax_rate, tax_amount, total, notes)
        VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)`,
       [customerId, invoiceNumber, periodStart, periodEnd, invoiceDate, dueDate,
-       summary.subtotal, taxRate, taxAmount, total, options.notes || null]
+       combinedSubtotal, taxRate, taxAmount, total, options.notes || null]
     );
 
     const invoiceId = invoiceResult.insertId;
@@ -235,8 +254,8 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
     const lineItems = [];
     let sortOrder = 1;
 
-    // Support hours line items per tier
-    if (summary.billableHours > 0 || summary.freeHoursApplied > 0) {
+    // Support hours line items per tier (only if support included)
+    if (includeSupport && (summary.billableHours > 0 || summary.freeHoursApplied > 0)) {
       // Emergency hours
       if (summary.billableEmergencyHours > 0) {
         const [itemResult] = await connection.query(
@@ -288,13 +307,27 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
       }
     }
 
-    // Link requests to invoice
-    const requestIds = summary.requests.map(r => r.id);
-    if (requestIds.length > 0) {
+    // Insert additional line items (projects, hosting)
+    for (const item of additionalItems) {
+      const itemSortOrder = item.sort_order || sortOrder++;
       await connection.query(
-        `UPDATE requests SET invoice_id = ? WHERE id IN (?)`,
-        [invoiceId, requestIds]
+        `INSERT INTO invoice_items
+         (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [invoiceId, item.item_type, item.description,
+         item.quantity || 1, item.unit_price || item.amount, item.amount, itemSortOrder]
       );
+    }
+
+    // Link requests to invoice (only if support included)
+    if (includeSupport) {
+      const requestIds = summary.requests.map(r => r.id);
+      if (requestIds.length > 0) {
+        await connection.query(
+          `UPDATE requests SET invoice_id = ? WHERE id IN (?)`,
+          [invoiceId, requestIds]
+        );
+      }
     }
 
     await connection.commit();

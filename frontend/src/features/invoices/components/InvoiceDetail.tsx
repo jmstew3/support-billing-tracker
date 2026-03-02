@@ -457,104 +457,172 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
             {/* Line Items */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3">Line Items</h3>
-              <div className="border border-border rounded overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-1/2">Description</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      {editMode && <TableHead className="w-20 text-center">Actions</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoice.items?.filter(item => parseFloat(item.amount) > 0).map((item) => (
-                      <TableRow key={item.id}>
-                        {editingItem === item.id ? (
-                          <>
-                            <TableCell>
-                              <input
-                                type="text"
-                                value={editValues.description}
-                                onChange={(e) => setEditValues(prev => ({ ...prev, description: e.target.value }))}
-                                className="w-full px-2 py-1 bg-background border border-border rounded text-sm"
-                              />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={editValues.quantity}
-                                onChange={(e) => setEditValues(prev => ({ ...prev, quantity: e.target.value }))}
-                                className="w-20 px-2 py-1 bg-background border border-border rounded text-sm text-right"
-                              />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={editValues.unit_price}
-                                onChange={(e) => setEditValues(prev => ({ ...prev, unit_price: e.target.value }))}
-                                className="w-24 px-2 py-1 bg-background border border-border rounded text-sm text-right"
-                              />
-                            </TableCell>
-                            <TableCell className="text-right font-medium text-muted-foreground">
-                              {formatCurrency((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0))}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() => saveEditItem(item.id)}
-                                  className="p-1 hover:bg-muted rounded text-green-600"
-                                  title="Save"
-                                >
-                                  <Save className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={cancelEditItem}
-                                  className="p-1 hover:bg-muted rounded text-muted-foreground"
-                                  title="Cancel"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                            <TableCell>{item.description}</TableCell>
-                            <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
-                            <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
-                            {editMode && (
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  <button
-                                    onClick={() => startEditItem(item)}
-                                    className="p-1 hover:bg-muted rounded text-yellow-600"
-                                    title="Edit line item"
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </TableCell>
-                            )}
-                          </>
-                        )}
-                      </TableRow>
-                    ))}
-                    {/* Show free credits applied as info line */}
-                    {invoice.items?.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'other').map((item) => (
-                      <TableRow key={item.id} className="bg-green-500/5">
-                        <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
-                          {item.description}
+              {(() => {
+                const items = invoice.items || [];
+                const billableItems = items.filter(item => parseFloat(item.amount) > 0);
+                const creditItems = items.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'other');
+                const freeProjectItems = items.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'project');
+                const itemTypes = new Set(billableItems.map(i => i.item_type));
+                const hasMultipleTypes = itemTypes.size > 1 || (itemTypes.size === 1 && freeProjectItems.length > 0);
+
+                const sectionLabels: Record<string, string> = {
+                  support: 'Support',
+                  project: 'Projects',
+                  hosting: 'Hosting',
+                  other: 'Other',
+                };
+
+                // Group items by type, preserving sort_order within groups
+                const typeOrder = ['support', 'project', 'hosting', 'other'] as const;
+                const groupedItems = typeOrder
+                  .map(type => ({
+                    type,
+                    label: sectionLabels[type],
+                    items: [...billableItems.filter(i => i.item_type === type),
+                            ...(type === 'project' ? freeProjectItems : [])],
+                  }))
+                  .filter(g => g.items.length > 0);
+
+                const renderItemRow = (item: InvoiceItem) => (
+                  <TableRow key={item.id} className={parseFloat(item.amount) === 0 ? 'bg-green-500/5' : ''}>
+                    {editingItem === item.id ? (
+                      <>
+                        <TableCell>
+                          <input
+                            type="text"
+                            value={editValues.description}
+                            onChange={(e) => setEditValues(prev => ({ ...prev, description: e.target.value }))}
+                            className="w-full px-2 py-1 bg-background border border-border rounded text-sm"
+                          />
                         </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                        <TableCell className="text-right">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editValues.quantity}
+                            onChange={(e) => setEditValues(prev => ({ ...prev, quantity: e.target.value }))}
+                            className="w-20 px-2 py-1 bg-background border border-border rounded text-sm text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editValues.unit_price}
+                            onChange={(e) => setEditValues(prev => ({ ...prev, unit_price: e.target.value }))}
+                            className="w-24 px-2 py-1 bg-background border border-border rounded text-sm text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-muted-foreground">
+                          {formatCurrency((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => saveEditItem(item.id)}
+                              className="p-1 hover:bg-muted rounded text-green-600"
+                              title="Save"
+                            >
+                              <Save className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={cancelEditItem}
+                              className="p-1 hover:bg-muted rounded text-muted-foreground"
+                              title="Cancel"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell>
+                          {item.description}
+                          {parseFloat(item.amount) === 0 && item.item_type === 'project' && (
+                            <span className="ml-2 text-xs text-green-600 dark:text-green-400">(Free Credit)</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {parseFloat(item.amount) === 0 && item.item_type === 'project'
+                            ? '-'
+                            : parseFloat(item.quantity).toFixed(2)
+                          }
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {parseFloat(item.amount) === 0 && item.item_type === 'project'
+                            ? '-'
+                            : formatCurrency(item.unit_price)
+                          }
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${
+                          parseFloat(item.amount) === 0 ? 'text-green-600 dark:text-green-400' : ''
+                        }`}>
+                          {formatCurrency(item.amount)}
+                        </TableCell>
+                        {editMode && (
+                          <TableCell>
+                            <div className="flex items-center justify-center">
+                              {parseFloat(item.amount) > 0 && (
+                                <button
+                                  onClick={() => startEditItem(item)}
+                                  className="p-1 hover:bg-muted rounded text-yellow-600"
+                                  title="Edit line item"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                      </>
+                    )}
+                  </TableRow>
+                );
+
+                return (
+                  <div className="border border-border rounded overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-1/2">Description</TableHead>
+                          <TableHead className="text-right">Quantity</TableHead>
+                          <TableHead className="text-right">Unit Price</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          {editMode && <TableHead className="w-20 text-center">Actions</TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {hasMultipleTypes ? (
+                          groupedItems.map((group) => (
+                            <>{/* Section header + items */}
+                              <TableRow key={`header-${group.type}`} className="bg-muted/30">
+                                <TableCell
+                                  colSpan={editMode ? 5 : 4}
+                                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2"
+                                >
+                                  {group.label}
+                                </TableCell>
+                              </TableRow>
+                              {group.items.map(renderItemRow)}
+                            </>
+                          ))
+                        ) : (
+                          billableItems.map(renderItemRow)
+                        )}
+                        {/* Show free credits applied as info line (support credits) */}
+                        {creditItems.map((item) => (
+                          <TableRow key={item.id} className="bg-green-500/5">
+                            <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
+                              {item.description}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Totals */}

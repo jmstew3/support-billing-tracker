@@ -1,10 +1,11 @@
 /**
  * Generate Invoice Modal Component
  * Modal for generating new invoices from billing summary
+ * Supports three revenue streams: Support, Projects, and Hosting
  */
 
-import { useState, useEffect } from 'react';
-import { X, FileText, Calculator, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, FileText, Calculator, AlertCircle, Headphones, FolderKanban, Server } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -18,9 +19,12 @@ import {
   listCustomers,
   getBillingSummary,
   generateInvoice,
+  buildAdditionalLineItems,
   type Customer,
   type BillingSummary,
 } from '../../../services/invoiceApi';
+import { generateComprehensiveBilling } from '../../../services/billingApi';
+import type { MonthlyBillingSummary } from '../../../types/billing';
 import { formatDate } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
 
@@ -36,10 +40,16 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
+  const [monthlyBillingData, setMonthlyBillingData] = useState<MonthlyBillingSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+
+  // Section toggles
+  const [includeSupport, setIncludeSupport] = useState(true);
+  const [includeProjects, setIncludeProjects] = useState(true);
+  const [includeHosting, setIncludeHosting] = useState(true);
 
   // Set default period to current month
   useEffect(() => {
@@ -47,11 +57,9 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    // First day of current month
     const firstDay = new Date(year, month, 1);
     setPeriodStart(firstDay.toISOString().split('T')[0]);
 
-    // Last day of current month
     const lastDay = new Date(year, month + 1, 0);
     setPeriodEnd(lastDay.toISOString().split('T')[0]);
   }, [isOpen]);
@@ -67,7 +75,6 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     try {
       const data = await listCustomers();
       setCustomers(data);
-      // Auto-select if only one customer
       if (data.length === 1) {
         setSelectedCustomer(data[0].id);
       }
@@ -76,30 +83,78 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     }
   }
 
-  // Load billing summary when customer and period change
+  // Load billing data when customer and period change
   useEffect(() => {
     if (selectedCustomer && periodStart && periodEnd) {
-      loadBillingSummary();
+      loadAllBillingData();
     } else {
       setBillingSummary(null);
+      setMonthlyBillingData(null);
     }
   }, [selectedCustomer, periodStart, periodEnd]);
 
-  async function loadBillingSummary() {
+  async function loadAllBillingData() {
     if (!selectedCustomer || !periodStart || !periodEnd) return;
 
     try {
       setLoading(true);
       setError(null);
-      const summary = await getBillingSummary(selectedCustomer as number, periodStart, periodEnd);
-      setBillingSummary(summary);
+
+      // Fetch both support summary and comprehensive billing in parallel
+      const [supportSummary, comprehensiveBilling] = await Promise.all([
+        getBillingSummary(selectedCustomer as number, periodStart, periodEnd),
+        generateComprehensiveBilling(),
+      ]);
+
+      setBillingSummary(supportSummary);
+
+      // Find the matching month from comprehensive billing
+      // Use the period start to determine the target month
+      const targetMonth = periodStart.substring(0, 7); // YYYY-MM
+      const matchingMonth = comprehensiveBilling.monthlyBreakdown.find(
+        (m) => m.month === targetMonth
+      );
+      setMonthlyBillingData(matchingMonth || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load billing summary');
+      setError(err instanceof Error ? err.message : 'Failed to load billing data');
       setBillingSummary(null);
+      setMonthlyBillingData(null);
     } finally {
       setLoading(false);
     }
   }
+
+  // Computed totals
+  const supportTotal = useMemo(() => {
+    if (!includeSupport || !billingSummary) return 0;
+    return billingSummary.subtotal;
+  }, [includeSupport, billingSummary]);
+
+  const projectsTotal = useMemo(() => {
+    if (!includeProjects || !monthlyBillingData) return 0;
+    return monthlyBillingData.projectsRevenue;
+  }, [includeProjects, monthlyBillingData]);
+
+  const hostingTotal = useMemo(() => {
+    if (!includeHosting || !monthlyBillingData) return 0;
+    return monthlyBillingData.hostingRevenue;
+  }, [includeHosting, monthlyBillingData]);
+
+  const combinedTotal = supportTotal + projectsTotal + hostingTotal;
+
+  const hasAnyData = useMemo(() => {
+    const hasSupportData = billingSummary && billingSummary.requestCount > 0;
+    const hasProjectData = monthlyBillingData && monthlyBillingData.projectsCount > 0;
+    const hasHostingData = monthlyBillingData && monthlyBillingData.hostingSitesCount > 0;
+    return hasSupportData || hasProjectData || hasHostingData;
+  }, [billingSummary, monthlyBillingData]);
+
+  const hasSelectedData = useMemo(() => {
+    if (includeSupport && billingSummary && billingSummary.requestCount > 0) return true;
+    if (includeProjects && monthlyBillingData && monthlyBillingData.projectsCount > 0) return true;
+    if (includeHosting && monthlyBillingData && monthlyBillingData.hostingSitesCount > 0) return true;
+    return false;
+  }, [includeSupport, includeProjects, includeHosting, billingSummary, monthlyBillingData]);
 
   async function handleGenerate() {
     if (!selectedCustomer || !periodStart || !periodEnd) {
@@ -107,8 +162,8 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
       return;
     }
 
-    if (!billingSummary || billingSummary.requestCount === 0) {
-      setError('No billable requests found for this period');
+    if (!hasSelectedData) {
+      setError('No billable items selected for this period');
       return;
     }
 
@@ -116,11 +171,18 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
       setGenerating(true);
       setError(null);
 
+      // Build additional line items from comprehensive billing data
+      const additionalItems = monthlyBillingData
+        ? buildAdditionalLineItems(monthlyBillingData, includeProjects, includeHosting)
+        : [];
+
       await generateInvoice({
         customerId: selectedCustomer as number,
         periodStart,
         periodEnd,
         notes: notes || undefined,
+        includeSupport,
+        additionalItems: additionalItems.length > 0 ? additionalItems : undefined,
       });
 
       onSuccess();
@@ -133,6 +195,10 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
   }
 
   if (!isOpen) return null;
+
+  const hasSupportData = billingSummary && billingSummary.requestCount > 0;
+  const hasProjectData = monthlyBillingData && monthlyBillingData.projectsCount > 0;
+  const hasHostingData = monthlyBillingData && monthlyBillingData.hostingSitesCount > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -220,22 +286,120 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
             </CardContent>
           </Card>
 
-          {/* Billing Summary */}
-          {loading ? (
+          {/* Section Toggles */}
+          {!loading && hasAnyData && (
+            <div className="flex flex-wrap gap-2">
+              <label
+                className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer transition-colors text-sm ${
+                  includeSupport && hasSupportData
+                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300'
+                    : 'border-border text-muted-foreground'
+                } ${!hasSupportData ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeSupport}
+                  onChange={(e) => setIncludeSupport(e.target.checked)}
+                  disabled={!hasSupportData}
+                  className="sr-only"
+                />
+                <Headphones className="h-4 w-4" />
+                <span>Support Hours</span>
+                {hasSupportData && (
+                  <span className="text-xs opacity-75">({formatCurrency(billingSummary!.subtotal)})</span>
+                )}
+                <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                  includeSupport && hasSupportData ? 'bg-blue-500 border-blue-500' : 'border-current'
+                }`}>
+                  {includeSupport && hasSupportData && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </label>
+
+              <label
+                className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer transition-colors text-sm ${
+                  includeProjects && hasProjectData
+                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300'
+                    : 'border-border text-muted-foreground'
+                } ${!hasProjectData ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeProjects}
+                  onChange={(e) => setIncludeProjects(e.target.checked)}
+                  disabled={!hasProjectData}
+                  className="sr-only"
+                />
+                <FolderKanban className="h-4 w-4" />
+                <span>Projects</span>
+                {hasProjectData && (
+                  <span className="text-xs opacity-75">({formatCurrency(monthlyBillingData!.projectsRevenue)})</span>
+                )}
+                <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                  includeProjects && hasProjectData ? 'bg-purple-500 border-purple-500' : 'border-current'
+                }`}>
+                  {includeProjects && hasProjectData && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </label>
+
+              <label
+                className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer transition-colors text-sm ${
+                  includeHosting && hasHostingData
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                    : 'border-border text-muted-foreground'
+                } ${!hasHostingData ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeHosting}
+                  onChange={(e) => setIncludeHosting(e.target.checked)}
+                  disabled={!hasHostingData}
+                  className="sr-only"
+                />
+                <Server className="h-4 w-4" />
+                <span>Hosting</span>
+                {hasHostingData && (
+                  <span className="text-xs opacity-75">({formatCurrency(monthlyBillingData!.hostingRevenue)})</span>
+                )}
+                <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                  includeHosting && hasHostingData ? 'bg-emerald-500 border-emerald-500' : 'border-current'
+                }`}>
+                  {includeHosting && hasHostingData && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && (
             <Card>
               <CardContent className="py-8">
                 <div className="flex items-center justify-center text-muted-foreground">
                   <Calculator className="h-5 w-5 mr-2 animate-pulse" />
-                  Loading billing summary...
+                  Loading billing data...
                 </div>
               </CardContent>
             </Card>
-          ) : billingSummary ? (
+          )}
+
+          {/* Support Section */}
+          {!loading && includeSupport && hasSupportData && billingSummary && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  Billing Summary
+                  <Headphones className="h-4 w-4 text-blue-500" />
+                  Support Hours
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -367,17 +531,152 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                 )}
               </CardContent>
             </Card>
-          ) : selectedCustomer && periodStart && periodEnd ? (
+          )}
+
+          {/* Projects Section */}
+          {!loading && includeProjects && hasProjectData && monthlyBillingData && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FolderKanban className="h-4 w-4 text-purple-500" />
+                  Projects
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({monthlyBillingData.projectsCount} project{monthlyBillingData.projectsCount !== 1 ? 's' : ''})
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border border-border rounded overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Project Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {monthlyBillingData.projectDetails.map((project) => (
+                        <TableRow
+                          key={project.id}
+                          className={project.isFreeCredit ? 'bg-green-500/5' : ''}
+                        >
+                          <TableCell className="text-sm">
+                            {project.name}
+                            {project.isFreeCredit && (
+                              <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-green-500/10 text-green-600 dark:text-green-400">
+                                Free Credit
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">{project.category.replace(/_/g, ' ')}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {project.isFreeCredit ? (
+                              <span className="text-green-600 dark:text-green-400">
+                                $0.00
+                                <span className="text-xs ml-1 opacity-75">
+                                  (was {formatCurrency(project.originalAmount ?? 0)})
+                                </span>
+                              </span>
+                            ) : (
+                              formatCurrency(project.amount)
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/50 font-semibold">
+                        <TableCell colSpan={2}>Subtotal</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(monthlyBillingData.projectsRevenue)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Hosting Section */}
+          {!loading && includeHosting && hasHostingData && monthlyBillingData && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Server className="h-4 w-4 text-emerald-500" />
+                  Turbo Hosting
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({monthlyBillingData.hostingSitesCount} site{monthlyBillingData.hostingSitesCount !== 1 ? 's' : ''})
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  <div className="p-3 bg-muted/50 rounded">
+                    <div className="text-sm text-muted-foreground">Gross MRR</div>
+                    <div className="text-lg font-semibold">{formatCurrency(monthlyBillingData.hostingGross)}</div>
+                  </div>
+                  <div className="p-3 bg-muted/50 rounded">
+                    <div className="text-sm text-muted-foreground">Net MRR</div>
+                    <div className="text-lg font-semibold">{formatCurrency(monthlyBillingData.hostingRevenue)}</div>
+                  </div>
+                  {monthlyBillingData.hostingCreditsApplied > 0 && (
+                    <div className="p-3 bg-green-500/5 rounded">
+                      <div className="text-sm text-green-600 dark:text-green-400">Credits Applied</div>
+                      <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                        {monthlyBillingData.hostingCreditsApplied} free site{monthlyBillingData.hostingCreditsApplied !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Combined Total Preview */}
+          {!loading && hasSelectedData && (
+            <Card className="border-primary/30">
+              <CardContent className="py-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    {includeSupport && hasSupportData && (
+                      <span className="flex items-center gap-1.5">
+                        <Headphones className="h-3.5 w-3.5 text-blue-500" />
+                        Support: <strong>{formatCurrency(supportTotal)}</strong>
+                      </span>
+                    )}
+                    {includeProjects && hasProjectData && (
+                      <span className="flex items-center gap-1.5">
+                        <FolderKanban className="h-3.5 w-3.5 text-purple-500" />
+                        Projects: <strong>{formatCurrency(projectsTotal)}</strong>
+                      </span>
+                    )}
+                    {includeHosting && hasHostingData && (
+                      <span className="flex items-center gap-1.5">
+                        <Server className="h-3.5 w-3.5 text-emerald-500" />
+                        Hosting: <strong>{formatCurrency(hostingTotal)}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-lg font-bold">
+                    Total: {formatCurrency(combinedTotal)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No data message */}
+          {!loading && !hasAnyData && selectedCustomer && periodStart && periodEnd && (
             <Card>
               <CardContent className="py-8">
                 <div className="flex flex-col items-center justify-center text-muted-foreground">
                   <AlertCircle className="h-8 w-8 mb-2" />
-                  <p>No billable requests found for this period.</p>
+                  <p>No billable data found for this period.</p>
                   <p className="text-sm">Try selecting a different date range.</p>
                 </div>
               </CardContent>
             </Card>
-          ) : null}
+          )}
 
           {/* Error */}
           {error && (
@@ -397,7 +696,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           </button>
           <button
             onClick={handleGenerate}
-            disabled={generating || !billingSummary || billingSummary.requestCount === 0}
+            disabled={generating || !hasSelectedData}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             {generating ? (

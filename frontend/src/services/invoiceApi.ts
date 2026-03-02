@@ -103,6 +103,15 @@ export interface BillingSummary {
   subtotal: number;
 }
 
+export interface AdditionalLineItem {
+  item_type: 'project' | 'hosting';
+  description: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  sort_order?: number;
+}
+
 export interface GenerateInvoiceParams {
   customerId: number;
   periodStart: string;
@@ -111,6 +120,8 @@ export interface GenerateInvoiceParams {
   dueDate?: string;
   taxRate?: number;
   notes?: string;
+  additionalItems?: AdditionalLineItem[];
+  includeSupport?: boolean;
 }
 
 export interface InvoiceFilters {
@@ -383,6 +394,67 @@ export function downloadFile(content: string, filename: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+// =====================================================
+// LINE ITEM BUILDER
+// =====================================================
+
+import type { MonthlyBillingSummary } from '../types/billing';
+
+/**
+ * Build additional line items from comprehensive billing data
+ * Creates pre-computed project and hosting line items for invoice generation
+ */
+export function buildAdditionalLineItems(
+  monthData: MonthlyBillingSummary,
+  includeProjects: boolean,
+  includeHosting: boolean
+): AdditionalLineItem[] {
+  const items: AdditionalLineItem[] = [];
+  let sortOrder = 50; // Start after support items
+
+  // Project line items
+  if (includeProjects && monthData.projectDetails.length > 0) {
+    for (const project of monthData.projectDetails) {
+      const desc = project.isFreeCredit
+        ? `${project.name} (Free Credit)`
+        : project.name;
+
+      items.push({
+        item_type: 'project',
+        description: desc,
+        quantity: 1,
+        unit_price: project.isFreeCredit ? (project.originalAmount ?? 0) : project.amount,
+        amount: project.amount, // 0 for free-credited projects
+        sort_order: sortOrder++,
+      });
+    }
+  }
+
+  // Hosting line item (consolidated)
+  if (includeHosting && monthData.hostingSitesCount > 0) {
+    const [year, monthNum] = monthData.month.split('-');
+    const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleString('en-US', { month: 'long' });
+
+    let desc = `Turbo Hosting - ${monthData.hostingSitesCount} site${monthData.hostingSitesCount !== 1 ? 's' : ''} (${monthName} ${year})`;
+    if (monthData.hostingCreditsApplied > 0) {
+      desc += ` [${monthData.hostingCreditsApplied} free credit${monthData.hostingCreditsApplied !== 1 ? 's' : ''} applied]`;
+    }
+
+    items.push({
+      item_type: 'hosting',
+      description: desc,
+      quantity: monthData.hostingSitesCount,
+      unit_price: monthData.hostingSitesCount > 0
+        ? Math.round((monthData.hostingRevenue / monthData.hostingSitesCount) * 100) / 100
+        : 0,
+      amount: monthData.hostingRevenue,
+      sort_order: sortOrder++,
+    });
+  }
+
+  return items;
+}
+
 export default {
   listCustomers,
   getCustomer,
@@ -396,5 +468,6 @@ export default {
   payInvoice,
   exportInvoiceCSV,
   exportInvoiceJSON,
-  downloadFile
+  downloadFile,
+  buildAdditionalLineItems
 };

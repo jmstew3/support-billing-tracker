@@ -152,6 +152,32 @@ router.post('/generate', async (req, res) => {
       });
     }
 
+    // Validate additionalItems if present
+    if (options.additionalItems !== undefined) {
+      if (!Array.isArray(options.additionalItems)) {
+        return res.status(400).json({ error: 'additionalItems must be an array' });
+      }
+      const validTypes = ['project', 'hosting'];
+      for (let i = 0; i < options.additionalItems.length; i++) {
+        const item = options.additionalItems[i];
+        if (!validTypes.includes(item.item_type)) {
+          return res.status(400).json({
+            error: `additionalItems[${i}].item_type must be one of: ${validTypes.join(', ')}`
+          });
+        }
+        if (typeof item.amount !== 'number' || item.amount < 0) {
+          return res.status(400).json({
+            error: `additionalItems[${i}].amount must be a non-negative number`
+          });
+        }
+        if (!item.description) {
+          return res.status(400).json({
+            error: `additionalItems[${i}].description is required`
+          });
+        }
+      }
+    }
+
     const invoice = await generateInvoice(customerId, periodStart, periodEnd, options);
     res.status(201).json(invoice);
   } catch (error) {
