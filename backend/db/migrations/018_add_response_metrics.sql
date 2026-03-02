@@ -11,16 +11,5 @@ SET response_count = COALESCE(JSON_UNQUOTE(JSON_EXTRACT(raw_data, '$.response_co
     total_close_time = NULLIF(JSON_UNQUOTE(JSON_EXTRACT(raw_data, '$.total_close_time')), 'null')
 WHERE raw_data IS NOT NULL;
 
--- Recalculate estimated_hours for existing fluent-sourced requests
--- Formula: response_count * 0.25 * urgency_multiplier, clamped to [0.25, 10.0]
-UPDATE requests r
-JOIN fluent_tickets ft ON ft.request_id = r.id
-SET r.estimated_hours = GREATEST(0.25, LEAST(10.0,
-  COALESCE(ft.response_count, 1) * 0.25 *
-  CASE r.urgency
-    WHEN 'HIGH' THEN 1.5
-    WHEN 'MEDIUM' THEN 1.0
-    ELSE 0.75
-  END
-))
-WHERE r.source = 'fluent';
+-- Note: estimated_hours backfill removed — only new tickets get formula-based hours.
+-- Existing tickets preserve manually-logged hours.

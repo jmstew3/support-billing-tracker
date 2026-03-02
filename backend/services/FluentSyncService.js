@@ -241,7 +241,7 @@ class FluentSyncService {
         description: requestData.description,
         urgency: requestData.urgency,
         effort: requestData.effort,
-        estimated_hours: requestData.estimated_hours,
+        // Note: estimated_hours intentionally omitted on update to preserve manually-logged hours
         source: requestData.source,
         website_url: requestData.website_url,
         status: 'active' // Re-activate in case it was previously deleted (reopened then re-closed)
