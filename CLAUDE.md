@@ -82,6 +82,7 @@ VITE_FLUENT_API_URL=https://support.peakonedigital.com
 VITE_FLUENT_DATE_FILTER=2025-10-11
 
 # Database
+DB_NAME=velocity_billing
 MYSQL_PORT=3307
 ```
 
