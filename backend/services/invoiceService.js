@@ -774,8 +774,10 @@ export async function exportInvoiceCSV(invoiceId) {
 
   // --- Header ---
   lines.push('INVOICE STATEMENT');
+  lines.push('PeakOne Digital');
   lines.push('========================================');
   lines.push(`Invoice Number,${invoice.invoice_number}`);
+  lines.push(`From,PeakOne Digital`);
   lines.push(`Customer,${invoice.customer_name}`);
   lines.push(`Invoice Date,${fmtDate(invoice.invoice_date)}`);
   lines.push(`Due Date,${fmtDate(invoice.due_date)}`);
