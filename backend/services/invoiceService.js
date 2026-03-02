@@ -169,6 +169,7 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
 
     const includeSupport = options.includeSupport !== false;
     const additionalItems = Array.isArray(options.additionalItems) ? options.additionalItems : [];
+    const hostingDetailSnapshot = options.hostingDetailSnapshot || null;
 
     // Get customer info
     const [customers] = await connection.query(
@@ -242,10 +243,11 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
     const [invoiceResult] = await connection.query(
       `INSERT INTO invoices
        (customer_id, invoice_number, period_start, period_end, invoice_date, due_date,
-        status, subtotal, tax_rate, tax_amount, total, notes)
-       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?)`,
+        status, subtotal, tax_rate, tax_amount, total, notes, hosting_detail_snapshot)
+       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?)`,
       [customerId, invoiceNumber, periodStart, periodEnd, invoiceDate, dueDate,
-       combinedSubtotal, taxRate, taxAmount, total, options.notes || null]
+       combinedSubtotal, taxRate, taxAmount, total, options.notes || null,
+       hostingDetailSnapshot ? JSON.stringify(hostingDetailSnapshot) : null]
     );
 
     const invoiceId = invoiceResult.insertId;
@@ -777,6 +779,99 @@ export async function exportInvoiceCSV(invoiceId) {
 }
 
 /**
+ * Export invoice as QBO-compatible flat CSV
+ * Flat format with repeated invoice header per line — directly importable into QuickBooks Online
+ */
+export async function exportInvoiceQBOCSV(invoiceId) {
+  const invoice = await getInvoice(invoiceId);
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  // Format dates as MM/DD/YYYY for QBO
+  const fmtDate = (d) => {
+    const [y, m, day] = d.split('T')[0].split('-');
+    return `${m}/${day}/${y}`;
+  };
+
+  const invNo = invoice.invoice_number;
+  const customer = invoice.customer_name;
+  const invDate = fmtDate(invoice.invoice_date);
+  const dueDate = fmtDate(invoice.due_date);
+
+  const lines = [];
+  lines.push('InvoiceNo,Customer,InvoiceDate,DueDate,ItemDescription,ItemQuantity,ItemRate,ItemAmount');
+
+  const billableItems = (invoice.items || []).filter(item => parseFloat(item.amount) > 0);
+  for (const item of billableItems) {
+    const desc = `"${item.description.replace(/"/g, '""')}"`;
+    const qty = parseFloat(item.quantity);
+    const rate = parseFloat(item.unit_price).toFixed(2);
+    const amt = parseFloat(item.amount).toFixed(2);
+    lines.push(`${invNo},${customer},${invDate},${dueDate},${desc},${qty},${rate},${amt}`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Export hosting detail CSV from stored snapshot
+ * Per-site breakdown for client transparency, sent as an attachment alongside the invoice
+ */
+export async function exportHostingDetailCSV(invoiceId) {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query(
+      'SELECT hosting_detail_snapshot, invoice_number FROM invoices WHERE id = ?',
+      [invoiceId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Invoice not found');
+    }
+
+    const snapshot = rows[0].hosting_detail_snapshot;
+    if (!snapshot) {
+      throw new Error('No hosting detail data stored for this invoice');
+    }
+
+    const details = typeof snapshot === 'string' ? JSON.parse(snapshot) : snapshot;
+
+    const lines = [];
+    lines.push('Site Name,Website URL,Billing Type,Days Active,Days in Month,Gross Amount,Credit Applied,Net Amount');
+
+    let totalGross = 0;
+    let totalNet = 0;
+    let totalCredits = 0;
+    let totalSites = 0;
+
+    for (const site of details) {
+      const name = `"${(site.siteName || '').replace(/"/g, '""')}"`;
+      const url = site.websiteUrl || '';
+      const billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const gross = parseFloat(site.grossAmount) || 0;
+      const net = parseFloat(site.netAmount) || 0;
+      const credit = site.creditApplied ? 'Yes' : 'No';
+
+      lines.push(`${name},${url},${billingLabel},${site.daysActive},${site.daysInMonth},$${gross.toFixed(2)},${credit},$${net.toFixed(2)}`);
+
+      totalGross += gross;
+      totalNet += net;
+      if (site.creditApplied) totalCredits++;
+      totalSites++;
+    }
+
+    // Summary row
+    lines.push('');
+    lines.push(`Total: ${totalSites} sites,,,,,$${totalGross.toFixed(2)},${totalCredits} credit${totalCredits !== 1 ? 's' : ''},$${totalNet.toFixed(2)}`);
+
+    return lines.join('\n');
+  } finally {
+    connection.release();
+  }
+}
+
+/**
  * Export invoice to JSON format (for QuickBooks import)
  */
 export async function exportInvoiceJSON(invoiceId) {
@@ -862,6 +957,8 @@ export default {
   getUnbilledRequests,
   deleteInvoice,
   exportInvoiceCSV,
+  exportInvoiceQBOCSV,
+  exportHostingDetailCSV,
   exportInvoiceJSON,
   listCustomers,
   getCustomer
