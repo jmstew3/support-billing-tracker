@@ -373,7 +373,7 @@ export async function getInvoice(invoiceId) {
 
     // Get linked requests
     const [requests] = await connection.query(
-      `SELECT id, date, time, description, category, urgency, estimated_hours
+      `SELECT id, date, time, description, category, urgency, estimated_hours, website_url
        FROM requests WHERE invoice_id = ?
        ORDER BY date, time`,
       [invoiceId]
@@ -740,7 +740,7 @@ async function recalculateInvoiceTotals(connection, invoiceId) {
 }
 
 /**
- * Export invoice to CSV format
+ * Export invoice to CSV format (accounting-style statement with category sections)
  */
 export async function exportInvoiceCSV(invoiceId) {
   const invoice = await getInvoice(invoiceId);
@@ -748,33 +748,178 @@ export async function exportInvoiceCSV(invoiceId) {
     throw new Error('Invoice not found');
   }
 
-  const lines = [];
+  const urgencyMap = {
+    'HIGH': { label: 'Emergency', rate: 250 },
+    'MEDIUM': { label: 'Same Day', rate: 175 },
+    'LOW': { label: 'Regular', rate: 150 }
+  };
 
-  // Header
-  lines.push('Invoice Export');
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const lines = [];
+  const categorySubtotals = [];
+
+  // --- Header ---
+  lines.push('INVOICE STATEMENT');
+  lines.push('========================================');
   lines.push(`Invoice Number,${invoice.invoice_number}`);
   lines.push(`Customer,${invoice.customer_name}`);
-  lines.push(`Invoice Date,${invoice.invoice_date}`);
-  lines.push(`Due Date,${invoice.due_date}`);
-  lines.push(`Period,${invoice.period_start} to ${invoice.period_end}`);
-  lines.push(`Support Requests,${invoice.requests ? invoice.requests.length : 0}`);
-  lines.push('');
+  lines.push(`Invoice Date,${fmtDate(invoice.invoice_date)}`);
+  lines.push(`Due Date,${fmtDate(invoice.due_date)}`);
+  lines.push(`Billing Period,${fmtDate(invoice.period_start)} to ${fmtDate(invoice.period_end)}`);
 
-  // Line items
-  lines.push('Description,Quantity,Unit Price,Amount');
-  invoice.items.forEach(item => {
-    if (item.amount > 0) {
-      lines.push(`"${item.description}",${item.quantity},${item.unit_price},${item.amount}`);
+  // --- Support Section ---
+  const supportItems = invoice.items.filter(i => i.item_type === 'support');
+  const supportRequests = invoice.requests || [];
+  const freeCreditItem = invoice.items.find(i => i.item_type === 'other' && i.sort_order === 99);
+
+  if (supportRequests.length > 0 || supportItems.length > 0) {
+    lines.push('');
+    lines.push('========================================');
+    lines.push('SUPPORT SERVICES');
+    lines.push('========================================');
+    lines.push('Date,Description,Website,Urgency,Hours,Rate,Amount');
+
+    let totalHours = 0;
+
+    for (const req of supportRequests) {
+      const urgency = urgencyMap[req.urgency] || urgencyMap['LOW'];
+      const hours = parseFloat(req.estimated_hours) || 0;
+      const amount = hours * urgency.rate;
+      totalHours += hours;
+
+      const desc = `"${(req.description || '').replace(/"/g, '""')}"`;
+      const website = req.website_url || '';
+      lines.push(`${fmtDate(req.date)},${desc},${website},${urgency.label},${hours.toFixed(2)},$${urgency.rate.toFixed(2)},$${amount.toFixed(2)}`);
     }
-  });
-  lines.push('');
 
-  // Totals
-  lines.push(`Subtotal,,,$${parseFloat(invoice.subtotal).toFixed(2)}`);
-  if (parseFloat(invoice.tax_amount) > 0) {
-    lines.push(`Tax (${(parseFloat(invoice.tax_rate) * 100).toFixed(2)}%),,,$${parseFloat(invoice.tax_amount).toFixed(2)}`);
+    // Total hours row
+    lines.push(`,,,Total Hours,${totalHours.toFixed(2)},,`);
+
+    // Free credit row
+    if (freeCreditItem) {
+      const freeHours = parseFloat(freeCreditItem.quantity) || 0;
+      const supportGross = supportRequests.reduce((sum, req) => {
+        const u = urgencyMap[req.urgency] || urgencyMap['LOW'];
+        return sum + (parseFloat(req.estimated_hours) || 0) * u.rate;
+      }, 0);
+      const supportNet = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+      const creditAmount = supportGross - supportNet;
+      lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,-$${creditAmount.toFixed(2)}`);
+    }
+
+    const supportSubtotal = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+    lines.push(`,,,SUPPORT SUBTOTAL,,,$${supportSubtotal.toFixed(2)}`);
+    categorySubtotals.push({ label: 'Support Services', amount: supportSubtotal });
   }
-  lines.push(`Total,,,$${parseFloat(invoice.total).toFixed(2)}`);
+
+  // --- Projects Section ---
+  const projectItems = invoice.items.filter(i => i.item_type === 'project');
+
+  if (projectItems.length > 0) {
+    lines.push('');
+    lines.push('========================================');
+    lines.push('PROJECTS');
+    lines.push('========================================');
+    lines.push('Description,Quantity,Unit Price,Amount');
+
+    for (const item of projectItems) {
+      const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
+      const qty = parseFloat(item.quantity) || 1;
+      const unitPrice = parseFloat(item.unit_price) || 0;
+      const amount = parseFloat(item.amount) || 0;
+      lines.push(`${desc},${qty},$${unitPrice.toFixed(2)},$${amount.toFixed(2)}`);
+    }
+
+    lines.push(',,,');
+    const projectSubtotal = projectItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+    lines.push(`,,PROJECTS SUBTOTAL,$${projectSubtotal.toFixed(2)}`);
+    categorySubtotals.push({ label: 'Projects', amount: projectSubtotal });
+  }
+
+  // --- Hosting Section ---
+  let hostingRendered = false;
+  const hostingSnapshot = invoice.hosting_detail_snapshot;
+
+  if (hostingSnapshot) {
+    const details = typeof hostingSnapshot === 'string' ? JSON.parse(hostingSnapshot) : hostingSnapshot;
+    if (details.length > 0) {
+      lines.push('');
+      lines.push('========================================');
+      lines.push('HOSTING - TURBO HOSTING');
+      lines.push('========================================');
+      lines.push('Site Name,Website URL,Billing Type,Days Active,Days in Month,Gross Amount,Credit,Net Amount');
+
+      let hostingSubtotal = 0;
+      for (const site of details) {
+        const name = `"${(site.siteName || '').replace(/"/g, '""')}"`;
+        const url = site.websiteUrl || '';
+        const billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const gross = parseFloat(site.grossAmount) || 0;
+        const net = parseFloat(site.netAmount) || 0;
+        const credit = site.creditApplied ? 'Free Credit' : '';
+        hostingSubtotal += net;
+
+        lines.push(`${name},${url},${billingLabel},${site.daysActive},${site.daysInMonth},$${gross.toFixed(2)},${credit},$${net.toFixed(2)}`);
+      }
+
+      lines.push(',,,,,,');
+      lines.push(`,,,,,HOSTING SUBTOTAL,,$${hostingSubtotal.toFixed(2)}`);
+      categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
+      hostingRendered = true;
+    }
+  }
+
+  // Fallback: no snapshot but there's a hosting line item
+  if (!hostingRendered) {
+    const hostingItems = invoice.items.filter(i => i.item_type === 'hosting');
+    if (hostingItems.length > 0) {
+      lines.push('');
+      lines.push('========================================');
+      lines.push('HOSTING - TURBO HOSTING');
+      lines.push('========================================');
+      lines.push('Description,Quantity,Unit Price,Amount');
+
+      for (const item of hostingItems) {
+        const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
+        const amount = parseFloat(item.amount) || 0;
+        lines.push(`${desc},${parseFloat(item.quantity) || 1},$${(parseFloat(item.unit_price) || 0).toFixed(2)},$${amount.toFixed(2)}`);
+      }
+
+      lines.push(',,,');
+      const hostingSubtotal = hostingItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+      lines.push(`,,HOSTING SUBTOTAL,$${hostingSubtotal.toFixed(2)}`);
+      categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
+    }
+  }
+
+  // --- Totals Section ---
+  lines.push('');
+  lines.push('========================================');
+  lines.push('INVOICE TOTAL');
+  lines.push('========================================');
+
+  for (const cat of categorySubtotals) {
+    lines.push(`${cat.label},,,,,$${cat.amount.toFixed(2)}`);
+  }
+
+  const subtotal = parseFloat(invoice.subtotal) || 0;
+  const taxAmount = parseFloat(invoice.tax_amount) || 0;
+  const total = parseFloat(invoice.total) || 0;
+
+  lines.push(`,,,,Subtotal,,$${subtotal.toFixed(2)}`);
+  if (taxAmount > 0) {
+    const taxRate = (parseFloat(invoice.tax_rate) * 100).toFixed(2);
+    lines.push(`,,,,Tax (${taxRate}%),,$${taxAmount.toFixed(2)}`);
+  }
+  lines.push(`,,,,TOTAL,,$${total.toFixed(2)}`);
 
   return lines.join('\n');
 }
