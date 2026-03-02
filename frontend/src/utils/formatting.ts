@@ -30,6 +30,17 @@ export function formatMonthLabel(monthStr: string): string {
 }
 
 /**
+ * Parse a date string safely, handling both ISO (2025-07-01T00:00:00.000Z)
+ * and plain date (2025-07-01) formats without UTC midnight offset issues.
+ */
+function parseDateSafe(dateString: string): Date {
+  if (dateString.includes('T')) {
+    return new Date(dateString);
+  }
+  return new Date(dateString + 'T00:00:00');
+}
+
+/**
  * Format a date string for display
  * @param dateString - ISO date string or null
  * @returns Formatted string like "Sep 15, 2025" or "Active" if null
@@ -40,7 +51,8 @@ export function formatMonthLabel(monthStr: string): string {
  */
 export function formatDate(dateString: string | null): string {
   if (!dateString) return 'Active';
-  const date = new Date(dateString);
+  const date = parseDateSafe(dateString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -57,9 +69,28 @@ export function formatDate(dateString: string | null): string {
  * formatDateShort("2025-09-15")  // "Sep 15, 2025"
  */
 export function formatDateShort(dateString: string): string {
-  const date = new Date(dateString);
+  const date = parseDateSafe(dateString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
   return date.toLocaleDateString('en-US', {
     month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Format a date string for display (long version)
+ * @param dateString - ISO date string
+ * @returns Formatted string like "January 15, 2025"
+ *
+ * @example
+ * formatDateFull("2025-09-15")  // "September 15, 2025"
+ */
+export function formatDateFull(dateString: string): string {
+  const date = parseDateSafe(dateString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
     day: 'numeric',
     year: 'numeric',
   });
@@ -74,7 +105,8 @@ export function formatDateShort(dateString: string): string {
  * formatDateLong("2025-09-15")  // "Monday, Sep 15, 2025"
  */
 export function formatDateLong(dateString: string): string {
-  const date = new Date(dateString);
+  const date = parseDateSafe(dateString);
+  if (isNaN(date.getTime())) return 'Invalid Date';
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',

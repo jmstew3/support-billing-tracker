@@ -92,8 +92,13 @@ export interface BillingSummary {
   billableHours: number;
   freeHoursApplied: number;
   emergencyHours: number;
+  sameDayHours: number;
   regularHours: number;
+  billableEmergencyHours: number;
+  billableSameDayHours: number;
+  billableRegularHours: number;
   emergencyAmount: number;
+  sameDayAmount: number;
   regularAmount: number;
   subtotal: number;
 }
@@ -272,6 +277,74 @@ export async function payInvoice(
   }
   return response.json();
 }
+
+// =====================================================
+// INVOICE EDITING (draft only)
+// =====================================================
+
+/**
+ * Update a line item on a draft invoice
+ */
+export async function updateInvoiceItem(
+  invoiceId: number,
+  itemId: number,
+  updates: { description?: string; quantity?: number; unit_price?: number }
+): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${invoiceId}/items/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to update line item: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Remove a request from a draft invoice
+ */
+export async function unlinkRequest(invoiceId: number, requestId: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${invoiceId}/requests/${requestId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to unlink request: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Add an unbilled request to a draft invoice
+ */
+export async function linkRequest(invoiceId: number, requestId: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${invoiceId}/requests/${requestId}`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to link request: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get unbilled requests for the invoice's customer and period
+ */
+export async function getUnbilledRequests(invoiceId: number): Promise<InvoiceRequest[]> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${invoiceId}/unbilled-requests`);
+  if (!response.ok) {
+    throw new Error(`Failed to get unbilled requests: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.requests;
+}
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 /**
  * Export invoice as CSV

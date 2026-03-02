@@ -12,13 +12,15 @@ export interface AccountingFormat {
 
 /**
  * Format currency in standard string format (e.g., "$1,234.56")
- * Used for scorecards, charts, and inline displays
+ * Accepts both number and string values.
+ * Used for scorecards, charts, and inline displays.
  */
-export function formatCurrency(value: number): string {
-  return `$${value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+export function formatCurrency(value: number | string): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(num);
 }
 
 /**

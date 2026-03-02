@@ -50,6 +50,7 @@ async function generateInvoiceNumber(customerId) {
 
 /**
  * Calculate billing for a set of requests
+ * Free credits are deducted from cheapest tier first (regular → sameDay → emergency)
  */
 function calculateBilling(requests, periodStart) {
   const effectiveDate = new Date(PRICING.freeCredits.effectiveDate);
@@ -58,6 +59,7 @@ function calculateBilling(requests, periodStart) {
 
   let totalHours = 0;
   let emergencyHours = 0;
+  let sameDayHours = 0;
   let regularHours = 0;
 
   requests.forEach(req => {
@@ -66,32 +68,59 @@ function calculateBilling(requests, periodStart) {
 
     if (req.urgency === 'HIGH') {
       emergencyHours += hours;
+    } else if (req.urgency === 'MEDIUM') {
+      sameDayHours += hours;
     } else {
       regularHours += hours;
     }
   });
 
-  // Apply free credits if applicable
-  let billableHours = totalHours;
+  // Apply free credits from cheapest tier first: regular → sameDay → emergency
   let freeHoursApplied = 0;
+  let billableRegularHours = regularHours;
+  let billableSameDayHours = sameDayHours;
+  let billableEmergencyHours = emergencyHours;
 
   if (hasFreeCredits) {
-    freeHoursApplied = Math.min(totalHours, PRICING.freeCredits.supportHours);
-    billableHours = Math.max(0, totalHours - PRICING.freeCredits.supportHours);
+    let remainingCredits = Math.min(totalHours, PRICING.freeCredits.supportHours);
+    freeHoursApplied = remainingCredits;
+
+    // Deduct from regular hours first (cheapest at $150/hr)
+    const regularDeduction = Math.min(remainingCredits, regularHours);
+    billableRegularHours = regularHours - regularDeduction;
+    remainingCredits -= regularDeduction;
+
+    // Then from same-day hours ($175/hr)
+    const sameDayDeduction = Math.min(remainingCredits, sameDayHours);
+    billableSameDayHours = sameDayHours - sameDayDeduction;
+    remainingCredits -= sameDayDeduction;
+
+    // Finally from emergency hours (most expensive at $250/hr)
+    const emergencyDeduction = Math.min(remainingCredits, emergencyHours);
+    billableEmergencyHours = emergencyHours - emergencyDeduction;
+    remainingCredits -= emergencyDeduction;
   }
 
-  // Calculate amounts
-  const emergencyAmount = emergencyHours * PRICING.rates.emergency;
-  const regularAmount = Math.max(0, billableHours - emergencyHours) * PRICING.rates.regular;
-  const subtotal = emergencyAmount + regularAmount;
+  const billableHours = billableRegularHours + billableSameDayHours + billableEmergencyHours;
+
+  // Calculate amounts per tier
+  const emergencyAmount = billableEmergencyHours * PRICING.rates.emergency;
+  const sameDayAmount = billableSameDayHours * PRICING.rates.sameDay;
+  const regularAmount = billableRegularHours * PRICING.rates.regular;
+  const subtotal = emergencyAmount + sameDayAmount + regularAmount;
 
   return {
     totalHours,
     billableHours,
     freeHoursApplied,
     emergencyHours,
+    sameDayHours,
     regularHours,
+    billableEmergencyHours,
+    billableSameDayHours,
+    billableRegularHours,
     emergencyAmount,
+    sameDayAmount,
     regularAmount,
     subtotal
   };
@@ -204,32 +233,45 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
 
     // Create line items
     const lineItems = [];
+    let sortOrder = 1;
 
-    // Support hours line item
+    // Support hours line items per tier
     if (summary.billableHours > 0 || summary.freeHoursApplied > 0) {
       // Emergency hours
-      if (summary.emergencyHours > 0) {
+      if (summary.billableEmergencyHours > 0) {
         const [itemResult] = await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
-           VALUES (?, 'support', ?, ?, ?, ?, 1, ?)`,
-          [invoiceId, 'Emergency Support Hours', summary.emergencyHours,
-           PRICING.rates.emergency, summary.emergencyAmount,
+           VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
+          [invoiceId, 'Emergency Support Hours', summary.billableEmergencyHours,
+           PRICING.rates.emergency, summary.emergencyAmount, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency === 'HIGH').map(r => r.id))]
         );
         lineItems.push({ id: itemResult.insertId, type: 'emergency' });
       }
 
-      // Regular hours (billable portion)
-      const billableRegularHours = Math.max(0, summary.billableHours - summary.emergencyHours);
-      if (billableRegularHours > 0) {
+      // Same Day hours
+      if (summary.billableSameDayHours > 0) {
         const [itemResult] = await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
-           VALUES (?, 'support', ?, ?, ?, ?, 2, ?)`,
-          [invoiceId, 'Regular Support Hours', billableRegularHours,
-           PRICING.rates.regular, summary.regularAmount,
-           JSON.stringify(summary.requests.filter(r => r.urgency !== 'HIGH').map(r => r.id))]
+           VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
+          [invoiceId, 'Same Day Support Hours', summary.billableSameDayHours,
+           PRICING.rates.sameDay, summary.sameDayAmount, sortOrder++,
+           JSON.stringify(summary.requests.filter(r => r.urgency === 'MEDIUM').map(r => r.id))]
+        );
+        lineItems.push({ id: itemResult.insertId, type: 'sameDay' });
+      }
+
+      // Regular hours
+      if (summary.billableRegularHours > 0) {
+        const [itemResult] = await connection.query(
+          `INSERT INTO invoice_items
+           (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
+           VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
+          [invoiceId, 'Regular Support Hours', summary.billableRegularHours,
+           PRICING.rates.regular, summary.regularAmount, sortOrder++,
+           JSON.stringify(summary.requests.filter(r => r.urgency !== 'HIGH' && r.urgency !== 'MEDIUM').map(r => r.id))]
         );
         lineItems.push({ id: itemResult.insertId, type: 'regular' });
       }
@@ -313,60 +355,74 @@ export async function getInvoice(invoiceId) {
 }
 
 /**
+ * Mark sent invoices as overdue if past their due date
+ */
+export async function markOverdueInvoices() {
+  const connection = await pool.getConnection();
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const [result] = await connection.query(
+      `UPDATE invoices SET status = 'overdue'
+       WHERE status = 'sent' AND due_date < ?`,
+      [today]
+    );
+    return result.affectedRows || 0;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
  * List invoices with filters
  */
 export async function listInvoices(filters = {}) {
   const connection = await pool.getConnection();
   try {
+    let whereClause = 'WHERE 1=1';
+    const filterParams = [];
+
+    if (filters.customerId) {
+      whereClause += ' AND i.customer_id = ?';
+      filterParams.push(filters.customerId);
+    }
+
+    if (filters.status) {
+      whereClause += ' AND i.status = ?';
+      filterParams.push(filters.status);
+    }
+
+    if (filters.startDate) {
+      whereClause += ' AND i.invoice_date >= ?';
+      filterParams.push(filters.startDate);
+    }
+
+    if (filters.endDate) {
+      whereClause += ' AND i.invoice_date <= ?';
+      filterParams.push(filters.endDate);
+    }
+
+    // Get total count (with same filters, without limit/offset)
+    const [countResult] = await connection.query(
+      `SELECT COUNT(*) as total FROM invoices i ${whereClause}`,
+      filterParams
+    );
+
+    // Get paginated results
     let query = `
       SELECT i.*, c.name as customer_name
       FROM invoices i
       JOIN customers c ON i.customer_id = c.id
-      WHERE 1=1
+      ${whereClause}
+      ORDER BY i.invoice_date DESC, i.id DESC
     `;
-    const params = [];
+    const queryParams = [...filterParams];
 
-    if (filters.customerId) {
-      query += ' AND i.customer_id = ?';
-      params.push(filters.customerId);
-    }
+    const limit = parseInt(filters.limit, 10) || 20;
+    const offset = parseInt(filters.offset, 10) || 0;
+    query += ' LIMIT ? OFFSET ?';
+    queryParams.push(limit, offset);
 
-    if (filters.status) {
-      query += ' AND i.status = ?';
-      params.push(filters.status);
-    }
-
-    if (filters.startDate) {
-      query += ' AND i.invoice_date >= ?';
-      params.push(filters.startDate);
-    }
-
-    if (filters.endDate) {
-      query += ' AND i.invoice_date <= ?';
-      params.push(filters.endDate);
-    }
-
-    query += ' ORDER BY i.invoice_date DESC, i.id DESC';
-
-    if (filters.limit) {
-      query += ' LIMIT ?';
-      params.push(parseInt(filters.limit, 10));
-    }
-
-    if (filters.offset) {
-      query += ' OFFSET ?';
-      params.push(parseInt(filters.offset, 10));
-    }
-
-    const [invoices] = await connection.query(query, params);
-
-    // Get total count
-    const [countResult] = await connection.query(
-      `SELECT COUNT(*) as total FROM invoices i WHERE 1=1
-       ${filters.customerId ? 'AND i.customer_id = ?' : ''}
-       ${filters.status ? 'AND i.status = ?' : ''}`,
-      params.slice(0, (filters.customerId ? 1 : 0) + (filters.status ? 1 : 0))
-    );
+    const [invoices] = await connection.query(query, queryParams);
 
     return {
       invoices,
@@ -450,6 +506,202 @@ export async function deleteInvoice(invoiceId) {
   } finally {
     connection.release();
   }
+}
+
+/**
+ * Update a line item on a draft invoice and recalculate totals
+ */
+export async function updateInvoiceItem(invoiceId, itemId, updates) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verify invoice is draft
+    const [invoices] = await connection.query(
+      'SELECT status FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be edited');
+
+    // Verify item belongs to this invoice
+    const [items] = await connection.query(
+      'SELECT * FROM invoice_items WHERE id = ? AND invoice_id = ?', [itemId, invoiceId]
+    );
+    if (items.length === 0) throw new Error('Invoice item not found');
+
+    // Update allowed fields
+    const allowedFields = ['description', 'quantity', 'unit_price'];
+    const updateFields = [];
+    const params = [];
+
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        updateFields.push(`${field} = ?`);
+        params.push(updates[field]);
+      }
+    }
+
+    // Recalculate amount if quantity or unit_price changed
+    const newQty = updates.quantity !== undefined ? parseFloat(updates.quantity) : parseFloat(items[0].quantity);
+    const newPrice = updates.unit_price !== undefined ? parseFloat(updates.unit_price) : parseFloat(items[0].unit_price);
+    const newAmount = newQty * newPrice;
+    updateFields.push('amount = ?');
+    params.push(newAmount);
+
+    params.push(itemId);
+    await connection.query(
+      `UPDATE invoice_items SET ${updateFields.join(', ')} WHERE id = ?`,
+      params
+    );
+
+    // Recalculate invoice totals from all line items
+    await recalculateInvoiceTotals(connection, invoiceId);
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Remove a request from a draft invoice and recalculate
+ */
+export async function unlinkRequest(invoiceId, requestId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verify invoice is draft
+    const [invoices] = await connection.query(
+      'SELECT * FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be edited');
+
+    // Unlink the request
+    const [result] = await connection.query(
+      'UPDATE requests SET invoice_id = NULL WHERE id = ? AND invoice_id = ?',
+      [requestId, invoiceId]
+    );
+    if (result.affectedRows === 0) throw new Error('Request not linked to this invoice');
+
+    // Remove the request ID from any line item request_ids arrays
+    const [items] = await connection.query(
+      'SELECT id, request_ids FROM invoice_items WHERE invoice_id = ? AND request_ids IS NOT NULL',
+      [invoiceId]
+    );
+    for (const item of items) {
+      let ids = typeof item.request_ids === 'string' ? JSON.parse(item.request_ids) : item.request_ids;
+      if (Array.isArray(ids) && ids.includes(requestId)) {
+        ids = ids.filter(id => id !== requestId);
+        await connection.query(
+          'UPDATE invoice_items SET request_ids = ? WHERE id = ?',
+          [JSON.stringify(ids), item.id]
+        );
+      }
+    }
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Add an unbilled request to a draft invoice
+ */
+export async function linkRequest(invoiceId, requestId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verify invoice is draft
+    const [invoices] = await connection.query(
+      'SELECT * FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be edited');
+
+    // Verify request is unbilled and belongs to same customer
+    const [requests] = await connection.query(
+      `SELECT * FROM requests WHERE id = ? AND customer_id = ? AND invoice_id IS NULL AND status = 'active'`,
+      [requestId, invoices[0].customer_id]
+    );
+    if (requests.length === 0) throw new Error('Request not found or already billed');
+
+    // Link the request
+    await connection.query(
+      'UPDATE requests SET invoice_id = ? WHERE id = ?',
+      [invoiceId, requestId]
+    );
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Get unbilled requests for a customer within an invoice's period
+ */
+export async function getUnbilledRequests(invoiceId) {
+  const connection = await pool.getConnection();
+  try {
+    const [invoices] = await connection.query(
+      'SELECT customer_id, period_start, period_end FROM invoices WHERE id = ?',
+      [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+
+    const inv = invoices[0];
+    const [requests] = await connection.query(
+      `SELECT id, date, time, description, category, urgency, estimated_hours
+       FROM requests
+       WHERE customer_id = ? AND date >= ? AND date <= ?
+       AND status = 'active' AND invoice_id IS NULL
+       AND category NOT IN ('Non-billable', 'Migration')
+       ORDER BY date, time`,
+      [inv.customer_id, inv.period_start, inv.period_end]
+    );
+    return requests;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Recalculate invoice subtotal/total from line items
+ */
+async function recalculateInvoiceTotals(connection, invoiceId) {
+  const [items] = await connection.query(
+    'SELECT SUM(amount) as subtotal FROM invoice_items WHERE invoice_id = ? AND amount > 0',
+    [invoiceId]
+  );
+  const subtotal = parseFloat(items[0].subtotal) || 0;
+
+  const [invoice] = await connection.query(
+    'SELECT tax_rate FROM invoices WHERE id = ?', [invoiceId]
+  );
+  const taxRate = parseFloat(invoice[0].tax_rate) || 0;
+  const taxAmount = subtotal * taxRate;
+  const total = subtotal + taxAmount;
+
+  await connection.query(
+    'UPDATE invoices SET subtotal = ?, tax_amount = ?, total = ? WHERE id = ?',
+    [subtotal, taxAmount, total, invoiceId]
+  );
 }
 
 /**
@@ -569,7 +821,12 @@ export default {
   generateInvoice,
   getInvoice,
   listInvoices,
+  markOverdueInvoices,
   updateInvoice,
+  updateInvoiceItem,
+  unlinkRequest,
+  linkRequest,
+  getUnbilledRequests,
   deleteInvoice,
   exportInvoiceCSV,
   exportInvoiceJSON,

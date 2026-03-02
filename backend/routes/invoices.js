@@ -10,11 +10,16 @@ import {
   getInvoice,
   listInvoices,
   updateInvoice,
+  updateInvoiceItem,
+  unlinkRequest,
+  linkRequest,
+  getUnbilledRequests,
   deleteInvoice,
   exportInvoiceCSV,
   exportInvoiceJSON,
   listCustomers,
-  getCustomer
+  getCustomer,
+  markOverdueInvoices
 } from '../services/invoiceService.js';
 
 const router = express.Router();
@@ -93,6 +98,11 @@ router.get('/billing-summary', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
+    // Auto-detect overdue invoices on each list load
+    await markOverdueInvoices().catch(err =>
+      console.error('Error marking overdue invoices:', err)
+    );
+
     const filters = {
       customerId: req.query.customerId,
       status: req.query.status,
@@ -178,6 +188,73 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: 'Invoice deleted' });
   } catch (error) {
     console.error('Error deleting invoice:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// =====================================================
+// INVOICE EDITING ENDPOINTS (draft only)
+// =====================================================
+
+/**
+ * PUT /api/invoices/:id/items/:itemId
+ * Update a line item on a draft invoice
+ * Body: { description?, quantity?, unit_price? }
+ */
+router.put('/:id/items/:itemId', async (req, res) => {
+  try {
+    const invoice = await updateInvoiceItem(req.params.id, req.params.itemId, req.body);
+    res.json(invoice);
+  } catch (error) {
+    console.error('Error updating invoice item:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/invoices/:id/requests/:requestId
+ * Remove a request from a draft invoice
+ */
+router.delete('/:id/requests/:requestId', async (req, res) => {
+  try {
+    const invoice = await unlinkRequest(
+      parseInt(req.params.id),
+      parseInt(req.params.requestId)
+    );
+    res.json(invoice);
+  } catch (error) {
+    console.error('Error unlinking request:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invoices/:id/requests/:requestId
+ * Add an unbilled request to a draft invoice
+ */
+router.post('/:id/requests/:requestId', async (req, res) => {
+  try {
+    const invoice = await linkRequest(
+      parseInt(req.params.id),
+      parseInt(req.params.requestId)
+    );
+    res.json(invoice);
+  } catch (error) {
+    console.error('Error linking request:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invoices/:id/unbilled-requests
+ * Get unbilled requests for the invoice's customer and period
+ */
+router.get('/:id/unbilled-requests', async (req, res) => {
+  try {
+    const requests = await getUnbilledRequests(parseInt(req.params.id));
+    res.json({ requests });
+  } catch (error) {
+    console.error('Error getting unbilled requests:', error);
     res.status(400).json({ error: error.message });
   }
 });

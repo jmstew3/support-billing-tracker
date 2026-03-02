@@ -1,9 +1,9 @@
 /**
  * Invoice List Component
- * Displays a list of invoices with filtering and actions
+ * Displays a list of invoices with filtering, pagination, and actions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, Plus, Download, Eye, Trash2, Send } from 'lucide-react';
 import {
   Table,
@@ -14,6 +14,10 @@ import {
   TableCell,
 } from '../../../components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Pagination } from '../../../components/shared/Pagination';
+import { ConfirmDialog } from '../../../components/shared/ConfirmDialog';
+import { ToastContainer } from '../../../components/shared/Toast';
+import { createToast, type ToastMessage } from '../../../utils/toast';
 import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import {
   listInvoices,
@@ -26,12 +30,16 @@ import {
   type Customer,
   type InvoiceFilters,
 } from '../../../services/invoiceApi';
+import { formatDate } from '../../../utils/formatting';
+import { formatCurrency } from '../../../utils/currency';
 
 interface InvoiceListProps {
   onViewInvoice: (invoice: Invoice) => void;
   onGenerateInvoice: () => void;
   refreshTrigger?: number;
 }
+
+const DEFAULT_PAGE_SIZE = 20;
 
 export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }: InvoiceListProps) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -44,10 +52,40 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
   const [statusFilter, setStatusFilter] = useState<Invoice['status'] | ''>('');
   const [customerFilter, setCustomerFilter] = useState<number | ''>('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    isDestructive: boolean;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', confirmText: 'Confirm', isDestructive: false, onConfirm: () => {} });
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = useCallback((type: ToastMessage['type'], message: string) => {
+    setToasts(prev => [...prev, createToast(type, message)]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, customerFilter]);
+
   // Load data
   useEffect(() => {
     loadData();
-  }, [statusFilter, customerFilter, refreshTrigger]);
+  }, [statusFilter, customerFilter, currentPage, pageSize, refreshTrigger]);
 
   useEffect(() => {
     loadCustomers();
@@ -68,8 +106,8 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
       setError(null);
 
       const filters: InvoiceFilters = {
-        limit: 50,
-        offset: 0,
+        limit: pageSize,
+        offset: (currentPage - 1) * pageSize,
       };
 
       if (statusFilter) {
@@ -91,35 +129,49 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
     }
   }
 
-  async function handleDelete(invoice: Invoice) {
+  function handleDelete(invoice: Invoice) {
     if (invoice.status !== 'draft') {
-      alert('Only draft invoices can be deleted');
+      addToast('error', 'Only draft invoices can be deleted');
       return;
     }
 
-    if (!confirm(`Delete invoice ${invoice.invoice_number}?`)) {
-      return;
-    }
-
-    try {
-      await deleteInvoice(invoice.id);
-      loadData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete invoice');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Invoice',
+      message: `Are you sure you want to delete invoice ${invoice.invoice_number}? This will unlink all associated requests.`,
+      confirmText: 'Delete',
+      isDestructive: true,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await deleteInvoice(invoice.id);
+          addToast('success', `Invoice ${invoice.invoice_number} deleted`);
+          loadData();
+        } catch (err) {
+          addToast('error', err instanceof Error ? err.message : 'Failed to delete invoice');
+        }
+      },
+    });
   }
 
-  async function handleSend(invoice: Invoice) {
-    if (!confirm(`Mark invoice ${invoice.invoice_number} as sent?`)) {
-      return;
-    }
-
-    try {
-      await sendInvoice(invoice.id);
-      loadData();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to send invoice');
-    }
+  function handleSend(invoice: Invoice) {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Mark as Sent',
+      message: `Mark invoice ${invoice.invoice_number} as sent? This will lock it from editing.`,
+      confirmText: 'Mark as Sent',
+      isDestructive: false,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await sendInvoice(invoice.id);
+          addToast('success', `Invoice ${invoice.invoice_number} marked as sent`);
+          loadData();
+        } catch (err) {
+          addToast('error', err instanceof Error ? err.message : 'Failed to send invoice');
+        }
+      },
+    });
   }
 
   async function handleExportCSV(invoice: Invoice) {
@@ -127,34 +179,20 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
       const csv = await exportInvoiceCSV(invoice.id);
       downloadFile(csv, `invoice-${invoice.invoice_number}.csv`, 'text/csv');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to export CSV');
+      addToast('error', err instanceof Error ? err.message : 'Failed to export CSV');
     }
   }
 
-  function formatCurrency(value: string | number): string {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(num);
-  }
-
-  function formatDate(dateString: string): string {
-    // Handle both ISO format (2025-07-01T00:00:00.000Z) and plain date (2025-07-01)
-    const date = dateString.includes('T')
-      ? new Date(dateString)
-      : new Date(dateString + 'T00:00:00');
-
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
+  function handlePageSizeChange(size: number | 'all') {
+    if (size === 'all') {
+      setPageSize(total || 1000);
+    } else {
+      setPageSize(size);
     }
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    setCurrentPage(1);
   }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   if (loading && invoices.length === 0) {
     return (
@@ -188,144 +226,172 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Invoices ({total})
-        </CardTitle>
-        <button
-          onClick={onGenerateInvoice}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm font-medium"
-        >
-          <Plus className="h-4 w-4" />
-          Generate Invoice
-        </button>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Invoices ({total})
+          </CardTitle>
+          <button
+            onClick={onGenerateInvoice}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm font-medium"
+          >
+            <Plus className="h-4 w-4" />
+            Generate Invoice
+          </button>
+        </CardHeader>
 
-      <CardContent>
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Status:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as Invoice['status'] | '')}
-              className="px-3 py-1.5 bg-background border border-border rounded text-sm"
-            >
-              <option value="">All</option>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+        <CardContent>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground">Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as Invoice['status'] | '')}
+                className="px-3 py-1.5 bg-background border border-border rounded text-sm"
+              >
+                <option value="">All</option>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground">Customer:</label>
+              <select
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value ? parseInt(e.target.value) : '')}
+                className="px-3 py-1.5 bg-background border border-border rounded text-sm"
+              >
+                <option value="">All</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Customer:</label>
-            <select
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value ? parseInt(e.target.value) : '')}
-              className="px-3 py-1.5 bg-background border border-border rounded text-sm"
-            >
-              <option value="">All</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+          {/* Invoice Table */}
+          {invoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No invoices found. Click "Generate Invoice" to create one.
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                      <TableCell>{invoice.customer_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
+                      </TableCell>
+                      <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                      <TableCell>{formatDate(invoice.due_date)}</TableCell>
+                      <TableCell>
+                        <InvoiceStatusBadge status={invoice.status} />
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(invoice.total)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {parseFloat(invoice.balance_due) > 0 ? (
+                          <span className="text-red-600 dark:text-red-400 font-medium">
+                            {formatCurrency(invoice.balance_due)}
+                          </span>
+                        ) : (
+                          <span className="text-green-600 dark:text-green-400">$0.00</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => onViewInvoice(invoice)}
+                            className="p-1.5 hover:bg-muted rounded"
+                            title="View invoice"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          {invoice.status === 'draft' && (
+                            <button
+                              onClick={() => handleSend(invoice)}
+                              className="p-1.5 hover:bg-muted rounded text-blue-600 dark:text-blue-400"
+                              title="Mark as sent"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleExportCSV(invoice)}
+                            className="p-1.5 hover:bg-muted rounded"
+                            title="Export CSV"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          {invoice.status === 'draft' && (
+                            <button
+                              onClick={() => handleDelete(invoice)}
+                              className="p-1.5 hover:bg-muted rounded text-red-600 dark:text-red-400"
+                              title="Delete invoice"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-        {/* Invoice Table */}
-        {invoices.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No invoices found. Click "Generate Invoice" to create one.
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                  <TableCell>{invoice.customer_name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
-                  </TableCell>
-                  <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                  <TableCell>{formatDate(invoice.due_date)}</TableCell>
-                  <TableCell>
-                    <InvoiceStatusBadge status={invoice.status} />
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(invoice.total)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {parseFloat(invoice.balance_due) > 0 ? (
-                      <span className="text-red-600 dark:text-red-400 font-medium">
-                        {formatCurrency(invoice.balance_due)}
-                      </span>
-                    ) : (
-                      <span className="text-green-600 dark:text-green-400">$0.00</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => onViewInvoice(invoice)}
-                        className="p-1.5 hover:bg-muted rounded"
-                        title="View invoice"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      {invoice.status === 'draft' && (
-                        <button
-                          onClick={() => handleSend(invoice)}
-                          className="p-1.5 hover:bg-muted rounded text-blue-600 dark:text-blue-400"
-                          title="Mark as sent"
-                        >
-                          <Send className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleExportCSV(invoice)}
-                        className="p-1.5 hover:bg-muted rounded"
-                        title="Export CSV"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                      {invoice.status === 'draft' && (
-                        <button
-                          onClick={() => handleDelete(invoice)}
-                          className="p-1.5 hover:bg-muted rounded text-red-600 dark:text-red-400"
-                          title="Delete invoice"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={total}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        isDestructive={confirmDialog.isDestructive}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </>
   );
 }

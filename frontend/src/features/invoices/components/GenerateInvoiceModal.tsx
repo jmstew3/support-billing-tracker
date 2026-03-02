@@ -21,6 +21,8 @@ import {
   type Customer,
   type BillingSummary,
 } from '../../../services/invoiceApi';
+import { formatDate } from '../../../utils/formatting';
+import { formatCurrency } from '../../../utils/currency';
 
 interface GenerateInvoiceModalProps {
   isOpen: boolean;
@@ -128,21 +130,6 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     } finally {
       setGenerating(false);
     }
-  }
-
-  function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  }
-
-  function formatDate(dateString: string): string {
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   }
 
   if (!isOpen) return null;
@@ -286,20 +273,30 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {billingSummary.emergencyHours > 0 && (
+                      {billingSummary.billableEmergencyHours > 0 && (
                         <TableRow>
                           <TableCell>Emergency Support Hours</TableCell>
-                          <TableCell className="text-right">{billingSummary.emergencyHours.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{billingSummary.billableEmergencyHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">$250.00</TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(billingSummary.emergencyAmount)}
                           </TableCell>
                         </TableRow>
                       )}
-                      {billingSummary.regularHours > 0 && (
+                      {billingSummary.billableSameDayHours > 0 && (
+                        <TableRow>
+                          <TableCell>Same Day Support Hours</TableCell>
+                          <TableCell className="text-right">{billingSummary.billableSameDayHours.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">$175.00</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(billingSummary.sameDayAmount)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {billingSummary.billableRegularHours > 0 && (
                         <TableRow>
                           <TableCell>Regular Support Hours</TableCell>
-                          <TableCell className="text-right">{billingSummary.regularHours.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{billingSummary.billableRegularHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">$150.00</TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(billingSummary.regularAmount)}

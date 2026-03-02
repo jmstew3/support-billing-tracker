@@ -1,10 +1,10 @@
 /**
  * Invoice Detail Component
- * Displays detailed invoice information with actions
+ * Displays detailed invoice information with actions and inline editing for drafts
  */
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Send, CreditCard, FileText } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -14,16 +14,27 @@ import {
   TableHead,
   TableCell,
 } from '../../../components/ui/table';
+import { ConfirmDialog } from '../../../components/shared/ConfirmDialog';
+import { ToastContainer } from '../../../components/shared/Toast';
+import { createToast, type ToastMessage } from '../../../utils/toast';
 import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import {
   getInvoice,
   sendInvoice,
   payInvoice,
+  updateInvoiceItem,
+  unlinkRequest,
+  linkRequest,
+  getUnbilledRequests,
   exportInvoiceCSV,
   exportInvoiceJSON,
   downloadFile,
   type Invoice,
+  type InvoiceItem,
+  type InvoiceRequest,
 } from '../../../services/invoiceApi';
+import { formatDateFull } from '../../../utils/formatting';
+import { formatCurrency } from '../../../utils/currency';
 
 interface InvoiceDetailProps {
   invoiceId: number;
@@ -39,6 +50,38 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
   const [paymentDate, setPaymentDate] = useState('');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
+  // Editing state
+  const [editMode, setEditMode] = useState(false);
+  const [editingItem, setEditingItem] = useState<number | null>(null);
+  const [editValues, setEditValues] = useState<{ description: string; quantity: string; unit_price: string }>({
+    description: '', quantity: '', unit_price: ''
+  });
+  const [unbilledRequests, setUnbilledRequests] = useState<InvoiceRequest[]>([]);
+  const [showAddRequests, setShowAddRequests] = useState(false);
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    isDestructive: boolean;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', confirmText: 'Confirm', isDestructive: false, onConfirm: () => {} });
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = useCallback((type: ToastMessage['type'], message: string) => {
+    setToasts(prev => [...prev, createToast(type, message)]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const formatDate = formatDateFull;
+
   useEffect(() => {
     loadInvoice();
   }, [invoiceId]);
@@ -49,7 +92,6 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       setError(null);
       const data = await getInvoice(invoiceId);
       setInvoice(data);
-      // Set default payment amount to balance due
       setPaymentAmount(data.balance_due);
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (err) {
@@ -59,18 +101,37 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     }
   }
 
-  async function handleSend() {
-    if (!invoice || !confirm(`Mark invoice ${invoice.invoice_number} as sent?`)) {
-      return;
-    }
-
+  async function loadUnbilledRequests() {
     try {
-      await sendInvoice(invoice.id);
-      loadInvoice();
-      onUpdate();
+      const requests = await getUnbilledRequests(invoiceId);
+      setUnbilledRequests(requests);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to send invoice');
+      addToast('error', err instanceof Error ? err.message : 'Failed to load unbilled requests');
     }
+  }
+
+  function handleSend() {
+    if (!invoice) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Mark as Sent',
+      message: `Mark invoice ${invoice.invoice_number} as sent? This will lock it from editing.`,
+      confirmText: 'Mark as Sent',
+      isDestructive: false,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await sendInvoice(invoice.id);
+          addToast('success', `Invoice ${invoice.invoice_number} marked as sent`);
+          setEditMode(false);
+          loadInvoice();
+          onUpdate();
+        } catch (err) {
+          addToast('error', err instanceof Error ? err.message : 'Failed to send invoice');
+        }
+      },
+    });
   }
 
   async function handlePay() {
@@ -78,17 +139,18 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
 
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid payment amount');
+      addToast('error', 'Please enter a valid payment amount');
       return;
     }
 
     try {
       await payInvoice(invoice.id, amount, paymentDate || undefined);
       setShowPaymentForm(false);
+      addToast('success', `Payment of ${formatCurrency(amount)} recorded`);
       loadInvoice();
       onUpdate();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to record payment');
+      addToast('error', err instanceof Error ? err.message : 'Failed to record payment');
     }
   }
 
@@ -98,7 +160,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       const csv = await exportInvoiceCSV(invoice.id);
       downloadFile(csv, `invoice-${invoice.invoice_number}.csv`, 'text/csv');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to export CSV');
+      addToast('error', err instanceof Error ? err.message : 'Failed to export CSV');
     }
   }
 
@@ -108,33 +170,102 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       const json = await exportInvoiceJSON(invoice.id);
       downloadFile(JSON.stringify(json, null, 2), `invoice-${invoice.invoice_number}.json`, 'application/json');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to export JSON');
+      addToast('error', err instanceof Error ? err.message : 'Failed to export JSON');
     }
   }
 
-  function formatCurrency(value: string | number): string {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(num);
-  }
-
-  function formatDate(dateString: string): string {
-    // Handle both ISO format (2025-07-01T00:00:00.000Z) and plain date (2025-07-01)
-    const date = dateString.includes('T')
-      ? new Date(dateString)
-      : new Date(dateString + 'T00:00:00');
-
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
+  // Edit mode handlers
+  function startEditItem(item: InvoiceItem) {
+    setEditingItem(item.id);
+    setEditValues({
+      description: item.description,
+      quantity: parseFloat(item.quantity).toString(),
+      unit_price: parseFloat(item.unit_price).toString(),
     });
+  }
+
+  function cancelEditItem() {
+    setEditingItem(null);
+    setEditValues({ description: '', quantity: '', unit_price: '' });
+  }
+
+  async function saveEditItem(itemId: number) {
+    try {
+      const updates: { description?: string; quantity?: number; unit_price?: number } = {};
+      const origItem = invoice?.items?.find(i => i.id === itemId);
+      if (!origItem) return;
+
+      if (editValues.description !== origItem.description) {
+        updates.description = editValues.description;
+      }
+      if (editValues.quantity !== parseFloat(origItem.quantity).toString()) {
+        updates.quantity = parseFloat(editValues.quantity);
+      }
+      if (editValues.unit_price !== parseFloat(origItem.unit_price).toString()) {
+        updates.unit_price = parseFloat(editValues.unit_price);
+      }
+
+      if (Object.keys(updates).length === 0) {
+        cancelEditItem();
+        return;
+      }
+
+      const updated = await updateInvoiceItem(invoiceId, itemId, updates);
+      setInvoice(updated);
+      setEditingItem(null);
+      addToast('success', 'Line item updated');
+      onUpdate();
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to update line item');
+    }
+  }
+
+  function handleUnlinkRequest(req: InvoiceRequest) {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Request',
+      message: `Remove "${req.description}" (${parseFloat(req.estimated_hours).toFixed(2)}h) from this invoice? It will become unbilled again.`,
+      confirmText: 'Remove',
+      isDestructive: true,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          const updated = await unlinkRequest(invoiceId, req.id);
+          setInvoice(updated);
+          addToast('success', 'Request removed from invoice');
+          onUpdate();
+          // Refresh unbilled requests if panel is open
+          if (showAddRequests) loadUnbilledRequests();
+        } catch (err) {
+          addToast('error', err instanceof Error ? err.message : 'Failed to remove request');
+        }
+      },
+    });
+  }
+
+  async function handleLinkRequest(req: InvoiceRequest) {
+    try {
+      const updated = await linkRequest(invoiceId, req.id);
+      setInvoice(updated);
+      setUnbilledRequests(prev => prev.filter(r => r.id !== req.id));
+      addToast('success', 'Request added to invoice');
+      onUpdate();
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to add request');
+    }
+  }
+
+  function toggleEditMode() {
+    setEditMode(!editMode);
+    setEditingItem(null);
+    setShowAddRequests(false);
+  }
+
+  function toggleAddRequests() {
+    if (!showAddRequests) {
+      loadUnbilledRequests();
+    }
+    setShowAddRequests(!showAddRequests);
   }
 
   if (loading) {
@@ -168,261 +299,462 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     );
   }
 
+  const isDraft = invoice.status === 'draft';
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-muted rounded"
-            aria-label="Back to invoices"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Invoice {invoice.invoice_number}
-            </h2>
-            <p className="text-sm text-muted-foreground">{invoice.customer_name}</p>
-          </div>
-          <InvoiceStatusBadge status={invoice.status} />
-        </div>
-
-        <div className="flex items-center gap-2">
-          {invoice.status === 'draft' && (
+    <>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleSend}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              onClick={onBack}
+              className="p-2 hover:bg-muted rounded"
+              aria-label="Back to invoices"
             >
-              <Send className="h-4 w-4" />
-              Mark as Sent
+              <ArrowLeft className="h-5 w-5" />
             </button>
-          )}
-          {(invoice.status === 'sent' || invoice.status === 'overdue') && (
-            <button
-              onClick={() => setShowPaymentForm(!showPaymentForm)}
-              className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-            >
-              <CreditCard className="h-4 w-4" />
-              Record Payment
-            </button>
-          )}
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
-          >
-            <Download className="h-4 w-4" />
-            CSV
-          </button>
-          <button
-            onClick={handleExportJSON}
-            className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
-          >
-            <Download className="h-4 w-4" />
-            JSON
-          </button>
-        </div>
-      </div>
-
-      {/* Payment Form */}
-      {showPaymentForm && (
-        <Card className="border-green-500/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Record Payment
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-end gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-40 px-3 py-2 bg-background border border-border rounded text-sm"
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Payment Date</label>
-                <input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="px-3 py-2 bg-background border border-border rounded text-sm"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handlePay}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-                >
-                  Submit Payment
-                </button>
-                <button
-                  onClick={() => setShowPaymentForm(false)}
-                  className="px-4 py-2 border border-border rounded hover:bg-muted text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Invoice Content */}
-      <Card>
-        <CardContent className="p-6">
-          {/* Invoice Header */}
-          <div className="flex flex-col md:flex-row justify-between gap-6 mb-8 pb-6 border-b border-border">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Bill To:</h3>
-              <p className="font-medium">{invoice.customer_name}</p>
-              {invoice.customer_email && (
-                <p className="text-sm text-muted-foreground">{invoice.customer_email}</p>
-              )}
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Invoice {invoice.invoice_number}
+              </h2>
+              <p className="text-sm text-muted-foreground">{invoice.customer_name}</p>
             </div>
-            <div className="text-right">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                <span className="text-muted-foreground">Invoice Number:</span>
-                <span className="font-medium">{invoice.invoice_number}</span>
-                <span className="text-muted-foreground">Invoice Date:</span>
-                <span>{formatDate(invoice.invoice_date)}</span>
-                <span className="text-muted-foreground">Due Date:</span>
-                <span>{formatDate(invoice.due_date)}</span>
-                <span className="text-muted-foreground">Period:</span>
-                <span>{formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}</span>
-              </div>
-            </div>
+            <InvoiceStatusBadge status={invoice.status} />
+            {editMode && (
+              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">
+                Editing
+              </span>
+            )}
           </div>
 
-          {/* Line Items */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Line Items</h3>
-            <div className="border border-border rounded overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-1/2">Description</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoice.items?.filter(item => parseFloat(item.amount) > 0).map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.description}</TableCell>
-                      <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {/* Show free credits applied as info line */}
-                  {invoice.items?.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'other').map((item) => (
-                    <TableRow key={item.id} className="bg-green-500/5">
-                      <TableCell colSpan={4} className="text-green-600 dark:text-green-400 text-sm">
-                        {item.description}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          <div className="flex items-center gap-2">
+            {isDraft && (
+              <button
+                onClick={toggleEditMode}
+                className={`flex items-center gap-2 px-3 py-2 rounded text-sm ${
+                  editMode
+                    ? 'bg-muted border border-border'
+                    : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                }`}
+              >
+                {editMode ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                {editMode ? 'Done Editing' : 'Edit'}
+              </button>
+            )}
+            {isDraft && !editMode && (
+              <button
+                onClick={handleSend}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              >
+                <Send className="h-4 w-4" />
+                Mark as Sent
+              </button>
+            )}
+            {(invoice.status === 'sent' || invoice.status === 'overdue') && (
+              <button
+                onClick={() => setShowPaymentForm(!showPaymentForm)}
+                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+              >
+                <CreditCard className="h-4 w-4" />
+                Record Payment
+              </button>
+            )}
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
+            >
+              <Download className="h-4 w-4" />
+              CSV
+            </button>
+            <button
+              onClick={handleExportJSON}
+              className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
+            >
+              <Download className="h-4 w-4" />
+              JSON
+            </button>
           </div>
+        </div>
 
-          {/* Totals */}
-          <div className="flex justify-end mb-6">
-            <div className="w-64">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">{formatCurrency(invoice.subtotal)}</span>
-              </div>
-              {parseFloat(invoice.tax_amount) > 0 && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">
-                    Tax ({(parseFloat(invoice.tax_rate) * 100).toFixed(2)}%)
-                  </span>
-                  <span className="font-medium">{formatCurrency(invoice.tax_amount)}</span>
+        {/* Payment Form */}
+        {showPaymentForm && (
+          <Card className="border-green-500/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Record Payment
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="w-40 px-3 py-2 bg-background border border-border rounded text-sm"
+                    placeholder="0.00"
+                  />
                 </div>
-              )}
-              <div className="flex justify-between py-2 border-b border-border text-lg">
-                <span className="font-semibold">Total</span>
-                <span className="font-bold">{formatCurrency(invoice.total)}</span>
-              </div>
-              {parseFloat(invoice.amount_paid) > 0 && (
-                <div className="flex justify-between py-2 border-b border-border text-green-600 dark:text-green-400">
-                  <span>Amount Paid</span>
-                  <span>-{formatCurrency(invoice.amount_paid)}</span>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Payment Date</label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="px-3 py-2 bg-background border border-border rounded text-sm"
+                  />
                 </div>
-              )}
-              <div className="flex justify-between py-2 text-lg">
-                <span className="font-semibold">Balance Due</span>
-                <span className={`font-bold ${parseFloat(invoice.balance_due) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                  {formatCurrency(invoice.balance_due)}
-                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePay}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                  >
+                    Submit Payment
+                  </button>
+                  <button
+                    onClick={() => setShowPaymentForm(false)}
+                    className="px-4 py-2 border border-border rounded hover:bg-muted text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Invoice Content */}
+        <Card>
+          <CardContent className="p-6">
+            {/* Invoice Header */}
+            <div className="flex flex-col md:flex-row justify-between gap-6 mb-8 pb-6 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Bill To:</h3>
+                <p className="font-medium">{invoice.customer_name}</p>
+                {invoice.customer_email && (
+                  <p className="text-sm text-muted-foreground">{invoice.customer_email}</p>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <span className="text-muted-foreground">Invoice Number:</span>
+                  <span className="font-medium">{invoice.invoice_number}</span>
+                  <span className="text-muted-foreground">Invoice Date:</span>
+                  <span>{formatDate(invoice.invoice_date)}</span>
+                  <span className="text-muted-foreground">Due Date:</span>
+                  <span>{formatDate(invoice.due_date)}</span>
+                  <span className="text-muted-foreground">Period:</span>
+                  <span>{formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Notes */}
-          {invoice.notes && (
-            <div className="pt-4 border-t border-border">
-              <h4 className="text-sm font-medium mb-2">Notes</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
-            </div>
-          )}
-
-          {/* Linked Requests */}
-          {invoice.requests && invoice.requests.length > 0 && (
-            <div className="pt-6 border-t border-border mt-6">
-              <h3 className="text-lg font-semibold mb-3">Linked Requests ({invoice.requests.length})</h3>
-              <div className="border border-border rounded overflow-hidden max-h-64 overflow-y-auto">
+            {/* Line Items */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Line Items</h3>
+              <div className="border border-border rounded overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Urgency</TableHead>
-                      <TableHead className="text-right">Hours</TableHead>
+                      <TableHead className="w-1/2">Description</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      {editMode && <TableHead className="w-20 text-center">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {invoice.requests.map((req) => (
-                      <TableRow key={req.id}>
-                        <TableCell className="text-sm">{formatDate(req.date)}</TableCell>
-                        <TableCell className="text-sm">{req.time}</TableCell>
-                        <TableCell className="text-sm max-w-xs truncate">{req.description}</TableCell>
-                        <TableCell className="text-sm">{req.category}</TableCell>
-                        <TableCell>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            req.urgency === 'HIGH'
-                              ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-                              : req.urgency === 'MEDIUM'
-                              ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                              : 'bg-green-500/10 text-green-600 dark:text-green-400'
-                          }`}>
-                            {req.urgency}
-                          </span>
+                    {invoice.items?.filter(item => parseFloat(item.amount) > 0).map((item) => (
+                      <TableRow key={item.id}>
+                        {editingItem === item.id ? (
+                          <>
+                            <TableCell>
+                              <input
+                                type="text"
+                                value={editValues.description}
+                                onChange={(e) => setEditValues(prev => ({ ...prev, description: e.target.value }))}
+                                className="w-full px-2 py-1 bg-background border border-border rounded text-sm"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={editValues.quantity}
+                                onChange={(e) => setEditValues(prev => ({ ...prev, quantity: e.target.value }))}
+                                className="w-20 px-2 py-1 bg-background border border-border rounded text-sm text-right"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={editValues.unit_price}
+                                onChange={(e) => setEditValues(prev => ({ ...prev, unit_price: e.target.value }))}
+                                className="w-24 px-2 py-1 bg-background border border-border rounded text-sm text-right"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right font-medium text-muted-foreground">
+                              {formatCurrency((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => saveEditItem(item.id)}
+                                  className="p-1 hover:bg-muted rounded text-green-600"
+                                  title="Save"
+                                >
+                                  <Save className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={cancelEditItem}
+                                  className="p-1 hover:bg-muted rounded text-muted-foreground"
+                                  title="Cancel"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell>{item.description}</TableCell>
+                            <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
+                            <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
+                            {editMode && (
+                              <TableCell>
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => startEditItem(item)}
+                                    className="p-1 hover:bg-muted rounded text-yellow-600"
+                                    title="Edit line item"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            )}
+                          </>
+                        )}
+                      </TableRow>
+                    ))}
+                    {/* Show free credits applied as info line */}
+                    {invoice.items?.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'other').map((item) => (
+                      <TableRow key={item.id} className="bg-green-500/5">
+                        <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
+                          {item.description}
                         </TableCell>
-                        <TableCell className="text-right">{parseFloat(req.estimated_hours).toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+
+            {/* Totals */}
+            <div className="flex justify-end mb-6">
+              <div className="w-64">
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(invoice.subtotal)}</span>
+                </div>
+                {parseFloat(invoice.tax_amount) > 0 && (
+                  <div className="flex justify-between py-2 border-b border-border">
+                    <span className="text-muted-foreground">
+                      Tax ({(parseFloat(invoice.tax_rate) * 100).toFixed(2)}%)
+                    </span>
+                    <span className="font-medium">{formatCurrency(invoice.tax_amount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 border-b border-border text-lg">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-bold">{formatCurrency(invoice.total)}</span>
+                </div>
+                {parseFloat(invoice.amount_paid) > 0 && (
+                  <div className="flex justify-between py-2 border-b border-border text-green-600 dark:text-green-400">
+                    <span>Amount Paid</span>
+                    <span>-{formatCurrency(invoice.amount_paid)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 text-lg">
+                  <span className="font-semibold">Balance Due</span>
+                  <span className={`font-bold ${parseFloat(invoice.balance_due) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                    {formatCurrency(invoice.balance_due)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {invoice.notes && (
+              <div className="pt-4 border-t border-border">
+                <h4 className="text-sm font-medium mb-2">Notes</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
+              </div>
+            )}
+
+            {/* Linked Requests */}
+            {invoice.requests && invoice.requests.length > 0 && (
+              <div className="pt-6 border-t border-border mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Linked Requests ({invoice.requests.length})</h3>
+                  {editMode && (
+                    <button
+                      onClick={toggleAddRequests}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border rounded hover:bg-muted"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Requests
+                    </button>
+                  )}
+                </div>
+                <div className="border border-border rounded overflow-hidden max-h-64 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Urgency</TableHead>
+                        <TableHead className="text-right">Hours</TableHead>
+                        {editMode && <TableHead className="w-12"></TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoice.requests.map((req) => (
+                        <TableRow key={req.id}>
+                          <TableCell className="text-sm">{formatDate(req.date)}</TableCell>
+                          <TableCell className="text-sm">{req.time}</TableCell>
+                          <TableCell className="text-sm max-w-xs truncate">{req.description}</TableCell>
+                          <TableCell className="text-sm">{req.category}</TableCell>
+                          <TableCell>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              req.urgency === 'HIGH'
+                                ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                : req.urgency === 'MEDIUM'
+                                ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                                : 'bg-green-500/10 text-green-600 dark:text-green-400'
+                            }`}>
+                              {req.urgency}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">{parseFloat(req.estimated_hours).toFixed(2)}</TableCell>
+                          {editMode && (
+                            <TableCell>
+                              <button
+                                onClick={() => handleUnlinkRequest(req)}
+                                className="p-1 hover:bg-muted rounded text-red-600 dark:text-red-400"
+                                title="Remove from invoice"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {/* Add Requests Panel (edit mode only) */}
+            {editMode && showAddRequests && (
+              <div className="pt-4 mt-4 border-t border-border">
+                <h4 className="text-sm font-semibold mb-2">Unbilled Requests for This Period</h4>
+                {unbilledRequests.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No unbilled requests available for this invoice's period.
+                  </p>
+                ) : (
+                  <div className="border border-border rounded overflow-hidden max-h-48 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Urgency</TableHead>
+                          <TableHead className="text-right">Hours</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {unbilledRequests.map((req) => (
+                          <TableRow key={req.id}>
+                            <TableCell className="text-sm">{formatDate(req.date)}</TableCell>
+                            <TableCell className="text-sm max-w-xs truncate">{req.description}</TableCell>
+                            <TableCell>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                req.urgency === 'HIGH'
+                                  ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                  : req.urgency === 'MEDIUM'
+                                  ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                                  : 'bg-green-500/10 text-green-600 dark:text-green-400'
+                              }`}>
+                                {req.urgency}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">{parseFloat(req.estimated_hours).toFixed(2)}</TableCell>
+                            <TableCell>
+                              <button
+                                onClick={() => handleLinkRequest(req)}
+                                className="p-1 hover:bg-muted rounded text-green-600 dark:text-green-400"
+                                title="Add to invoice"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty requests - show add button if in edit mode */}
+            {editMode && (!invoice.requests || invoice.requests.length === 0) && (
+              <div className="pt-6 border-t border-border mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Linked Requests (0)</h3>
+                  <button
+                    onClick={toggleAddRequests}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border rounded hover:bg-muted"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Requests
+                  </button>
+                </div>
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No requests linked. Click "Add Requests" to link unbilled requests.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        isDestructive={confirmDialog.isDestructive}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </>
   );
 }
