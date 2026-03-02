@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingState } from '../../../components/ui/LoadingState';
 import { PageHeader } from '../../../components/shared/PageHeader';
@@ -38,7 +38,7 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
   });
 
   // Register available data with context when billingSummary changes
-  useMemo(() => {
+  useEffect(() => {
     if (!billingSummary) return;
 
     const months = billingSummary.monthlyBreakdown.map(m => {
