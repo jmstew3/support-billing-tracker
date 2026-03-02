@@ -136,11 +136,11 @@ export async function getBillingSummary(customerId, periodStart, periodEnd) {
     const [requests] = await connection.query(
       `SELECT * FROM requests
        WHERE customer_id = ?
-       AND date >= ? AND date <= ?
+       AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
        AND status = 'active'
        AND invoice_id IS NULL
        AND category NOT IN ('Non-billable', 'Migration')
-       ORDER BY date, time`,
+       ORDER BY COALESCE(billing_date, date), time`,
       [customerId, periodStart, periodEnd]
     );
 
@@ -189,11 +189,11 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
       const [summaryRequests] = await connection.query(
         `SELECT * FROM requests
          WHERE customer_id = ?
-         AND date >= ? AND date <= ?
+         AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
          AND status = 'active'
          AND invoice_id IS NULL
          AND category NOT IN ('Non-billable', 'Migration')
-         ORDER BY date, time`,
+         ORDER BY COALESCE(billing_date, date), time`,
         [customerId, periodStart, periodEnd]
       );
 
@@ -704,10 +704,10 @@ export async function getUnbilledRequests(invoiceId) {
     const [requests] = await connection.query(
       `SELECT id, date, time, description, category, urgency, estimated_hours
        FROM requests
-       WHERE customer_id = ? AND date >= ? AND date <= ?
+       WHERE customer_id = ? AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
        AND status = 'active' AND invoice_id IS NULL
        AND category NOT IN ('Non-billable', 'Migration')
-       ORDER BY date, time`,
+       ORDER BY COALESCE(billing_date, date), time`,
       [inv.customer_id, inv.period_start, inv.period_end]
     );
     return requests;
@@ -757,6 +757,7 @@ export async function exportInvoiceCSV(invoiceId) {
   lines.push(`Invoice Date,${invoice.invoice_date}`);
   lines.push(`Due Date,${invoice.due_date}`);
   lines.push(`Period,${invoice.period_start} to ${invoice.period_end}`);
+  lines.push(`Support Requests,${invoice.requests ? invoice.requests.length : 0}`);
   lines.push('');
 
   // Line items

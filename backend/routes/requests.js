@@ -125,15 +125,15 @@ router.get('/requests', readRateLimiter, async (req, res) => {
     }
 
     if (startDate) {
-      query += ' AND date >= ?';
-      countQuery += ' AND date >= ?';
+      query += ' AND COALESCE(billing_date, date) >= ?';
+      countQuery += ' AND COALESCE(billing_date, date) >= ?';
       params.push(startDate);
       countParams.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND date <= ?';
-      countQuery += ' AND date <= ?';
+      query += ' AND COALESCE(billing_date, date) <= ?';
+      countQuery += ' AND COALESCE(billing_date, date) <= ?';
       params.push(endDate);
       countParams.push(endDate);
     }
@@ -144,7 +144,7 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       params.push(cursor);
     }
 
-    query += ' ORDER BY date DESC, time DESC, id DESC';
+    query += ' ORDER BY COALESCE(billing_date, date) DESC, time DESC, id DESC';
 
     // Apply limit if provided (pagination mode)
     // Note: Using query() instead of execute() because MySQL prepared statements
