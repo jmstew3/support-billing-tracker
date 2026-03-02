@@ -4,7 +4,7 @@
  * Supports three revenue streams: Support, Projects, and Hosting
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, FileText, Calculator, AlertCircle, Headphones, FolderKanban, Server } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
@@ -27,6 +27,7 @@ import { generateComprehensiveBilling } from '../../../services/billingApi';
 import type { MonthlyBillingSummary } from '../../../types/billing';
 import { formatDate } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
+import { DateInput } from '../../../components/shared/DateInput';
 
 interface GenerateInvoiceModalProps {
   isOpen: boolean;
@@ -41,9 +42,13 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
   const [periodEnd, setPeriodEnd] = useState('');
   const [billingSummary, setBillingSummary] = useState<BillingSummary | null>(null);
   const [monthlyBillingData, setMonthlyBillingData] = useState<MonthlyBillingSummary | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [comprehensiveError, setComprehensiveError] = useState<string | null>(null);
+
+  const loading = supportLoading || comprehensiveLoading;
   const [notes, setNotes] = useState('');
 
   // Section toggles
@@ -83,46 +88,53 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     }
   }
 
-  // Load billing data when customer and period change
-  useEffect(() => {
-    if (selectedCustomer && periodStart && periodEnd) {
-      loadAllBillingData();
-    } else {
-      setBillingSummary(null);
-      setMonthlyBillingData(null);
-    }
-  }, [selectedCustomer, periodStart, periodEnd]);
-
-  async function loadAllBillingData() {
+  const loadSupportData = useCallback(async () => {
     if (!selectedCustomer || !periodStart || !periodEnd) return;
 
     try {
-      setLoading(true);
+      setSupportLoading(true);
       setError(null);
-
-      // Fetch both support summary and comprehensive billing in parallel
-      const [supportSummary, comprehensiveBilling] = await Promise.all([
-        getBillingSummary(selectedCustomer as number, periodStart, periodEnd),
-        generateComprehensiveBilling(),
-      ]);
-
+      const supportSummary = await getBillingSummary(selectedCustomer as number, periodStart, periodEnd);
       setBillingSummary(supportSummary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load support data');
+      setBillingSummary(null);
+    } finally {
+      setSupportLoading(false);
+    }
+  }, [selectedCustomer, periodStart, periodEnd]);
 
-      // Find the matching month from comprehensive billing
-      // Use the period start to determine the target month
+  const loadComprehensiveBillingData = useCallback(async () => {
+    if (!periodStart) return;
+
+    try {
+      setComprehensiveLoading(true);
+      setComprehensiveError(null);
+      const comprehensiveBilling = await generateComprehensiveBilling();
+
       const targetMonth = periodStart.substring(0, 7); // YYYY-MM
       const matchingMonth = comprehensiveBilling.monthlyBreakdown.find(
         (m) => m.month === targetMonth
       );
       setMonthlyBillingData(matchingMonth || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load billing data');
-      setBillingSummary(null);
+      setComprehensiveError(err instanceof Error ? err.message : 'Failed to load projects/hosting data');
       setMonthlyBillingData(null);
     } finally {
-      setLoading(false);
+      setComprehensiveLoading(false);
     }
-  }
+  }, [periodStart]);
+
+  // Load billing data when customer and period change
+  useEffect(() => {
+    if (selectedCustomer && periodStart && periodEnd) {
+      loadSupportData();
+      loadComprehensiveBillingData();
+    } else {
+      setBillingSummary(null);
+      setMonthlyBillingData(null);
+    }
+  }, [selectedCustomer, periodStart, periodEnd, loadSupportData, loadComprehensiveBillingData]);
 
   // Computed totals
   const supportTotal = useMemo(() => {
@@ -254,21 +266,19 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Period Start</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={periodStart}
-                    onChange={(e) => setPeriodStart(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded text-sm"
+                    onChange={setPeriodStart}
+                    label="Period Start"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Period End</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={periodEnd}
-                    onChange={(e) => setPeriodEnd(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded text-sm"
+                    onChange={setPeriodEnd}
+                    label="Period End"
                   />
                 </div>
               </div>
@@ -287,7 +297,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           </Card>
 
           {/* Section Toggles */}
-          {!loading && hasAnyData && (
+          {hasAnyData && (
             <div className="flex flex-wrap gap-2">
               <label
                 className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer transition-colors text-sm ${
@@ -679,9 +689,9 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           )}
 
           {/* Error */}
-          {error && (
+          {(error || comprehensiveError) && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-destructive text-sm">
-              {error}
+              {error || comprehensiveError}
             </div>
           )}
         </div>
