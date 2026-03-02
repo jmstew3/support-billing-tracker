@@ -1,6 +1,7 @@
 import axios from 'axios';
 import logger from './logger.js';
 import { validateFluentTickets } from './apiSchemas.js';
+import { estimateHours } from './invoiceService.js';
 
 /**
  * FluentSupport API Service
@@ -354,6 +355,11 @@ export function transformFluentTicket(ticket) {
 
   const urgency = mapPriority(ticket.priority);
 
+  // Extract response metrics for hour estimation
+  const responseCount = parseInt(ticket.response_count) || 0;
+  const totalCloseTime = ticket.total_close_time != null ? parseInt(ticket.total_close_time) : null;
+  const estimated_hours = estimateHours(responseCount, urgency);
+
   /**
    * Validate category against frontend CATEGORY_OPTIONS
    * Valid categories: Advisory, Email, Forms, General, Hosting, Migration, Non-billable, Scripts, Support, Website
@@ -455,10 +461,13 @@ export function transformFluentTicket(ticket) {
     description,
     urgency,
     effort: estimateEffort(urgency),
+    estimated_hours,
     status: 'active',
     source: 'fluent',
     fluent_id: ticket.id?.toString() || ticket.ticket_id?.toString(),
     website_url: websiteUrl, // Primary website URL extracted from ticket
+    response_count: responseCount,
+    total_close_time: totalCloseTime,
 
     // Additional FluentSupport metadata
     fluent_metadata: {
@@ -476,6 +485,8 @@ export function transformFluentTicket(ticket) {
       product_name: ticket.product?.title || ticket.product_name,
       agent_id: ticket.agent_id,
       agent_name: ticket.agent?.name || ticket.agent_name,
+      response_count: responseCount,
+      total_close_time: totalCloseTime,
       raw_data: ticket
     }
   };

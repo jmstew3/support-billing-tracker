@@ -241,6 +241,7 @@ class FluentSyncService {
         description: requestData.description,
         urgency: requestData.urgency,
         effort: requestData.effort,
+        estimated_hours: requestData.estimated_hours,
         source: requestData.source,
         website_url: requestData.website_url,
         status: 'active' // Re-activate in case it was previously deleted (reopened then re-closed)
@@ -266,6 +267,8 @@ class FluentSyncService {
       product_name: meta.product_name,
       agent_id: meta.agent_id,
       agent_name: meta.agent_name,
+      response_count: requestData.response_count,
+      total_close_time: requestData.total_close_time,
       raw_data: meta.raw_data
     });
   }
@@ -286,6 +289,7 @@ class FluentSyncService {
       description: requestData.description,
       urgency: requestData.urgency,
       effort: requestData.effort,
+      estimated_hours: requestData.estimated_hours,
       status: requestData.status,
       source: requestData.source,
       website_url: requestData.website_url
@@ -311,6 +315,8 @@ class FluentSyncService {
       product_name: meta.product_name,
       agent_id: meta.agent_id,
       agent_name: meta.agent_name,
+      response_count: requestData.response_count,
+      total_close_time: requestData.total_close_time,
       raw_data: meta.raw_data,
       request_id: requestId
     });

@@ -15,8 +15,28 @@ const PRICING = {
   freeCredits: {
     supportHours: 10,
     effectiveDate: '2025-06-01'
+  },
+  hourEstimation: {
+    baseHoursPerResponse: 0.25,
+    urgencyMultipliers: { HIGH: 1.5, MEDIUM: 1.0, LOW: 0.75 },
+    minHours: 0.25,
+    maxHours: 10.0
   }
 };
+
+/**
+ * Estimate hours for a FluentSupport ticket based on response count and urgency
+ * @param {number} responseCount - Number of responses on the ticket
+ * @param {string} urgency - Urgency level (HIGH, MEDIUM, LOW)
+ * @returns {number} Estimated hours, clamped to [minHours, maxHours]
+ */
+export function estimateHours(responseCount, urgency) {
+  const { baseHoursPerResponse, urgencyMultipliers, minHours, maxHours } = PRICING.hourEstimation;
+  const count = parseInt(responseCount) || 1;
+  const multiplier = urgencyMultipliers[urgency] || urgencyMultipliers.MEDIUM;
+  const raw = count * baseHoursPerResponse * multiplier;
+  return Math.round(Math.max(minHours, Math.min(maxHours, raw)) * 100) / 100;
+}
 
 /**
  * Generate next invoice number
@@ -1115,5 +1135,6 @@ export default {
   exportHostingDetailCSV,
   exportInvoiceJSON,
   listCustomers,
-  getCustomer
+  getCustomer,
+  estimateHours
 };

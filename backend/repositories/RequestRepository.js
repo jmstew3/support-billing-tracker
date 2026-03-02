@@ -245,10 +245,23 @@ class RequestRepository {
       description,
       urgency = 'MEDIUM',
       effort = 'Medium',
+      estimated_hours,
       status = 'active',
       source = 'sms',
       website_url = null
     } = data;
+
+    // Only include estimated_hours in INSERT if explicitly provided
+    if (estimated_hours != null) {
+      const [result] = await connection.query(
+        `INSERT INTO requests (date, time, request_type, category, description,
+                              urgency, effort, estimated_hours, status, source, website_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [date, time, request_type, category, description,
+         urgency, effort, estimated_hours, status, source, website_url]
+      );
+      return result.insertId;
+    }
 
     const [result] = await connection.query(
       `INSERT INTO requests (date, time, request_type, category, description,
@@ -271,7 +284,7 @@ class RequestRepository {
   async updateWithConnection(connection, id, data) {
     const allowedFields = [
       'date', 'time', 'category', 'description', 'urgency',
-      'effort', 'status', 'source', 'website_url'
+      'effort', 'estimated_hours', 'status', 'source', 'website_url'
     ];
 
     const updates = [];
