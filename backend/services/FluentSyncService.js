@@ -11,6 +11,10 @@ import logger from './logger.js';
  * Handles the complete sync workflow with transaction support
  */
 class FluentSyncService {
+  constructor() {
+    this.mailboxId = process.env.VITE_FLUENT_MAILBOX_ID || null;
+  }
+
   /**
    * Synchronize tickets from FluentSupport
    * @param {string} dateFilter - Only sync tickets created after this date (YYYY-MM-DD)
@@ -29,7 +33,16 @@ class FluentSyncService {
       // Mark sync as in progress
       syncId = await FluentSyncStatusRepository.startSync(connection, dateFilter);
 
-      // Fetch tickets from FluentSupport API
+      // 1. Cleanup: Remove any tickets that don't belong to the configured mailbox
+      // This handles cases where the mailbox ID changed or previous syncs were misconfigured
+      if (this.mailboxId) {
+        const deletedCount = await FluentTicketRepository.deleteOtherMailboxes(connection, this.mailboxId);
+        if (deletedCount > 0) {
+          logger.info(`[FluentSyncService] Cleaned up ${deletedCount} tickets from other mailboxes`);
+        }
+      }
+
+      // 2. Fetch tickets from FluentSupport API (already filtered by mailbox_id in the API service)
       const tickets = await fetchFluentTickets(dateFilter);
 
       // Process results
@@ -310,8 +323,8 @@ class FluentSyncService {
   async getStatus() {
     const [syncStatus, totalTickets, statusBreakdown] = await Promise.all([
       FluentSyncStatusRepository.getLatest(),
-      FluentTicketRepository.count(),
-      FluentTicketRepository.countByStatus()
+      FluentTicketRepository.count(this.mailboxId),
+      FluentTicketRepository.countByStatus(this.mailboxId)
     ]);
 
     return {
@@ -327,7 +340,10 @@ class FluentSyncService {
    * @returns {Promise<Array>} Array of tickets
    */
   async getTickets(options = {}) {
-    return FluentTicketRepository.findAll(options);
+    return FluentTicketRepository.findAll({
+      ...options,
+      mailboxId: this.mailboxId
+    });
   }
 }
 

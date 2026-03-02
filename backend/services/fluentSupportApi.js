@@ -148,6 +148,31 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
       }
     }
 
+    // Filter by mailbox_id server-side (API ignores the mailbox_id query parameter)
+    const effectiveMailboxId = process.env.VITE_FLUENT_MAILBOX_ID || FLUENT_MAILBOX_ID;
+    if (effectiveMailboxId) {
+      const before = allTickets.length;
+      logger.info(`[FluentSupport] Filtering ${before} tickets for mailbox_id=${effectiveMailboxId}`);
+      
+      allTickets = allTickets.filter(ticket => {
+        const ticketMailboxId = ticket.mailbox_id || (ticket.mailbox && ticket.mailbox.id);
+        const matches = String(ticketMailboxId) === String(effectiveMailboxId);
+        if (!matches && before < 10) { // Only log details if few tickets for debugging
+           logger.debug(`[FluentSupport] Ticket ${ticket.id} mailbox_id ${ticketMailboxId} does not match ${effectiveMailboxId}`);
+        }
+        return matches;
+      });
+      
+      const filtered = before - allTickets.length;
+      if (filtered > 0) {
+        logger.info(`[FluentSupport] Filtered out ${filtered} tickets from other mailboxes (keeping mailbox_id=${effectiveMailboxId})`);
+      } else if (before > 0 && allTickets.length === before) {
+        logger.warn(`[FluentSupport] No tickets were filtered out, even though mailbox_id=${effectiveMailboxId} was set. First ticket mailbox_id: ${allTickets[0]?.mailbox_id}`);
+      }
+    } else {
+      logger.warn('[FluentSupport] VITE_FLUENT_MAILBOX_ID not set, skipping mailbox filter');
+    }
+
     // Validate API response data at integration boundary
     return validateFluentTickets(allTickets);
 

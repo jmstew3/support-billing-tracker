@@ -158,44 +158,99 @@ class FluentTicketRepository {
   }
 
   /**
-   * Find all fluent tickets with pagination
+   * Find all fluent tickets with pagination, optionally filtered by mailbox_id
    * @param {Object} options - Query options
    * @returns {Promise<Array>} Array of fluent ticket records
    */
-  async findAll({ limit = 100, offset = 0 } = {}) {
-    const [rows] = await pool.query(
-      `SELECT ft.*, r.date, r.time, r.category, r.urgency, r.status
-       FROM fluent_tickets ft
-       LEFT JOIN requests r ON ft.request_id = r.id
-       ORDER BY ft.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [parseInt(limit), parseInt(offset)]
-    );
+  async findAll({ limit = 100, offset = 0, mailboxId = null } = {}) {
+    let query = `
+      SELECT ft.*, r.date, r.time, r.category, r.urgency, r.status
+      FROM fluent_tickets ft
+      LEFT JOIN requests r ON ft.request_id = r.id
+    `;
+    const params = [];
+
+    if (mailboxId) {
+      query += ` WHERE ft.mailbox_id = ?`;
+      params.push(mailboxId);
+    }
+
+    query += ` ORDER BY ft.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
   /**
-   * Count fluent tickets by status
+   * Count fluent tickets by status, optionally filtered by mailbox_id
+   * @param {number|string} mailboxId - Optional mailbox filter
    * @returns {Promise<Array>} Status breakdown
    */
-  async countByStatus() {
-    const [rows] = await pool.query(
-      `SELECT ticket_status, COUNT(*) as count
-       FROM fluent_tickets
-       GROUP BY ticket_status`
-    );
+  async countByStatus(mailboxId = null) {
+    let query = `SELECT ticket_status, COUNT(*) as count FROM fluent_tickets`;
+    const params = [];
+
+    if (mailboxId) {
+      query += ` WHERE mailbox_id = ?`;
+      params.push(mailboxId);
+    }
+
+    query += ` GROUP BY ticket_status`;
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
   /**
-   * Get total count of fluent tickets
+   * Get total count of fluent tickets, optionally filtered by mailbox_id
+   * @param {number|string} mailboxId - Optional mailbox filter
    * @returns {Promise<number>} Total count
    */
-  async count() {
-    const [[{ count }]] = await pool.query(
-      'SELECT COUNT(*) as count FROM fluent_tickets'
-    );
+  async count(mailboxId = null) {
+    let query = `SELECT COUNT(*) as count FROM fluent_tickets`;
+    const params = [];
+
+    if (mailboxId) {
+      query += ` WHERE mailbox_id = ?`;
+      params.push(mailboxId);
+    }
+
+    const [[{ count }]] = await pool.query(query, params);
     return parseInt(count);
+  }
+
+  /**
+   * Delete tickets not matching the specified mailbox_id
+   * Use with caution!
+   * @param {Object} connection - MySQL connection
+   * @param {number|string} mailboxId - The mailbox_id to KEEP
+   * @returns {Promise<number>} Number of deleted tickets
+   */
+  async deleteOtherMailboxes(connection, mailboxId) {
+    if (!mailboxId) return 0;
+    
+    // First find the associated request IDs to delete those too (soft delete)
+    const [rows] = await connection.query(
+      'SELECT request_id FROM fluent_tickets WHERE mailbox_id != ? AND request_id IS NOT NULL',
+      [mailboxId]
+    );
+    
+    const requestIds = rows.map(r => r.request_id);
+    
+    if (requestIds.length > 0) {
+      const placeholders = requestIds.map(() => '?').join(', ');
+      await connection.query(
+        `UPDATE requests SET status = 'deleted' WHERE id IN (${placeholders})`,
+        requestIds
+      );
+    }
+
+    const [result] = await connection.query(
+      'DELETE FROM fluent_tickets WHERE mailbox_id != ?',
+      [mailboxId]
+    );
+    
+    return result.affectedRows;
   }
 
   /**
