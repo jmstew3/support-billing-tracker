@@ -16,6 +16,8 @@ import {
   getUnbilledRequests,
   deleteInvoice,
   exportInvoiceCSV,
+  exportInvoiceQBOCSV,
+  exportHostingDetailCSV,
   exportInvoiceJSON,
   listCustomers,
   getCustomer,
@@ -306,6 +308,48 @@ router.get('/:id/export/csv', async (req, res) => {
     res.send(csv);
   } catch (error) {
     console.error('Error exporting CSV:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invoices/:id/export/qbo-csv
+ * Export invoice as QBO-compatible flat CSV (directly importable into QuickBooks Online)
+ */
+router.get('/:id/export/qbo-csv', async (req, res) => {
+  try {
+    const csv = await exportInvoiceQBOCSV(req.params.id);
+    const invoice = await getInvoice(req.params.id);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${invoice.invoice_number}-qbo.csv"`
+    );
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting QBO CSV:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/invoices/:id/export/hosting-csv
+ * Export hosting detail CSV (per-site breakdown from stored snapshot)
+ */
+router.get('/:id/export/hosting-csv', async (req, res) => {
+  try {
+    const csv = await exportHostingDetailCSV(req.params.id);
+    const invoice = await getInvoice(req.params.id);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${invoice.invoice_number}-hosting-detail.csv"`
+    );
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting hosting detail CSV:', error);
     res.status(400).json({ error: error.message });
   }
 });

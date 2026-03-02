@@ -28,6 +28,8 @@ import {
   linkRequest,
   getUnbilledRequests,
   exportInvoiceCSV,
+  exportInvoiceQBOCSV,
+  exportHostingDetailCSV,
   exportInvoiceJSON,
   downloadFile,
   type Invoice,
@@ -178,6 +180,26 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       downloadFile(JSON.stringify(json, null, 2), `invoice-${invoice.invoice_number}.json`, 'application/json');
     } catch (err) {
       addToast('error', err instanceof Error ? err.message : 'Failed to export JSON');
+    }
+  }
+
+  async function handleExportQBOCSV() {
+    if (!invoice) return;
+    try {
+      const csv = await exportInvoiceQBOCSV(invoice.id);
+      downloadFile(csv, `${invoice.invoice_number}-qbo.csv`, 'text/csv');
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to export QBO CSV');
+    }
+  }
+
+  async function handleExportHostingCSV() {
+    if (!invoice) return;
+    try {
+      const csv = await exportHostingDetailCSV(invoice.id);
+      downloadFile(csv, `${invoice.invoice_number}-hosting-detail.csv`, 'text/csv');
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to export hosting detail CSV');
     }
   }
 
@@ -392,20 +414,44 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 Record Payment
               </button>
             )}
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
-            >
-              <Download className="h-4 w-4" />
-              CSV
-            </button>
-            <button
-              onClick={handleExportJSON}
-              className="flex items-center gap-2 px-3 py-2 border border-border rounded hover:bg-muted text-sm"
-            >
-              <Download className="h-4 w-4" />
-              JSON
-            </button>
+            <div className="flex items-center gap-1 border border-border rounded overflow-hidden">
+              <button
+                onClick={handleExportQBOCSV}
+                className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted text-sm font-medium"
+                title="QuickBooks Online import CSV"
+              >
+                <Download className="h-4 w-4" />
+                QBO
+              </button>
+              <div className="w-px h-6 bg-border" />
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted text-sm"
+                title="Human-readable invoice CSV"
+              >
+                CSV
+              </button>
+              {invoice.hosting_detail_snapshot && (
+                <>
+                  <div className="w-px h-6 bg-border" />
+                  <button
+                    onClick={handleExportHostingCSV}
+                    className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted text-sm"
+                    title="Per-site hosting breakdown CSV"
+                  >
+                    Hosting
+                  </button>
+                </>
+              )}
+              <div className="w-px h-6 bg-border" />
+              <button
+                onClick={handleExportJSON}
+                className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted text-sm"
+                title="JSON export for API/automation"
+              >
+                JSON
+              </button>
+            </div>
           </div>
         </div>
 

@@ -74,6 +74,7 @@ export interface Invoice {
   qbo_sync_status: 'pending' | 'synced' | 'error' | 'not_applicable';
   qbo_sync_date: string | null;
   qbo_sync_error: string | null;
+  hosting_detail_snapshot: HostingChargeSnapshot[] | null;
   created_at: string;
   updated_at: string;
   customer_name?: string;
@@ -122,6 +123,20 @@ export interface GenerateInvoiceParams {
   notes?: string;
   additionalItems?: AdditionalLineItem[];
   includeSupport?: boolean;
+  hostingDetailSnapshot?: HostingChargeSnapshot[];
+}
+
+// Serializable hosting charge for DB snapshot (matches HostingCharge from types/websiteProperty)
+export interface HostingChargeSnapshot {
+  siteName: string;
+  websiteUrl: string | null;
+  billingType: string;
+  daysActive: number;
+  daysInMonth: number;
+  grossAmount: number;
+  creditApplied: boolean;
+  creditAmount?: number;
+  netAmount: number;
 }
 
 export interface InvoiceFilters {
@@ -369,6 +384,28 @@ export async function exportInvoiceCSV(id: number): Promise<string> {
 }
 
 /**
+ * Export invoice as QBO-compatible flat CSV
+ */
+export async function exportInvoiceQBOCSV(id: number): Promise<string> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/export/qbo-csv`);
+  if (!response.ok) {
+    throw new Error(`Failed to export QBO CSV: ${response.statusText}`);
+  }
+  return response.text();
+}
+
+/**
+ * Export hosting detail CSV (per-site breakdown)
+ */
+export async function exportHostingDetailCSV(id: number): Promise<string> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/export/hosting-csv`);
+  if (!response.ok) {
+    throw new Error(`Failed to export hosting detail CSV: ${response.statusText}`);
+  }
+  return response.text();
+}
+
+/**
  * Export invoice as JSON
  */
 export async function exportInvoiceJSON(id: number): Promise<object> {
@@ -430,23 +467,33 @@ export function buildAdditionalLineItems(
     }
   }
 
-  // Hosting line item (consolidated)
+  // Hosting line item (consolidated lump-sum — detail CSV handles per-site breakdown)
   if (includeHosting && monthData.hostingSitesCount > 0) {
     const [year, monthNum] = monthData.month.split('-');
     const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleString('en-US', { month: 'long' });
 
+    // Count prorated sites from hosting details
+    const proratedCount = monthData.hostingDetails?.filter(
+      h => h.billingType !== 'full_month' && h.billingType !== 'free_credit'
+    ).length ?? 0;
+
     let desc = `Turbo Hosting - ${monthData.hostingSitesCount} site${monthData.hostingSitesCount !== 1 ? 's' : ''} (${monthName} ${year})`;
+    const notes: string[] = [];
     if (monthData.hostingCreditsApplied > 0) {
-      desc += ` [${monthData.hostingCreditsApplied} free credit${monthData.hostingCreditsApplied !== 1 ? 's' : ''} applied]`;
+      notes.push(`${monthData.hostingCreditsApplied} free credit${monthData.hostingCreditsApplied !== 1 ? 's' : ''}`);
+    }
+    if (proratedCount > 0) {
+      notes.push(`${proratedCount} prorated`);
+    }
+    if (notes.length > 0) {
+      desc += ` [${notes.join(', ')}]`;
     }
 
     items.push({
       item_type: 'hosting',
       description: desc,
-      quantity: monthData.hostingSitesCount,
-      unit_price: monthData.hostingSitesCount > 0
-        ? Math.round((monthData.hostingRevenue / monthData.hostingSitesCount) * 100) / 100
-        : 0,
+      quantity: 1,
+      unit_price: monthData.hostingRevenue,
       amount: monthData.hostingRevenue,
       sort_order: sortOrder++,
     });
@@ -467,6 +514,8 @@ export default {
   sendInvoice,
   payInvoice,
   exportInvoiceCSV,
+  exportInvoiceQBOCSV,
+  exportHostingDetailCSV,
   exportInvoiceJSON,
   downloadFile,
   buildAdditionalLineItems

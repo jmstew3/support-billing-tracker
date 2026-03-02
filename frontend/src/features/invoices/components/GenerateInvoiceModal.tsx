@@ -188,6 +188,21 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
         ? buildAdditionalLineItems(monthlyBillingData, includeProjects, includeHosting)
         : [];
 
+      // Build hosting detail snapshot for DB storage
+      const hostingDetailSnapshot = (includeHosting && monthlyBillingData?.hostingDetails?.length)
+        ? monthlyBillingData.hostingDetails.map(h => ({
+            siteName: h.siteName,
+            websiteUrl: h.websiteUrl,
+            billingType: h.billingType,
+            daysActive: h.daysActive,
+            daysInMonth: h.daysInMonth,
+            grossAmount: h.grossAmount,
+            creditApplied: h.creditApplied,
+            creditAmount: h.creditAmount,
+            netAmount: h.netAmount,
+          }))
+        : undefined;
+
       await generateInvoice({
         customerId: selectedCustomer as number,
         periodStart,
@@ -195,6 +210,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
         notes: notes || undefined,
         includeSupport,
         additionalItems: additionalItems.length > 0 ? additionalItems : undefined,
+        hostingDetailSnapshot,
       });
 
       onSuccess();
