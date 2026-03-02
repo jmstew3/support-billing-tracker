@@ -1,9 +1,9 @@
 -- =============================================================================
 -- Development Seed Data
--- Run: docker exec -i support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker < backend/db/seed_dev_data.sql
+-- Run: docker exec -i support-billing-tracker-mysql mysql -u thaduser -pthadpassword velocity_billing < backend/db/seed_dev_data.sql
 -- =============================================================================
 
-USE support_billing_tracker;
+USE velocity_billing;
 
 -- ---------------------------------------------------------------------------
 -- CUSTOMERS (billing entities)

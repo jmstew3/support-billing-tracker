@@ -1,6 +1,6 @@
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS support_billing_tracker;
-USE support_billing_tracker;
+CREATE DATABASE IF NOT EXISTS velocity_billing;
+USE velocity_billing;
 
 -- Drop existing table if it exists (for clean setup)
 DROP TABLE IF EXISTS requests;

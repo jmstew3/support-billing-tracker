@@ -3,7 +3,7 @@
 -- Date: 2025-10-08
 -- Description: Converts estimated_hours from static decimal to GENERATED column based on effort
 
-USE support_billing_tracker;
+USE velocity_billing;
 
 -- Drop the existing estimated_hours column
 ALTER TABLE requests DROP COLUMN estimated_hours;

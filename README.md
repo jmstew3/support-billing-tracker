@@ -172,7 +172,7 @@ The client portal provides a separate, client-facing view for customers to view 
 
 1. **Run the seed script** to create test client and user:
 ```bash
-docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword thad_chat < backend/db/migrations/009d_seed_test_client_users.sql
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword velocity_billing < backend/db/migrations/009d_seed_test_client_users.sql
 ```
 
 2. **Access the portal**:
@@ -272,7 +272,7 @@ Check the sync status:
 curl -s http://localhost:3011/api/fluent/status | python3 -m json.tool
 
 # Check database
-docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword support_billing_tracker \
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword velocity_billing \
   -e "SELECT COUNT(*) as total, MIN(date) as earliest, MAX(date) as latest FROM requests WHERE date >= '2025-10-17';"
 ```
 
@@ -635,14 +635,14 @@ Host: 127.0.0.1 or localhost
 Port: 3307 (not 3306)
 User: thaduser
 Password: [from .env]
-Database: support_billing_tracker
+Database: velocity_billing
 ```
 
 **Via MySQL Command Line**:
 ```bash
 mysql -h localhost -P 3307 -u thaduser -p
 # Enter password from .env
-USE support_billing_tracker;
+USE velocity_billing;
 SELECT * FROM requests WHERE status = 'active' LIMIT 10;
 ```
 
@@ -667,12 +667,12 @@ curl http://localhost:3011/api/export-csv > export.csv
 
 **Backup Database**:
 ```bash
-docker exec support-billing-tracker-mysql mysqldump -u root -prootpassword support_billing_tracker > backup.sql
+docker exec support-billing-tracker-mysql mysqldump -u root -prootpassword velocity_billing > backup.sql
 ```
 
 **Restore Database**:
 ```bash
-docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword support_billing_tracker < backup.sql
+docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword velocity_billing < backup.sql
 ```
 
 ## 🔧 Troubleshooting

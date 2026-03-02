@@ -1,7 +1,7 @@
--- Seed data for support_billing_tracker
+-- Seed data for velocity_billing
 -- Run after schema.sql to populate initial test data
 
-USE support_billing_tracker;
+USE velocity_billing;
 
 -- Clear existing data for fresh seed
 TRUNCATE TABLE requests;

@@ -209,7 +209,7 @@ SELECT
   TABLE_NAME,
   ROUND(((data_length + index_length) / 1024 / 1024), 2) AS size_mb
 FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = 'support_billing_tracker'
+WHERE TABLE_SCHEMA = 'velocity_billing'
 ORDER BY size_mb DESC;
 ```
 

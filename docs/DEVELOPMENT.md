@@ -266,7 +266,7 @@ CREATE INDEX idx_requests_new_field ON requests(new_field);
 docker exec -it support-billing-tracker-mysql mysql -u root -p
 
 # Run migration
-USE support_billing_tracker;
+USE velocity_billing;
 SOURCE /path/to/006_my_migration.sql;
 ```
 
@@ -343,7 +343,7 @@ docker-compose down -v
 | `MYSQL_HOST` | Database host | `mysql` |
 | `MYSQL_USER` | Database user | `thaduser` |
 | `MYSQL_PASSWORD` | Database password | `thadpassword` |
-| `MYSQL_DATABASE` | Database name | `support_billing_tracker` |
+| `MYSQL_DATABASE` | Database name | `velocity_billing` |
 | `JWT_SECRET` | JWT signing key | `your-secret-key` |
 | `FRONTEND_URL` | CORS origin | `http://localhost:5173` |
 

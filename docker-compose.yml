@@ -12,7 +12,7 @@ services:
         max-file: "3"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: support_billing_tracker
+      MYSQL_DATABASE: velocity_billing
       MYSQL_USER: ${MYSQL_USER:-thaduser}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
     ports:
@@ -51,7 +51,7 @@ services:
       DB_PORT: ${DB_PORT:-3306}
       DB_USER: ${MYSQL_USER:-thaduser}
       DB_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
-      DB_NAME: ${DB_NAME:-support_billing_tracker}
+      DB_NAME: ${DB_NAME:-velocity_billing}
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-development}
       ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-false}
@@ -118,7 +118,7 @@ services:
       MYSQL_HOST: mysql
       MYSQL_USER: ${MYSQL_USER:-thaduser}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-thadpassword}
-      MYSQL_DATABASE: ${DB_NAME:-support_billing_tracker}
+      MYSQL_DATABASE: ${DB_NAME:-velocity_billing}
       TZ: America/New_York
       BACKUP_ON_STARTUP: ${BACKUP_ON_STARTUP:-false}
     volumes:

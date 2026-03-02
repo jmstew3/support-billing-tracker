@@ -21,7 +21,7 @@ LOG_FILE="/var/log/backup.log"
 DB_HOST="${MYSQL_HOST:-mysql}"
 DB_USER="${MYSQL_USER}"
 DB_PASSWORD="${MYSQL_PASSWORD}"
-DB_NAME="${MYSQL_DATABASE:-support_billing_tracker}"
+DB_NAME="${MYSQL_DATABASE:-velocity_billing}"
 
 # Retention settings
 DAILY_RETENTION=5

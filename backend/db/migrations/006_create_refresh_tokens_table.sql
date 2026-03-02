@@ -8,7 +8,7 @@
 --   - Had no token expiration cleanup
 --   - Was vulnerable to memory exhaustion
 
-USE support_billing_tracker;
+USE velocity_billing;
 
 -- Create refresh_tokens table
 CREATE TABLE IF NOT EXISTS refresh_tokens (

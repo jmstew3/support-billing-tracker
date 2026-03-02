@@ -1,7 +1,7 @@
 -- Migration script to convert estimated_hours from generated column to regular column
 -- This allows manual editing of hours while preserving existing calculated values
 
-USE support_billing_tracker;
+USE velocity_billing;
 
 -- Step 1: Create a temporary column to hold current values
 ALTER TABLE requests ADD COLUMN estimated_hours_temp DECIMAL(4, 2);

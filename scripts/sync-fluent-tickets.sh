@@ -299,7 +299,7 @@ MYSQL_PASS=$(grep "^MYSQL_PASSWORD=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
 MYSQL_DB=$(grep "^MYSQL_DATABASE=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"')
 
 # Use defaults only for container/db name, not credentials
-MYSQL_DB="${MYSQL_DB:-support_billing_tracker}"
+MYSQL_DB="${MYSQL_DB:-velocity_billing}"
 
 if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASS" ]; then
     log_warning "Database credentials not found in .env - skipping verification"

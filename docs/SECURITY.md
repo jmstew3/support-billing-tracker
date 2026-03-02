@@ -139,5 +139,5 @@ docker-compose up -d mysql && sleep 10
 **Corrupted data:**
 ```bash
 ./scripts/restore-mysql.sh --list
-./scripts/restore-mysql.sh mysql_data_backup/daily/support_billing_tracker_YYYY-MM-DD.sql.gz
+./scripts/restore-mysql.sh mysql_data_backup/daily/velocity_billing_YYYY-MM-DD.sql.gz
 ```

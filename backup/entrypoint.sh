@@ -21,7 +21,7 @@ printenv | grep -E '^(MYSQL_|TZ=)' > /etc/environment
 # Log configuration (without exposing password)
 echo "[INFO] Configuration:"
 echo "  - MYSQL_HOST: ${MYSQL_HOST:-mysql}"
-echo "  - MYSQL_DATABASE: ${MYSQL_DATABASE:-support_billing_tracker}"
+echo "  - MYSQL_DATABASE: ${MYSQL_DATABASE:-velocity_billing}"
 echo "  - MYSQL_USER: ${MYSQL_USER}"
 echo "  - Timezone: ${TZ:-UTC}"
 echo "  - Backup Directory: /backups"

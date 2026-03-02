@@ -566,7 +566,7 @@ passport.use(new GoogleStrategy({
 3. Application accessible without authentication (original state)
 
 ### If Phase 2 Fails
-1. Revert database migration: `mysql -u root -p thad_chat < db/rollback_users.sql`
+1. Revert database migration: `mysql -u root -p velocity_billing < db/rollback_users.sql`
 2. Revert backend changes: `git revert <commit-hash>`
 3. Revert frontend changes: `git revert <commit-hash>`
 4. Rebuild containers: `docker-compose build --no-cache`

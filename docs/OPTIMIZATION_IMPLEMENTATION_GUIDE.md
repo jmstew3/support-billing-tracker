@@ -715,7 +715,7 @@ SHOW INDEX FROM requests;
 
 **Run migration:**
 ```bash
-mysql -u root -p support_billing_tracker < backend/db/migrations/008_add_performance_indexes_v2.sql
+mysql -u root -p velocity_billing < backend/db/migrations/008_add_performance_indexes_v2.sql
 ```
 
 **Performance Impact:**

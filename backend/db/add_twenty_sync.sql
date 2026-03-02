@@ -6,7 +6,7 @@ CREATE PROCEDURE AddSourceColumn()
 BEGIN
     IF NOT EXISTS (
         SELECT * FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = 'support_billing_tracker'
+        WHERE TABLE_SCHEMA = 'velocity_billing'
         AND TABLE_NAME = 'requests'
         AND COLUMN_NAME = 'source'
     ) THEN

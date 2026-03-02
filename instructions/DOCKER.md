@@ -53,7 +53,7 @@ This will:
 │  Port: 3306     │  Port: 3001  │    Port: 5173         │
 │                 │              │                         │
 │  Database:      │  Express     │    React + Vite        │
-│  thad_chat      │  API Server  │    Dev Server          │
+│  velocity_billing      │  API Server  │    Dev Server          │
 │                 │              │                         │
 │  Persistent     │  Depends on  │    Depends on          │
 │  Volume         │  MySQL       │    Backend             │
@@ -118,16 +118,16 @@ docker-compose exec backend npm run import
 
 ```bash
 # Access MySQL shell
-docker-compose exec mysql mysql -u thaduser -pthadpassword thad_chat
+docker-compose exec mysql mysql -u thaduser -pthadpassword velocity_billing
 
 # Run SQL query
-docker-compose exec mysql mysql -u thaduser -pthadpassword thad_chat -e "SELECT COUNT(*) FROM requests;"
+docker-compose exec mysql mysql -u thaduser -pthadpassword velocity_billing -e "SELECT COUNT(*) FROM requests;"
 
 # Backup database
-docker-compose exec mysql mysqldump -u root -prootpassword thad_chat > backup.sql
+docker-compose exec mysql mysqldump -u root -prootpassword velocity_billing > backup.sql
 
 # Restore database
-docker-compose exec -T mysql mysql -u root -prootpassword thad_chat < backup.sql
+docker-compose exec -T mysql mysql -u root -prootpassword velocity_billing < backup.sql
 ```
 
 ### Rebuilding Containers
@@ -210,7 +210,7 @@ docker-compose exec mysql mysqladmin ping -h localhost
 docker-compose exec mysql mysql -u root -prootpassword -e "SHOW DATABASES;"
 
 # Recreate database
-docker-compose exec mysql mysql -u root -prootpassword -e "CREATE DATABASE IF NOT EXISTS thad_chat;"
+docker-compose exec mysql mysql -u root -prootpassword -e "CREATE DATABASE IF NOT EXISTS velocity_billing;"
 ```
 
 ### Frontend Can't Connect to Backend

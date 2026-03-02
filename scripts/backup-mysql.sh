@@ -22,7 +22,7 @@ ENV_FILE="$PROJECT_DIR/.env"
 
 # Container and database name (non-sensitive defaults OK)
 CONTAINER_NAME="support-billing-tracker-mysql"
-DB_NAME="support_billing_tracker"
+DB_NAME="velocity_billing"
 
 # SECURITY: Load database credentials from environment - no hardcoded fallbacks
 if [ -f "$ENV_FILE" ]; then

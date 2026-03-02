@@ -33,7 +33,7 @@ cp .env.example .env
 # Edit .env with your MySQL credentials
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=thad_chat
+DB_NAME=velocity_billing
 ```
 
 ## Running the Server
@@ -132,7 +132,7 @@ The main `requests` table contains:
 - `DB_PORT` - MySQL port (default: 3306)
 - `DB_USER` - MySQL username
 - `DB_PASSWORD` - MySQL password
-- `DB_NAME` - Database name (default: thad_chat)
+- `DB_NAME` - Database name (default: velocity_billing)
 - `PORT` - Server port (default: 3001)
 - `NODE_ENV` - Environment (development/production)
 - `FRONTEND_URL` - Frontend URL for CORS (default: http://localhost:5173)
@@ -164,7 +164,7 @@ sudo systemctl start mysql
 
 3. Ensure database exists:
 ```bash
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS thad_chat;"
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS velocity_billing;"
 ```
 
 ### Port already in use
