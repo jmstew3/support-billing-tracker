@@ -29,12 +29,12 @@ import {
   getUnbilledRequests,
   exportInvoiceCSV,
   exportInvoiceQBOCSV,
-  exportHostingDetailCSV,
   exportInvoiceJSON,
   downloadFile,
   type Invoice,
   type InvoiceItem,
   type InvoiceRequest,
+  type HostingChargeSnapshot,
 } from '../../../services/invoiceApi';
 import { formatDateFull } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
@@ -227,16 +227,6 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       downloadFile(csv, `${invoice.invoice_number}-qbo.csv`, 'text/csv');
     } catch (err) {
       addToast('error', err instanceof Error ? err.message : 'Failed to export QBO CSV');
-    }
-  }
-
-  async function handleExportHostingCSV() {
-    if (!invoice) return;
-    try {
-      const csv = await exportHostingDetailCSV(invoice.id);
-      downloadFile(csv, `${invoice.invoice_number}-hosting-detail.csv`, 'text/csv');
-    } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to export hosting detail CSV');
     }
   }
 
@@ -468,29 +458,6 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               >
                 CSV
               </button>
-              {invoice.hosting_detail_snapshot ? (
-                <>
-                  <div className="w-px h-6 bg-border" />
-                  <button
-                    onClick={handleExportHostingCSV}
-                    className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted text-sm"
-                    title="Per-site hosting breakdown CSV"
-                  >
-                    Hosting
-                  </button>
-                </>
-              ) : snapshotLoading ? (
-                <>
-                  <div className="w-px h-6 bg-border" />
-                  <span className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Hosting...
-                  </span>
-                </>
-              ) : null}
               <div className="w-px h-6 bg-border" />
               <button
                 onClick={handleExportJSON}
@@ -713,9 +680,9 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                             <span className="ml-2 text-xs text-green-600 dark:text-green-400">(Free Credit)</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
-                          {parseFloat(item.amount) === 0 && item.item_type === 'project'
-                            ? '-'
+                        <TableCell className={item.item_type === 'project' ? '' : 'text-right'}>
+                          {item.item_type === 'project'
+                            ? (item.category?.replace(/_/g, ' ') || '-')
                             : parseFloat(item.quantity).toFixed(2)
                           }
                         </TableCell>
@@ -794,6 +761,55 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 );
               })()}
             </div>
+
+            {/* Hosting Detail */}
+            {invoice.hosting_detail_snapshot && invoice.hosting_detail_snapshot.length > 0 && (
+              <div className="mb-6 border border-border rounded overflow-hidden">
+                <div className="bg-muted/30 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Hosting Detail
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Site</TableHead>
+                      <TableHead className="text-right">Days</TableHead>
+                      <TableHead className="text-right">Gross</TableHead>
+                      <TableHead className="text-right">Credit</TableHead>
+                      <TableHead className="text-right">Net</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoice.hosting_detail_snapshot.map((site: HostingChargeSnapshot, i: number) => (
+                      <TableRow key={i} className={site.creditApplied ? 'bg-green-500/5' : ''}>
+                        <TableCell>
+                          <div>{site.siteName}</div>
+                          {site.websiteUrl && (
+                            <div className="text-xs text-muted-foreground">{site.websiteUrl}</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {site.daysActive}/{site.daysInMonth}
+                        </TableCell>
+                        <TableCell className="text-right">{formatCurrency(site.grossAmount)}</TableCell>
+                        <TableCell className="text-right text-green-600">
+                          {site.creditApplied ? `-${formatCurrency(site.creditAmount || site.grossAmount)}` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(site.netAmount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            {snapshotLoading && (
+              <div className="mb-6 border border-border rounded p-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading hosting detail...
+              </div>
+            )}
 
             {/* Totals */}
             <div className="flex justify-end mb-6">

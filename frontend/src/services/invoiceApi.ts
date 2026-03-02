@@ -37,6 +37,7 @@ export interface InvoiceItem {
   unit_price: string;
   amount: string;
   sort_order: number;
+  category: string | null;
   request_ids: number[] | null;
   created_at: string;
   updated_at: string;
@@ -111,6 +112,7 @@ export interface AdditionalLineItem {
   unit_price: number;
   amount: number;
   sort_order?: number;
+  category?: string;
 }
 
 export interface GenerateInvoiceParams {
@@ -463,6 +465,7 @@ export function buildAdditionalLineItems(
         unit_price: project.isFreeCredit ? (project.originalAmount ?? 0) : project.amount,
         amount: project.amount, // 0 for free-credited projects
         sort_order: sortOrder++,
+        category: project.category,
       });
     }
   }

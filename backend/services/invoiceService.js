@@ -314,10 +314,11 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
       const itemSortOrder = item.sort_order || sortOrder++;
       await connection.query(
         `INSERT INTO invoice_items
-         (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, category)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [invoiceId, item.item_type, item.description,
-         item.quantity || 1, item.unit_price || item.amount, item.amount, itemSortOrder]
+         item.quantity || 1, item.unit_price || item.amount, item.amount, itemSortOrder,
+         item.category || null]
       );
     }
 
@@ -833,14 +834,14 @@ export async function exportInvoiceCSV(invoiceId) {
     lines.push('========================================');
     lines.push('PROJECTS');
     lines.push('========================================');
-    lines.push('Description,Quantity,Unit Price,Amount');
+    lines.push('Description,Category,Unit Price,Amount');
 
     for (const item of projectItems) {
       const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
-      const qty = parseFloat(item.quantity) || 1;
+      const category = (item.category || '').replace(/_/g, ' ') || '-';
       const unitPrice = parseFloat(item.unit_price) || 0;
       const amount = parseFloat(item.amount) || 0;
-      lines.push(`${desc},${qty},$${unitPrice.toFixed(2)},$${amount.toFixed(2)}`);
+      lines.push(`${desc},${category},$${unitPrice.toFixed(2)},$${amount.toFixed(2)}`);
     }
 
     lines.push(',,,');
