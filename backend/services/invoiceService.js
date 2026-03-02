@@ -791,7 +791,7 @@ export async function exportInvoiceCSV(invoiceId) {
     lines.push('========================================');
     lines.push('SUPPORT SERVICES');
     lines.push('========================================');
-    lines.push('Date,Description,Website,Urgency,Hours,Rate,Amount');
+    lines.push('Date,Description,Website,Urgency,Hours,Rate,,Amount');
 
     let totalHours = 0;
 
@@ -803,11 +803,11 @@ export async function exportInvoiceCSV(invoiceId) {
 
       const desc = `"${(req.description || '').replace(/"/g, '""')}"`;
       const website = req.website_url || '';
-      lines.push(`${fmtDate(req.date)},${desc},${website},${urgency.label},${hours.toFixed(2)},$${urgency.rate.toFixed(2)},$${amount.toFixed(2)}`);
+      lines.push(`${fmtDate(req.date)},${desc},${website},${urgency.label},${hours.toFixed(2)},$${urgency.rate.toFixed(2)},,$${amount.toFixed(2)}`);
     }
 
     // Total hours row
-    lines.push(`,,,Total Hours,${totalHours.toFixed(2)},,`);
+    lines.push(`,,,Total Hours,${totalHours.toFixed(2)},,,`);
 
     // Free credit row
     if (freeCreditItem) {
@@ -818,11 +818,11 @@ export async function exportInvoiceCSV(invoiceId) {
       }, 0);
       const supportNet = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
       const creditAmount = supportGross - supportNet;
-      lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,-$${creditAmount.toFixed(2)}`);
+      lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,,-$${creditAmount.toFixed(2)}`);
     }
 
     const supportSubtotal = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    lines.push(`,,,SUPPORT SUBTOTAL,,,$${supportSubtotal.toFixed(2)}`);
+    lines.push(`,,,SUPPORT SUBTOTAL,,,,$${supportSubtotal.toFixed(2)}`);
     categorySubtotals.push({ label: 'Support Services', amount: supportSubtotal });
   }
 
@@ -834,19 +834,19 @@ export async function exportInvoiceCSV(invoiceId) {
     lines.push('========================================');
     lines.push('PROJECTS');
     lines.push('========================================');
-    lines.push('Description,Category,Unit Price,Amount');
+    lines.push('Description,Category,,,Unit Price,,,Amount');
 
     for (const item of projectItems) {
       const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
       const category = (item.category || '').replace(/_/g, ' ') || '-';
       const unitPrice = parseFloat(item.unit_price) || 0;
       const amount = parseFloat(item.amount) || 0;
-      lines.push(`${desc},${category},$${unitPrice.toFixed(2)},$${amount.toFixed(2)}`);
+      lines.push(`${desc},${category},,,$${unitPrice.toFixed(2)},,,$${amount.toFixed(2)}`);
     }
 
-    lines.push(',,,');
+    lines.push(',,,,,,,');
     const projectSubtotal = projectItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    lines.push(`,,PROJECTS SUBTOTAL,$${projectSubtotal.toFixed(2)}`);
+    lines.push(`,,,,,,PROJECTS SUBTOTAL,$${projectSubtotal.toFixed(2)}`);
     categorySubtotals.push({ label: 'Projects', amount: projectSubtotal });
   }
 
@@ -876,7 +876,7 @@ export async function exportInvoiceCSV(invoiceId) {
         lines.push(`${name},${url},${billingLabel},${site.daysActive},${site.daysInMonth},$${gross.toFixed(2)},${credit},$${net.toFixed(2)}`);
       }
 
-      lines.push(',,,,,,');
+      lines.push(',,,,,,,');
       lines.push(`,,,,,HOSTING SUBTOTAL,,$${hostingSubtotal.toFixed(2)}`);
       categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
       hostingRendered = true;
@@ -891,17 +891,17 @@ export async function exportInvoiceCSV(invoiceId) {
       lines.push('========================================');
       lines.push('HOSTING - TURBO HOSTING');
       lines.push('========================================');
-      lines.push('Description,Quantity,Unit Price,Amount');
+      lines.push('Description,Quantity,,,Unit Price,,,Amount');
 
       for (const item of hostingItems) {
         const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
         const amount = parseFloat(item.amount) || 0;
-        lines.push(`${desc},${parseFloat(item.quantity) || 1},$${(parseFloat(item.unit_price) || 0).toFixed(2)},$${amount.toFixed(2)}`);
+        lines.push(`${desc},${parseFloat(item.quantity) || 1},,,$${(parseFloat(item.unit_price) || 0).toFixed(2)},,,$${amount.toFixed(2)}`);
       }
 
-      lines.push(',,,');
+      lines.push(',,,,,,,');
       const hostingSubtotal = hostingItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-      lines.push(`,,HOSTING SUBTOTAL,$${hostingSubtotal.toFixed(2)}`);
+      lines.push(`,,,,,,HOSTING SUBTOTAL,$${hostingSubtotal.toFixed(2)}`);
       categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
     }
   }
@@ -913,19 +913,19 @@ export async function exportInvoiceCSV(invoiceId) {
   lines.push('========================================');
 
   for (const cat of categorySubtotals) {
-    lines.push(`${cat.label},,,,,$${cat.amount.toFixed(2)}`);
+    lines.push(`${cat.label},,,,,,,$${cat.amount.toFixed(2)}`);
   }
 
   const subtotal = parseFloat(invoice.subtotal) || 0;
   const taxAmount = parseFloat(invoice.tax_amount) || 0;
   const total = parseFloat(invoice.total) || 0;
 
-  lines.push(`,,,,Subtotal,,$${subtotal.toFixed(2)}`);
+  lines.push(`,,,,,Subtotal,,$${subtotal.toFixed(2)}`);
   if (taxAmount > 0) {
     const taxRate = (parseFloat(invoice.tax_rate) * 100).toFixed(2);
-    lines.push(`,,,,Tax (${taxRate}%),,$${taxAmount.toFixed(2)}`);
+    lines.push(`,,,,,Tax (${taxRate}%),,$${taxAmount.toFixed(2)}`);
   }
-  lines.push(`,,,,TOTAL,,$${total.toFixed(2)}`);
+  lines.push(`,,,,,TOTAL,,$${total.toFixed(2)}`);
 
   return lines.join('\n');
 }
