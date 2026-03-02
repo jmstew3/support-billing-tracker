@@ -82,6 +82,9 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Hosting snapshot loading state
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+
   const addToast = useCallback((type: ToastMessage['type'], message: string) => {
     setToasts(prev => [...prev, createToast(type, message)]);
   }, []);
@@ -100,41 +103,47 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     try {
       setLoading(true);
       setError(null);
-      let data = await getInvoice(invoiceId);
-
-      // Auto-populate hosting detail snapshot if missing
-      const hasHostingItem = data.items?.some((i: InvoiceItem) => i.item_type === 'hosting');
-      if (hasHostingItem && !data.hosting_detail_snapshot) {
-        try {
-          const targetMonth = data.period_start?.slice(0, 7); // YYYY-MM
-          if (targetMonth) {
-            const properties = await fetchWebsiteProperties();
-            const summary = calculateMonthlyHosting(properties, targetMonth);
-            const snapshot = summary.charges.map(h => ({
-              siteName: h.siteName,
-              websiteUrl: h.websiteUrl,
-              billingType: h.billingType,
-              daysActive: h.daysActive,
-              daysInMonth: h.daysInMonth,
-              grossAmount: h.grossAmount,
-              creditApplied: h.creditApplied,
-              creditAmount: h.creditAmount,
-              netAmount: h.netAmount,
-            }));
-            data = await updateInvoice(data.id, { hosting_detail_snapshot: snapshot });
-          }
-        } catch (snapshotErr) {
-          console.warn('Failed to auto-populate hosting snapshot:', snapshotErr);
-        }
-      }
-
+      const data = await getInvoice(invoiceId);
       setInvoice(data);
       setPaymentAmount(data.balance_due);
       setPaymentDate(new Date().toISOString().split('T')[0]);
+
+      // Auto-populate hosting snapshot in background (non-blocking)
+      const hasHostingItem = data.items?.some((i: InvoiceItem) => i.item_type === 'hosting');
+      if (hasHostingItem && !data.hosting_detail_snapshot) {
+        populateHostingSnapshot(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load invoice');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function populateHostingSnapshot(data: Invoice) {
+    try {
+      setSnapshotLoading(true);
+      const targetMonth = data.period_start?.slice(0, 7); // YYYY-MM
+      if (!targetMonth) return;
+      const properties = await fetchWebsiteProperties();
+      const summary = calculateMonthlyHosting(properties, targetMonth);
+      const snapshot = summary.charges.map(h => ({
+        siteName: h.siteName,
+        websiteUrl: h.websiteUrl,
+        billingType: h.billingType,
+        daysActive: h.daysActive,
+        daysInMonth: h.daysInMonth,
+        grossAmount: h.grossAmount,
+        creditApplied: h.creditApplied,
+        creditAmount: h.creditAmount,
+        netAmount: h.netAmount,
+      }));
+      const updated = await updateInvoice(data.id, { hosting_detail_snapshot: snapshot });
+      setInvoice(updated);
+    } catch (err) {
+      console.warn('Failed to auto-populate hosting snapshot:', err);
+    } finally {
+      setSnapshotLoading(false);
     }
   }
 
@@ -459,7 +468,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               >
                 CSV
               </button>
-              {invoice.hosting_detail_snapshot && (
+              {invoice.hosting_detail_snapshot ? (
                 <>
                   <div className="w-px h-6 bg-border" />
                   <button
@@ -470,7 +479,18 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                     Hosting
                   </button>
                 </>
-              )}
+              ) : snapshotLoading ? (
+                <>
+                  <div className="w-px h-6 bg-border" />
+                  <span className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground">
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Hosting...
+                  </span>
+                </>
+              ) : null}
               <div className="w-px h-6 bg-border" />
               <button
                 onClick={handleExportJSON}
