@@ -78,6 +78,8 @@ function transformDbRow(row: any): ChatRequest {
     Status: row.Status,
     source: row.source || 'sms', // Default to 'sms' for backwards compatibility
     website_url: row.website_url || null,
+    fluent_id: row.fluent_id || null,
+    ticket_number: row.ticket_number || null,
     BillingDate: row.BillingDate || null,
   };
 }

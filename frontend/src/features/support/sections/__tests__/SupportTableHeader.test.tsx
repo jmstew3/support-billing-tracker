@@ -27,9 +27,9 @@ describe('SupportTableHeader', () => {
 
     expect(screen.getByText('Source')).toBeInTheDocument()
     expect(screen.getByText('URL')).toBeInTheDocument()
-    expect(screen.getByText('Date')).toBeInTheDocument()
-    expect(screen.getByText('Day')).toBeInTheDocument()
-    expect(screen.getByText('Time')).toBeInTheDocument()
+    expect(screen.getByText('Resolved Date')).toBeInTheDocument()
+    expect(screen.getByText('Ticket ID')).toBeInTheDocument()
+    expect(screen.getByText('Resolved Time')).toBeInTheDocument()
     expect(screen.getByText('Request Summary')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
     expect(screen.getByText('Urgency')).toBeInTheDocument()
@@ -85,25 +85,10 @@ describe('SupportTableHeader', () => {
       </table>
     )
 
-    const dateButton = screen.getByRole('button', { name: 'Date' })
+    const dateButton = screen.getByRole('button', { name: 'Resolved Date' })
     await user.click(dateButton)
 
     expect(onSort).toHaveBeenCalledWith('Date')
-  })
-
-  it('should call onSort when Day column header is clicked', async () => {
-    const user = userEvent.setup()
-    const onSort = vi.fn()
-    render(
-      <table>
-        <SupportTableHeader {...defaultProps} onSort={onSort} />
-      </table>
-    )
-
-    const dayButton = screen.getByRole('button', { name: /Day/i })
-    await user.click(dayButton)
-
-    expect(onSort).toHaveBeenCalledWith('DayOfWeek')
   })
 
   it('should call onSort when Time column header is clicked', async () => {
@@ -115,7 +100,7 @@ describe('SupportTableHeader', () => {
       </table>
     )
 
-    const timeButton = screen.getByRole('button', { name: /Time/i })
+    const timeButton = screen.getByRole('button', { name: /Resolved Time/i })
     await user.click(timeButton)
 
     expect(onSort).toHaveBeenCalledWith('Time')

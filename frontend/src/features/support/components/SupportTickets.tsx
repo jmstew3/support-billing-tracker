@@ -778,68 +778,22 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
       <div className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
 
-          {/* Scorecards Section */}
-          <SupportScorecards
-            billableCount={billableFilteredRequests.length}
-            totalActiveCount={requests.filter(r => r.Status === 'active').length}
-            costs={filteredCosts}
-            activityMetrics={activityMetrics}
-          />
-
-          {/* FluentSupport Sync Status */}
-          <FluentSyncStatus
-            refreshTrigger={syncRefreshTrigger}
-            className="max-w-2xl"
-          />
-
-          {/* Cost Tracker */}
-          {filteredCosts && (
-            <div className="w-full">
-              <CostTrackerCard
-                costData={filteredCosts}
-                monthlyCosts={monthlyCosts || undefined}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                gridSpan=""
+          {/* Scorecards + FluentSupport Sync Status Side-by-Side */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="lg:flex-1">
+              <SupportScorecards
+                billableCount={billableFilteredRequests.length}
+                totalActiveCount={requests.filter(r => r.Status === 'active').length}
+                costs={filteredCosts}
+                activityMetrics={activityMetrics}
               />
             </div>
-          )}
-
-          {/* Category Components Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
-            {/* Category Breakdown Tracker */}
-            {(allCategoryBreakdownData || allMonthlyCategoryData) && (
-              <CategoryTrackerCard
-                categoryData={allCategoryBreakdownData || undefined}
-                monthlyCategoryData={allMonthlyCategoryData || undefined}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                gridSpan=""
+            <div className="w-full lg:w-72 shrink-0">
+              <FluentSyncStatus
+                refreshTrigger={syncRefreshTrigger}
               />
-            )}
-
-            {/* Category Distribution Chart (Simple Bar Chart) */}
-            {totalCategoryData && totalCategoryData.total > 0 && (
-              <CategoryDistributionChart
-                categoryData={totalCategoryData}
-                title="Category Distribution"
-                description="Ticket volume by category (all active tickets)"
-              />
-            )}
+            </div>
           </div>
-
-          {/* Charts Section */}
-          <SupportChartsSection
-            calendarData={calendarData}
-            timeViewMode={viewMode}
-            selectedDay={selectedDay}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            monthNames={monthNames}
-            categoryData={categoryData}
-            onCalendarDateClick={handleCalendarDateClick}
-            onBackToCalendar={handleBackToCalendar}
-          />
 
           {/* Table Section */}
           <SupportTableSection
@@ -953,6 +907,55 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
             selectedDay={selectedDay}
             formatTime={formatTime}
             preserveScrollPosition={preserveScrollPosition}
+          />
+
+          {/* Cost Tracker */}
+          {filteredCosts && (
+            <div className="w-full">
+              <CostTrackerCard
+                costData={filteredCosts}
+                monthlyCosts={monthlyCosts || undefined}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                gridSpan=""
+              />
+            </div>
+          )}
+
+          {/* Category Components Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
+            {/* Category Breakdown Tracker */}
+            {(allCategoryBreakdownData || allMonthlyCategoryData) && (
+              <CategoryTrackerCard
+                categoryData={allCategoryBreakdownData || undefined}
+                monthlyCategoryData={allMonthlyCategoryData || undefined}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                gridSpan=""
+              />
+            )}
+
+            {/* Category Distribution Chart (Simple Bar Chart) */}
+            {totalCategoryData && totalCategoryData.total > 0 && (
+              <CategoryDistributionChart
+                categoryData={totalCategoryData}
+                title="Category Distribution"
+                description="Ticket volume by category (all active tickets)"
+              />
+            )}
+          </div>
+
+          {/* Charts Section */}
+          <SupportChartsSection
+            calendarData={calendarData}
+            timeViewMode={viewMode}
+            selectedDay={selectedDay}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            monthNames={monthNames}
+            categoryData={categoryData}
+            onCalendarDateClick={handleCalendarDateClick}
+            onBackToCalendar={handleBackToCalendar}
           />
 
           {/* Archived Requests Section */}

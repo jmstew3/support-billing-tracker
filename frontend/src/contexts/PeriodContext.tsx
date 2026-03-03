@@ -49,10 +49,11 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
   // State - use current year as default
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all'); // Deprecated
-  const [selectedMonths, setSelectedMonthsState] = useState<number[] | 'all'>('all'); // New
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(currentMonth); // Deprecated
+  const [selectedMonths, setSelectedMonthsState] = useState<number[] | 'all'>([currentMonth]); // New
   const [selectedDay, setSelectedDay] = useState<string | 'all'>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
 
   // Available data (provided by pages)
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);

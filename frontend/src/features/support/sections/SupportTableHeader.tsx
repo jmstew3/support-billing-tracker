@@ -70,19 +70,8 @@ export function SupportTableHeader({
             onClick={() => onSort('Date')}
             className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
           >
-            <span>Date</span>
+            <span>Resolved Date</span>
             {getSortIcon('Date')}
-          </button>
-        </TableHead>
-
-        {/* Day Column with Sort */}
-        <TableHead className="w-20">
-          <button
-            onClick={() => onSort('DayOfWeek')}
-            className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-          >
-            <span>Day</span>
-            {getSortIcon('DayOfWeek')}
           </button>
         </TableHead>
 
@@ -92,9 +81,14 @@ export function SupportTableHeader({
             onClick={() => onSort('Time')}
             className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
           >
-            <span>Time</span>
+            <span>Resolved Time</span>
             {getSortIcon('Time')}
           </button>
+        </TableHead>
+
+        {/* Ticket ID Column */}
+        <TableHead className="w-20">
+          <span className="text-xs">Ticket ID</span>
         </TableHead>
 
         {/* Request Summary Column with Sort */}

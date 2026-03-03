@@ -98,8 +98,8 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid end date format (use YYYY-MM-DD)' });
     }
 
-    let query = 'SELECT * FROM requests WHERE 1=1';
-    let countQuery = 'SELECT COUNT(*) as total FROM requests WHERE 1=1';
+    let query = 'SELECT r.*, ft.fluent_id, ft.ticket_number FROM requests r LEFT JOIN fluent_tickets ft ON ft.request_id = r.id WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM requests r WHERE 1=1';
     const params = [];
     const countParams = [];
 
@@ -140,11 +140,11 @@ router.get('/requests', readRateLimiter, async (req, res) => {
 
     // Cursor-based pagination (for infinite scroll / load more)
     if (cursor) {
-      query += ' AND id < ?';
+      query += ' AND r.id < ?';
       params.push(cursor);
     }
 
-    query += ' ORDER BY COALESCE(billing_date, date) DESC, time DESC, id DESC';
+    query += ' ORDER BY COALESCE(billing_date, date) DESC, time DESC, r.id DESC';
 
     // Apply limit if provided (pagination mode)
     // Note: Using query() instead of execute() because MySQL prepared statements
@@ -170,6 +170,8 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       Status: row.status,
       source: row.source || 'sms', // Include source field with default
       website_url: row.website_url || null, // Include website URL from FluentSupport
+      fluent_id: row.fluent_id || null, // FluentSupport ticket ID
+      ticket_number: row.ticket_number || null, // FluentSupport ticket number (e.g. "2001")
       BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at

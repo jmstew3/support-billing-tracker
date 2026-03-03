@@ -55,6 +55,11 @@ export function SupportTableRow({
 }: SupportTableRowProps) {
   const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration'
   const filteredIndex = startIndex + paginatedIndex
+  const linkUrl = request.website_url
+    ? request.website_url
+    : request.source === 'fluent' && request.fluent_id
+      ? `https://support.peakonedigital.com/wp-admin/admin.php?page=fluent-support#/tickets/${request.fluent_id}/view`
+      : null
 
   return (
     <TableRow
@@ -98,12 +103,12 @@ export function SupportTableRow({
         </TooltipProvider>
       </TableCell>
       <TableCell className="text-center">
-        {request.website_url ? (
+        {linkUrl ? (
           <TooltipProvider>
             <UITooltip>
               <TooltipTrigger asChild>
                 <a
-                  href={request.website_url}
+                  href={linkUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
@@ -113,7 +118,7 @@ export function SupportTableRow({
                 </a>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{request.website_url}</p>
+                <p>{linkUrl}</p>
               </TooltipContent>
             </UITooltip>
           </TooltipProvider>
@@ -121,14 +126,17 @@ export function SupportTableRow({
           <span className="text-gray-400 text-xs">-</span>
         )}
       </TableCell>
-      <TableCell className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}>
+      <TableCell
+        className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}
+        title={`${getDayOfWeek(request.Date)}, ${request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}`}
+      >
         {request.Date.includes('T') ? request.Date.split('T')[0] : request.Date}
-      </TableCell>
-      <TableCell className={`text-xs ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>
-        {getDayOfWeek(request.Date)}
       </TableCell>
       <TableCell className={`text-xs ${isNonBillable ? 'text-gray-400' : ''}`}>
         {formatTime(request.Time)}
+      </TableCell>
+      <TableCell className={`text-xs ${isNonBillable ? 'text-muted-foreground opacity-60' : 'text-muted-foreground'}`}>
+        {request.ticket_number ? `#${request.ticket_number}` : '-'}
       </TableCell>
       <TableCell className="min-w-[200px] max-w-md">
         <div className={`text-xs whitespace-pre-wrap break-words ${isNonBillable ? 'text-gray-400' : ''}`}>
