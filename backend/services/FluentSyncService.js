@@ -106,7 +106,7 @@ class FluentSyncService {
 
         // Try to mark sync as failed
         try {
-          await FluentSyncStatusRepository.markFailed(connection, error.message);
+          await FluentSyncStatusRepository.markFailed(connection, syncId, error.message);
         } catch (updateError) {
           logger.error('[FluentSyncService] Failed to update sync status', { error: updateError.message });
         }

@@ -32,6 +32,11 @@ async function withRetry(fn, maxAttempts = 3, baseDelayMs = 1000) {
 
       // Don't retry on 4xx client errors
       if (error.response && error.response.status >= 400 && error.response.status < 500) {
+        logger.warn('[FluentSupport] Client error (not retrying)', {
+          status: error.response.status,
+          data: error.response.data,
+          url: error.config?.url
+        });
         throw error;
       }
 
@@ -178,7 +183,21 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
     return validateFluentTickets(allTickets);
 
   } catch (error) {
-    throw new Error(`FluentSupport API error: ${error.message}`);
+    const status = error.response?.status;
+    const responseBody = error.response?.data;
+    const detail = responseBody
+      ? (typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody))
+      : '';
+    const msg = detail
+      ? `FluentSupport API error (HTTP ${status}): ${detail}`
+      : `FluentSupport API error: ${error.message}`;
+    logger.error('[FluentSupport] API request failed', {
+      status,
+      message: error.message,
+      responseBody,
+      url: error.config?.url
+    });
+    throw new Error(msg);
   }
 }
 
@@ -211,7 +230,21 @@ export async function fetchFluentTicket(ticketId) {
     return response.data;
 
   } catch (error) {
-    throw new Error(`FluentSupport API error: ${error.message}`);
+    const status = error.response?.status;
+    const responseBody = error.response?.data;
+    const detail = responseBody
+      ? (typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody))
+      : '';
+    const msg = detail
+      ? `FluentSupport API error (HTTP ${status}): ${detail}`
+      : `FluentSupport API error: ${error.message}`;
+    logger.error('[FluentSupport] API request failed', {
+      status,
+      message: error.message,
+      responseBody,
+      url: error.config?.url
+    });
+    throw new Error(msg);
   }
 }
 

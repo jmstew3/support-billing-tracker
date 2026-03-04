@@ -55,20 +55,20 @@ class FluentSyncStatusRepository {
 
   /**
    * Mark sync as failed
+   * After rollback, the startSync record no longer exists,
+   * so we INSERT a new record to capture the failure.
    * @param {Object} connection - MySQL connection
+   * @param {number|undefined} syncId - Original sync status ID (unused, kept for API clarity)
    * @param {string} errorMessage - Error message
-   * @returns {Promise<boolean>} True if updated
+   * @returns {Promise<number>} Inserted sync status ID
    */
-  async markFailed(connection, errorMessage) {
+  async markFailed(connection, syncId, errorMessage) {
     const [result] = await connection.query(
-      `UPDATE fluent_sync_status
-       SET last_sync_status = 'failed',
-           error_message = ?
-       WHERE id = (SELECT MAX(id) FROM (SELECT id FROM fluent_sync_status) AS t)`,
+      `INSERT INTO fluent_sync_status (last_sync_at, last_sync_status, error_message)
+       VALUES (NOW(), 'failed', ?)`,
       [errorMessage]
     );
-
-    return result.affectedRows > 0;
+    return result.insertId;
   }
 
   /**
