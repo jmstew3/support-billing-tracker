@@ -8,7 +8,7 @@ import { useBillingCalculations } from '../hooks/useBillingCalculations';
 import { DashboardScorecards } from '../sections/DashboardScorecards';
 import { MonthlyBreakdownTable } from '../sections/MonthlyBreakdownTable';
 import { MobileMonthBreakdown } from '../sections/MobileMonthBreakdown';
-import { SyncStatusWidget } from '../sections/SyncStatusWidget';
+import { SyncStatusWidget } from '../../../components/shared/SyncStatusWidget';
 import { generateComprehensiveBilling } from '../../../services/billingApi';
 import { formatMonthLabel } from '../../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../../utils/csvExport';

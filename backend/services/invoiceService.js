@@ -16,9 +16,11 @@ const PRICING = {
     supportHours: 10,
     effectiveDate: '2025-06-01'
   },
+  // Default hours by urgency: LOW=0.25, MEDIUM=0.5, HIGH=1.0
   hourEstimation: {
     baseHoursPerResponse: 0.25,
     urgencyMultipliers: { HIGH: 1.5, MEDIUM: 1.0, LOW: 0.75 },
+    defaultHours: { HIGH: 1.0, MEDIUM: 0.5, LOW: 0.25 },
     minHours: 0.25,
     maxHours: 10.0
   }
@@ -31,8 +33,14 @@ const PRICING = {
  * @returns {number} Estimated hours, clamped to [minHours, maxHours]
  */
 export function estimateHours(responseCount, urgency) {
-  const { baseHoursPerResponse, urgencyMultipliers, minHours, maxHours } = PRICING.hourEstimation;
-  const count = parseInt(responseCount) || 1;
+  const { defaultHours, baseHoursPerResponse, urgencyMultipliers, minHours, maxHours } = PRICING.hourEstimation;
+  const defaults = defaultHours[urgency] || defaultHours.MEDIUM;
+  const count = parseInt(responseCount) || 0;
+
+  // Use default hours unless there are multiple responses
+  if (count <= 1) return defaults;
+
+  // Scale by response count for tickets with substantive interaction
   const multiplier = urgencyMultipliers[urgency] || urgencyMultipliers.MEDIUM;
   const raw = count * baseHoursPerResponse * multiplier;
   return Math.round(Math.max(minHours, Math.min(maxHours, raw)) * 100) / 100;
@@ -964,7 +972,11 @@ export async function exportInvoiceQBOCSV(invoiceId) {
 
   // Format dates as MM/DD/YYYY for QBO
   const fmtDate = (d) => {
-    const [y, m, day] = d.split('T')[0].split('-');
+    if (!d) return '';
+    const dt = d instanceof Date ? d : new Date(d);
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    const y = dt.getFullYear();
     return `${m}/${day}/${y}`;
   };
 

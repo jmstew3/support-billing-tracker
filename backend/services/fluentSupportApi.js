@@ -97,7 +97,7 @@ export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
     const perPage = 100; // Adjust based on API limits
 
     while (hasMore) {
-      let url = `${endpoint}?per_page=${perPage}&page=${page}`;
+      let url = `${endpoint}?per_page=${perPage}&page=${page}&order_by=id&order_type=DESC`;
       if (FLUENT_MAILBOX_ID) {
         url += `&mailbox_id=${FLUENT_MAILBOX_ID}`;
       }
@@ -340,35 +340,17 @@ function parseFluentSupportHTML(htmlContent) {
 export function transformFluentTicket(ticket) {
   /**
    * Map FluentSupport priority to internal urgency level
-   * FluentSupport priorities: critical, high, urgent, medium, normal, low
-   * Our urgency levels: HIGH, MEDIUM, LOW
+   * FluentSupport priorities: normal, medium, critical
+   * Our urgency levels: LOW, MEDIUM, HIGH
    * @param {string} priority - The priority from FluentSupport
    * @returns {string} The mapped urgency level
    */
   const mapPriority = (priority) => {
-    if (!priority) {
-      logger.info('[FluentSupport] No priority provided, defaulting to MEDIUM');
-      return 'MEDIUM';
-    }
-
-    // Case-insensitive matching with trimming
-    const normalizedPriority = priority.toString().trim().toLowerCase();
-
-    // Map FluentSupport priority values to our urgency levels
-    if (normalizedPriority === 'critical' || normalizedPriority === 'high' || normalizedPriority === 'urgent') {
-      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency HIGH`);
-      return 'HIGH';
-    }
-    if (normalizedPriority === 'medium' || normalizedPriority === 'normal') {
-      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency MEDIUM`);
-      return 'MEDIUM';
-    }
-    if (normalizedPriority === 'low') {
-      logger.debug(`[FluentSupport] Mapping priority "${priority}" → urgency LOW`);
-      return 'LOW';
-    }
-
-    // Unknown priority value - log warning and default to MEDIUM
+    if (!priority) return 'MEDIUM';
+    const p = priority.toString().trim().toLowerCase();
+    if (p === 'critical') return 'HIGH';
+    if (p === 'medium') return 'MEDIUM';
+    if (p === 'normal') return 'LOW';
     logger.warn(`[FluentSupport] Unknown priority "${priority}" - defaulting to MEDIUM`);
     return 'MEDIUM';
   };

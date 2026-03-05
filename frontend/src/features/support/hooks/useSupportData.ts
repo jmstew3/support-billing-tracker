@@ -318,6 +318,12 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
           if (!a.BillingDate && b.BillingDate) return sortDirection === 'asc' ? 1 : -1
           if (a.BillingDate && !b.BillingDate) return sortDirection === 'asc' ? -1 : 1
           break
+        case 'ticket_number':
+          aValue = a.ticket_number ? parseInt(a.ticket_number, 10) : 0
+          bValue = b.ticket_number ? parseInt(b.ticket_number, 10) : 0
+          if (!a.ticket_number && b.ticket_number) return sortDirection === 'asc' ? 1 : -1
+          if (a.ticket_number && !b.ticket_number) return sortDirection === 'asc' ? -1 : 1
+          break
         default:
           return 0
       }

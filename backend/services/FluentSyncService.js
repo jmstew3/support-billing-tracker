@@ -237,11 +237,9 @@ class FluentSyncService {
       await RequestRepository.updateWithConnection(connection, requestId, {
         date: requestData.date,
         time: requestData.time,
-        category: requestData.category,
+        // Note: category, urgency, and estimated_hours intentionally omitted on update to preserve user edits
         description: requestData.description,
-        urgency: requestData.urgency,
         effort: requestData.effort,
-        // Note: estimated_hours intentionally omitted on update to preserve manually-logged hours
         source: requestData.source,
         website_url: requestData.website_url,
         status: 'active' // Re-activate in case it was previously deleted (reopened then re-closed)

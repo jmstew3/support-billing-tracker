@@ -19,8 +19,7 @@ import { CategoryDistributionChart } from './CategoryDistributionChart'
 import { SupportChartsSection } from '../sections/SupportChartsSection'
 import { SupportTableSection } from '../sections/SupportTableSection'
 import { ArchivedRequestsSection } from '../sections/ArchivedRequestsSection'
-import { FluentSyncButton } from './FluentSyncButton'
-import { FluentSyncStatus } from './FluentSyncStatus'
+import { SyncStatusWidget } from '../../../components/shared/SyncStatusWidget'
 
 // Hooks
 import { usePeriod } from '../../../contexts/PeriodContext'
@@ -126,8 +125,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const scrollPositionRef = useRef<number>(0)
   const shouldPreserveScrollRef = useRef<boolean>(false)
 
-  // FluentSupport sync state
-  const [syncRefreshTrigger, setSyncRefreshTrigger] = useState(0)
+  // FluentSupport sync state managed by SyncStatusWidget
 
   // ============================================================
   // DATA HOOK - Centralized data management
@@ -735,9 +733,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
   const handleSyncComplete = useCallback(async () => {
     // Reload request data to include new FluentSupport tickets
     await reloadData()
-
-    // Trigger refresh of sync status component
-    setSyncRefreshTrigger(prev => prev + 1)
   }, [reloadData])
 
   // ============================================================
@@ -766,12 +761,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         showViewToggle={true}
         viewOptions={['all', 'month', 'day']}
         onToggleMobileMenu={onToggleMobileMenu}
-        rightControls={
-          <FluentSyncButton
-            onSyncComplete={handleSyncComplete}
-            className="flex"
-          />
-        }
       />
 
       {/* Main Content Container */}
@@ -789,9 +778,7 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
               />
             </div>
             <div className="w-full lg:w-72 shrink-0">
-              <FluentSyncStatus
-                refreshTrigger={syncRefreshTrigger}
-              />
+              <SyncStatusWidget onSyncComplete={handleSyncComplete} />
             </div>
           </div>
 

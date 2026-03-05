@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, CheckCircle2, Clock, AlertTriangle, Loader2, Database } from 'lucide-react';
-import { getFluentSyncStatus, triggerFluentSync, type FluentSyncResponse, type FluentSyncResult } from '../../../utils/api';
-import { cn } from '../../../lib/utils';
+import { getFluentSyncStatus, triggerFluentSync, type FluentSyncResponse, type FluentSyncResult } from '../../utils/api';
+import { cn } from '../../lib/utils';
 
 interface SyncStatusWidgetProps {
   className?: string;
   autoRefreshInterval?: number; // in milliseconds, default 5 minutes
+  onSyncComplete?: () => void;
 }
 
 /**
@@ -20,6 +21,7 @@ interface SyncStatusWidgetProps {
 export function SyncStatusWidget({
   className,
   autoRefreshInterval = 5 * 60 * 1000, // 5 minutes default
+  onSyncComplete,
 }: SyncStatusWidgetProps) {
   const [status, setStatus] = useState<FluentSyncResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +70,11 @@ export function SyncStatusWidget({
 
       // Refresh status after sync
       await fetchStatus();
+
+      // Notify parent to reload data
+      if (result.success && onSyncComplete) {
+        onSyncComplete();
+      }
 
       // Auto-clear success result after 5 seconds
       if (result.success) {

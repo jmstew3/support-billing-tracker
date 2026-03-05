@@ -86,9 +86,15 @@ export function SupportTableHeader({
           </button>
         </TableHead>
 
-        {/* Ticket ID Column */}
+        {/* Ticket ID Column with Sort */}
         <TableHead className="w-20">
-          <span className="text-xs">Ticket ID</span>
+          <button
+            onClick={() => onSort('ticket_number')}
+            className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+          >
+            <span className="text-xs">Ticket ID</span>
+            {getSortIcon('ticket_number')}
+          </button>
         </TableHead>
 
         {/* Request Summary Column with Sort */}
