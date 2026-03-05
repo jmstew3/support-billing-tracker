@@ -98,7 +98,7 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid end date format (use YYYY-MM-DD)' });
     }
 
-    let query = 'SELECT r.*, ft.fluent_id, ft.ticket_number FROM requests r LEFT JOIN fluent_tickets ft ON ft.request_id = r.id WHERE 1=1';
+    let query = 'SELECT r.*, ft.fluent_id, ft.ticket_number, i.status as invoice_status FROM requests r LEFT JOIN fluent_tickets ft ON ft.request_id = r.id LEFT JOIN invoices i ON r.invoice_id = i.id WHERE 1=1';
     let countQuery = 'SELECT COUNT(*) as total FROM requests r WHERE 1=1';
     const params = [];
     const countParams = [];
@@ -173,6 +173,7 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       fluent_id: row.fluent_id || null, // FluentSupport ticket ID
       ticket_number: row.ticket_number || null, // FluentSupport ticket number (e.g. "2001")
       BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
+      invoice_status: row.invoice_status || null, // Status of linked invoice (null, 'draft', 'sent', etc.)
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
     }));
@@ -270,6 +271,21 @@ router.put('/requests/:id', async (req, res) => {
     }
 
     const updates = req.body;
+
+    // If request is linked to a non-draft invoice, block billing field changes
+    if (updates.estimated_hours !== undefined || updates.urgency !== undefined || updates.billing_date !== undefined) {
+      const [linked] = await pool.execute(
+        `SELECT i.status, i.invoice_number FROM invoices i
+         JOIN requests r ON r.invoice_id = i.id
+         WHERE r.id = ? AND i.status != 'draft'`,
+        [id]
+      );
+      if (linked.length > 0) {
+        return res.status(409).json({
+          error: `Cannot edit billing fields — this request is on ${linked[0].invoice_number} (${linked[0].status}). Delete the invoice first to make changes.`
+        });
+      }
+    }
 
     // Build dynamic update query with validation
     const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours', 'billing_date'];

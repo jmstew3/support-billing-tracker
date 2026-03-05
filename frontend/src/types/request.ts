@@ -15,6 +15,7 @@ export interface ChatRequest {
   fluent_id?: string | null; // FluentSupport ticket ID
   ticket_number?: string | null; // FluentSupport ticket number (e.g. "#2001")
   BillingDate?: string | null; // YYYY-MM-DD format, null = use original Date for billing
+  invoice_status?: string | null; // Status of linked invoice (null, 'draft', 'sent', 'paid', etc.)
 }
 
 export interface DailyRequestCount {

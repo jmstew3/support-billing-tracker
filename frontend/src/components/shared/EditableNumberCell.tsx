@@ -7,6 +7,7 @@ interface EditableNumberCellProps {
   min?: number;
   max?: number;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
@@ -15,7 +16,8 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   urgency: _urgency,
   min = 0,
   max = 99.99,
-  placeholder: _placeholder = '0.50'
+  placeholder: _placeholder = '0.50',
+  disabled = false
 }) => {
   // Silence unused variable warnings - kept for API compatibility
   void _urgency;
@@ -46,6 +48,7 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
   }, [isEditing]);
 
   const handleEdit = () => {
+    if (disabled) return;
     setIsEditing(true);
     setEditValue(roundedInitialValue.toFixed(2));
   };
@@ -116,8 +119,11 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
         e.stopPropagation();
         handleEdit();
       }}
-      className="w-20 px-2 py-1 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      title="Click to edit hours"
+      disabled={disabled}
+      className={`w-20 px-2 py-1 text-xs text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+      }`}
+      title={disabled ? 'Locked — on a sent invoice' : 'Click to edit hours'}
       data-testid="editable-number-cell"
     >
       {roundedInitialValue.toFixed(2)}

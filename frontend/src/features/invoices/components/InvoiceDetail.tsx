@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save } from 'lucide-react';
+import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -21,6 +21,7 @@ import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import {
   getInvoice,
   sendInvoice,
+  recalculateInvoice,
   payInvoice,
   updateInvoice,
   updateInvoiceItem,
@@ -414,6 +415,24 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
           </div>
 
           <div className="flex items-center gap-2">
+            {isDraft && editMode && (
+              <button
+                onClick={async () => {
+                  try {
+                    const updated = await recalculateInvoice(invoiceId);
+                    setInvoice(updated);
+                    addToast('success', 'Invoice recalculated from current request data');
+                    onUpdate();
+                  } catch (err) {
+                    addToast('error', err instanceof Error ? err.message : 'Failed to recalculate');
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2 rounded text-sm bg-purple-600 text-white hover:bg-purple-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Recalculate
+              </button>
+            )}
             {isDraft && (
               <button
                 onClick={toggleEditMode}

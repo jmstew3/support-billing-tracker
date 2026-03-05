@@ -17,7 +17,7 @@ import { EditableCell } from '../../../components/shared/EditableCell'
 import { EditableNumberCell } from '../../../components/shared/EditableNumberCell'
 import { EditableDateCell } from '../components/EditableDateCell'
 import { TooltipProvider, Tooltip as UITooltip, TooltipTrigger, TooltipContent } from '../../../components/ui/tooltip'
-import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard, ExternalLink } from 'lucide-react'
+import { Trash2, MessageCircle, Ticket, Mail, Phone, Clipboard, ExternalLink, Lock } from 'lucide-react'
 import type { ChatRequest } from '../../../types/request'
 import { getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
@@ -54,6 +54,7 @@ export function SupportTableRow({
   formatUrgencyDisplay
 }: SupportTableRowProps) {
   const isNonBillable = request.Category === 'Non-billable' || request.Category === 'Migration'
+  const isBillingLocked = request.invoice_status != null && request.invoice_status !== 'draft'
   const filteredIndex = startIndex + paginatedIndex
   const linkUrl = request.website_url
     ? request.website_url
@@ -167,6 +168,7 @@ export function SupportTableRow({
               onUpdateRequest(index, 'Urgency', newValue)
             }}
             formatDisplayValue={formatUrgencyDisplay}
+            disabled={isBillingLocked}
           />
         )}
       </TableCell>
@@ -176,13 +178,21 @@ export function SupportTableRow({
             N/A
           </span>
         ) : (
-          <EditableNumberCell
-            value={request.EstimatedHours != null ? request.EstimatedHours : 0.50}
-            urgency={request.Urgency}
-            onSave={(newValue) => {
-              onUpdateRequest(index, 'EstimatedHours', newValue)
-            }}
-          />
+          <div className="flex items-center gap-1">
+            <EditableNumberCell
+              value={request.EstimatedHours != null ? request.EstimatedHours : 0.50}
+              urgency={request.Urgency}
+              onSave={(newValue) => {
+                onUpdateRequest(index, 'EstimatedHours', newValue)
+              }}
+              disabled={isBillingLocked}
+            />
+            {isBillingLocked && (
+              <span title={`Billed (${request.invoice_status})`}>
+                <Lock className="h-3 w-3 text-amber-500 flex-shrink-0" />
+              </span>
+            )}
+          </div>
         )}
       </TableCell>
       <TableCell className="min-w-[120px]">
@@ -194,6 +204,7 @@ export function SupportTableRow({
             onSave={(newValue) => {
               onUpdateRequest(index, 'BillingDate', newValue)
             }}
+            disabled={isBillingLocked}
           />
         )}
       </TableCell>
