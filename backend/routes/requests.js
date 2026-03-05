@@ -104,7 +104,7 @@ router.get('/requests', readRateLimiter, async (req, res) => {
     const countParams = [];
 
     if (status && status !== 'all') {
-      query += ' AND status = ?';
+      query += ' AND r.status = ?';
       countQuery += ' AND status = ?';
       params.push(status);
       countParams.push(status);
