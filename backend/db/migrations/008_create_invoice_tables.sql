@@ -114,7 +114,7 @@ ALTER TABLE requests
 -- =====================================================
 -- Insert default customer for existing requests
 INSERT INTO customers (id, name, email, payment_terms, notes)
-VALUES (1, 'Velocity', 'billing@velocity.com', 30, 'Primary client - Turbo support agreement')
+VALUES (1, 'Velocity Business Automation, LLC', 'billing@velocity.com', 30, 'Primary client - Turbo support agreement')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- Link existing requests to the default customer

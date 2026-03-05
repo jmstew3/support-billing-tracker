@@ -10,7 +10,7 @@ USE velocity_billing;
 -- ---------------------------------------------------------------------------
 INSERT INTO customers (id, name, email, phone, address_line1, city, state, postal_code, country, payment_terms, qbo_customer_id, is_active)
 VALUES
-  (1, 'Velocity', 'thad@velocity-seo.com', '555-100-0001', '123 Main St', 'Charlotte', 'NC', '28202', 'USA', 30, 'QBO-VEL-001', TRUE)
+  (1, 'Velocity Business Automation, LLC', 'thad@velocity-seo.com', '555-100-0001', '123 Main St', 'Charlotte', 'NC', '28202', 'USA', 30, 'QBO-VEL-001', TRUE)
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 INSERT INTO customers (name, email, phone, address_line1, city, state, postal_code, country, payment_terms, qbo_customer_id, is_active)
