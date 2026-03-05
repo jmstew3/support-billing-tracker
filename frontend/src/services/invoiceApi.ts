@@ -106,7 +106,7 @@ export interface BillingSummary {
 }
 
 export interface AdditionalLineItem {
-  item_type: 'project' | 'hosting';
+  item_type: 'project' | 'hosting' | 'other';
   description: string;
   quantity: number;
   unit_price: number;
@@ -470,36 +470,59 @@ export function buildAdditionalLineItems(
     }
   }
 
-  // Hosting line item (consolidated lump-sum — detail CSV handles per-site breakdown)
+  // Hosting line items: gross + separate discount lines
   if (includeHosting && monthData.hostingSitesCount > 0) {
     const [year, monthNum] = monthData.month.split('-');
     const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleString('en-US', { month: 'long' });
+    const totalSites = monthData.hostingSitesCount;
+    const grossAmount = totalSites * 99;
 
-    // Count prorated sites from hosting details
-    const proratedCount = monthData.hostingDetails?.filter(
-      h => h.billingType === 'PRORATED_START' || h.billingType === 'PRORATED_END'
-    ).length ?? 0;
+    const desc = `Turbo Hosting - ${totalSites} site${totalSites !== 1 ? 's' : ''} (${monthName} ${year})`;
 
-    let desc = `Turbo Hosting - ${monthData.hostingSitesCount} site${monthData.hostingSitesCount !== 1 ? 's' : ''} (${monthName} ${year})`;
-    const notes: string[] = [];
-    if (monthData.hostingCreditsApplied > 0) {
-      notes.push(`${monthData.hostingCreditsApplied} free credit${monthData.hostingCreditsApplied !== 1 ? 's' : ''}`);
-    }
-    if (proratedCount > 0) {
-      notes.push(`${proratedCount} prorated`);
-    }
-    if (notes.length > 0) {
-      desc += ` [${notes.join(', ')}]`;
-    }
-
+    // Main hosting line at gross
     items.push({
       item_type: 'hosting',
       description: desc,
-      quantity: 1,
-      unit_price: monthData.hostingRevenue,
-      amount: monthData.hostingRevenue,
+      quantity: totalSites,
+      unit_price: 99,
+      amount: grossAmount,
       sort_order: sortOrder++,
     });
+
+    // Free credits discount line
+    if (monthData.hostingCreditsApplied > 0) {
+      const creditAmount = monthData.hostingCreditsApplied * 99;
+      items.push({
+        item_type: 'other',
+        description: `Free Hosting Credits (${monthData.hostingCreditsApplied} site${monthData.hostingCreditsApplied !== 1 ? 's' : ''})`,
+        quantity: monthData.hostingCreditsApplied,
+        unit_price: -99,
+        amount: -creditAmount,
+        sort_order: sortOrder++,
+        category: 'HOSTING_CREDIT',
+      });
+    }
+
+    // Prorated adjustments discount line (only non-credited prorated sites)
+    const proratedSites = monthData.hostingDetails?.filter(
+      h => (h.billingType === 'PRORATED_START' || h.billingType === 'PRORATED_END') && !h.creditApplied
+    ) ?? [];
+    if (proratedSites.length > 0) {
+      const proratedDiscount = proratedSites.reduce(
+        (sum, s) => sum + (99 - s.grossAmount), 0
+      );
+      if (proratedDiscount > 0) {
+        items.push({
+          item_type: 'other',
+          description: `Prorated Hosting Adjustments (${proratedSites.length} site${proratedSites.length !== 1 ? 's' : ''})`,
+          quantity: 1,
+          unit_price: -proratedDiscount,
+          amount: -proratedDiscount,
+          sort_order: sortOrder++,
+          category: 'HOSTING_PRORATED',
+        });
+      }
+    }
   }
 
   return items;

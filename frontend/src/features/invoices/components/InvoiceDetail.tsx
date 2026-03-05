@@ -38,10 +38,12 @@ import {
 } from '../../../services/invoiceApi';
 import { formatDateFull } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
+import { formatTime } from '../../../shared/utils/time/timeUtils';
 import { DateInput } from '../../../components/shared/DateInput';
 import { fetchWebsiteProperties, calculateMonthlyHosting } from '../../../services/hostingApi';
 import { BillingTypeBadge } from '../../../components/ui/BillingBadge';
 import type { BillingType } from '../../../types/websiteProperty';
+import { STANDARD_MRR } from '../../../config/apiConfig';
 
 interface InvoiceDetailProps {
   invoiceId: number;
@@ -599,7 +601,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               {(() => {
                 const items = invoice.items || [];
                 const billableItems = items.filter(item => parseFloat(item.amount) > 0);
-                const creditItems = items.filter(item => parseFloat(item.amount) <= 0 && item.item_type === 'other');
+                // Credit/discount items are shown only in the summary section, not in the line items table
                 const freeProjectItems = items.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'project');
                 const itemTypes = new Set(billableItems.map(i => i.item_type));
                 const hasMultipleTypes = itemTypes.size > 1 || (itemTypes.size === 1 && freeProjectItems.length > 0);
@@ -744,18 +746,14 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                                 </TableCell>
                               </TableRow>
                               {group.items.map(renderItemRow)}
-                              {/* Show support credit line directly under the support section */}
-                              {group.type === 'support' && creditItems.map((item) => (
-                                <TableRow key={item.id} className="bg-green-500/5">
-                                  <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
-                                    {item.description}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                              {/* Credits/discounts shown only in summary section */}
                             </>
                           ))
                         ) : (
-                          billableItems.map(renderItemRow)
+                          <>
+                            {billableItems.map(renderItemRow)}
+                            {/* Credits/discounts shown only in summary section */}
+                          </>
                         )}
                       </TableBody>
                     </Table>
@@ -783,7 +781,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                   </TableHeader>
                   <TableBody>
                     {invoice.hosting_detail_snapshot.map((site: HostingChargeSnapshot, i: number) => (
-                      <TableRow key={i} className={site.creditApplied ? 'bg-green-500/5' : ''}>
+                      <TableRow key={i} className={site.netAmount === 0 ? 'bg-green-500/5' : site.netAmount < STANDARD_MRR ? 'bg-muted/30' : ''}>
                         <TableCell>
                           <div>{site.siteName}</div>
                           {site.websiteUrl && (
@@ -796,9 +794,9 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                         <TableCell className="text-right text-sm">
                           {site.daysActive}/{site.daysInMonth}
                         </TableCell>
-                        <TableCell className="text-right">{formatCurrency(site.grossAmount)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(STANDARD_MRR)}</TableCell>
                         <TableCell className="text-right text-green-600">
-                          {site.creditApplied ? `-${formatCurrency(site.creditAmount || site.grossAmount)}` : '-'}
+                          {site.netAmount < STANDARD_MRR ? `-${formatCurrency(STANDARD_MRR - site.netAmount)}` : '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(site.netAmount)}</TableCell>
                       </TableRow>
@@ -849,7 +847,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                       {invoice.requests.map((req) => (
                         <TableRow key={req.id}>
                           <TableCell className="text-sm">{formatDate(req.date)}</TableCell>
-                          <TableCell className="text-sm">{req.time}</TableCell>
+                          <TableCell className="text-sm">{formatTime(req.time)} ET</TableCell>
                           <TableCell className="text-sm max-w-xs truncate">{req.description}</TableCell>
                           <TableCell className="text-sm">{req.category}</TableCell>
                           <TableCell>
@@ -974,22 +972,19 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 .filter(i => i.item_type === 'project' && parseFloat(i.amount) > 0)
                 .reduce((sum, i) => sum + parseFloat(i.amount), 0);
 
-              // Hosting: use gross from snapshot if available, else hosting item amount
-              const hostingSnapshot = invoice.hosting_detail_snapshot || [];
-              const hostingGross = hostingSnapshot.length > 0
-                ? hostingSnapshot.reduce((sum: number, s: HostingChargeSnapshot) => sum + (s.grossAmount || 0), 0)
-                : items
-                    .filter(i => i.item_type === 'hosting')
-                    .reduce((sum, i) => sum + parseFloat(i.amount), 0);
-              const hostingNet = items
+              // Hosting gross: directly from hosting line items (now stored at gross)
+              const hostingGross = items
                 .filter(i => i.item_type === 'hosting')
                 .reduce((sum, i) => sum + parseFloat(i.amount), 0);
-              const hostingCredit = hostingGross - hostingNet;
 
-              // Free support credits (negative 'other' items)
+              // Support credits: negative 'other' items NOT related to hosting
               const supportCredits = items
-                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0)
+                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && !(i.category || '').startsWith('HOSTING_'))
                 .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+
+              // Hosting discount lines: negative 'other' items with HOSTING_ category
+              const hostingDiscountItems = items
+                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && (i.category || '').startsWith('HOSTING_'));
 
               const grossSubtotal = supportTotal + projectsTotal + hostingGross;
 
@@ -1003,12 +998,12 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               // Build discount lines (only show non-zero)
               const discounts: { label: string; amount: number }[] = [];
               if (supportCredits < 0) {
-                const creditLabel = items.find(i => i.item_type === 'other' && parseFloat(i.amount) < 0)?.description || 'Free Support Credits';
+                const creditLabel = items.find(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && !(i.category || '').startsWith('HOSTING_'))?.description || 'Free Support Credits';
                 discounts.push({ label: creditLabel, amount: supportCredits });
               }
-              if (hostingCredit > 0) {
-                discounts.push({ label: 'Free Hosting Credits', amount: -hostingCredit });
-              }
+              hostingDiscountItems.forEach(item => {
+                discounts.push({ label: item.description, amount: parseFloat(item.amount) });
+              });
 
               return (
                 <div className="flex justify-end mb-6 mt-6">
@@ -1030,12 +1025,22 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                     )}
 
                     {/* Discount lines */}
-                    {discounts.map((d, i) => (
-                      <div key={i} className="flex justify-between py-1.5 text-green-600 dark:text-green-400">
-                        <span>{d.label}</span>
-                        <span>{formatCurrency(d.amount)}</span>
-                      </div>
-                    ))}
+                    {discounts.map((d, i) => {
+                      const parenMatch = d.label.match(/^(.+?)\s*\((.+)\)$/);
+                      const mainLabel = parenMatch ? parenMatch[1] : d.label;
+                      const detail = parenMatch ? parenMatch[2] : null;
+                      return (
+                        <div key={i} className="flex justify-between py-1.5 text-sm text-green-600 dark:text-green-400">
+                          <div className="flex flex-col">
+                            <span>{mainLabel}</span>
+                            {detail && (
+                              <span className="text-xs text-green-500/70 dark:text-green-400/60 ml-3">{detail}</span>
+                            )}
+                          </div>
+                          <span className="shrink-0 self-start">{formatCurrency(d.amount)}</span>
+                        </div>
+                      );
+                    })}
 
                     {/* Tax */}
                     {parseFloat(invoice.tax_amount) > 0 && (

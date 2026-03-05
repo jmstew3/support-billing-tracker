@@ -159,7 +159,7 @@ router.post('/generate', async (req, res) => {
       if (!Array.isArray(options.additionalItems)) {
         return res.status(400).json({ error: 'additionalItems must be an array' });
       }
-      const validTypes = ['project', 'hosting'];
+      const validTypes = ['project', 'hosting', 'other'];
       for (let i = 0; i < options.additionalItems.length; i++) {
         const item = options.additionalItems[i];
         if (!validTypes.includes(item.item_type)) {
@@ -167,9 +167,9 @@ router.post('/generate', async (req, res) => {
             error: `additionalItems[${i}].item_type must be one of: ${validTypes.join(', ')}`
           });
         }
-        if (typeof item.amount !== 'number' || item.amount < 0) {
+        if (typeof item.amount !== 'number' || (item.item_type !== 'other' && item.amount < 0)) {
           return res.status(400).json({
-            error: `additionalItems[${i}].amount must be a non-negative number`
+            error: `additionalItems[${i}].amount must be a non-negative number (except 'other' type)`
           });
         }
         if (!item.description) {

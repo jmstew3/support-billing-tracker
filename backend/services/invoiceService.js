@@ -1100,31 +1100,15 @@ export async function exportInvoiceQBOCSV(invoiceId) {
       });
     });
 
-  // ── 4c: Hosting — consolidated single row ──
+  // ── 4c: Hosting — gross row (credits excluded like support credits) ──
   items
     .filter(i => i.item_type === 'hosting')
     .forEach(item => {
-      const netTotal = parseFloat(item.amount);
+      const totalSites = parseFloat(item.quantity) || 1;
       let desc;
 
       if (hostingSnapshot && hostingSnapshot.length > 0) {
-        const creditedCount = hostingSnapshot.filter(s => s.creditApplied).length;
-        const proratedCount = hostingSnapshot.filter(
-          s => s.billingType === 'PRORATED_START' || s.billingType === 'PRORATED_END'
-        ).length;
-
-        desc = `Website hosting - ${hostingSnapshot.length} site${hostingSnapshot.length !== 1 ? 's' : ''}`;
-        const notes = [];
-        if (creditedCount > 0) {
-          notes.push(`${creditedCount} free credit${creditedCount !== 1 ? 's' : ''}`);
-        }
-        if (proratedCount > 0) {
-          notes.push(`${proratedCount} prorated`);
-        }
-        if (notes.length > 0) {
-          desc += `, ${notes.join(', ')}`;
-        }
-        desc += ' (see supplement for per-site detail)';
+        desc = `Website hosting - ${hostingSnapshot.length} site${hostingSnapshot.length !== 1 ? 's' : ''} (see supplement for per-site detail)`;
       } else {
         desc = item.description;
       }
@@ -1132,9 +1116,9 @@ export async function exportInvoiceQBOCSV(invoiceId) {
       rows.push({
         product: HOSTING_PRODUCT,
         description: desc,
-        qty: 1,
-        rate: netTotal.toFixed(2),
-        amount: netTotal.toFixed(2),
+        qty: totalSites,
+        rate: '99.00',
+        amount: parseFloat(item.amount).toFixed(2),
       });
     });
 
