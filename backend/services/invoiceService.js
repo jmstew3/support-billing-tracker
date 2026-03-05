@@ -960,6 +960,54 @@ export async function exportInvoiceCSV(invoiceId) {
   return lines.join('\n');
 }
 
+// ── QBO Product Name Constants ──
+
+// Support: tier-specific (rates differ: $250 / $175 / $150)
+const SUPPORT_PRODUCT_MAP = {
+  'Emergency Support Hours': 'p1 - Emergency Support',
+  'Same Day Support Hours':  'p2 - Urgent Support',
+  'Regular Support Hours':   'p3 - Standard Support',
+};
+
+// Projects: map by category field
+const PROJECT_PRODUCT_MAP = {
+  'Landing_Page': 'Landing Page Development',
+  'Multi_Form':   'Multi-Step Lead Form Implementation',
+  'Basic_Form':   'Basic Lead Form Implementation',
+  'Migration':    'Website Migration Services',
+};
+const DEFAULT_PROJECT_PRODUCT = 'Custom Development';
+
+// Hosting: single consolidated product
+const HOSTING_PRODUCT = 'PeakOne Website Hosting - Turbo (T2) - Per Site';
+
+// QBO Terms: map day-gap to standard QBO terms string
+const QBO_TERMS_MAP = { 0: 'Due on receipt', 15: 'Net 15', 30: 'Net 30', 60: 'Net 60' };
+
+function getQBOProductName(item) {
+  if (item.item_type === 'support') {
+    return SUPPORT_PRODUCT_MAP[item.description] || 'p3 - Standard Support';
+  }
+  if (item.item_type === 'project') {
+    return PROJECT_PRODUCT_MAP[item.category] || DEFAULT_PROJECT_PRODUCT;
+  }
+  if (item.item_type === 'hosting') {
+    return HOSTING_PRODUCT;
+  }
+  console.warn(
+    `[QBO Export] Unmapped item: type=${item.item_type}, desc="${item.description}" — using "Services"`
+  );
+  return 'Services';
+}
+
+function escapeCSV(val) {
+  const str = String(val ?? '');
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 /**
  * Export invoice as QBO-compatible flat CSV
  * Flat format with repeated invoice header per line — directly importable into QuickBooks Online
@@ -970,7 +1018,9 @@ export async function exportInvoiceQBOCSV(invoiceId) {
     throw new Error('Invoice not found');
   }
 
-  // Format dates as MM/DD/YYYY for QBO
+  const items = invoice.items || [];
+
+  // ── Format dates as MM/DD/YYYY for QBO ──
   const fmtDate = (d) => {
     if (!d) return '';
     const dt = d instanceof Date ? d : new Date(d);
@@ -985,19 +1035,112 @@ export async function exportInvoiceQBOCSV(invoiceId) {
   const invDate = fmtDate(invoice.invoice_date);
   const dueDate = fmtDate(invoice.due_date);
 
-  const lines = [];
-  lines.push('InvoiceNo,Customer,InvoiceDate,DueDate,ItemDescription,ItemQuantity,ItemRate,ItemAmount');
+  // ── Terms: computed from date gap, mapped to QBO-standard string ──
+  const invDateObj = invoice.invoice_date instanceof Date ? invoice.invoice_date : new Date(invoice.invoice_date);
+  const dueDateObj = invoice.due_date instanceof Date ? invoice.due_date : new Date(invoice.due_date);
+  const daysDiff = Math.round((dueDateObj - invDateObj) / (1000 * 60 * 60 * 24));
+  const terms = QBO_TERMS_MAP[daysDiff] || '';
 
-  const billableItems = (invoice.items || []).filter(item => parseFloat(item.amount) > 0);
-  for (const item of billableItems) {
-    const desc = `"${item.description.replace(/"/g, '""')}"`;
-    const qty = parseFloat(item.quantity);
-    const rate = parseFloat(item.unit_price).toFixed(2);
-    const amt = parseFloat(item.amount).toFixed(2);
-    lines.push(`${invNo},${customer},${invDate},${dueDate},${desc},${qty},${rate},${amt}`);
-  }
+  // ── Hosting snapshot: on the INVOICE object, NOT on individual items ──
+  const hostingSnapshot = invoice.hosting_detail_snapshot
+    ? (typeof invoice.hosting_detail_snapshot === 'string'
+        ? JSON.parse(invoice.hosting_detail_snapshot)
+        : invoice.hosting_detail_snapshot)
+    : null;
 
-  return lines.join('\n');
+  const rows = [];
+
+  // ── 4a: Support items (amount > 0, grouped by tier) ──
+  const supportGroups = {};
+  items
+    .filter(i => i.item_type === 'support' && parseFloat(i.amount) > 0)
+    .forEach(item => {
+      const product = getQBOProductName(item);
+      if (!supportGroups[product]) {
+        supportGroups[product] = {
+          product,
+          description: item.description,
+          totalQty: 0,
+          totalAmount: 0,
+          rate: parseFloat(item.unit_price),
+        };
+      }
+      supportGroups[product].totalQty += parseFloat(item.quantity);
+      supportGroups[product].totalAmount += parseFloat(item.amount);
+    });
+
+  Object.values(supportGroups).forEach(group => {
+    rows.push({
+      product: group.product,
+      description: group.description,
+      qty: group.totalQty,
+      rate: group.rate.toFixed(2),
+      amount: group.totalAmount.toFixed(2),
+    });
+  });
+
+  // ── 4b: Project items (amount > 0 only — free credits excluded) ──
+  items
+    .filter(i => i.item_type === 'project' && parseFloat(i.amount) > 0)
+    .forEach(item => {
+      rows.push({
+        product: getQBOProductName(item),
+        description: item.description,
+        qty: parseFloat(item.quantity) || 1,
+        rate: parseFloat(item.unit_price).toFixed(2),
+        amount: parseFloat(item.amount).toFixed(2),
+      });
+    });
+
+  // ── 4c: Hosting — consolidated single row ──
+  items
+    .filter(i => i.item_type === 'hosting')
+    .forEach(item => {
+      const netTotal = parseFloat(item.amount);
+      let desc;
+
+      if (hostingSnapshot && hostingSnapshot.length > 0) {
+        const creditedSites = hostingSnapshot.filter(s => s.creditApplied);
+        desc = `Website hosting - ${hostingSnapshot.length} site${hostingSnapshot.length !== 1 ? 's' : ''}`;
+        if (creditedSites.length > 0) {
+          desc += ` (${creditedSites.length} free credit${creditedSites.length !== 1 ? 's' : ''} applied)`;
+        }
+        desc += ' (see supplement for per-site detail)';
+      } else {
+        desc = item.description;
+      }
+
+      rows.push({
+        product: HOSTING_PRODUCT,
+        description: desc,
+        qty: 1,
+        rate: netTotal.toFixed(2),
+        amount: netTotal.toFixed(2),
+      });
+    });
+
+  // ── 4d: item_type='other' and $0 project credits are EXCLUDED ──
+
+  // ── CSV assembly ──
+  const header = 'InvoiceNo,Customer,InvoiceDate,DueDate,Terms,Item(Product/Service),ItemDescription,ItemQuantity,ItemRate,ItemAmount';
+
+  const csvLines = [header];
+  rows.forEach(row => {
+    csvLines.push([
+      escapeCSV(invNo),
+      escapeCSV(customer),
+      invDate,
+      dueDate,
+      escapeCSV(terms),
+      escapeCSV(row.product),
+      escapeCSV(row.description),
+      row.qty,
+      row.rate,
+      row.amount,
+    ].join(','));
+  });
+
+  return csvLines.join('\n');
 }
 
 /**
