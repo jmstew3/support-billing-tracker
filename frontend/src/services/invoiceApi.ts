@@ -275,6 +275,21 @@ export async function deleteInvoice(id: number): Promise<void> {
 }
 
 /**
+ * Recalculate a draft invoice's support line items from current request data
+ */
+export async function recalculateInvoice(id: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/recalculate`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to recalculate invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
  * Mark invoice as sent
  */
 export async function sendInvoice(id: number): Promise<Invoice> {
@@ -538,6 +553,7 @@ export default {
   updateInvoice,
   deleteInvoice,
   sendInvoice,
+  recalculateInvoice,
   payInvoice,
   exportInvoiceCSV,
   exportInvoiceQBOCSV,

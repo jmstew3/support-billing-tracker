@@ -8,9 +8,10 @@ interface EditableCellProps {
   onSave: (newValue: string) => void;
   className?: string;
   formatDisplayValue?: (value: string) => string;
+  disabled?: boolean;
 }
 
-export function EditableCell({ value, options, onSave, className = '', formatDisplayValue }: EditableCellProps) {
+export function EditableCell({ value, options, onSave, className = '', formatDisplayValue, disabled = false }: EditableCellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -83,6 +84,7 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
   };
 
   const handleToggleOpen = () => {
+    if (disabled) return;
     if (!isOpen) {
       calculateDropdownPosition();
     }
@@ -104,8 +106,9 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
         ref={buttonRef}
         onClick={handleToggleOpen}
         onKeyDown={handleKeyDown}
-        className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left text-foreground border border-border rounded-md bg-card hover:border-border hover:bg-accent transition-colors ${className} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
-        title="Click to edit"
+        disabled={disabled}
+        className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left text-foreground border border-border rounded-md bg-card transition-colors ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border hover:bg-accent'} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+        title={disabled ? 'Locked — on a sent invoice' : 'Click to edit'}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >

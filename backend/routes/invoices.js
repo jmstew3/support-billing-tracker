@@ -21,7 +21,9 @@ import {
   exportInvoiceJSON,
   listCustomers,
   getCustomer,
-  markOverdueInvoices
+  markOverdueInvoices,
+  sendInvoice,
+  recalculateDraftInvoice
 } from '../services/invoiceService.js';
 
 const router = express.Router();
@@ -381,17 +383,31 @@ router.get('/:id/export/json', async (req, res) => {
 
 /**
  * POST /api/invoices/:id/send
- * Mark invoice as sent
+ * Mark invoice as sent — snapshots linked requests for data integrity
  */
 router.post('/:id/send', async (req, res) => {
   try {
-    const invoice = await updateInvoice(req.params.id, { status: 'sent' });
+    const invoice = await sendInvoice(req.params.id);
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     res.json(invoice);
   } catch (error) {
     console.error('Error sending invoice:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/invoices/:id/recalculate
+ * Recalculate a draft invoice's support line items from current request data
+ */
+router.post('/:id/recalculate', async (req, res) => {
+  try {
+    const invoice = await recalculateDraftInvoice(req.params.id);
+    res.json(invoice);
+  } catch (error) {
+    console.error('Error recalculating invoice:', error);
     res.status(400).json({ error: error.message });
   }
 });

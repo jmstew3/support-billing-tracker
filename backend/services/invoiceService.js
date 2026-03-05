@@ -292,7 +292,7 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Emergency Support Hours', summary.emergencyHours,
+          [invoiceId, 'High Priority Support Hours', summary.emergencyHours,
            PRICING.rates.emergency, summary.emergencyHours * PRICING.rates.emergency, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency === 'HIGH').map(r => r.id))]
         );
@@ -305,7 +305,7 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Same Day Support Hours', summary.sameDayHours,
+          [invoiceId, 'Medium Priority Support Hours', summary.sameDayHours,
            PRICING.rates.sameDay, summary.sameDayHours * PRICING.rates.sameDay, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency === 'MEDIUM').map(r => r.id))]
         );
@@ -318,7 +318,7 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Regular Support Hours', summary.regularHours,
+          [invoiceId, 'Low Priority Support Hours', summary.regularHours,
            PRICING.rates.regular, summary.regularHours * PRICING.rates.regular, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency !== 'HIGH' && r.urgency !== 'MEDIUM').map(r => r.id))]
         );
@@ -408,16 +408,25 @@ export async function getInvoice(invoiceId) {
       [invoiceId]
     );
 
-    // Get linked requests
-    const [requests] = await connection.query(
-      `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
-              ft.ticket_number
-       FROM requests r
-       LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
-       WHERE r.invoice_id = ?
-       ORDER BY r.date, r.time`,
-      [invoiceId]
-    );
+    // For non-draft invoices with a snapshot, use frozen data; otherwise fetch live
+    let requests;
+    if (invoice.status !== 'draft' && invoice.request_snapshot) {
+      requests = typeof invoice.request_snapshot === 'string'
+        ? JSON.parse(invoice.request_snapshot)
+        : invoice.request_snapshot;
+    } else {
+      // Draft or legacy invoices without snapshot: use live data
+      const [liveRequests] = await connection.query(
+        `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
+                ft.ticket_number
+         FROM requests r
+         LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
+         WHERE r.invoice_id = ?
+         ORDER BY r.date, r.time`,
+        [invoiceId]
+      );
+      requests = liveRequests;
+    }
 
     return {
       ...invoice,
@@ -514,13 +523,16 @@ export async function listInvoices(filters = {}) {
 export async function updateInvoice(invoiceId, updates) {
   const connection = await pool.getConnection();
   try {
-    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date', 'period_start', 'period_end', 'hosting_detail_snapshot'];
+    const allowedFields = ['status', 'notes', 'internal_notes', 'amount_paid', 'payment_date', 'period_start', 'period_end', 'hosting_detail_snapshot', 'request_snapshot'];
     const updateFields = [];
     const params = [];
 
-    // JSON-serialize hosting_detail_snapshot if present and not already a string
+    // JSON-serialize snapshot fields if present and not already a string
     if (updates.hosting_detail_snapshot !== undefined && typeof updates.hosting_detail_snapshot !== 'string') {
       updates.hosting_detail_snapshot = JSON.stringify(updates.hosting_detail_snapshot);
+    }
+    if (updates.request_snapshot !== undefined && typeof updates.request_snapshot !== 'string') {
+      updates.request_snapshot = JSON.stringify(updates.request_snapshot);
     }
 
     for (const field of allowedFields) {
@@ -548,6 +560,61 @@ export async function updateInvoice(invoiceId, updates) {
 }
 
 /**
+ * Send a draft invoice: snapshot linked requests and mark as sent
+ */
+export async function sendInvoice(invoiceId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verify invoice exists and is draft
+    const [invoices] = await connection.query(
+      'SELECT * FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be sent');
+
+    // Fetch all linked requests (live data) with ticket numbers
+    const [requests] = await connection.query(
+      `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
+              ft.ticket_number
+       FROM requests r
+       LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
+       WHERE r.invoice_id = ?
+       ORDER BY r.date, r.time`,
+      [invoiceId]
+    );
+
+    // Build snapshot
+    const requestSnapshot = requests.map(r => ({
+      id: r.id,
+      date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : r.date,
+      time: r.time,
+      description: r.description,
+      category: r.category,
+      urgency: r.urgency,
+      estimated_hours: parseFloat(r.estimated_hours) || 0,
+      website_url: r.website_url || null,
+      ticket_number: r.ticket_number || null
+    }));
+
+    // Update invoice: set status to sent and store snapshot
+    await connection.query(
+      `UPDATE invoices SET status = 'sent', request_snapshot = ? WHERE id = ?`,
+      [JSON.stringify(requestSnapshot), invoiceId]
+    );
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
  * Delete invoice (only drafts)
  */
 export async function deleteInvoice(invoiceId) {
@@ -563,10 +630,6 @@ export async function deleteInvoice(invoiceId) {
 
     if (invoices.length === 0) {
       throw new Error('Invoice not found');
-    }
-
-    if (invoices[0].status !== 'draft') {
-      throw new Error('Only draft invoices can be deleted');
     }
 
     // Unlink requests
@@ -647,8 +710,80 @@ export async function updateInvoiceItem(invoiceId, itemId, updates) {
   }
 }
 
+// Map urgency to tier description used in invoice_items
+function urgencyToTierDescription(urgency) {
+  if (urgency === 'HIGH') return 'High Priority Support Hours';
+  if (urgency === 'MEDIUM') return 'Medium Priority Support Hours';
+  return 'Low Priority Support Hours';
+}
+
+function urgencyToRate(urgency) {
+  if (urgency === 'HIGH') return PRICING.rates.emergency;
+  if (urgency === 'MEDIUM') return PRICING.rates.sameDay;
+  return PRICING.rates.regular;
+}
+
 /**
- * Remove a request from a draft invoice and recalculate
+ * Recalculate the free credit line item based on current support tier hours
+ */
+async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
+  // Get all remaining support items
+  const [supportItems] = await connection.query(
+    `SELECT description, quantity, unit_price, amount FROM invoice_items
+     WHERE invoice_id = ? AND item_type = 'support'`,
+    [invoiceId]
+  );
+
+  // Delete existing free credit line
+  await connection.query(
+    `DELETE FROM invoice_items WHERE invoice_id = ? AND item_type = 'other' AND sort_order = 99`,
+    [invoiceId]
+  );
+
+  // Determine if free credits apply
+  const hasFreeCredits = periodStart >= PRICING.freeCredits.effectiveDate;
+  if (!hasFreeCredits || supportItems.length === 0) return;
+
+  // Sum hours per tier
+  let emergencyHours = 0, sameDayHours = 0, regularHours = 0;
+  for (const item of supportItems) {
+    const qty = parseFloat(item.quantity) || 0;
+    if (item.description === 'High Priority Support Hours') emergencyHours = qty;
+    else if (item.description === 'Medium Priority Support Hours') sameDayHours = qty;
+    else if (item.description === 'Low Priority Support Hours') regularHours = qty;
+  }
+  const totalHours = emergencyHours + sameDayHours + regularHours;
+  if (totalHours === 0) return;
+
+  // Apply free credits from cheapest first
+  let remainingCredits = Math.min(totalHours, PRICING.freeCredits.supportHours);
+  const freeHoursApplied = remainingCredits;
+
+  const regularDeduction = Math.min(remainingCredits, regularHours);
+  remainingCredits -= regularDeduction;
+  const sameDayDeduction = Math.min(remainingCredits, sameDayHours);
+  remainingCredits -= sameDayDeduction;
+  const emergencyDeduction = Math.min(remainingCredits, emergencyHours);
+
+  const creditValue = regularDeduction * PRICING.rates.regular
+    + sameDayDeduction * PRICING.rates.sameDay
+    + emergencyDeduction * PRICING.rates.emergency;
+
+  if (creditValue > 0) {
+    await connection.query(
+      `INSERT INTO invoice_items
+       (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
+       VALUES (?, 'other', ?, ?, ?, ?, 99)`,
+      [invoiceId, `Turbo Support Credit Applied (${freeHoursApplied}h free)`,
+       freeHoursApplied,
+       -(creditValue / freeHoursApplied),
+       -creditValue]
+    );
+  }
+}
+
+/**
+ * Remove a request from a draft invoice and recalculate line items
  */
 export async function unlinkRequest(invoiceId, requestId) {
   const connection = await pool.getConnection();
@@ -662,28 +797,50 @@ export async function unlinkRequest(invoiceId, requestId) {
     if (invoices.length === 0) throw new Error('Invoice not found');
     if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be edited');
 
-    // Unlink the request
-    const [result] = await connection.query(
-      'UPDATE requests SET invoice_id = NULL WHERE id = ? AND invoice_id = ?',
+    // Fetch the request's billing info before unlinking
+    const [reqRows] = await connection.query(
+      'SELECT urgency, estimated_hours FROM requests WHERE id = ? AND invoice_id = ?',
       [requestId, invoiceId]
     );
-    if (result.affectedRows === 0) throw new Error('Request not linked to this invoice');
+    if (reqRows.length === 0) throw new Error('Request not linked to this invoice');
+    const reqHours = parseFloat(reqRows[0].estimated_hours) || 0;
+    const tierDesc = urgencyToTierDescription(reqRows[0].urgency);
 
-    // Remove the request ID from any line item request_ids arrays
-    const [items] = await connection.query(
-      'SELECT id, request_ids FROM invoice_items WHERE invoice_id = ? AND request_ids IS NOT NULL',
-      [invoiceId]
+    // Unlink the request
+    await connection.query(
+      'UPDATE requests SET invoice_id = NULL WHERE id = ?',
+      [requestId]
     );
-    for (const item of items) {
-      let ids = typeof item.request_ids === 'string' ? JSON.parse(item.request_ids) : item.request_ids;
-      if (Array.isArray(ids) && ids.includes(requestId)) {
-        ids = ids.filter(id => id !== requestId);
+
+    // Find matching support line item and adjust
+    const [items] = await connection.query(
+      `SELECT id, quantity, unit_price, request_ids FROM invoice_items
+       WHERE invoice_id = ? AND item_type = 'support' AND description = ?`,
+      [invoiceId, tierDesc]
+    );
+
+    if (items.length > 0) {
+      const item = items[0];
+      let ids = typeof item.request_ids === 'string' ? JSON.parse(item.request_ids) : (item.request_ids || []);
+      ids = ids.filter(id => id !== requestId);
+      const newQty = Math.max(0, parseFloat(item.quantity) - reqHours);
+      const unitPrice = parseFloat(item.unit_price);
+
+      if (newQty <= 0) {
+        await connection.query('DELETE FROM invoice_items WHERE id = ?', [item.id]);
+      } else {
         await connection.query(
-          'UPDATE invoice_items SET request_ids = ? WHERE id = ?',
-          [JSON.stringify(ids), item.id]
+          'UPDATE invoice_items SET quantity = ?, amount = ?, request_ids = ? WHERE id = ?',
+          [newQty, newQty * unitPrice, JSON.stringify(ids), item.id]
         );
       }
     }
+
+    // Recalculate free credit line
+    await recalculateFreeCreditItem(connection, invoiceId, invoices[0].period_start);
+
+    // Recalculate totals
+    await recalculateInvoiceTotals(connection, invoiceId);
 
     await connection.commit();
     return getInvoice(invoiceId);
@@ -696,7 +853,7 @@ export async function unlinkRequest(invoiceId, requestId) {
 }
 
 /**
- * Add an unbilled request to a draft invoice
+ * Add an unbilled request to a draft invoice and update line items
  */
 export async function linkRequest(invoiceId, requestId) {
   const connection = await pool.getConnection();
@@ -717,11 +874,58 @@ export async function linkRequest(invoiceId, requestId) {
     );
     if (requests.length === 0) throw new Error('Request not found or already billed');
 
+    const req = requests[0];
+    const reqHours = parseFloat(req.estimated_hours) || 0;
+    const tierDesc = urgencyToTierDescription(req.urgency);
+    const rate = urgencyToRate(req.urgency);
+
     // Link the request
     await connection.query(
       'UPDATE requests SET invoice_id = ? WHERE id = ?',
       [invoiceId, requestId]
     );
+
+    // Find matching support line item
+    const [items] = await connection.query(
+      `SELECT id, quantity, unit_price, request_ids, sort_order FROM invoice_items
+       WHERE invoice_id = ? AND item_type = 'support' AND description = ?`,
+      [invoiceId, tierDesc]
+    );
+
+    if (items.length > 0) {
+      // Update existing line item
+      const item = items[0];
+      let ids = typeof item.request_ids === 'string' ? JSON.parse(item.request_ids) : (item.request_ids || []);
+      ids.push(requestId);
+      const newQty = parseFloat(item.quantity) + reqHours;
+      const unitPrice = parseFloat(item.unit_price);
+
+      await connection.query(
+        'UPDATE invoice_items SET quantity = ?, amount = ?, request_ids = ? WHERE id = ?',
+        [newQty, newQty * unitPrice, JSON.stringify(ids), item.id]
+      );
+    } else {
+      // Create new support line item - find next sort_order
+      const [maxSort] = await connection.query(
+        `SELECT COALESCE(MAX(sort_order), 0) as max_sort FROM invoice_items
+         WHERE invoice_id = ? AND item_type = 'support'`,
+        [invoiceId]
+      );
+      const sortOrder = (maxSort[0].max_sort || 0) + 1;
+
+      await connection.query(
+        `INSERT INTO invoice_items
+         (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
+         VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
+        [invoiceId, tierDesc, reqHours, rate, reqHours * rate, sortOrder, JSON.stringify([requestId])]
+      );
+    }
+
+    // Recalculate free credit line
+    await recalculateFreeCreditItem(connection, invoiceId, invoices[0].period_start);
+
+    // Recalculate totals
+    await recalculateInvoiceTotals(connection, invoiceId);
 
     await connection.commit();
     return getInvoice(invoiceId);
@@ -762,6 +966,91 @@ export async function getUnbilledRequests(invoiceId) {
 }
 
 /**
+ * Recalculate a draft invoice's support line items from current linked request data
+ */
+export async function recalculateDraftInvoice(invoiceId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Verify invoice is draft
+    const [invoices] = await connection.query(
+      'SELECT * FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be recalculated');
+
+    // Fetch all linked requests (live)
+    const [requests] = await connection.query(
+      `SELECT id, urgency, estimated_hours FROM requests WHERE invoice_id = ? AND status = 'active'`,
+      [invoiceId]
+    );
+
+    // Delete existing support items and free credit item
+    await connection.query(
+      `DELETE FROM invoice_items WHERE invoice_id = ? AND (item_type = 'support' OR (item_type = 'other' AND sort_order = 99))`,
+      [invoiceId]
+    );
+
+    // Aggregate hours by tier
+    let emergencyHours = 0, sameDayHours = 0, regularHours = 0;
+    const emergencyIds = [], sameDayIds = [], regularIds = [];
+
+    for (const req of requests) {
+      const hours = parseFloat(req.estimated_hours) || 0;
+      if (req.urgency === 'HIGH') {
+        emergencyHours += hours;
+        emergencyIds.push(req.id);
+      } else if (req.urgency === 'MEDIUM') {
+        sameDayHours += hours;
+        sameDayIds.push(req.id);
+      } else {
+        regularHours += hours;
+        regularIds.push(req.id);
+      }
+    }
+
+    // Insert new support line items
+    let sortOrder = 1;
+    if (emergencyHours > 0) {
+      await connection.query(
+        `INSERT INTO invoice_items (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
+         VALUES (?, 'support', 'High Priority Support Hours', ?, ?, ?, ?, ?)`,
+        [invoiceId, emergencyHours, PRICING.rates.emergency, emergencyHours * PRICING.rates.emergency, sortOrder++, JSON.stringify(emergencyIds)]
+      );
+    }
+    if (sameDayHours > 0) {
+      await connection.query(
+        `INSERT INTO invoice_items (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
+         VALUES (?, 'support', 'Medium Priority Support Hours', ?, ?, ?, ?, ?)`,
+        [invoiceId, sameDayHours, PRICING.rates.sameDay, sameDayHours * PRICING.rates.sameDay, sortOrder++, JSON.stringify(sameDayIds)]
+      );
+    }
+    if (regularHours > 0) {
+      await connection.query(
+        `INSERT INTO invoice_items (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
+         VALUES (?, 'support', 'Low Priority Support Hours', ?, ?, ?, ?, ?)`,
+        [invoiceId, regularHours, PRICING.rates.regular, regularHours * PRICING.rates.regular, sortOrder++, JSON.stringify(regularIds)]
+      );
+    }
+
+    // Recalculate free credits
+    await recalculateFreeCreditItem(connection, invoiceId, invoices[0].period_start);
+
+    // Recalculate totals
+    await recalculateInvoiceTotals(connection, invoiceId);
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
  * Recalculate invoice subtotal/total from line items
  */
 async function recalculateInvoiceTotals(connection, invoiceId) {
@@ -794,9 +1083,9 @@ export async function exportInvoiceCSV(invoiceId) {
   }
 
   const urgencyMap = {
-    'HIGH': { label: 'Emergency', rate: 250 },
-    'MEDIUM': { label: 'Same Day', rate: 175 },
-    'LOW': { label: 'Regular', rate: 150 }
+    'HIGH': { label: 'High', rate: 250 },
+    'MEDIUM': { label: 'Medium', rate: 175 },
+    'LOW': { label: 'Low', rate: 150 }
   };
 
   const fmtDate = (d) => {
@@ -824,6 +1113,7 @@ export async function exportInvoiceCSV(invoiceId) {
 
   // --- Support Section ---
   const supportItems = invoice.items.filter(i => i.item_type === 'support');
+  // For sent/paid invoices, getInvoice already returns snapshot data as requests
   const supportRequests = invoice.requests || [];
   const freeCreditItem = invoice.items.find(i => i.item_type === 'other' && i.sort_order === 99);
 
@@ -853,17 +1143,17 @@ export async function exportInvoiceCSV(invoiceId) {
     // Free credit row
     if (freeCreditItem) {
       const freeHours = parseFloat(freeCreditItem.quantity) || 0;
-      const supportGross = supportRequests.reduce((sum, req) => {
-        const u = urgencyMap[req.urgency] || urgencyMap['LOW'];
-        return sum + (parseFloat(req.estimated_hours) || 0) * u.rate;
-      }, 0);
-      const supportNet = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-      const creditAmount = supportGross - supportNet;
-      lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,,-$${creditAmount.toFixed(2)}`);
+      const creditAmount = Math.abs(parseFloat(freeCreditItem.amount)) || 0;
+      if (creditAmount > 0) {
+        lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,,-$${creditAmount.toFixed(2)}`);
+      }
     }
 
-    const supportSubtotal = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    lines.push(`,,,SUPPORT SUBTOTAL,,,,$${supportSubtotal.toFixed(2)}`);
+    const supportGross = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+    const creditDeduction = freeCreditItem ? parseFloat(freeCreditItem.amount) : 0; // negative
+    const supportSubtotal = supportGross + creditDeduction;
+    lines.push(',,,,,,,');
+    lines.push(`,,,,,,SUPPORT SUBTOTAL,$${supportSubtotal.toFixed(2)}`);
     categorySubtotals.push({ label: 'Support Services', amount: supportSubtotal });
   }
 
@@ -875,14 +1165,14 @@ export async function exportInvoiceCSV(invoiceId) {
     lines.push('========================================');
     lines.push('PROJECTS');
     lines.push('========================================');
-    lines.push('Description,Category,,,Unit Price,,,Amount');
+    lines.push('Description,Category,,Qty,Unit Price,,,Amount');
 
     for (const item of projectItems) {
       const desc = `"${(item.description || '').replace(/"/g, '""')}"`;
       const category = (item.category || '').replace(/_/g, ' ') || '-';
       const unitPrice = parseFloat(item.unit_price) || 0;
       const amount = parseFloat(item.amount) || 0;
-      lines.push(`${desc},${category},,,$${unitPrice.toFixed(2)},,,$${amount.toFixed(2)}`);
+      lines.push(`${desc},${category},,${parseFloat(item.quantity) || 1},$${unitPrice.toFixed(2)},,,$${amount.toFixed(2)}`);
     }
 
     lines.push(',,,,,,,');
@@ -918,8 +1208,14 @@ export async function exportInvoiceCSV(invoiceId) {
         lines.push(`${name},${url},${billingLabel},${site.daysActive},${site.daysInMonth},$${gross.toFixed(2)},${credit},$${net.toFixed(2)}`);
       }
 
+      const hostingGross = details.length * 99;
+      const hostingCredits = hostingSubtotal - hostingGross; // negative
       lines.push(',,,,,,,');
-      lines.push(`,,,,,HOSTING SUBTOTAL,,$${hostingSubtotal.toFixed(2)}`);
+      if (hostingCredits < 0) {
+        lines.push(`,,,,,Gross Total,,$${hostingGross.toFixed(2)}`);
+        lines.push(`,,,,,Credits,,$${hostingCredits.toFixed(2)}`);
+      }
+      lines.push(`,,,,,,HOSTING SUBTOTAL,$${hostingSubtotal.toFixed(2)}`);
       categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
       hostingRendered = true;
     }
@@ -942,9 +1238,9 @@ export async function exportInvoiceCSV(invoiceId) {
       }
 
       lines.push(',,,,,,,');
-      const hostingSubtotal = hostingItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-      lines.push(`,,,,,,HOSTING SUBTOTAL,$${hostingSubtotal.toFixed(2)}`);
-      categorySubtotals.push({ label: 'Hosting', amount: hostingSubtotal });
+      const hostingFallbackSubtotal = hostingItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+      lines.push(`,,,,,,HOSTING SUBTOTAL,$${hostingFallbackSubtotal.toFixed(2)}`);
+      categorySubtotals.push({ label: 'Hosting', amount: hostingFallbackSubtotal });
     }
   }
 
@@ -962,12 +1258,12 @@ export async function exportInvoiceCSV(invoiceId) {
   const taxAmount = parseFloat(invoice.tax_amount) || 0;
   const total = parseFloat(invoice.total) || 0;
 
-  lines.push(`,,,,,Subtotal,,$${subtotal.toFixed(2)}`);
+  lines.push(`,,,,,,Subtotal,$${subtotal.toFixed(2)}`);
   if (taxAmount > 0) {
     const taxRate = (parseFloat(invoice.tax_rate) * 100).toFixed(2);
-    lines.push(`,,,,,Tax (${taxRate}%),,$${taxAmount.toFixed(2)}`);
+    lines.push(`,,,,,,Tax (${taxRate}%),$${taxAmount.toFixed(2)}`);
   }
-  lines.push(`,,,,,TOTAL,,$${total.toFixed(2)}`);
+  lines.push(`,,,,,,TOTAL,$${total.toFixed(2)}`);
 
   return lines.join('\n');
 }
@@ -976,9 +1272,9 @@ export async function exportInvoiceCSV(invoiceId) {
 
 // Support: tier-specific (rates differ: $250 / $175 / $150)
 const SUPPORT_PRODUCT_MAP = {
-  'Emergency Support Hours': 'Professional Services:Website Services:Support Services:p1 - Emergency Support',
-  'Same Day Support Hours':  'Professional Services:Website Services:Support Services:p2 - Urgent Support',
-  'Regular Support Hours':   'Professional Services:Website Services:Support Services:p3 - Standard Support',
+  'High Priority Support Hours':   'Professional Services:Website Services:Support Services:p1 - Emergency Support',
+  'Medium Priority Support Hours': 'Professional Services:Website Services:Support Services:p2 - Urgent Support',
+  'Low Priority Support Hours':    'Professional Services:Website Services:Support Services:p3 - Standard Support',
 };
 
 // Projects: map by category field
