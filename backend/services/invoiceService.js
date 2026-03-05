@@ -85,49 +85,34 @@ function calculateBilling(requests, periodStart) {
   const periodDate = new Date(periodStart);
   const hasFreeCredits = periodDate >= effectiveDate;
 
+  // Requests are already sorted by date/time from the SQL query
+  let remainingCredits = hasFreeCredits ? PRICING.freeCredits.supportHours : 0;
+  let freeHoursApplied = 0;
+
   let totalHours = 0;
-  let emergencyHours = 0;
-  let sameDayHours = 0;
-  let regularHours = 0;
+  let emergencyHours = 0, sameDayHours = 0, regularHours = 0;
+  let billableEmergencyHours = 0, billableSameDayHours = 0, billableRegularHours = 0;
 
   requests.forEach(req => {
     const hours = parseFloat(req.estimated_hours) || 0;
     totalHours += hours;
 
-    if (req.urgency === 'HIGH') {
-      emergencyHours += hours;
-    } else if (req.urgency === 'MEDIUM') {
-      sameDayHours += hours;
-    } else {
-      regularHours += hours;
-    }
+    // Accumulate gross tier hours
+    if (req.urgency === 'HIGH') emergencyHours += hours;
+    else if (req.urgency === 'MEDIUM') sameDayHours += hours;
+    else regularHours += hours;
+
+    // Apply free hours chronologically (first N hours of the month are free)
+    const freeForThis = Math.min(hours, remainingCredits);
+    const billableForThis = hours - freeForThis;
+    remainingCredits -= freeForThis;
+    freeHoursApplied += freeForThis;
+
+    // Accumulate billable tier hours
+    if (req.urgency === 'HIGH') billableEmergencyHours += billableForThis;
+    else if (req.urgency === 'MEDIUM') billableSameDayHours += billableForThis;
+    else billableRegularHours += billableForThis;
   });
-
-  // Apply free credits from cheapest tier first: regular → sameDay → emergency
-  let freeHoursApplied = 0;
-  let billableRegularHours = regularHours;
-  let billableSameDayHours = sameDayHours;
-  let billableEmergencyHours = emergencyHours;
-
-  if (hasFreeCredits) {
-    let remainingCredits = Math.min(totalHours, PRICING.freeCredits.supportHours);
-    freeHoursApplied = remainingCredits;
-
-    // Deduct from regular hours first (cheapest at $150/hr)
-    const regularDeduction = Math.min(remainingCredits, regularHours);
-    billableRegularHours = regularHours - regularDeduction;
-    remainingCredits -= regularDeduction;
-
-    // Then from same-day hours ($175/hr)
-    const sameDayDeduction = Math.min(remainingCredits, sameDayHours);
-    billableSameDayHours = sameDayHours - sameDayDeduction;
-    remainingCredits -= sameDayDeduction;
-
-    // Finally from emergency hours (most expensive at $250/hr)
-    const emergencyDeduction = Math.min(remainingCredits, emergencyHours);
-    billableEmergencyHours = emergencyHours - emergencyDeduction;
-    remainingCredits -= emergencyDeduction;
-  }
 
   const billableHours = billableRegularHours + billableSameDayHours + billableEmergencyHours;
 
@@ -160,15 +145,17 @@ function calculateBilling(requests, periodStart) {
 export async function getBillingSummary(customerId, periodStart, periodEnd) {
   const connection = await pool.getConnection();
   try {
-    // Get unbilled requests for the period
+    // Get unbilled resolved requests for the period
     const [requests] = await connection.query(
-      `SELECT * FROM requests
-       WHERE customer_id = ?
-       AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
-       AND status = 'active'
-       AND invoice_id IS NULL
-       AND category NOT IN ('Non-billable', 'Migration')
-       ORDER BY COALESCE(billing_date, date), time`,
+      `SELECT r.* FROM requests r
+       INNER JOIN fluent_tickets ft ON ft.request_id = r.id
+       WHERE r.customer_id = ?
+       AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+       AND r.status = 'active'
+       AND r.invoice_id IS NULL
+       AND r.category NOT IN ('Non-billable', 'Migration')
+       AND ft.resolved_at IS NOT NULL
+       ORDER BY COALESCE(r.billing_date, r.date), r.time`,
       [customerId, periodStart, periodEnd]
     );
 
@@ -215,13 +202,15 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
     let summary;
     if (includeSupport) {
       const [summaryRequests] = await connection.query(
-        `SELECT * FROM requests
-         WHERE customer_id = ?
-         AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
-         AND status = 'active'
-         AND invoice_id IS NULL
-         AND category NOT IN ('Non-billable', 'Migration')
-         ORDER BY COALESCE(billing_date, date), time`,
+        `SELECT r.* FROM requests r
+         INNER JOIN fluent_tickets ft ON ft.request_id = r.id
+         WHERE r.customer_id = ?
+         AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+         AND r.status = 'active'
+         AND r.invoice_id IS NULL
+         AND r.category NOT IN ('Non-billable', 'Migration')
+         AND ft.resolved_at IS NOT NULL
+         ORDER BY COALESCE(r.billing_date, r.date), r.time`,
         [customerId, periodStart, periodEnd]
       );
 
@@ -727,13 +716,6 @@ function urgencyToRate(urgency) {
  * Recalculate the free credit line item based on current support tier hours
  */
 async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
-  // Get all remaining support items
-  const [supportItems] = await connection.query(
-    `SELECT description, quantity, unit_price, amount FROM invoice_items
-     WHERE invoice_id = ? AND item_type = 'support'`,
-    [invoiceId]
-  );
-
   // Delete existing free credit line
   await connection.query(
     `DELETE FROM invoice_items WHERE invoice_id = ? AND item_type = 'other' AND sort_order = 99`,
@@ -742,41 +724,32 @@ async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
 
   // Determine if free credits apply
   const hasFreeCredits = periodStart >= PRICING.freeCredits.effectiveDate;
-  if (!hasFreeCredits || supportItems.length === 0) return;
+  if (!hasFreeCredits) return;
 
-  // Sum hours per tier
-  let emergencyHours = 0, sameDayHours = 0, regularHours = 0;
-  for (const item of supportItems) {
-    const qty = parseFloat(item.quantity) || 0;
-    if (item.description === 'High Priority Support Hours') emergencyHours = qty;
-    else if (item.description === 'Medium Priority Support Hours') sameDayHours = qty;
-    else if (item.description === 'Low Priority Support Hours') regularHours = qty;
-  }
-  const totalHours = emergencyHours + sameDayHours + regularHours;
-  if (totalHours === 0) return;
+  // Get linked requests in chronological order for proper free-hours allocation
+  const [requests] = await connection.query(
+    `SELECT urgency, estimated_hours FROM requests
+     WHERE invoice_id = ? AND status = 'active'
+     ORDER BY COALESCE(billing_date, date), time`,
+    [invoiceId]
+  );
+  if (requests.length === 0) return;
 
-  // Apply free credits from cheapest first
-  let remainingCredits = Math.min(totalHours, PRICING.freeCredits.supportHours);
-  const freeHoursApplied = remainingCredits;
+  // Use chronological allocation (matching calculateBilling)
+  const billing = calculateBilling(requests, periodStart);
+  const grossSubtotal = billing.emergencyHours * PRICING.rates.emergency
+    + billing.sameDayHours * PRICING.rates.sameDay
+    + billing.regularHours * PRICING.rates.regular;
+  const creditValue = grossSubtotal - billing.subtotal;
 
-  const regularDeduction = Math.min(remainingCredits, regularHours);
-  remainingCredits -= regularDeduction;
-  const sameDayDeduction = Math.min(remainingCredits, sameDayHours);
-  remainingCredits -= sameDayDeduction;
-  const emergencyDeduction = Math.min(remainingCredits, emergencyHours);
-
-  const creditValue = regularDeduction * PRICING.rates.regular
-    + sameDayDeduction * PRICING.rates.sameDay
-    + emergencyDeduction * PRICING.rates.emergency;
-
-  if (creditValue > 0) {
+  if (creditValue > 0 && billing.freeHoursApplied > 0) {
     await connection.query(
       `INSERT INTO invoice_items
        (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
        VALUES (?, 'other', ?, ?, ?, ?, 99)`,
-      [invoiceId, `Turbo Support Credit Applied (${freeHoursApplied}h free)`,
-       freeHoursApplied,
-       -(creditValue / freeHoursApplied),
+      [invoiceId, `Turbo Support Credit Applied (${billing.freeHoursApplied}h free)`,
+       billing.freeHoursApplied,
+       -(creditValue / billing.freeHoursApplied),
        -creditValue]
     );
   }
@@ -951,12 +924,14 @@ export async function getUnbilledRequests(invoiceId) {
 
     const inv = invoices[0];
     const [requests] = await connection.query(
-      `SELECT id, date, time, description, category, urgency, estimated_hours
-       FROM requests
-       WHERE customer_id = ? AND COALESCE(billing_date, date) >= ? AND COALESCE(billing_date, date) <= ?
-       AND status = 'active' AND invoice_id IS NULL
-       AND category NOT IN ('Non-billable', 'Migration')
-       ORDER BY COALESCE(billing_date, date), time`,
+      `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours
+       FROM requests r
+       INNER JOIN fluent_tickets ft ON ft.request_id = r.id
+       WHERE r.customer_id = ? AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+       AND r.status = 'active' AND r.invoice_id IS NULL
+       AND r.category NOT IN ('Non-billable', 'Migration')
+       AND ft.resolved_at IS NOT NULL
+       ORDER BY COALESCE(r.billing_date, r.date), r.time`,
       [inv.customer_id, inv.period_start, inv.period_end]
     );
     return requests;
