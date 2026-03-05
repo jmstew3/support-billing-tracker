@@ -972,22 +972,22 @@ export async function exportInvoiceCSV(invoiceId) {
 
 // Support: tier-specific (rates differ: $250 / $175 / $150)
 const SUPPORT_PRODUCT_MAP = {
-  'Emergency Support Hours': 'p1 - Emergency Support',
-  'Same Day Support Hours':  'p2 - Urgent Support',
-  'Regular Support Hours':   'p3 - Standard Support',
+  'Emergency Support Hours': 'Professional Services:Website Services:Support Services:p1 - Emergency Support',
+  'Same Day Support Hours':  'Professional Services:Website Services:Support Services:p2 - Urgent Support',
+  'Regular Support Hours':   'Professional Services:Website Services:Support Services:p3 - Standard Support',
 };
 
 // Projects: map by category field
 const PROJECT_PRODUCT_MAP = {
-  'LANDING_PAGE': 'Landing Page Development',
-  'MULTI_FORM':   'Multi-Step Lead Form Implementation',
-  'BASIC_FORM':   'Basic Lead Form Implementation',
-  'MIGRATION':    'Website Migration Services',
+  'LANDING_PAGE': 'Professional Services:Website Services:Lead Capture Assets:Landing Page Development',
+  'MULTI_FORM':   'Professional Services:Website Services:Lead Capture Assets:Multi-Step Lead Form Implementation',
+  'BASIC_FORM':   'Professional Services:Website Services:Lead Capture Assets:Basic Lead Form Implementation',
+  'MIGRATION':    'Professional Services:Website Services:Website Migration Services',
 };
-const DEFAULT_PROJECT_PRODUCT = 'Custom Development';
+const DEFAULT_PROJECT_PRODUCT = 'Professional Services:Custom Development Services:Custom Development';
 
 // Hosting: single consolidated product
-const HOSTING_PRODUCT = 'PeakOne Website Hosting - Turbo (T2) - Per Site';
+const HOSTING_PRODUCT = 'Managed Services:Hosting Services:PeakOne Website Hosting - Turbo - T2 - Per Site';
 
 // QBO Terms: map day-gap to standard QBO terms string
 const QBO_TERMS_MAP = { 0: 'Due on receipt', 15: 'Net 15', 30: 'Net 30', 60: 'Net 60' };
@@ -1010,7 +1010,7 @@ function getQBOProductName(item) {
 
 function escapeCSV(val) {
   const str = String(val ?? '');
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes(':')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
