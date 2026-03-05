@@ -27,19 +27,19 @@ export const PRICING_CONFIG: PricingConfig = {
       name: 'Low',
       rate: 150,
       urgency: 'LOW',
-      description: 'Standard turnaround time'
+      description: 'Low priority - standard turnaround'
     },
     {
       name: 'Medium',
       rate: 175,
       urgency: 'MEDIUM',
-      description: 'Same day service'
+      description: 'Medium priority - same day service'
     },
     {
       name: 'High',
       rate: 250,
       urgency: 'HIGH',
-      description: 'Immediate attention required'
+      description: 'High priority - immediate attention'
     }
   ],
   defaultHoursPerRequest: 0.5

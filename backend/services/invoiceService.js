@@ -1198,10 +1198,14 @@ export async function exportInvoiceCSV(invoiceId) {
       for (const site of details) {
         const name = `"${(site.siteName || '').replace(/"/g, '""')}"`;
         const url = site.websiteUrl || '';
-        const billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        let billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         const net = parseFloat(site.netAmount) || 0;
         const gross = 99;
         const discount = net - gross; // negative value (e.g., -99, -49.50)
+        // Sites receiving full $99 hosting benefit show as "Turbo Credit"
+        if (discount <= -99) {
+          billingLabel = 'Turbo Credit';
+        }
         const credit = discount < 0 ? `-$${Math.abs(discount).toFixed(2)}` : '';
         hostingSubtotal += net;
 
@@ -1480,7 +1484,11 @@ export async function exportHostingDetailCSV(invoiceId) {
     for (const site of details) {
       const name = `"${(site.siteName || '').replace(/"/g, '""')}"`;
       const url = site.websiteUrl || '';
-      const billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      let billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      // Sites receiving full $99 hosting benefit show as "Turbo Credit"
+      if (site.creditApplied && (parseFloat(site.netAmount) || 0) === 0) {
+        billingLabel = 'Turbo Credit';
+      }
       const gross = parseFloat(site.grossAmount) || 0;
       const net = parseFloat(site.netAmount) || 0;
       const credit = site.creditApplied ? 'Yes' : 'No';

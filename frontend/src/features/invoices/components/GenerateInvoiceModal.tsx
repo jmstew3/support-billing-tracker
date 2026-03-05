@@ -588,7 +588,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                     <TableBody>
                       {billingSummary.billableEmergencyHours > 0 && (
                         <TableRow>
-                          <TableCell>Emergency Support Hours</TableCell>
+                          <TableCell>High Priority Support Hours</TableCell>
                           <TableCell className="text-right">{billingSummary.billableEmergencyHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">$250.00</TableCell>
                           <TableCell className="text-right font-medium">
@@ -598,7 +598,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                       )}
                       {billingSummary.billableSameDayHours > 0 && (
                         <TableRow>
-                          <TableCell>Same Day Support Hours</TableCell>
+                          <TableCell>Medium Priority Support Hours</TableCell>
                           <TableCell className="text-right">{billingSummary.billableSameDayHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">$175.00</TableCell>
                           <TableCell className="text-right font-medium">
@@ -608,7 +608,7 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                       )}
                       {billingSummary.billableRegularHours > 0 && (
                         <TableRow>
-                          <TableCell>Regular Support Hours</TableCell>
+                          <TableCell>Low Priority Support Hours</TableCell>
                           <TableCell className="text-right">{billingSummary.billableRegularHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">$150.00</TableCell>
                           <TableCell className="text-right font-medium">
