@@ -101,74 +101,6 @@ class FluentTicketRepository {
   }
 
   /**
-   * Update a fluent ticket record
-   * @param {Object} connection - MySQL connection (for transactions)
-   * @param {number} id - Internal ID
-   * @param {Object} data - Fields to update
-   * @returns {Promise<boolean>} True if updated
-   */
-  async updateWithConnection(connection, id, data) {
-    const {
-      ticket_number,
-      created_at,
-      resolved_at,
-      updated_at,
-      ticket_status,
-      customer_id,
-      customer_name,
-      customer_email,
-      mailbox_id,
-      title,
-      customer_message,
-      priority,
-      response_count,
-      total_close_time,
-      product_id,
-      product_name,
-      agent_id,
-      agent_name,
-      raw_data
-    } = data;
-
-    const [result] = await connection.query(
-      `UPDATE fluent_tickets
-       SET ticket_number = ?, created_at = ?, resolved_at = ?, updated_at_fluent = ?,
-           ticket_status = ?, customer_id = ?, customer_name = ?,
-           customer_email = ?, mailbox_id = ?, title = ?,
-           customer_message = ?, priority = ?,
-           response_count = ?, total_close_time = ?,
-           product_id = ?,
-           product_name = ?, agent_id = ?, agent_name = ?,
-           raw_data = ?, last_synced_at = NOW()
-       WHERE id = ?`,
-      [
-        ticket_number,
-        created_at,
-        resolved_at !== undefined ? resolved_at : null,
-        updated_at,
-        ticket_status,
-        customer_id,
-        customer_name,
-        customer_email,
-        mailbox_id,
-        title,
-        customer_message,
-        priority,
-        response_count != null ? response_count : 0,
-        total_close_time != null ? total_close_time : null,
-        product_id,
-        product_name,
-        agent_id,
-        agent_name,
-        JSON.stringify(raw_data),
-        id
-      ]
-    );
-
-    return result.affectedRows > 0;
-  }
-
-  /**
    * Find all fluent tickets with pagination, optionally filtered by mailbox_id
    * @param {Object} options - Query options
    * @returns {Promise<Array>} Array of fluent ticket records
@@ -228,40 +160,6 @@ class FluentTicketRepository {
 
     const [[{ count }]] = await pool.query(query, params);
     return parseInt(count);
-  }
-
-  /**
-   * Delete tickets not matching the specified mailbox_id
-   * Use with caution!
-   * @param {Object} connection - MySQL connection
-   * @param {number|string} mailboxId - The mailbox_id to KEEP
-   * @returns {Promise<number>} Number of deleted tickets
-   */
-  async deleteOtherMailboxes(connection, mailboxId) {
-    if (!mailboxId) return 0;
-    
-    // First find the associated request IDs to delete those too (soft delete)
-    const [rows] = await connection.query(
-      'SELECT request_id FROM fluent_tickets WHERE mailbox_id != ? AND request_id IS NOT NULL',
-      [mailboxId]
-    );
-    
-    const requestIds = rows.map(r => r.request_id);
-    
-    if (requestIds.length > 0) {
-      const placeholders = requestIds.map(() => '?').join(', ');
-      await connection.query(
-        `UPDATE requests SET status = 'deleted' WHERE id IN (${placeholders})`,
-        requestIds
-      );
-    }
-
-    const [result] = await connection.query(
-      'DELETE FROM fluent_tickets WHERE mailbox_id != ?',
-      [mailboxId]
-    );
-    
-    return result.affectedRows;
   }
 
   /**
