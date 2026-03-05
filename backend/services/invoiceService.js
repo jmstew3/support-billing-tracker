@@ -410,9 +410,12 @@ export async function getInvoice(invoiceId) {
 
     // Get linked requests
     const [requests] = await connection.query(
-      `SELECT id, date, time, description, category, urgency, estimated_hours, website_url
-       FROM requests WHERE invoice_id = ?
-       ORDER BY date, time`,
+      `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
+              ft.ticket_number
+       FROM requests r
+       LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
+       WHERE r.invoice_id = ?
+       ORDER BY r.date, r.time`,
       [invoiceId]
     );
 
@@ -829,7 +832,7 @@ export async function exportInvoiceCSV(invoiceId) {
     lines.push('========================================');
     lines.push('SUPPORT SERVICES');
     lines.push('========================================');
-    lines.push('Date,Description,Website,Urgency,Hours,Rate,,Amount');
+    lines.push('Date Completed,Description,Ticket ID,Urgency,Hours,Rate,,Amount');
 
     let totalHours = 0;
 
@@ -840,8 +843,8 @@ export async function exportInvoiceCSV(invoiceId) {
       totalHours += hours;
 
       const desc = `"${(req.description || '').replace(/"/g, '""')}"`;
-      const website = req.website_url || '';
-      lines.push(`${fmtDate(req.date)},${desc},${website},${urgency.label},${hours.toFixed(2)},$${urgency.rate.toFixed(2)},,$${amount.toFixed(2)}`);
+      const ticketId = req.ticket_number || '';
+      lines.push(`${fmtDate(req.date)},${desc},${ticketId},${urgency.label},${hours.toFixed(2)},$${urgency.rate.toFixed(2)},,$${amount.toFixed(2)}`);
     }
 
     // Total hours row
@@ -906,9 +909,10 @@ export async function exportInvoiceCSV(invoiceId) {
         const name = `"${(site.siteName || '').replace(/"/g, '""')}"`;
         const url = site.websiteUrl || '';
         const billingLabel = (site.billingType || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        const gross = parseFloat(site.grossAmount) || 0;
         const net = parseFloat(site.netAmount) || 0;
-        const credit = site.creditApplied ? 'Free Credit' : '';
+        const gross = 99;
+        const discount = net - gross; // negative value (e.g., -99, -49.50)
+        const credit = discount < 0 ? `-$${Math.abs(discount).toFixed(2)}` : '';
         hostingSubtotal += net;
 
         lines.push(`${name},${url},${billingLabel},${site.daysActive},${site.daysInMonth},$${gross.toFixed(2)},${credit},$${net.toFixed(2)}`);
