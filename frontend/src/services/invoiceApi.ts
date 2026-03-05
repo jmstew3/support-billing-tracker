@@ -477,7 +477,7 @@ export function buildAdditionalLineItems(
 
     // Count prorated sites from hosting details
     const proratedCount = monthData.hostingDetails?.filter(
-      h => h.billingType !== 'full_month' && h.billingType !== 'free_credit'
+      h => h.billingType === 'PRORATED_START' || h.billingType === 'PRORATED_END'
     ).length ?? 0;
 
     let desc = `Turbo Hosting - ${monthData.hostingSitesCount} site${monthData.hostingSitesCount !== 1 ? 's' : ''} (${monthName} ${year})`;
