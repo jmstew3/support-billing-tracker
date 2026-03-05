@@ -971,10 +971,10 @@ const SUPPORT_PRODUCT_MAP = {
 
 // Projects: map by category field
 const PROJECT_PRODUCT_MAP = {
-  'Landing_Page': 'Landing Page Development',
-  'Multi_Form':   'Multi-Step Lead Form Implementation',
-  'Basic_Form':   'Basic Lead Form Implementation',
-  'Migration':    'Website Migration Services',
+  'LANDING_PAGE': 'Landing Page Development',
+  'MULTI_FORM':   'Multi-Step Lead Form Implementation',
+  'BASIC_FORM':   'Basic Lead Form Implementation',
+  'MIGRATION':    'Website Migration Services',
 };
 const DEFAULT_PROJECT_PRODUCT = 'Custom Development';
 
@@ -989,7 +989,7 @@ function getQBOProductName(item) {
     return SUPPORT_PRODUCT_MAP[item.description] || 'p3 - Standard Support';
   }
   if (item.item_type === 'project') {
-    return PROJECT_PRODUCT_MAP[item.category] || DEFAULT_PROJECT_PRODUCT;
+    return PROJECT_PRODUCT_MAP[(item.category || '').toUpperCase()] || DEFAULT_PROJECT_PRODUCT;
   }
   if (item.item_type === 'hosting') {
     return HOSTING_PRODUCT;
