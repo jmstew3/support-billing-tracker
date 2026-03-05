@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Download, Eye, Trash2, Send } from 'lucide-react';
+import { FileText, Plus, Download, FileDown, Eye, Trash2, Send } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -25,6 +25,7 @@ import {
   deleteInvoice,
   sendInvoice,
   exportInvoiceCSV,
+  exportInvoiceQBOCSV,
   downloadFile,
   type Invoice,
   type Customer,
@@ -180,6 +181,15 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
       downloadFile(csv, `invoice-${invoice.invoice_number}.csv`, 'text/csv');
     } catch (err) {
       addToast('error', err instanceof Error ? err.message : 'Failed to export CSV');
+    }
+  }
+
+  async function handleExportQBOCSV(invoice: Invoice) {
+    try {
+      const csv = await exportInvoiceQBOCSV(invoice.id);
+      downloadFile(csv, `${invoice.invoice_number}-qbo.csv`, 'text/csv');
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to export QBO CSV');
     }
   }
 
@@ -348,6 +358,13 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                             title="Export CSV"
                           >
                             <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleExportQBOCSV(invoice)}
+                            className="p-1.5 hover:bg-muted rounded text-emerald-600 dark:text-emerald-400"
+                            title="Export QBO CSV"
+                          >
+                            <FileDown className="h-4 w-4" />
                           </button>
                           {invoice.status === 'draft' && (
                             <button

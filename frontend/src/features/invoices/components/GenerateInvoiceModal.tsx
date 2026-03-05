@@ -4,7 +4,7 @@
  * Supports three revenue streams: Support, Projects, and Hosting
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, FileText, AlertCircle, Headphones, FolderKanban, Server } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
@@ -51,6 +51,10 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
   const loading = supportLoading || comprehensiveLoading;
   const [notes, setNotes] = useState('');
 
+  // Date mode: month picker vs custom range
+  const [dateMode, setDateMode] = useState<'month' | 'custom'>('month');
+  const [selectedMonth, setSelectedMonth] = useState('');
+
   // Section toggles
   const [includeSupport, setIncludeSupport] = useState(true);
   const [includeProjects, setIncludeProjects] = useState(true);
@@ -62,12 +66,26 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     const year = now.getFullYear();
     const month = now.getMonth();
 
+    const mm = String(month + 1).padStart(2, '0');
+    setSelectedMonth(`${year}-${mm}`);
+    setDateMode('month');
+
     const firstDay = new Date(year, month, 1);
     setPeriodStart(firstDay.toISOString().split('T')[0]);
 
     const lastDay = new Date(year, month + 1, 0);
     setPeriodEnd(lastDay.toISOString().split('T')[0]);
   }, [isOpen]);
+
+  // Sync periodStart/periodEnd when selectedMonth changes in month mode
+  useEffect(() => {
+    if (dateMode !== 'month' || !selectedMonth) return;
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const firstDay = new Date(y, m - 1, 1);
+    const lastDay = new Date(y, m, 0);
+    setPeriodStart(firstDay.toISOString().split('T')[0]);
+    setPeriodEnd(lastDay.toISOString().split('T')[0]);
+  }, [selectedMonth, dateMode]);
 
   // Load customers
   useEffect(() => {
@@ -88,53 +106,63 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
     }
   }
 
-  const loadSupportData = useCallback(async () => {
-    if (!selectedCustomer || !periodStart || !periodEnd) return;
-
-    try {
-      setSupportLoading(true);
-      setError(null);
-      const supportSummary = await getBillingSummary(selectedCustomer as number, periodStart, periodEnd);
-      setBillingSummary(supportSummary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load support data');
-      setBillingSummary(null);
-    } finally {
-      setSupportLoading(false);
-    }
-  }, [selectedCustomer, periodStart, periodEnd]);
-
-  const loadComprehensiveBillingData = useCallback(async () => {
-    if (!periodStart) return;
-
-    try {
-      setComprehensiveLoading(true);
-      setComprehensiveError(null);
-      const comprehensiveBilling = await generateComprehensiveBilling();
-
-      const targetMonth = periodStart.substring(0, 7); // YYYY-MM
-      const matchingMonth = comprehensiveBilling.monthlyBreakdown.find(
-        (m) => m.month === targetMonth
-      );
-      setMonthlyBillingData(matchingMonth || null);
-    } catch (err) {
-      setComprehensiveError(err instanceof Error ? err.message : 'Failed to load projects/hosting data');
-      setMonthlyBillingData(null);
-    } finally {
-      setComprehensiveLoading(false);
-    }
-  }, [periodStart]);
-
   // Load billing data when customer and period change
+  // Uses cancelled flag to prevent stale responses from racing (StrictMode, rapid month switching)
   useEffect(() => {
-    if (selectedCustomer && periodStart && periodEnd) {
-      loadSupportData();
-      loadComprehensiveBillingData();
-    } else {
+    if (!selectedCustomer || !periodStart || !periodEnd) {
       setBillingSummary(null);
       setMonthlyBillingData(null);
+      return;
     }
-  }, [selectedCustomer, periodStart, periodEnd, loadSupportData, loadComprehensiveBillingData]);
+
+    let cancelled = false;
+
+    // Clear stale data immediately
+    setBillingSummary(null);
+    setMonthlyBillingData(null);
+    setSupportLoading(true);
+    setComprehensiveLoading(true);
+    setError(null);
+    setComprehensiveError(null);
+
+    // Load support data
+    getBillingSummary(selectedCustomer as number, periodStart, periodEnd)
+      .then(data => {
+        if (!cancelled) setBillingSummary(data);
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load support data');
+          setBillingSummary(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSupportLoading(false);
+      });
+
+    // Load comprehensive billing data
+    generateComprehensiveBilling()
+      .then(billing => {
+        if (!cancelled) {
+          const targetMonth = periodStart.substring(0, 7);
+          const matchingMonth = billing.monthlyBreakdown.find(
+            (m) => m.month === targetMonth
+          );
+          setMonthlyBillingData(matchingMonth || null);
+        }
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setComprehensiveError(err instanceof Error ? err.message : 'Failed to load projects/hosting data');
+          setMonthlyBillingData(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setComprehensiveLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedCustomer, periodStart, periodEnd]);
 
   // Computed totals
   const supportTotal = useMemo(() => {
@@ -280,23 +308,54 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Period Start</label>
-                  <DateInput
-                    value={periodStart}
-                    onChange={setPeriodStart}
-                    label="Period Start"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Period End</label>
-                  <DateInput
-                    value={periodEnd}
-                    onChange={setPeriodEnd}
-                    label="Period End"
-                  />
-                </div>
+                {dateMode === 'month' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium">Billing Month</label>
+                      <button
+                        type="button"
+                        onClick={() => setDateMode('custom')}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Custom range
+                      </button>
+                    </div>
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded text-sm"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-medium">Period Start</label>
+                        <button
+                          type="button"
+                          onClick={() => setDateMode('month')}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Back to month
+                        </button>
+                      </div>
+                      <DateInput
+                        value={periodStart}
+                        onChange={setPeriodStart}
+                        label="Period Start"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Period End</label>
+                      <DateInput
+                        value={periodEnd}
+                        onChange={setPeriodEnd}
+                        label="Period End"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>
@@ -786,13 +845,18 @@ export function GenerateInvoiceModal({ isOpen, onClose, onSuccess }: GenerateInv
           </button>
           <button
             onClick={handleGenerate}
-            disabled={generating || !hasSelectedData}
+            disabled={generating || loading || !hasSelectedData}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             {generating ? (
               <>
                 <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 Generating...
+              </>
+            ) : loading ? (
+              <>
+                <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                Calculating...
               </>
             ) : (
               <>

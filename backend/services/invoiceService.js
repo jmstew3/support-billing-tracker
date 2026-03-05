@@ -1108,10 +1108,21 @@ export async function exportInvoiceQBOCSV(invoiceId) {
       let desc;
 
       if (hostingSnapshot && hostingSnapshot.length > 0) {
-        const creditedSites = hostingSnapshot.filter(s => s.creditApplied);
+        const creditedCount = hostingSnapshot.filter(s => s.creditApplied).length;
+        const proratedCount = hostingSnapshot.filter(
+          s => s.billingType === 'PRORATED_START' || s.billingType === 'PRORATED_END'
+        ).length;
+
         desc = `Website hosting - ${hostingSnapshot.length} site${hostingSnapshot.length !== 1 ? 's' : ''}`;
-        if (creditedSites.length > 0) {
-          desc += ` (${creditedSites.length} free credit${creditedSites.length !== 1 ? 's' : ''} applied)`;
+        const notes = [];
+        if (creditedCount > 0) {
+          notes.push(`${creditedCount} free credit${creditedCount !== 1 ? 's' : ''}`);
+        }
+        if (proratedCount > 0) {
+          notes.push(`${proratedCount} prorated`);
+        }
+        if (notes.length > 0) {
+          desc += `, ${notes.join(', ')}`;
         }
         desc += ' (see supplement for per-site detail)';
       } else {

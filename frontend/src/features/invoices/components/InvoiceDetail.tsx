@@ -744,19 +744,19 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                                 </TableCell>
                               </TableRow>
                               {group.items.map(renderItemRow)}
+                              {/* Show support credit line directly under the support section */}
+                              {group.type === 'support' && creditItems.map((item) => (
+                                <TableRow key={item.id} className="bg-green-500/5">
+                                  <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
+                                    {item.description}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                             </>
                           ))
                         ) : (
                           billableItems.map(renderItemRow)
                         )}
-                        {/* Show free credits applied as info line (support credits) */}
-                        {creditItems.map((item) => (
-                          <TableRow key={item.id} className="bg-green-500/5">
-                            <TableCell colSpan={editMode ? 5 : 4} className="text-green-600 dark:text-green-400 text-sm">
-                              {item.description}
-                            </TableCell>
-                          </TableRow>
-                        ))}
                       </TableBody>
                     </Table>
                   </div>
