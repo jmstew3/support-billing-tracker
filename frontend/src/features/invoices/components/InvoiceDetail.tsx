@@ -40,6 +40,8 @@ import { formatDateFull } from '../../../utils/formatting';
 import { formatCurrency } from '../../../utils/currency';
 import { DateInput } from '../../../components/shared/DateInput';
 import { fetchWebsiteProperties, calculateMonthlyHosting } from '../../../services/hostingApi';
+import { BillingTypeBadge } from '../../../components/ui/BillingBadge';
+import type { BillingType } from '../../../types/websiteProperty';
 
 interface InvoiceDetailProps {
   invoiceId: number;
@@ -772,6 +774,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                   <TableHeader>
                     <TableRow>
                       <TableHead>Site</TableHead>
+                      <TableHead>Billing</TableHead>
                       <TableHead className="text-right">Days</TableHead>
                       <TableHead className="text-right">Gross</TableHead>
                       <TableHead className="text-right">Credit</TableHead>
@@ -786,6 +789,9 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                           {site.websiteUrl && (
                             <div className="text-xs text-muted-foreground">{site.websiteUrl}</div>
                           )}
+                        </TableCell>
+                        <TableCell>
+                          <BillingTypeBadge billingType={site.billingType as BillingType} size="xs" />
                         </TableCell>
                         <TableCell className="text-right text-sm">
                           {site.daysActive}/{site.daysInMonth}
@@ -808,48 +814,6 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 Loading hosting detail...
-              </div>
-            )}
-
-            {/* Totals */}
-            <div className="flex justify-end mb-6">
-              <div className="w-64">
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatCurrency(invoice.subtotal)}</span>
-                </div>
-                {parseFloat(invoice.tax_amount) > 0 && (
-                  <div className="flex justify-between py-2 border-b border-border">
-                    <span className="text-muted-foreground">
-                      Tax ({(parseFloat(invoice.tax_rate) * 100).toFixed(2)}%)
-                    </span>
-                    <span className="font-medium">{formatCurrency(invoice.tax_amount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-2 border-b border-border text-lg">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold">{formatCurrency(invoice.total)}</span>
-                </div>
-                {parseFloat(invoice.amount_paid) > 0 && (
-                  <div className="flex justify-between py-2 border-b border-border text-green-600 dark:text-green-400">
-                    <span>Amount Paid</span>
-                    <span>-{formatCurrency(invoice.amount_paid)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between py-2 text-lg">
-                  <span className="font-semibold">Balance Due</span>
-                  <span className={`font-bold ${parseFloat(invoice.balance_due) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                    {formatCurrency(invoice.balance_due)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {invoice.notes && (
-              <div className="pt-4 border-t border-border">
-                <h4 className="text-sm font-medium mb-2">Notes</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
               </div>
             )}
 
@@ -990,6 +954,130 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No requests linked. Click "Add Requests" to link unbilled requests.
                 </p>
+              </div>
+            )}
+
+            {/* Invoice Summary - Category Breakdown + Discounts */}
+            {(() => {
+              const items = invoice.items || [];
+              const categoryLabels: Record<string, string> = {
+                support: 'Support',
+                project: 'Projects',
+                hosting: 'Hosting',
+              };
+
+              // Category subtotals
+              const supportTotal = items
+                .filter(i => i.item_type === 'support')
+                .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+              const projectsTotal = items
+                .filter(i => i.item_type === 'project' && parseFloat(i.amount) > 0)
+                .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+
+              // Hosting: use gross from snapshot if available, else hosting item amount
+              const hostingSnapshot = invoice.hosting_detail_snapshot || [];
+              const hostingGross = hostingSnapshot.length > 0
+                ? hostingSnapshot.reduce((sum: number, s: HostingChargeSnapshot) => sum + (s.grossAmount || 0), 0)
+                : items
+                    .filter(i => i.item_type === 'hosting')
+                    .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+              const hostingNet = items
+                .filter(i => i.item_type === 'hosting')
+                .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+              const hostingCredit = hostingGross - hostingNet;
+
+              // Free support credits (negative 'other' items)
+              const supportCredits = items
+                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0)
+                .reduce((sum, i) => sum + parseFloat(i.amount), 0);
+
+              const grossSubtotal = supportTotal + projectsTotal + hostingGross;
+
+              // Build category lines (only show non-zero)
+              const categories = [
+                { key: 'support', label: categoryLabels.support, amount: supportTotal },
+                { key: 'project', label: categoryLabels.project, amount: projectsTotal },
+                { key: 'hosting', label: categoryLabels.hosting, amount: hostingGross },
+              ].filter(c => c.amount > 0);
+
+              // Build discount lines (only show non-zero)
+              const discounts: { label: string; amount: number }[] = [];
+              if (supportCredits < 0) {
+                const creditLabel = items.find(i => i.item_type === 'other' && parseFloat(i.amount) < 0)?.description || 'Free Support Credits';
+                discounts.push({ label: creditLabel, amount: supportCredits });
+              }
+              if (hostingCredit > 0) {
+                discounts.push({ label: 'Free Hosting Credits', amount: -hostingCredit });
+              }
+
+              return (
+                <div className="flex justify-end mb-6 mt-6">
+                  <div className="w-80">
+                    {/* Category breakdown */}
+                    {categories.map(c => (
+                      <div key={c.key} className="flex justify-between py-1.5">
+                        <span className="text-muted-foreground">{c.label}</span>
+                        <span>{formatCurrency(c.amount)}</span>
+                      </div>
+                    ))}
+
+                    {/* Gross Subtotal - only show if there are discounts */}
+                    {discounts.length > 0 && (
+                      <div className="flex justify-between py-2 border-t border-border mt-1">
+                        <span className="font-medium">Gross Subtotal</span>
+                        <span className="font-medium">{formatCurrency(grossSubtotal)}</span>
+                      </div>
+                    )}
+
+                    {/* Discount lines */}
+                    {discounts.map((d, i) => (
+                      <div key={i} className="flex justify-between py-1.5 text-green-600 dark:text-green-400">
+                        <span>{d.label}</span>
+                        <span>{formatCurrency(d.amount)}</span>
+                      </div>
+                    ))}
+
+                    {/* Tax */}
+                    {parseFloat(invoice.tax_amount) > 0 && (
+                      <div className="flex justify-between py-2 border-t border-border">
+                        <span className="text-muted-foreground">
+                          Tax ({(parseFloat(invoice.tax_rate) * 100).toFixed(2)}%)
+                        </span>
+                        <span className="font-medium">{formatCurrency(invoice.tax_amount)}</span>
+                      </div>
+                    )}
+
+                    {/* Total */}
+                    <div className="flex justify-between py-2 border-t border-border text-lg mt-1">
+                      <span className="font-bold">Total</span>
+                      <span className="font-bold">{formatCurrency(invoice.total)}</span>
+                    </div>
+
+                    {/* Amount Paid */}
+                    {parseFloat(invoice.amount_paid) > 0 && (
+                      <div className="flex justify-between py-2 text-green-600 dark:text-green-400">
+                        <span>Amount Paid</span>
+                        <span>-{formatCurrency(invoice.amount_paid)}</span>
+                      </div>
+                    )}
+
+                    {/* Balance Due */}
+                    <div className="flex justify-between py-2 border-t border-border text-lg">
+                      <span className="font-bold">Balance Due</span>
+                      <span className={`font-bold ${parseFloat(invoice.balance_due) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                        {formatCurrency(invoice.balance_due)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Notes */}
+            {invoice.notes && (
+              <div className="pt-4 border-t border-border">
+                <h4 className="text-sm font-medium mb-2">Notes</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
               </div>
             )}
           </CardContent>
