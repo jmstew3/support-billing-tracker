@@ -597,7 +597,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               {(() => {
                 const items = invoice.items || [];
                 const billableItems = items.filter(item => parseFloat(item.amount) > 0);
-                const creditItems = items.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'other');
+                const creditItems = items.filter(item => parseFloat(item.amount) <= 0 && item.item_type === 'other');
                 const freeProjectItems = items.filter(item => parseFloat(item.amount) === 0 && item.item_type === 'project');
                 const itemTypes = new Set(billableItems.map(i => i.item_type));
                 const hasMultipleTypes = itemTypes.size > 1 || (itemTypes.size === 1 && freeProjectItems.length > 0);
@@ -621,7 +621,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                   .filter(g => g.items.length > 0);
 
                 const renderItemRow = (item: InvoiceItem) => (
-                  <TableRow key={item.id} className={parseFloat(item.amount) === 0 ? 'bg-green-500/5' : ''}>
+                  <TableRow key={item.id} className={parseFloat(item.amount) <= 0 ? 'bg-green-500/5' : ''}>
                     {editingItem === item.id ? (
                       <>
                         <TableCell>
@@ -693,7 +693,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                           }
                         </TableCell>
                         <TableCell className={`text-right font-medium ${
-                          parseFloat(item.amount) === 0 ? 'text-green-600 dark:text-green-400' : ''
+                          parseFloat(item.amount) <= 0 ? 'text-green-600 dark:text-green-400' : ''
                         }`}>
                           {formatCurrency(item.amount)}
                         </TableCell>

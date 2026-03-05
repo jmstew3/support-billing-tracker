@@ -286,53 +286,61 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
 
     // Support hours line items per tier (only if support included)
     if (includeSupport && (summary.billableHours > 0 || summary.freeHoursApplied > 0)) {
-      // Emergency hours
-      if (summary.billableEmergencyHours > 0) {
+      // Emergency hours — use GROSS hours so clients see full value delivered
+      if (summary.emergencyHours > 0) {
         const [itemResult] = await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Emergency Support Hours', summary.billableEmergencyHours,
-           PRICING.rates.emergency, summary.emergencyAmount, sortOrder++,
+          [invoiceId, 'Emergency Support Hours', summary.emergencyHours,
+           PRICING.rates.emergency, summary.emergencyHours * PRICING.rates.emergency, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency === 'HIGH').map(r => r.id))]
         );
         lineItems.push({ id: itemResult.insertId, type: 'emergency' });
       }
 
-      // Same Day hours
-      if (summary.billableSameDayHours > 0) {
+      // Same Day hours — use GROSS hours
+      if (summary.sameDayHours > 0) {
         const [itemResult] = await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Same Day Support Hours', summary.billableSameDayHours,
-           PRICING.rates.sameDay, summary.sameDayAmount, sortOrder++,
+          [invoiceId, 'Same Day Support Hours', summary.sameDayHours,
+           PRICING.rates.sameDay, summary.sameDayHours * PRICING.rates.sameDay, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency === 'MEDIUM').map(r => r.id))]
         );
         lineItems.push({ id: itemResult.insertId, type: 'sameDay' });
       }
 
-      // Regular hours
-      if (summary.billableRegularHours > 0) {
+      // Regular hours — use GROSS hours
+      if (summary.regularHours > 0) {
         const [itemResult] = await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order, request_ids)
            VALUES (?, 'support', ?, ?, ?, ?, ?, ?)`,
-          [invoiceId, 'Regular Support Hours', summary.billableRegularHours,
-           PRICING.rates.regular, summary.regularAmount, sortOrder++,
+          [invoiceId, 'Regular Support Hours', summary.regularHours,
+           PRICING.rates.regular, summary.regularHours * PRICING.rates.regular, sortOrder++,
            JSON.stringify(summary.requests.filter(r => r.urgency !== 'HIGH' && r.urgency !== 'MEDIUM').map(r => r.id))]
         );
         lineItems.push({ id: itemResult.insertId, type: 'regular' });
       }
 
-      // Free credits applied (as a note, not a line item with negative amount)
+      // Free credits applied as a negative-amount line so gross support lines stay visible
       if (summary.freeHoursApplied > 0) {
+        const grossSupportSubtotal = summary.emergencyHours * PRICING.rates.emergency
+          + summary.sameDayHours * PRICING.rates.sameDay
+          + summary.regularHours * PRICING.rates.regular;
+        const creditValue = grossSupportSubtotal - summary.subtotal; // summary.subtotal is NET billable
+
         await connection.query(
           `INSERT INTO invoice_items
            (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
-           VALUES (?, 'other', ?, ?, 0, 0, 99)`,
+           VALUES (?, 'other', ?, ?, ?, ?, 99)`,
           [invoiceId, `Turbo Support Credit Applied (${summary.freeHoursApplied}h free)`,
-           summary.freeHoursApplied]
+           summary.freeHoursApplied,
+           // unit_price is approximate blended rate when credits span multiple tiers — amount is authoritative
+           -(creditValue / summary.freeHoursApplied),
+           -creditValue]
         );
       }
     }
@@ -755,7 +763,7 @@ export async function getUnbilledRequests(invoiceId) {
  */
 async function recalculateInvoiceTotals(connection, invoiceId) {
   const [items] = await connection.query(
-    'SELECT SUM(amount) as subtotal FROM invoice_items WHERE invoice_id = ? AND amount > 0',
+    'SELECT SUM(amount) as subtotal FROM invoice_items WHERE invoice_id = ?',
     [invoiceId]
   );
   const subtotal = parseFloat(items[0].subtotal) || 0;
