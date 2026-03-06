@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import FluentSyncService from './FluentSyncService.js';
+import qboClient from './qboClient.js';
+import QBOTokenRepository from '../repositories/QBOTokenRepository.js';
 import logger from './logger.js';
 
 /**
@@ -31,6 +33,12 @@ class SchedulerService {
           date.setDate(date.getDate() - 14);
           return date.toISOString().split('T')[0];
         }
+      },
+      qboTokenRefresh: {
+        // Every 50 minutes — access tokens expire after 60 min
+        schedule: { expression: '*/50 * * * *', description: 'Every 50 minutes' },
+        timezone: 'America/New_York',
+        enabled: true
       }
     };
   }
@@ -44,6 +52,11 @@ class SchedulerService {
     // Initialize FluentSupport sync jobs
     if (this.scheduleConfig.fluentSync.enabled) {
       this._initializeFluentSyncJobs();
+    }
+
+    // Initialize QBO token refresh job
+    if (this.scheduleConfig.qboTokenRefresh.enabled) {
+      this._initializeQBOTokenRefreshJob();
     }
 
     logger.info('Scheduler service initialized', {
@@ -160,6 +173,111 @@ class SchedulerService {
       });
 
       throw error;
+    }
+  }
+
+  /**
+   * Initialize QBO token refresh cron job
+   * @private
+   */
+  _initializeQBOTokenRefreshJob() {
+    const { schedule, timezone } = this.scheduleConfig.qboTokenRefresh;
+    const jobName = 'qbo-token-refresh';
+
+    if (!cron.validate(schedule.expression)) {
+      logger.error('Invalid cron expression', { jobName, expression: schedule.expression });
+      return;
+    }
+
+    const job = cron.schedule(
+      schedule.expression,
+      async () => {
+        await this._runQBOTokenRefresh(jobName);
+      },
+      { timezone, scheduled: true }
+    );
+
+    this.jobs.set(jobName, {
+      job,
+      type: 'qbo-token-refresh',
+      schedule: schedule.expression,
+      description: schedule.description,
+      timezone,
+      lastRun: null,
+      lastStatus: null
+    });
+
+    logger.info('Scheduled QBO token refresh job', {
+      jobName,
+      schedule: schedule.expression,
+      description: schedule.description,
+      timezone
+    });
+  }
+
+  /**
+   * Run QBO token refresh
+   * @private
+   */
+  async _runQBOTokenRefresh(jobName) {
+    const startTime = Date.now();
+
+    try {
+      // Check if there's an active QBO connection
+      const tokenRecord = await QBOTokenRepository.getActiveToken();
+      if (!tokenRecord) {
+        logger.debug('[QBO Refresh] No active QBO connection, skipping refresh');
+        const jobInfo = this.jobs.get(jobName);
+        if (jobInfo) {
+          jobInfo.lastRun = new Date().toISOString();
+          jobInfo.lastStatus = 'skipped';
+        }
+        return;
+      }
+
+      // Check if access token expires within the next 10 minutes
+      const expiresAt = new Date(tokenRecord.access_token_expires_at);
+      const tenMinFromNow = new Date(Date.now() + 10 * 60 * 1000);
+      if (expiresAt > tenMinFromNow) {
+        logger.debug('[QBO Refresh] Token still valid, skipping refresh', {
+          expiresAt: expiresAt.toISOString()
+        });
+        const jobInfo = this.jobs.get(jobName);
+        if (jobInfo) {
+          jobInfo.lastRun = new Date().toISOString();
+          jobInfo.lastStatus = 'skipped';
+        }
+        return;
+      }
+
+      await qboClient.refreshTokens(tokenRecord.realm_id);
+
+      const duration = Date.now() - startTime;
+      const jobInfo = this.jobs.get(jobName);
+      if (jobInfo) {
+        jobInfo.lastRun = new Date().toISOString();
+        jobInfo.lastStatus = 'success';
+      }
+
+      logger.info('[QBO Refresh] Token refreshed successfully', {
+        jobName,
+        duration: `${duration}ms`,
+        realmId: tokenRecord.realm_id
+      });
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const jobInfo = this.jobs.get(jobName);
+      if (jobInfo) {
+        jobInfo.lastRun = new Date().toISOString();
+        jobInfo.lastStatus = 'failed';
+        jobInfo.lastError = error.message;
+      }
+
+      logger.error('[QBO Refresh] Token refresh failed', {
+        jobName,
+        duration: `${duration}ms`,
+        error: error.message
+      });
     }
   }
 

@@ -299,6 +299,7 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                     <TableHead>Date</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-center">QBO</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
@@ -316,6 +317,17 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                       <TableCell>{formatDate(invoice.due_date)}</TableCell>
                       <TableCell>
                         <InvoiceStatusBadge status={invoice.status} />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {invoice.qbo_sync_status === 'synced' && (
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" title={`Synced (ID: ${invoice.qbo_invoice_id})`} />
+                        )}
+                        {invoice.qbo_sync_status === 'error' && (
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" title={invoice.qbo_sync_error || 'Sync error'} />
+                        )}
+                        {invoice.qbo_sync_status === 'pending' && (
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-gray-600" title="Not synced" />
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(invoice.total)}

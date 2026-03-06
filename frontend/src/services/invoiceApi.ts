@@ -543,6 +543,74 @@ export function buildAdditionalLineItems(
   return items;
 }
 
+// =====================================================
+// QBO INTEGRATION
+// =====================================================
+
+export interface QBOStatus {
+  connected: boolean;
+  companyName?: string;
+  realmId?: string;
+  accessTokenExpiresAt?: string;
+  refreshTokenExpiresAt?: string;
+}
+
+export interface QBOSyncResult {
+  success: boolean;
+  qboInvoiceId?: string;
+  error?: string;
+}
+
+/**
+ * Get QBO connection status
+ */
+export async function getQBOStatus(): Promise<QBOStatus> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/qbo/status`);
+  if (!response.ok) {
+    throw new Error(`Failed to check QBO status: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Start QBO OAuth connection flow — returns the Intuit auth URL
+ */
+export async function connectQBO(): Promise<string> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/qbo/connect`);
+  if (!response.ok) {
+    throw new Error(`Failed to start QBO connection: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.authUrl;
+}
+
+/**
+ * Disconnect from QBO (revoke tokens)
+ */
+export async function disconnectQBO(): Promise<void> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/qbo/disconnect`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to disconnect QBO: ${response.statusText}`);
+  }
+}
+
+/**
+ * Sync a single invoice to QBO
+ */
+export async function syncInvoiceToQBO(invoiceId: number): Promise<QBOSyncResult> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${invoiceId}/sync-qbo`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to sync invoice to QBO: ${response.statusText}`);
+  }
+  return response.json();
+}
+
 export default {
   listCustomers,
   getCustomer,
@@ -560,5 +628,9 @@ export default {
   exportHostingDetailCSV,
   exportInvoiceJSON,
   downloadFile,
-  buildAdditionalLineItems
+  buildAdditionalLineItems,
+  getQBOStatus,
+  connectQBO,
+  disconnectQBO,
+  syncInvoiceToQBO,
 };
