@@ -201,7 +201,9 @@ class QBOClient {
 
     try {
       const response = await client.makeApiCall(callOptions);
-      return JSON.parse(response.text());
+      // intuit-oauth returns { json, body, status } — use json directly if available
+      if (response.json && typeof response.json === 'object') return response.json;
+      return JSON.parse(response.body);
     } catch (error) {
       return this._handleApiError(error, method, endpoint, body, realmId, options);
     }
@@ -226,7 +228,8 @@ class QBOClient {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
-      return JSON.parse(response.text());
+      if (response.json && typeof response.json === 'object') return response.json;
+      return JSON.parse(response.body);
     } catch (error) {
       return this._handleApiError(error, 'GET', `query: ${query}`, null, realmId, {});
     }
@@ -237,7 +240,7 @@ class QBOClient {
    * @private
    */
   async _handleApiError(error, method, endpoint, body, realmId, options) {
-    const statusCode = error.authResponse?.response?.status || error.statusCode;
+    const statusCode = error.response?.status || error.authResponse?.response?.status || error.statusCode;
     const retryCount = options._retryCount || 0;
 
     // 401 — Token expired, refresh and retry once
@@ -292,9 +295,10 @@ class QBOClient {
    */
   _parseErrorResponse(error) {
     try {
-      const body = error.authResponse?.response?.body
-        ? JSON.parse(error.authResponse.response.body)
-        : (error.body ? JSON.parse(error.body) : null);
+      // intuit-oauth errors: error.response.data (object) or error.authResponse.response.body (string)
+      const body = error.response?.data
+        || (error.authResponse?.response?.body ? JSON.parse(error.authResponse.response.body) : null)
+        || (error.body ? JSON.parse(error.body) : null);
 
       if (body?.Fault?.Error) {
         return body.Fault.Error.map(e => `${e.code}: ${e.Detail || e.Message}`).join('; ');
