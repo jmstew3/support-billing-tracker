@@ -23,6 +23,7 @@ import { sanitizeErrorMessage } from './middleware/security.js';
 import logger from './services/logger.js';
 import requestLogger from './middleware/requestLogger.js';
 import scheduler from './services/scheduler.js';
+import qboRoutes from './routes/qbo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -143,6 +144,9 @@ app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
 app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
 app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
 app.use('/api/invoices', conditionalAuth, invoiceRoutes);
+
+// QBO routes: callback is unprotected (Intuit redirects), management routes use conditionalAuth internally
+app.use('/api/qbo', qboRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

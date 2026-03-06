@@ -29,6 +29,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "intuit-oauth": "^4.2.2",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.0",
