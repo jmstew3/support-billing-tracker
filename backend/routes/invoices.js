@@ -40,7 +40,7 @@ const qboInvoiceResponseSchema = Joi.object({
     SyncToken: Joi.string().required(),
     DocNumber: Joi.string().optional(),
     TotalAmt: Joi.number().optional()
-  }).required()
+  }).unknown(true).required()
 }).unknown(true);
 
 // =====================================================
@@ -482,9 +482,9 @@ router.post('/:id/sync-qbo', async (req, res) => {
       });
     }
 
-    if (!['sent', 'paid'].includes(invoice.status)) {
+    if (!['sent', 'paid', 'overdue'].includes(invoice.status)) {
       return res.status(400).json({
-        error: `Cannot sync invoice with status "${invoice.status}". Only sent or paid invoices can be synced.`
+        error: `Cannot sync invoice with status "${invoice.status}". Only sent, paid, or overdue invoices can be synced.`
       });
     }
 
@@ -497,14 +497,48 @@ router.post('/:id/sync-qbo', async (req, res) => {
     // Build QBO payload
     const payload = await mapInvoiceToQBO(invoice, customer);
 
-    // Send to QBO
+    // Check if invoice already exists in QBO (handles retry after previous partial failure)
+    let existingQboInvoice = null;
+    try {
+      const queryResult = await qboClient.query(
+        `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${invoice.invoice_number}'`
+      );
+      const matches = queryResult?.QueryResponse?.Invoice;
+      if (matches && matches.length > 0) {
+        existingQboInvoice = matches[0];
+        logger.info('[QBO Sync] Found existing QBO invoice, will update instead of create', {
+          invoiceNumber: invoice.invoice_number,
+          qboId: existingQboInvoice.Id,
+          syncToken: existingQboInvoice.SyncToken
+        });
+      }
+    } catch (queryErr) {
+      logger.warn('[QBO Sync] Failed to check for existing invoice, will attempt create', {
+        invoiceNumber: invoice.invoice_number,
+        error: queryErr.message
+      });
+    }
+
+    // If it exists, add Id + SyncToken to payload for update
+    if (existingQboInvoice) {
+      payload.Id = existingQboInvoice.Id;
+      payload.SyncToken = existingQboInvoice.SyncToken;
+    }
+
+    // Send to QBO (POST creates or updates when Id+SyncToken present)
     const response = await qboClient.makeApiCall('POST', 'invoice', payload);
+
+    // Check for QBO Fault response (validation errors returned as 200)
+    if (response?.Fault) {
+      const faultDetail = response.Fault.Error?.map(e => `${e.code}: ${e.Detail || e.Message}`).join('; ') || 'Unknown QBO error';
+      throw new Error(`QBO rejected the invoice: ${faultDetail}`);
+    }
 
     // Validate response shape (I5 fix)
     const { error: validationError, value: validated } = qboInvoiceResponseSchema.validate(response);
     if (validationError) {
       logger.error('[QBO Sync] Invalid response shape from QBO', {
-        invoiceId, error: validationError.message, response
+        invoiceId, error: validationError.message, responseKeys: Object.keys(response || {})
       });
       throw new Error('QBO returned an unexpected response format');
     }
@@ -532,7 +566,7 @@ router.post('/:id/sync-qbo', async (req, res) => {
 
     // Return updated invoice
     const updated = await getInvoice(invoiceId);
-    res.json(updated);
+    res.json({ success: true, qboInvoiceId: qboInvoice.Id, invoice: updated });
 
   } catch (error) {
     // Store error on invoice for visibility
@@ -568,7 +602,7 @@ router.post('/bulk-sync-qbo', async (req, res) => {
     // Find all eligible invoices
     const [invoices] = await pool.query(
       `SELECT id, invoice_number FROM invoices
-       WHERE status IN ('sent', 'paid')
+       WHERE status IN ('sent', 'paid', 'overdue')
        AND qbo_sync_status IN ('pending', 'error')
        ORDER BY invoice_date ASC`
     );
@@ -585,7 +619,29 @@ router.post('/bulk-sync-qbo', async (req, res) => {
         const invoice = await getInvoice(inv.id);
         const customer = await getCustomer(invoice.customer_id);
         const payload = await mapInvoiceToQBO(invoice, customer);
+
+        // Check if invoice already exists in QBO (retry-safe)
+        try {
+          const queryResult = await qboClient.query(
+            `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${invoice.invoice_number}'`
+          );
+          const matches = queryResult?.QueryResponse?.Invoice;
+          if (matches && matches.length > 0) {
+            payload.Id = matches[0].Id;
+            payload.SyncToken = matches[0].SyncToken;
+          }
+        } catch (queryErr) {
+          logger.warn('[QBO Bulk Sync] Failed to check for existing invoice', {
+            invoiceNumber: invoice.invoice_number, error: queryErr.message
+          });
+        }
+
         const response = await qboClient.makeApiCall('POST', 'invoice', payload);
+
+        if (response?.Fault) {
+          const faultDetail = response.Fault.Error?.map(e => `${e.code}: ${e.Detail || e.Message}`).join('; ') || 'Unknown QBO error';
+          throw new Error(`QBO rejected the invoice: ${faultDetail}`);
+        }
 
         const { error: validationError, value: validated } = qboInvoiceResponseSchema.validate(response);
         if (validationError) {

@@ -17,7 +17,7 @@ const router = express.Router();
  * Generate Intuit authorization URL and return it to the frontend.
  * Frontend opens this URL to start the OAuth flow.
  */
-router.get('/connect', conditionalAuth, async (req, res) => {
+router.get('/connect', async (req, res) => {
   try {
     // Generate CSRF state as a signed JWT (C3 fix — self-validating, no server storage)
     const csrfPayload = {
@@ -28,7 +28,12 @@ router.get('/connect', conditionalAuth, async (req, res) => {
     const state = jwt.sign(csrfPayload, jwtSecret);
 
     const authUrl = qboClient.getAuthorizationUrl(state);
-    res.json({ authUrl });
+
+    // If called from browser directly, redirect; if API call, return JSON
+    if (req.query.json === 'true' || (req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html'))) {
+      return res.json({ authUrl });
+    }
+    res.redirect(authUrl);
   } catch (error) {
     logger.error('[QBO] Failed to generate auth URL', { error: error.message });
     res.status(500).json({ error: 'Failed to initiate QBO connection' });

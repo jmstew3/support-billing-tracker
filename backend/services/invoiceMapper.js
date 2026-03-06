@@ -47,6 +47,11 @@ function getItemLookupKey(item) {
     return { itemType: 'credit', category: null, description: 'Turbo Support Credit Applied' };
   }
 
+  // Legacy support credit format
+  if (item.item_type === 'other' && desc.startsWith('Free hours credit')) {
+    return { itemType: 'credit', category: null, description: 'Turbo Support Credit Applied' };
+  }
+
   // Hosting credit: item_type='other', category='HOSTING_CREDIT'
   if (item.item_type === 'other' && item.category === 'HOSTING_CREDIT') {
     return { itemType: 'credit', category: 'HOSTING_CREDIT', description: null };

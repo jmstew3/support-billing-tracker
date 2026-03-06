@@ -137,6 +137,10 @@ app.use('/api/client', clientRoutes);
 // Admin routes for client management (requires internal auth + admin role)
 app.use('/api/admin/clients', conditionalAuth, adminClientsRoutes);
 
+// QBO routes: OAuth flow is unprotected (browser redirects), management routes use conditionalAuth internally
+// Must be mounted BEFORE the catch-all '/api' route below
+app.use('/api/qbo', qboRoutes);
+
 // All other API routes use conditional authentication
 // (BasicAuth in production via Traefik, JWT for direct API access)
 app.use('/api', conditionalAuth, requestRoutes);
@@ -144,9 +148,6 @@ app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
 app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
 app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
 app.use('/api/invoices', conditionalAuth, invoiceRoutes);
-
-// QBO routes: callback is unprotected (Intuit redirects), management routes use conditionalAuth internally
-app.use('/api/qbo', qboRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
