@@ -1,0 +1,366 @@
+# QBO Integration Agent Team — Orchestrator Prompt
+
+## Purpose
+
+This prompt spawns a coordinated agent team to perform discovery and planning
+for integrating the React + Node/Express billing app with the QuickBooks Online
+API. Three specialist agents run in parallel, report their findings, and a
+Project Lead agent synthesizes the results into an actionable integration
+roadmap.
+
+---
+
+## Project Paths
+
+| Layer | Path |
+|---|---|
+| Project Root | `/Users/justinstewart/support-billing-tracker` |
+| Backend | `/Users/justinstewart/support-billing-tracker` (look for `server/`, `backend/`, or root-level `server.js` / `app.js` / `index.js`) |
+| Frontend | `/Users/justinstewart/support-billing-tracker` (look for `src/`, `client/`, or `frontend/`) |
+| Output Reports | `/Users/justinstewart/support-billing-tracker/qbo-integration/` |
+
+---
+
+## How to Run
+```bash
+cd /Users/justinstewart/support-billing-tracker
+claude
+```
+
+Then paste the contents of this file as your first message.
+
+---
+
+## Orchestrator Instructions
+
+You are the **Orchestrator** for a QuickBooks Online API integration discovery
+project. Your job is to spawn three specialist subagents in parallel, collect
+their reports, then pass all findings to the Project Lead agent for synthesis.
+
+### Step 1 — Spawn all three agents simultaneously
+
+Use the `Task` tool to launch the following three agents **in parallel**. Do
+not wait for one to finish before starting the next.
+
+---
+
+### Agent 1: QBO Documentation Researcher
+
+**Role:** Online research specialist. You have web browsing access.
+
+**Mission:** Research the QuickBooks Online API developer documentation and
+report back on everything needed to implement invoice creation with negative
+line items from a Node.js/Express backend using OAuth 2.0.
+
+**Research targets** (visit each URL and extract key findings):
+
+1. `https://developer.intuit.com/app/developer/qbo/docs/get-started` — OAuth
+   2.0 setup, app registration, sandbox vs. production environment differences
+2. `https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/invoice`
+   — Invoice entity: required fields, line item structure, negative amount
+   support, `SalesItemLineDetail` schema
+3. `https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/customer`
+   — Customer entity: how to query and reference customers (`CustomerRef`)
+4. `https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/item`
+   — Item entity: how to query and reference products/services (`ItemRef`) for
+   line items
+5. `https://developer.intuit.com/app/developer/qbo/docs/develop/authentication`
+   — OAuth 2.0 Authorization Code flow details, token refresh, scopes
+6. `https://developer.intuit.com/app/developer/qbo/docs/develop/sdks/node-js`
+   — Official Node.js SDK (`intuit-oauth`) capabilities and setup
+
+**Deliverable — return a structured report with these sections:**
+```
+## QBO Docs Research Report
+
+### OAuth 2.0 Setup Requirements
+[What app credentials are needed, what redirect URIs to configure,
+sandbox vs. production setup in the developer portal]
+
+### Invoice API: Key Fields & Constraints
+[Required fields for invoice creation, line item structure, how negative
+amounts work, any total-must-be-positive constraints, tax implications]
+
+### Customer & Item Reference Resolution
+[How to query existing QBO customers and items to get their IDs for use
+in invoice payloads]
+
+### Node.js SDK Capabilities
+[What intuit-oauth and node-quickbooks cover, any gaps that require raw
+API calls]
+
+### Developer Portal Setup Checklist
+[Step-by-step actions needed on developer.intuit.com before any code will
+work: app creation, redirect URI registration, sandbox company, OAuth
+scopes, etc.]
+
+### Gotchas & Warnings
+[Any undocumented constraints, rate limits, sandbox-specific behaviors,
+or known issues found in docs]
+```
+
+---
+
+### Agent 2: Backend Environment Assessor
+
+**Role:** Codebase analyst. You have filesystem access.
+
+**Mission:** Examine the current Node.js/Express backend to understand what
+already exists, what patterns are in use, and what gaps exist relative to QBO
+integration requirements.
+
+**Tasks:**
+
+1. The project root is `/Users/justinstewart/support-billing-tracker`. Start
+   there. Look for `package.json`, `server.js`, `app.js`, `index.js`, or
+   subdirectories named `server/`, `backend/`, or `api/`.
+2. Read `package.json` — identify installed dependencies, Node version,
+   existing scripts
+3. Identify the Express app entry point and understand the overall
+   route/middleware structure
+4. Look for any existing auth middleware, JWT handling, or OAuth-related code
+5. Look for any existing external API integration patterns (axios calls, fetch,
+   SDK usage)
+6. Identify the database layer — what ORM or query library is in use, how
+   models/schemas are structured
+7. Look for any existing invoice, billing, or payment-related files or routes
+8. Look for environment variable usage (`.env`, `dotenv`) and note what config
+   keys are already present (do NOT expose values, just key names)
+9. Note the project's folder structure conventions for routes, services,
+   middleware, and models
+
+**Deliverable — return a structured report with these sections:**
+```
+## Backend Environment Assessment Report
+
+### Project Structure Overview
+[Folder tree of key directories, entry points, and organization pattern]
+
+### Dependencies Inventory
+[Relevant packages already installed: HTTP clients, auth libraries, DB
+clients, validation, etc.]
+[Missing packages needed for QBO: intuit-oauth, node-quickbooks, etc.]
+
+### Auth & Middleware Patterns
+[How authentication is currently handled, what middleware exists, patterns
+to follow]
+
+### External API Integration Patterns
+[How the app currently calls external services — patterns to replicate
+for QBO]
+
+### Database Layer
+[ORM/query library in use, how to add a qbo_tokens table or equivalent
+storage for OAuth tokens and realmId]
+
+### Existing Billing/Invoice Code
+[Any existing routes, services, or models related to invoicing — what's
+already there vs. what needs to be built]
+
+### Environment Config
+[Key names already in .env, what new keys will need to be added for QBO
+client ID, secret, redirect URI, etc.]
+
+### Integration Readiness Score
+[Summary assessment: what's ready, what's missing, what needs to be
+refactored]
+```
+
+---
+
+### Agent 3: Invoicing Layer Analyst
+
+**Role:** React frontend analyst. You have filesystem access.
+
+**Mission:** Examine the React application's invoicing page and related
+components to understand what the UI intends to do, what data it collects,
+and what it currently expects from the backend — so the integration can be
+built to match the existing UX intent.
+
+**Tasks:**
+
+1. The project root is `/Users/justinstewart/support-billing-tracker`. Start
+   there. Look for a `src/` directory, a `package.json` with a React
+   dependency, or subdirectories named `client/` or `frontend/`.
+2. Find all invoice-related components, pages, hooks, and context files
+   (search for files containing "invoice", "Invoice", "billing", "Billing")
+3. Read the main invoicing page component(s) in full
+4. Identify all form fields present on the invoicing UI — what data does the
+   user enter?
+5. Identify any existing state management for invoice data (useState,
+   useReducer, Redux, Zustand, React Query, etc.)
+6. Look for any existing API calls from the invoicing layer — what endpoints
+   does it currently call or expect to call?
+7. Identify what a "submitted invoice" looks like as a data object in the
+   frontend — what shape does the payload take?
+8. Note any line item handling — can users add multiple line items? Is there
+   negative/discount line support in the UI?
+9. Identify any customer selector or customer data flow in the invoicing UI
+10. Note any validation logic already present on the invoice form
+
+**Deliverable — return a structured report with these sections:**
+```
+## Invoicing Layer Analysis Report
+
+### Invoicing UI Overview
+[What the invoicing page does from a user's perspective, key workflows]
+
+### Form Fields Inventory
+[Complete list of fields the user fills out: customer, line items,
+quantities, prices, discounts, dates, etc.]
+
+### Current Data Shape (Frontend Payload)
+[The shape of the invoice object as currently constructed in state or
+sent to the backend]
+
+### API Integration Points
+[What endpoints the frontend currently calls or is scaffolded to call —
+matches to backend routes]
+
+### Line Item Handling
+[How line items are added/removed/edited, whether negative/discount lines
+exist in the UI]
+
+### Customer Data Flow
+[How customer is selected — free text, dropdown, API lookup? What
+customer data is passed with invoice?]
+
+### State Management Pattern
+[What library or pattern manages invoice state, how to hook in async QBO
+submission]
+
+### Gaps & Mismatches
+[UI fields that don't map cleanly to QBO API fields, missing UI elements
+needed for QBO (e.g. ItemRef selector), UX changes needed]
+```
+
+---
+
+### Step 2 — Project Lead Review & Roadmap
+
+After all three agents have returned their reports, pass all findings to the
+**Project Lead** agent with the following instructions:
+
+---
+
+### Project Lead Agent
+
+**Role:** Senior integration architect and project manager.
+
+**Mission:** Review the three research reports above and produce a
+comprehensive, actionable integration roadmap for completing the QuickBooks
+Online invoice API integration. The roadmap must cover both the development
+work in VS Code and the configuration steps required on the QBO Developer
+Portal at `developer.intuit.com`.
+
+**Your output:**
+```
+# QBO Integration Roadmap
+
+## Executive Summary
+[2–3 paragraph overview of what needs to happen, major risks identified,
+and estimated complexity]
+
+---
+
+## Phase 0: QBO Developer Portal Setup
+> Actions required on developer.intuit.com BEFORE writing any code
+
+- [ ] Create QBO app in developer portal (if not done)
+- [ ] Configure OAuth 2.0 redirect URIs for sandbox and production
+- [ ] Copy Client ID and Client Secret to .env
+- [ ] Confirm sandbox QBO company is active
+- [ ] Set required OAuth scopes (com.intuit.quickbooks.accounting)
+- [ ] Test sandbox credentials with a basic API call (CompanyInfo endpoint)
+[Add any additional steps discovered by the QBO Docs Researcher]
+
+---
+
+## Phase 1: Backend — OAuth 2.0 & Token Infrastructure
+
+### 1.1 Install dependencies
+[Exact npm install commands based on what's missing per Backend Assessment]
+
+### 1.2 Environment configuration
+[All new .env keys to add with placeholder values]
+
+### 1.3 Build OAuth routes
+- GET /auth/qbo — initiate OAuth flow
+- GET /auth/qbo/callback — exchange code for tokens, store in DB
+[Notes on adapting to existing middleware/route patterns]
+
+### 1.4 Token storage
+[Recommended DB schema for qbo_tokens table]
+
+### 1.5 QBO client service
+[qboClient.js — SDK init, token refresh middleware]
+
+---
+
+## Phase 2: Backend — Customer & Item Sync
+
+### 2.1 QBO Customer sync endpoint
+### 2.2 QBO Item sync endpoint
+### 2.3 Mapping table schema
+
+---
+
+## Phase 3: Backend — Invoice Creation Endpoint
+
+### 3.1 Build POST /api/invoices/qbo
+### 3.2 Payload mapping layer (invoiceMapper.js)
+### 3.3 Error handling
+### 3.4 Response handling
+
+---
+
+## Phase 4: Frontend — Wire React Invoicing Layer to QBO
+
+### 4.1 Gaps to resolve in the UI
+### 4.2 API call update
+### 4.3 State management updates
+### 4.4 Negative line item / discount UI
+
+---
+
+## Phase 5: Testing & Validation
+
+### 5.1 Sandbox end-to-end test checklist
+- [ ] OAuth connect flow completes and stores tokens
+- [ ] Token refresh works after 1 hour
+- [ ] Customer and Item sync populates mapping tables
+- [ ] Basic invoice with positive lines creates in QBO sandbox
+- [ ] Invoice with negative discount line creates successfully
+- [ ] Invoice total < $0 rejected with clean error
+- [ ] Invoice visible in sandbox at app.sandbox.qbo.intuit.com
+
+### 5.2 Production cutover checklist
+- [ ] Switch credentials from sandbox to production in .env
+- [ ] Re-run customer/item sync against production QBO company
+- [ ] Test one real invoice end-to-end
+- [ ] Confirm invoice visible in production QBO
+
+---
+
+## Risk Register
+[Risks, likelihood, impact, mitigation]
+
+---
+
+## Open Questions
+[Decisions needed from Justin before work can proceed]
+```
+
+---
+
+## Output Instructions for Orchestrator
+
+1. Create output directory:
+   `/Users/justinstewart/support-billing-tracker/qbo-integration/`
+2. Save agent reports:
+   - `qbo-integration/qbo-docs-research-report.md`
+   - `qbo-integration/qbo-backend-assessment-report.md`
+   - `qbo-integration/qbo-invoicing-layer-report.md`
+3. Save roadmap:
+   - `qbo-integration/qbo-integration-roadmap.md`
+4. Print confirmation to terminal when all four files are written.
