@@ -82,11 +82,22 @@ services:
       QBO_TOKEN_ENCRYPTION_KEY: ${QBO_TOKEN_ENCRYPTION_KEY:-}
       QBO_MINOR_VERSION: ${QBO_MINOR_VERSION:-75}
       QBO_AUTO_SYNC: ${QBO_AUTO_SYNC:-false}
+      # Prefixed env vars (sandbox/production)
+      QBO_SANDBOX_CLIENT_ID: ${QBO_SANDBOX_CLIENT_ID:-}
+      QBO_SANDBOX_CLIENT_SECRET: ${QBO_SANDBOX_CLIENT_SECRET:-}
+      QBO_SANDBOX_REDIRECT_URI: ${QBO_SANDBOX_REDIRECT_URI:-http://localhost:3011/api/qbo/callback}
+      QBO_SANDBOX_REALM_ID: ${QBO_SANDBOX_REALM_ID:-}
+      QBO_SANDBOX_TOKEN_ENCRYPTION_KEY: ${QBO_SANDBOX_TOKEN_ENCRYPTION_KEY:-}
+      QBO_PROD_CLIENT_ID: ${QBO_PROD_CLIENT_ID:-}
+      QBO_PROD_CLIENT_SECRET: ${QBO_PROD_CLIENT_SECRET:-}
+      QBO_PROD_REDIRECT_URI: ${QBO_PROD_REDIRECT_URI:-}
+      QBO_PROD_REALM_ID: ${QBO_PROD_REALM_ID:-}
+      QBO_PROD_TOKEN_ENCRYPTION_KEY: ${QBO_PROD_TOKEN_ENCRYPTION_KEY:-}
     ports:
       - "${BACKEND_PORT:-3011}:3011"  # Exposed for local development
     volumes:
       - ./backend:/app
-      - /app/node_modules
+      - backend_node_modules:/app/node_modules
       - ./data:/data:ro
     networks:
       - velocity-network
@@ -167,7 +178,7 @@ services:
       - "${FRONTEND_PORT:-5173}:${VITE_PORT:-5173}"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - frontend_node_modules:/app/node_modules
       - ./frontend/public:/app/public
     networks:
       - velocity-network
@@ -197,7 +208,8 @@ networks:
 # Note: Using bind mount for MySQL data instead of named volume
 # This makes it easier to backup and migrate on NAS systems
 # The mysql_data directory will be created in your project root
-# To use a named volume instead, uncomment the following:
-# volumes:
-#   mysql_data:
-#     driver: local
+volumes:
+  backend_node_modules:
+    driver: local
+  frontend_node_modules:
+    driver: local

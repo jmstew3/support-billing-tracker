@@ -194,22 +194,37 @@ INSERT INTO invoice_items (invoice_id, item_type, description, quantity, unit_pr
 -- ---------------------------------------------------------------------------
 -- FLUENT TICKETS - linked to some requests
 -- ---------------------------------------------------------------------------
-INSERT INTO fluent_tickets (fluent_id, ticket_number, created_at, ticket_status, customer_id, customer_name, customer_email, mailbox_id, title, priority, agent_name, client_id) VALUES
-('FT-2001', '#2001', '2025-10-02 09:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Property listing search feature request', 'normal', 'Justin', 1),
-('FT-2002', '#2002', '2025-10-03 11:00:00', 'closed', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, 'Contact form emails going to spam', 'high', 'Justin', 2),
-('FT-2003', '#2003', '2025-10-14 16:15:00', 'closed', 'summit-001', 'Mike', 'mike@summitfitness.co', 1, 'Need multi-step form for lead capture', 'normal', 'Justin', 3),
-('FT-2004', '#2004', '2025-10-17 10:30:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Invoice dates are wrong in PDF export', 'high', 'Justin', 1),
-('FT-2005', '#2005', '2025-11-03 08:15:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Event calendar with RSVP', 'normal', 'Justin', 1),
-('FT-2006', '#2006', '2025-11-11 09:30:00', 'closed', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, 'WooCommerce checkout errors', 'high', 'Justin', 2),
-('FT-2007', '#2007', '2025-11-24 08:45:00', 'closed', 'blueline-001', 'Dan', 'dan@bluelinemfg.com', 1, 'Security hardening needed', 'high', 'Justin', 5),
-('FT-2008', '#2008', '2025-12-01 09:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Year in review interactive page', 'normal', 'Justin', 1),
-('FT-2009', '#2009', '2025-12-12 16:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Tax calculation rounding errors', 'high', 'Justin', 1),
-('FT-2010', '#2010', '2025-12-30 15:30:00', 'closed', 'blueline-001', 'Dan', 'dan@bluelinemfg.com', 1, 'URGENT: Site down after plugin update', 'critical', 'Justin', 5),
-('FT-2011', '#2011', '2026-01-06 08:30:00', 'active', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Client portal MVP project', 'normal', 'Justin', 1),
-('FT-2012', '#2012', '2026-01-08 10:00:00', 'closed', 'coastal-001', 'Amy', 'amy@coastalrealtygroup.com', 1, 'CSRF token expiring too fast', 'high', 'Justin', 4),
-('FT-2013', '#2013', '2026-01-16 16:00:00', 'active', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'QuickBooks Online integration', 'normal', 'Justin', 1),
-('FT-2014', '#2014', '2026-02-10 08:30:00', 'active', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, '503 errors during peak traffic', 'high', 'Justin', 2),
-('FT-2015', '#2015', '2026-02-14 10:00:00', 'active', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Subscription renewal charge issue', 'high', 'Justin', 1);
+INSERT INTO fluent_tickets (fluent_id, ticket_number, created_at, ticket_status, customer_id, customer_name, customer_email, mailbox_id, title, priority, agent_name, client_id, request_id, resolved_at) VALUES
+('FT-2001', '#2001', '2025-10-02 09:00:00', 'closed', 'coastal-001', 'Amy', 'amy@coastalrealtygroup.com', 1, 'Property listing search feature request', 'normal', 'Justin', 4,
+  (SELECT id FROM requests WHERE date='2025-10-01' AND description LIKE 'Build property listing%' LIMIT 1), '2025-10-20 14:00:00'),
+('FT-2002', '#2002', '2025-10-03 11:00:00', 'closed', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, 'Contact form emails going to spam', 'high', 'Justin', 2,
+  (SELECT id FROM requests WHERE date='2025-10-03' AND description LIKE 'Contact form emails%' LIMIT 1), '2025-10-05 16:00:00'),
+('FT-2003', '#2003', '2025-10-14 16:15:00', 'closed', 'summit-001', 'Mike', 'mike@summitfitness.co', 1, 'Need multi-step form for lead capture', 'normal', 'Justin', 3,
+  (SELECT id FROM requests WHERE date='2025-10-14' AND description LIKE 'Multi-step lead capture%' LIMIT 1), '2025-10-28 11:00:00'),
+('FT-2004', '#2004', '2025-10-17 10:30:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Invoice dates are wrong in PDF export', 'high', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2025-10-17' AND description LIKE 'Invoice PDF generation%' LIMIT 1), '2025-10-19 15:00:00'),
+('FT-2005', '#2005', '2025-11-03 08:15:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Event calendar with RSVP', 'normal', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2025-11-03' AND description LIKE 'Add event calendar%' LIMIT 1), '2025-11-20 17:00:00'),
+('FT-2006', '#2006', '2025-11-11 09:30:00', 'closed', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, 'WooCommerce checkout errors', 'high', 'Justin', 2,
+  (SELECT id FROM requests WHERE date='2025-11-11' AND description LIKE 'Troubleshoot WooCommerce%' LIMIT 1), '2025-11-14 12:00:00'),
+('FT-2007', '#2007', '2025-11-24 08:45:00', 'closed', 'blueline-001', 'Dan', 'dan@bluelinemfg.com', 1, 'Security hardening needed', 'high', 'Justin', 5,
+  (SELECT id FROM requests WHERE date='2025-11-24' AND description LIKE 'Security hardening%' LIMIT 1), '2025-11-30 16:00:00'),
+('FT-2008', '#2008', '2025-12-01 09:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Year in review interactive page', 'normal', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2025-12-01' AND description LIKE 'Build year-in-review%' LIMIT 1), '2025-12-20 14:00:00'),
+('FT-2009', '#2009', '2025-12-12 16:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Tax calculation rounding errors', 'high', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2025-12-12' AND description LIKE 'Tax calculation rounding%' LIMIT 1), '2025-12-15 10:00:00'),
+('FT-2010', '#2010', '2025-12-30 15:30:00', 'closed', 'blueline-001', 'Dan', 'dan@bluelinemfg.com', 1, 'URGENT: Site down after plugin update', 'critical', 'Justin', 5,
+  (SELECT id FROM requests WHERE date='2025-12-30' AND description LIKE 'Emergency: site down%' LIMIT 1), '2025-12-30 19:00:00'),
+('FT-2011', '#2011', '2026-01-06 08:30:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Client portal MVP project', 'normal', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2026-01-06' AND description LIKE 'Implement client portal%' LIMIT 1), '2026-01-28 17:00:00'),
+('FT-2012', '#2012', '2026-01-08 10:00:00', 'closed', 'coastal-001', 'Amy', 'amy@coastalrealtygroup.com', 1, 'CSRF token expiring too fast', 'high', 'Justin', 4,
+  (SELECT id FROM requests WHERE date='2026-01-08' AND description LIKE 'Contact form CSRF%' LIMIT 1), '2026-01-10 14:00:00'),
+('FT-2013', '#2013', '2026-01-16 16:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'QuickBooks Online integration', 'normal', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2026-01-16' AND description LIKE 'QuickBooks Online%' LIMIT 1), '2026-01-30 16:00:00'),
+('FT-2014', '#2014', '2026-02-10 08:30:00', 'closed', 'greenleaf-001', 'Sarah', 'sarah@greenleaforganics.com', 1, '503 errors during peak traffic', 'high', 'Justin', 2,
+  (SELECT id FROM requests WHERE date='2026-02-10' AND description LIKE 'Investigate 503 errors%' LIMIT 1), '2026-02-12 15:00:00'),
+('FT-2015', '#2015', '2026-02-14 10:00:00', 'closed', 'velocity-001', 'Thad', 'thad@velocity-seo.com', 1, 'Subscription renewal charge issue', 'high', 'Justin', 1,
+  (SELECT id FROM requests WHERE date='2026-02-14' AND description LIKE 'Subscription renewal%' LIMIT 1), '2026-02-17 11:00:00');
 
 -- ---------------------------------------------------------------------------
 -- CLIENT WEBSITE LINKS

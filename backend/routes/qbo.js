@@ -19,6 +19,18 @@ const router = express.Router();
  */
 router.get('/connect', async (req, res) => {
   try {
+    // Pre-flight: validate required config before starting OAuth
+    const missing = [];
+    if (!process.env.QBO_CLIENT_ID) missing.push('QBO_CLIENT_ID');
+    if (!process.env.QBO_CLIENT_SECRET) missing.push('QBO_CLIENT_SECRET');
+    const ek = process.env.QBO_TOKEN_ENCRYPTION_KEY;
+    if (!ek || ek.length !== 64) missing.push('QBO_TOKEN_ENCRYPTION_KEY (64-char hex — run: openssl rand -hex 32)');
+
+    if (missing.length > 0) {
+      logger.error('[QBO] Missing required config', { missing });
+      return res.status(500).json({ error: 'QBO configuration incomplete', missing });
+    }
+
     // Generate CSRF state as a signed JWT (C3 fix — self-validating, no server storage)
     const csrfPayload = {
       nonce: crypto.randomBytes(16).toString('hex'),

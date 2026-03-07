@@ -24,7 +24,9 @@ import {
   getCustomer,
   markOverdueInvoices,
   sendInvoice,
-  recalculateDraftInvoice
+  recalculateDraftInvoice,
+  buildRequestSnapshot,
+  revertToDraft
 } from '../services/invoiceService.js';
 import { mapInvoiceToQBO } from '../services/invoiceMapper.js';
 import qboClient from '../services/qboClient.js';
@@ -482,11 +484,8 @@ router.post('/:id/sync-qbo', async (req, res) => {
       });
     }
 
-    if (!['sent', 'paid', 'overdue'].includes(invoice.status)) {
-      return res.status(400).json({
-        error: `Cannot sync invoice with status "${invoice.status}". Only sent, paid, or overdue invoices can be synced.`
-      });
-    }
+    // Remember if this was a draft so we can finalize after successful sync
+    const wasDraft = invoice.status === 'draft';
 
     // Load customer
     const customer = await getCustomer(invoice.customer_id);
@@ -545,17 +544,39 @@ router.post('/:id/sync-qbo', async (req, res) => {
 
     const qboInvoice = validated.Invoice;
 
-    // Store QBO reference on local invoice
-    await pool.query(
-      `UPDATE invoices SET
-         qbo_invoice_id = ?,
-         qbo_sync_token = ?,
-         qbo_sync_status = 'synced',
-         qbo_sync_date = NOW(),
-         qbo_sync_error = NULL
-       WHERE id = ?`,
-      [qboInvoice.Id, qboInvoice.SyncToken, invoiceId]
-    );
+    // If this was a draft, finalize it: set status to sent and create snapshot
+    if (wasDraft) {
+      const connection = await pool.getConnection();
+      try {
+        const snapshot = await buildRequestSnapshot(invoiceId, connection);
+        await connection.query(
+          `UPDATE invoices SET
+             status = 'sent',
+             request_snapshot = ?,
+             qbo_invoice_id = ?,
+             qbo_sync_token = ?,
+             qbo_sync_status = 'synced',
+             qbo_sync_date = NOW(),
+             qbo_sync_error = NULL
+           WHERE id = ?`,
+          [snapshot, qboInvoice.Id, qboInvoice.SyncToken, invoiceId]
+        );
+      } finally {
+        connection.release();
+      }
+    } else {
+      // Store QBO reference on local invoice
+      await pool.query(
+        `UPDATE invoices SET
+           qbo_invoice_id = ?,
+           qbo_sync_token = ?,
+           qbo_sync_status = 'synced',
+           qbo_sync_date = NOW(),
+           qbo_sync_error = NULL
+         WHERE id = ?`,
+        [qboInvoice.Id, qboInvoice.SyncToken, invoiceId]
+      );
+    }
 
     logger.info('[QBO Sync] Invoice synced successfully', {
       invoiceId,
@@ -589,6 +610,22 @@ router.post('/:id/sync-qbo', async (req, res) => {
 
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({ error: syncError });
+  }
+});
+
+/**
+ * POST /api/invoices/:id/revert-to-draft
+ * Revert an invoice back to draft for editing.
+ * Keeps qbo_invoice_id/qbo_sync_token so re-sync updates rather than duplicates.
+ */
+router.post('/:id/revert-to-draft', async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    const updated = await revertToDraft(invoiceId);
+    res.json(updated);
+  } catch (error) {
+    logger.error('[Invoice] Revert to draft failed', { error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 

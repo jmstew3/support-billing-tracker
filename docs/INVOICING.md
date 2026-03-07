@@ -110,12 +110,52 @@ Best for automation or API integration.
 
 ## QuickBooks Online Integration
 
-### Current State (Export-Ready)
-- CSV/JSON export available
-- Manual creation in QBO with pre-calculated data
-- Status tracking in Support Billing Tracker
+### Connecting to QBO
 
-### Database Fields (Ready for API)
+**Via the UI:**
+1. Navigate to the **Invoices** page
+2. Click **Connect to QuickBooks** in the status bar
+3. Authorize in the Intuit popup — you'll be redirected back automatically
+4. The status bar shows the connected company name once complete
+
+**Via URL (direct):**
+- Development: `http://localhost:3011/api/qbo/connect`
+- Production: `https://billing.peakonedigital.com/api/qbo/connect`
+- Redirects to Intuit's authorization page automatically
+
+**Prerequisites:**
+Your `.env` must have the following configured (see `.env.example` for the full template):
+
+```bash
+QBO_ENVIRONMENT=sandbox              # "sandbox" or "production"
+QBO_SANDBOX_CLIENT_ID=...
+QBO_SANDBOX_CLIENT_SECRET=...
+QBO_PROD_CLIENT_ID=...
+QBO_PROD_CLIENT_SECRET=...
+QBO_TOKEN_ENCRYPTION_KEY=...         # 64-char hex — generate with: openssl rand -hex 32
+```
+
+The backend startup resolver (`backend/config/qboEnv.js`) copies the prefixed credentials into generic `QBO_CLIENT_ID` / `QBO_CLIENT_SECRET` based on `QBO_ENVIRONMENT`.
+
+**Switching environments:**
+Change `QBO_ENVIRONMENT` in `.env`, then rebuild the backend:
+```bash
+docker compose up -d --build backend
+```
+
+### What Happens on Connect
+1. Browser redirects to Intuit OAuth consent screen
+2. On approval, Intuit redirects to `/api/qbo/callback`
+3. Tokens are encrypted and stored in the database
+4. Company name is fetched and displayed in the UI status bar
+
+### Disconnecting
+- Click **Disconnect** in the QBO status bar on the Invoices page
+- Or call `POST /api/qbo/disconnect` (see [API docs](API.md#quickbooks-online))
+
+Tokens are revoked with Intuit and removed from the database.
+
+### Database Fields
 ```sql
 qbo_customer_id VARCHAR(100)   -- Link to QBO customer
 qbo_invoice_id VARCHAR(100)    -- Link to QBO invoice
@@ -123,13 +163,6 @@ qbo_sync_status ENUM('pending', 'synced', 'error', 'not_applicable')
 qbo_sync_date TIMESTAMP
 qbo_sync_error TEXT
 ```
-
-### Future Integration (Planned)
-1. OAuth2 connection to QBO
-2. "Sync to QuickBooks" button
-3. Auto-create invoice in QBO
-4. Payment status syncs back
-5. Customer matching/creation
 
 ## Invoice Number Format
 

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Download, Eye, Trash2, Send } from 'lucide-react';
+import { FileText, Plus, Download, Eye, Trash2 } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -23,7 +23,6 @@ import {
   listInvoices,
   listCustomers,
   deleteInvoice,
-  sendInvoice,
   exportInvoiceCSV,
   exportInvoiceQBOCSV,
   downloadFile,
@@ -150,26 +149,6 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
           loadData();
         } catch (err) {
           addToast('error', err instanceof Error ? err.message : 'Failed to delete invoice');
-        }
-      },
-    });
-  }
-
-  function handleSend(invoice: Invoice) {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Mark as Sent',
-      message: `Mark invoice ${invoice.invoice_number} as sent? This will lock it from editing.`,
-      confirmText: 'Mark as Sent',
-      isDestructive: false,
-      onConfirm: async () => {
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-        try {
-          await sendInvoice(invoice.id);
-          addToast('success', `Invoice ${invoice.invoice_number} marked as sent`);
-          loadData();
-        } catch (err) {
-          addToast('error', err instanceof Error ? err.message : 'Failed to send invoice');
         }
       },
     });
@@ -350,15 +329,6 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                           >
                             <Eye className="h-4 w-4" />
                           </button>
-                          {invoice.status === 'draft' && (
-                            <button
-                              onClick={() => handleSend(invoice)}
-                              className="p-1.5 hover:bg-muted rounded text-blue-600 dark:text-blue-400"
-                              title="Mark as sent"
-                            >
-                              <Send className="h-4 w-4" />
-                            </button>
-                          )}
                           <button
                             onClick={() => handleExportAll(invoice)}
                             className="p-1.5 hover:bg-muted rounded"

@@ -86,6 +86,19 @@ DB_NAME=velocity_billing
 MYSQL_PORT=3307
 ```
 
+**QuickBooks Online (`.env`):**
+```bash
+# QBO uses prefixed env vars resolved at startup by backend/config/qboEnv.js
+# The resolver copies QBO_SANDBOX_* or QBO_PROD_* into generic QBO_* names
+# based on QBO_ENVIRONMENT. To switch environments: change QBO_ENVIRONMENT,
+# then `docker compose up -d --build backend`.
+QBO_ENVIRONMENT=sandbox              # or "production"
+QBO_SANDBOX_CLIENT_ID=your-sandbox-id
+QBO_SANDBOX_CLIENT_SECRET=your-sandbox-secret
+QBO_PROD_CLIENT_ID=your-prod-id
+QBO_PROD_CLIENT_SECRET=your-prod-secret
+```
+
 ## Billing Policies
 
 **Free Credits (June 2025+):**

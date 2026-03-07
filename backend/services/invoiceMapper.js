@@ -42,13 +42,8 @@ function validateLineAmount(qty, unitPrice, amount) {
 function getItemLookupKey(item) {
   const desc = item.description || '';
 
-  // Support credit line: item_type='other', description starts with 'Turbo Support Credit Applied'
-  if (item.item_type === 'other' && desc.startsWith('Turbo Support Credit Applied')) {
-    return { itemType: 'credit', category: null, description: 'Turbo Support Credit Applied' };
-  }
-
-  // Legacy support credit format
-  if (item.item_type === 'other' && desc.startsWith('Free hours credit')) {
+  // Per-tier support credit lines and legacy formats
+  if (item.item_type === 'other' && (desc.includes('Support Credit') || desc.startsWith('Turbo Support Credit Applied') || desc.startsWith('Free hours credit'))) {
     return { itemType: 'credit', category: null, description: 'Turbo Support Credit Applied' };
   }
 
@@ -190,7 +185,7 @@ export async function mapInvoiceToQBO(invoice, customer) {
   }
   if (customer.email) {
     payload.BillEmail = { Address: customer.email };
-    payload.EmailStatus = 'NeedToSend';
+    payload.EmailStatus = 'NotSet';
   } else {
     payload.EmailStatus = 'NotSet';
   }
