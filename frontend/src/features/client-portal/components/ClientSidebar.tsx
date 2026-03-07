@@ -162,8 +162,8 @@ export function ClientSidebar({ theme, onToggleTheme, activitySummary, 'aria-hid
               className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/10 hover:text-foreground transition-all duration-200 min-h-[44px] group"
               aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              <span className="text-xs">Theme:</span>
               <ThemeToggle theme={theme} onToggle={() => {}} className="w-5 h-5" />
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
           )}
         </div>
@@ -182,7 +182,7 @@ export function ClientSidebar({ theme, onToggleTheme, activitySummary, 'aria-hid
           ) : (
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-500/10 transition-all duration-200 min-h-[44px]"
             >
               <LogOut size={18} className="flex-shrink-0" />
               <span>Log Out</span>
@@ -193,7 +193,7 @@ export function ClientSidebar({ theme, onToggleTheme, activitySummary, 'aria-hid
         {/* Powered by PeakOne */}
         {!isCollapsed && (
           <div className="px-4 pb-3 border-t border-border/50 pt-2">
-            <p className="text-xs text-muted-foreground/70 mb-2">Powered by</p>
+            <p className="text-xs text-muted-foreground mb-2">Powered by</p>
             <a
               href="https://peakonedigital.com"
               target="_blank"

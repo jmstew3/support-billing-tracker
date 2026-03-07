@@ -22,7 +22,7 @@ const statusConfig: Record<Invoice['status'], { label: string; className: string
   },
   paid: {
     label: 'Paid',
-    className: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+    className: 'bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30',
   },
   overdue: {
     label: 'Overdue',

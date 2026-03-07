@@ -29,6 +29,23 @@ export default class QBOTokenRepository {
   }
 
   /**
+   * Get metadata for the active QBO token without decrypting sensitive fields.
+   * Used by status checks that only need connection info, not actual tokens.
+   * @param {import('mysql2/promise').Pool|import('mysql2/promise').PoolConnection} connection
+   * @returns {Promise<Object|null>} Token metadata or null
+   */
+  static async getActiveTokenMeta(connection = pool) {
+    const env = process.env.QBO_ENVIRONMENT || 'sandbox';
+    const [rows] = await connection.query(
+      `SELECT realm_id, company_name, access_token_expires_at,
+              refresh_token_expires_at, last_refreshed_at, environment
+       FROM qbo_tokens WHERE is_active = TRUE AND environment = ? LIMIT 1`,
+      [env]
+    );
+    return rows[0] || null;
+  }
+
+  /**
    * Upsert token data after OAuth callback or token refresh.
    * Uses INSERT ... ON DUPLICATE KEY UPDATE keyed on realm_id.
    * @param {string} realmId - QBO company realm ID

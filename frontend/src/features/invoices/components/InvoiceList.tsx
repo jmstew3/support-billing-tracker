@@ -13,7 +13,7 @@ import {
   TableHead,
   TableCell,
 } from '../../../components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Card, CardContent, CardHeader } from '../../../components/ui/card';
 import { Pagination } from '../../../components/shared/Pagination';
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog';
 import { ToastContainer } from '../../../components/shared/Toast';
@@ -218,10 +218,10 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold leading-none tracking-tight text-foreground flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Invoices ({total})
-          </CardTitle>
+          </h2>
           <button
             onClick={onGenerateInvoice}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm font-medium"
@@ -331,7 +331,7 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                             {formatCurrency(invoice.balance_due)}
                           </span>
                         ) : (
-                          <span className="text-green-600 dark:text-green-400">$0.00</span>
+                          <span className="text-green-700 dark:text-green-400">$0.00</span>
                         )}
                       </TableCell>
                       <TableCell>

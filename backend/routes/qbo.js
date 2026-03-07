@@ -130,7 +130,8 @@ router.get('/status', conditionalAuth, async (req, res) => {
     res.json(status);
   } catch (error) {
     logger.error('[QBO] Status check failed', { error: error.message });
-    res.status(500).json({ error: 'Failed to check QBO status' });
+    // Return disconnected instead of 500 — status check failures shouldn't crash the UI
+    res.json({ connected: false, error: 'Status check failed' });
   }
 });
 

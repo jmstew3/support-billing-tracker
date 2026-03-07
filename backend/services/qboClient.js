@@ -329,20 +329,21 @@ class QBOClient {
   }
 
   /**
-   * Check if QBO is currently connected (has active tokens)
+   * Check if QBO is currently connected (has active tokens).
+   * Uses metadata-only query to avoid decryption failures on status checks.
    * @returns {Promise<Object|null>} Connection status or null
    */
   async getConnectionStatus() {
-    const token = await QBOTokenRepository.getActiveToken();
-    if (!token) return null;
+    const meta = await QBOTokenRepository.getActiveTokenMeta();
+    if (!meta) return null;
 
     return {
       connected: true,
-      realmId: token.realm_id,
-      companyName: token.company_name,
-      tokenExpiresAt: token.access_token_expires_at,
-      refreshTokenExpiresAt: token.refresh_token_expires_at,
-      lastRefreshed: token.last_refreshed_at
+      realmId: meta.realm_id,
+      companyName: meta.company_name,
+      tokenExpiresAt: meta.access_token_expires_at,
+      refreshTokenExpiresAt: meta.refresh_token_expires_at,
+      lastRefreshed: meta.last_refreshed_at
     };
   }
 }
