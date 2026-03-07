@@ -325,12 +325,13 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
       ];
       for (const credit of tierCredits) {
         if (credit.hours > 0) {
+          const hrs = Math.round(credit.hours * 100) / 100;
           await connection.query(
             `INSERT INTO invoice_items
              (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
              VALUES (?, 'other', ?, ?, ?, ?, ?)`,
-            [invoiceId, `${credit.label} Support Credit (${credit.hours}h free)`,
-             credit.hours, -credit.rate, -(credit.hours * credit.rate), credit.sortOrder]
+            [invoiceId, `${credit.label} Support Credit (${hrs}h free)`,
+             hrs, -credit.rate, -(hrs * credit.rate), credit.sortOrder]
           );
         }
       }
@@ -792,12 +793,13 @@ async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
   ];
   for (const credit of tierCredits) {
     if (credit.hours > 0) {
+      const hrs = Math.round(credit.hours * 100) / 100;
       await connection.query(
         `INSERT INTO invoice_items
          (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
          VALUES (?, 'other', ?, ?, ?, ?, ?)`,
-        [invoiceId, `${credit.label} Support Credit (${credit.hours}h free)`,
-         credit.hours, -credit.rate, -(credit.hours * credit.rate), credit.sortOrder]
+        [invoiceId, `${credit.label} Support Credit (${hrs}h free)`,
+         hrs, -credit.rate, -(hrs * credit.rate), credit.sortOrder]
       );
     }
   }
