@@ -8,3 +8,4 @@ export { InvoiceList } from './components/InvoiceList';
 export { InvoiceDetail } from './components/InvoiceDetail';
 export { GenerateInvoiceModal } from './components/GenerateInvoiceModal';
 export { InvoiceStatusBadge } from './components/InvoiceStatusBadge';
+export { InvoiceCard } from './components/InvoiceCard';

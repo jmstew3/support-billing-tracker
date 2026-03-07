@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../../../components/shared/ConfirmDialog';
 import { ToastContainer } from '../../../components/shared/Toast';
 import { createToast, type ToastMessage } from '../../../utils/toast';
 import { InvoiceStatusBadge } from './InvoiceStatusBadge';
+import { InvoiceCard } from './InvoiceCard';
 import {
   listInvoices,
   listCustomers,
@@ -267,111 +268,128 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
             </div>
           </div>
 
-          {/* Invoice Table */}
+          {/* Invoice List */}
           {invoices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No invoices found. Click "Generate Invoice" to create one.
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Invoice #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-center">QBO</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                      <TableCell>{invoice.customer_name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
-                      </TableCell>
-                      <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
-                      <TableCell>{formatDate(invoice.due_date)}</TableCell>
-                      <TableCell>
-                        <InvoiceStatusBadge status={invoice.status} />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {invoice.qbo_sync_status === 'synced' && (
-                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400" title={`Synced (ID: ${invoice.qbo_invoice_id})`}>
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Synced
-                          </span>
-                        )}
-                        {invoice.qbo_sync_status === 'error' && (
-                          <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" title={invoice.qbo_sync_error || 'Sync error'}>
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            Error
-                          </span>
-                        )}
-                        {invoice.qbo_sync_status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                            <Minus className="h-3.5 w-3.5" />
-                            Not Synced
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(invoice.total)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {parseFloat(invoice.balance_due) > 0 ? (
-                          <span className="text-red-600 dark:text-red-400 font-medium">
-                            {formatCurrency(invoice.balance_due)}
-                          </span>
-                        ) : (
-                          <span className="text-green-700 dark:text-green-400">$0.00</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => onViewInvoice(invoice)}
-                            className="p-1.5 hover:bg-muted rounded"
-                            title="View invoice"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleExportCSV(invoice)}
-                            className="p-1.5 hover:bg-muted rounded"
-                            title="Download CSV"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleExportQBO(invoice)}
-                            className="p-1.5 hover:bg-muted rounded"
-                            title="Export for QBO (CSV)"
-                          >
-                            <FileSpreadsheet className="h-4 w-4" />
-                          </button>
-                          {invoice.status === 'draft' && (
-                            <button
-                              onClick={() => handleDelete(invoice)}
-                              className="p-1.5 hover:bg-muted rounded text-red-600 dark:text-red-400"
-                              title="Delete invoice"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </TableCell>
+              {/* Mobile: Card layout */}
+              <div className="block md:hidden space-y-3">
+                {invoices.map((invoice) => (
+                  <InvoiceCard
+                    key={invoice.id}
+                    invoice={invoice}
+                    onView={onViewInvoice}
+                    onExportCSV={handleExportCSV}
+                    onExportQBO={handleExportQBO}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">QBO</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                        <TableCell>{invoice.customer_name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
+                        </TableCell>
+                        <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                        <TableCell>{formatDate(invoice.due_date)}</TableCell>
+                        <TableCell>
+                          <InvoiceStatusBadge status={invoice.status} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {invoice.qbo_sync_status === 'synced' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400" title={`Synced (ID: ${invoice.qbo_invoice_id})`}>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Synced
+                            </span>
+                          )}
+                          {invoice.qbo_sync_status === 'error' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" title={invoice.qbo_sync_error || 'Sync error'}>
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Error
+                            </span>
+                          )}
+                          {invoice.qbo_sync_status === 'pending' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <Minus className="h-3.5 w-3.5" />
+                              Not Synced
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(invoice.total)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {parseFloat(invoice.balance_due) > 0 ? (
+                            <span className="text-red-600 dark:text-red-400 font-medium">
+                              {formatCurrency(invoice.balance_due)}
+                            </span>
+                          ) : (
+                            <span className="text-green-700 dark:text-green-400">$0.00</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => onViewInvoice(invoice)}
+                              className="p-1.5 hover:bg-muted rounded"
+                              title="View invoice"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleExportCSV(invoice)}
+                              className="p-1.5 hover:bg-muted rounded"
+                              title="Download CSV"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleExportQBO(invoice)}
+                              className="p-1.5 hover:bg-muted rounded"
+                              title="Export for QBO (CSV)"
+                            >
+                              <FileSpreadsheet className="h-4 w-4" />
+                            </button>
+                            {invoice.status === 'draft' && (
+                              <button
+                                onClick={() => handleDelete(invoice)}
+                                className="p-1.5 hover:bg-muted rounded text-red-600 dark:text-red-400"
+                                title="Delete invoice"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
               <Pagination
