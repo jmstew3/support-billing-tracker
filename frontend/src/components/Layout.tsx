@@ -4,7 +4,7 @@ import { Sidebar } from './shared/Sidebar';
 import { PeriodProvider } from '../contexts/PeriodContext';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../contexts/AuthContext';
-import { routeToView } from '../router';
+import { routeToView, type ViewType } from '../router';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -35,7 +35,7 @@ export function Layout() {
   }
 
   // Determine current view based on route
-  const currentView = (routeToView[location.pathname] || 'overview') as 'home' | 'projects' | 'overview' | 'billing' | 'invoices';
+  const currentView = (routeToView[location.pathname] || 'overview') as ViewType;
 
   return (
     <PeriodProvider>

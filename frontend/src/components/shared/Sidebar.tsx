@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, FolderKanban, BarChart3, Zap, ChevronLeft, ChevronRight, LogOut, FileText } from 'lucide-react';
+import { Ticket, FolderKanban, BarChart3, Zap, ChevronLeft, ChevronRight, LogOut, FileText, Settings } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
-import { viewToRoute } from '../../router';
+import { viewToRoute, type ViewType } from '../../router';
 import velocityLogo from '../../assets/velocity-logo.png';
 import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
-  currentView?: 'home' | 'projects' | 'overview' | 'billing' | 'invoices';
+  currentView?: ViewType;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
@@ -43,9 +43,10 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
     { id: 'projects' as const, label: 'Projects', icon: FolderKanban },
     { id: 'billing' as const, label: 'Turbo Hosting', icon: Zap },
     { id: 'invoices' as const, label: 'Invoices', icon: FileText },
+    { id: 'settings' as const, label: 'Settings', icon: Settings },
   ];
 
-  const handleNavigation = (view: 'home' | 'projects' | 'overview' | 'billing' | 'invoices') => {
+  const handleNavigation = (view: ViewType) => {
     const route = viewToRoute[view];
     navigate(route);
   };

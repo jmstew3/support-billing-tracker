@@ -10,6 +10,7 @@ const SupportTickets = lazy(() => import('./features/support/components/SupportT
 const Projects = lazy(() => import('./features/projects/components/Projects').then(m => ({ default: m.Projects })));
 const TurboHosting = lazy(() => import('./features/hosting/components/TurboHosting').then(m => ({ default: m.TurboHosting })));
 const Invoices = lazy(() => import('./features/invoices').then(m => ({ default: m.Invoices })));
+const Settings = lazy(() => import('./features/settings').then(m => ({ default: m.Settings })));
 
 /**
  * Loading fallback component displayed inside the layout while lazy pages load.
@@ -50,6 +51,7 @@ function withSuspense(Component: React.LazyExoticComponent<React.ComponentType<a
  * - /projects -> Projects (protected)
  * - /billing -> Turbo Hosting (protected)
  * - /invoices -> Invoices (protected)
+ * - /settings -> Settings (protected)
  */
 
 // Get base path from environment (for deployment at /billing-overview)
@@ -90,6 +92,10 @@ export const router = createBrowserRouter(
           path: '/invoices',
           element: withSuspense(Invoices),
         },
+        {
+          path: '/settings',
+          element: withSuspense(Settings),
+        },
         // Catch-all redirect to Dashboard
         {
           path: '*',
@@ -104,20 +110,24 @@ export const router = createBrowserRouter(
 );
 
 // Route path to view mapping (for Sidebar active state)
-export const routeToView: Record<string, 'home' | 'projects' | 'overview' | 'billing' | 'invoices'> = {
+export type ViewType = 'home' | 'projects' | 'overview' | 'billing' | 'invoices' | 'settings';
+
+export const routeToView: Record<string, ViewType> = {
   '/': 'overview',
   '/overview': 'overview',
   '/support': 'home',
   '/projects': 'projects',
   '/billing': 'billing',
   '/invoices': 'invoices',
+  '/settings': 'settings',
 };
 
 // View to route mapping (for navigation)
-export const viewToRoute: Record<'home' | 'projects' | 'overview' | 'billing' | 'invoices', string> = {
+export const viewToRoute: Record<ViewType, string> = {
   overview: '/',
   home: '/support',
   projects: '/projects',
   billing: '/billing',
   invoices: '/invoices',
+  settings: '/settings',
 };
