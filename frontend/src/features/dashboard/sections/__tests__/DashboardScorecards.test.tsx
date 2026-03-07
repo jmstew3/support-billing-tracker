@@ -22,12 +22,12 @@ describe('DashboardScorecards', () => {
     billingSummary: mockBillingSummary
   }
 
-  it('renders both rows of scorecards', () => {
+  it('renders scorecard grid', () => {
     const { container } = render(<DashboardScorecards {...defaultProps} />)
 
-    // Should have two grid containers
+    // Should have a grid container for scorecards
     const grids = container.querySelectorAll('.grid')
-    expect(grids.length).toBe(2)
+    expect(grids.length).toBe(1)
   })
 
   it('displays all primary revenue scorecards', () => {
