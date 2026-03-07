@@ -4,18 +4,13 @@ import { QBOCustomerSyncPanel } from './QBOCustomerSyncPanel';
 import { QBOItemMappingPanel } from './QBOItemMappingPanel';
 import { QBOBulkSyncPanel } from './QBOBulkSyncPanel';
 
-interface SettingsProps {
-  onToggleMobileMenu?: () => void;
-}
-
-export function Settings({ onToggleMobileMenu }: SettingsProps) {
+export function Settings() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
         title="Settings"
         showPeriodSelector={false}
         showViewToggle={false}
-        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       <div className="flex-1 overflow-auto">

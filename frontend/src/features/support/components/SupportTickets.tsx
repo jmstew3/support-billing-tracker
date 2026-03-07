@@ -56,11 +56,7 @@ const CATEGORY_OPTIONS = [
 
 const URGENCY_OPTIONS = ['HIGH', 'MEDIUM', 'LOW', 'PROMOTION']
 
-interface SupportTicketsProps {
-  onToggleMobileMenu?: () => void
-}
-
-export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
+export function SupportTickets() {
   // ============================================================
   // STATE MANAGEMENT
   // ============================================================
@@ -760,7 +756,6 @@ export function SupportTickets({ onToggleMobileMenu }: SupportTicketsProps) {
         periodSelectorType="full"
         showViewToggle={true}
         viewOptions={['all', 'month', 'day']}
-        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       {/* Main Content Container */}

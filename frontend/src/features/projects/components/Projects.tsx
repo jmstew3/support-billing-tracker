@@ -12,11 +12,7 @@ import { FREE_LANDING_PAGE_START_DATE, FREE_MULTI_FORM_START_DATE, FREE_MULTI_FO
 import { queryKeys } from '../../../lib/queryClient';
 import type { Project, ProjectFilters } from '../../../types/project';
 
-interface ProjectsProps {
-  onToggleMobileMenu?: () => void;
-}
-
-export function Projects({ onToggleMobileMenu }: ProjectsProps) {
+export function Projects() {
   // Filter states - shows billable projects (READY, INVOICED, PAID)
   const [filters, setFilters] = useState<ProjectFilters>({
     hostingStatus: 'ALL',
@@ -202,7 +198,6 @@ export function Projects({ onToggleMobileMenu }: ProjectsProps) {
         title="Projects"
         showPeriodSelector={false}
         showViewToggle={false}
-        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       {/* Main Content */}

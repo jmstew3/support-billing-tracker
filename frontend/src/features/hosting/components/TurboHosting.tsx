@@ -16,9 +16,6 @@ import {
 import { queryKeys } from '../../../lib/queryClient';
 import type { MonthlyHostingSummary } from '../../../types/websiteProperty';
 
-interface TurboHostingProps {
-  onToggleMobileMenu?: () => void;
-}
 
 /**
  * Fetches hosting data and computes monthly breakdown in one query function.
@@ -28,7 +25,7 @@ async function fetchHostingData(): Promise<MonthlyHostingSummary[]> {
   return generateMonthlyBreakdown(fetchedProperties);
 }
 
-export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
+export function TurboHosting() {
   // Use PeriodContext for month selection
   const { selectedYear, selectedMonth: contextMonth } = usePeriod();
 
@@ -98,7 +95,6 @@ export function TurboHosting({ onToggleMobileMenu }: TurboHostingProps) {
         showPeriodSelector={true}
         periodSelectorType="simple"
         showViewToggle={false}
-        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       {/* Main Content - Scrollable */}

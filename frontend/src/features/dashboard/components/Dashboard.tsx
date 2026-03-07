@@ -15,11 +15,7 @@ import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } f
 import { queryKeys } from '../../../lib/queryClient';
 import type { MonthlyBillingSummary } from '../../../types/billing';
 
-interface DashboardProps {
-  onToggleMobileMenu?: () => void;
-}
-
-export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
+export function Dashboard() {
   const { selectedYear, selectedMonths, selectedDay, getMonthStrings, setAvailableData } = usePeriod();
 
   // Track which sections are expanded
@@ -294,7 +290,6 @@ export function Dashboard({ onToggleMobileMenu }: DashboardProps) {
         periodSelectorType="full"
         showViewToggle={true}
         viewOptions={['all', 'month', 'day']}
-        onToggleMobileMenu={onToggleMobileMenu}
       />
 
       {/* Main Content */}
