@@ -576,7 +576,7 @@ export async function getQBOStatus(): Promise<QBOStatus> {
  * Start QBO OAuth connection flow — returns the Intuit auth URL
  */
 export async function connectQBO(): Promise<string> {
-  const response = await authenticatedFetch(`${API_BASE_URL}/qbo/connect`);
+  const response = await authenticatedFetch(`${API_BASE_URL}/qbo/connect?json=true`);
   if (!response.ok) {
     throw new Error(`Failed to start QBO connection: ${response.statusText}`);
   }
