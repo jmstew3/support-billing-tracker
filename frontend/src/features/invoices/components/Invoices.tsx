@@ -111,10 +111,14 @@ export function Invoices() {
       )}
 
       {/* QBO Connection Status */}
-      <div className="mx-4 mt-2 px-4 py-3 rounded text-sm flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+      <div className={`mx-4 mt-2 px-4 py-3 rounded text-sm flex items-center justify-between border ${
+        qboStatus?.connected
+          ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+          : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
+      }`}>
         {qboStatus?.connected ? (
           <>
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-emerald-700 dark:text-emerald-300">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2" />
               Connected to QuickBooks: <span className="font-medium">{qboStatus.companyName}</span>
             </span>
@@ -128,9 +132,9 @@ export function Invoices() {
           </>
         ) : (
           <>
-            <span className="text-gray-500 dark:text-gray-400">
-              <span className="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2" />
-              QuickBooks not connected
+            <span className="text-amber-700 dark:text-amber-300">
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2" />
+              QuickBooks is not connected. Connect to sync invoices.
             </span>
             <button
               onClick={handleConnectQBO}

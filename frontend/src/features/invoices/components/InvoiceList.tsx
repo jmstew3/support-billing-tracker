@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Download, Eye, Trash2 } from 'lucide-react';
+import { FileText, Plus, Download, FileSpreadsheet, Eye, Trash2, CheckCircle2, AlertTriangle, Minus } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -154,16 +154,21 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
     });
   }
 
-  async function handleExportAll(invoice: Invoice) {
+  async function handleExportCSV(invoice: Invoice) {
     try {
-      const [csv, qboCsv] = await Promise.all([
-        exportInvoiceCSV(invoice.id),
-        exportInvoiceQBOCSV(invoice.id),
-      ]);
+      const csv = await exportInvoiceCSV(invoice.id);
       downloadFile(csv, `invoice-${invoice.invoice_number}.csv`, 'text/csv');
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to export CSV');
+    }
+  }
+
+  async function handleExportQBO(invoice: Invoice) {
+    try {
+      const qboCsv = await exportInvoiceQBOCSV(invoice.id);
       downloadFile(qboCsv, `${invoice.invoice_number}-qbo.csv`, 'text/csv');
     } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to export files');
+      addToast('error', err instanceof Error ? err.message : 'Failed to export QBO CSV');
     }
   }
 
@@ -299,13 +304,22 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                       </TableCell>
                       <TableCell className="text-center">
                         {invoice.qbo_sync_status === 'synced' && (
-                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" title={`Synced (ID: ${invoice.qbo_invoice_id})`} />
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400" title={`Synced (ID: ${invoice.qbo_invoice_id})`}>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Synced
+                          </span>
                         )}
                         {invoice.qbo_sync_status === 'error' && (
-                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" title={invoice.qbo_sync_error || 'Sync error'} />
+                          <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" title={invoice.qbo_sync_error || 'Sync error'}>
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Error
+                          </span>
                         )}
                         {invoice.qbo_sync_status === 'pending' && (
-                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300 dark:bg-gray-600" title="Not synced" />
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Minus className="h-3.5 w-3.5" />
+                            Not Synced
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
@@ -330,11 +344,18 @@ export function InvoiceList({ onViewInvoice, onGenerateInvoice, refreshTrigger }
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleExportAll(invoice)}
+                            onClick={() => handleExportCSV(invoice)}
                             className="p-1.5 hover:bg-muted rounded"
-                            title="Export CSV + QBO"
+                            title="Download CSV"
                           >
                             <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleExportQBO(invoice)}
+                            className="p-1.5 hover:bg-muted rounded"
+                            title="Export for QBO (CSV)"
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
                           </button>
                           {invoice.status === 'draft' && (
                             <button

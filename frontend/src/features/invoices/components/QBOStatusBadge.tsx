@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, LinkIcon } from 'lucide-react';
 import { getQBOStatus } from '../../../services/invoiceApi';
 
 export function QBOStatusBadge() {
@@ -17,16 +18,20 @@ export function QBOStatusBadge() {
   return (
     <button
       onClick={() => navigate('/settings')}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
-      title={connected ? 'QBO Connected - Click to manage' : 'QBO Disconnected - Click to connect'}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+        connected
+          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+      }`}
+      title={connected ? 'QBO Connected — Click to manage' : 'QBO not linked — Click to connect'}
     >
-      <span
-        className={`inline-block w-2 h-2 rounded-full ${
-          connected ? 'bg-emerald-500' : 'bg-red-400'
-        }`}
-      />
-      <span className={connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}>
-        {connected ? 'QBO Connected' : 'QBO Disconnected'}
+      {connected ? (
+        <CheckCircle2 className="h-3.5 w-3.5" />
+      ) : (
+        <LinkIcon className="h-3.5 w-3.5" />
+      )}
+      <span>
+        {connected ? 'QBO Connected' : 'QBO Not Linked'}
       </span>
     </button>
   );
