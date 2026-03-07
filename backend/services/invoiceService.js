@@ -132,6 +132,9 @@ function calculateBilling(requests, periodStart) {
     billableEmergencyHours,
     billableSameDayHours,
     billableRegularHours,
+    freeEmergencyHours: emergencyHours - billableEmergencyHours,
+    freeSameDayHours: sameDayHours - billableSameDayHours,
+    freeRegularHours: regularHours - billableRegularHours,
     emergencyAmount,
     sameDayAmount,
     regularAmount,
@@ -314,23 +317,22 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
         lineItems.push({ id: itemResult.insertId, type: 'regular' });
       }
 
-      // Free credits applied as a negative-amount line so gross support lines stay visible
-      if (summary.freeHoursApplied > 0) {
-        const grossSupportSubtotal = summary.emergencyHours * PRICING.rates.emergency
-          + summary.sameDayHours * PRICING.rates.sameDay
-          + summary.regularHours * PRICING.rates.regular;
-        const creditValue = grossSupportSubtotal - summary.subtotal; // summary.subtotal is NET billable
-
-        await connection.query(
-          `INSERT INTO invoice_items
-           (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
-           VALUES (?, 'other', ?, ?, ?, ?, 99)`,
-          [invoiceId, `Turbo Support Credit Applied (${summary.freeHoursApplied}h free)`,
-           summary.freeHoursApplied,
-           // unit_price is approximate blended rate when credits span multiple tiers — amount is authoritative
-           -(creditValue / summary.freeHoursApplied),
-           -creditValue]
-        );
+      // Per-tier free credit lines so each shows its actual hourly rate
+      const tierCredits = [
+        { hours: summary.freeEmergencyHours, rate: PRICING.rates.emergency, label: 'High Priority', sortOrder: 97 },
+        { hours: summary.freeSameDayHours, rate: PRICING.rates.sameDay, label: 'Medium Priority', sortOrder: 98 },
+        { hours: summary.freeRegularHours, rate: PRICING.rates.regular, label: 'Low Priority', sortOrder: 99 },
+      ];
+      for (const credit of tierCredits) {
+        if (credit.hours > 0) {
+          await connection.query(
+            `INSERT INTO invoice_items
+             (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
+             VALUES (?, 'other', ?, ?, ?, ?, ?)`,
+            [invoiceId, `${credit.label} Support Credit (${credit.hours}h free)`,
+             credit.hours, -credit.rate, -(credit.hours * credit.rate), credit.sortOrder]
+          );
+        }
       }
     }
 
@@ -549,6 +551,38 @@ export async function updateInvoice(invoiceId, updates) {
 }
 
 /**
+ * Build a request snapshot for an invoice (used when finalizing)
+ * @param {number} invoiceId
+ * @param {import('mysql2/promise').PoolConnection} connection - DB connection to use
+ * @returns {Promise<string>} JSON string of the snapshot
+ */
+export async function buildRequestSnapshot(invoiceId, connection) {
+  const [requests] = await connection.query(
+    `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
+            ft.ticket_number
+     FROM requests r
+     LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
+     WHERE r.invoice_id = ?
+     ORDER BY r.date, r.time`,
+    [invoiceId]
+  );
+
+  const snapshot = requests.map(r => ({
+    id: r.id,
+    date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : r.date,
+    time: r.time,
+    description: r.description,
+    category: r.category,
+    urgency: r.urgency,
+    estimated_hours: parseFloat(r.estimated_hours) || 0,
+    website_url: r.website_url || null,
+    ticket_number: r.ticket_number || null
+  }));
+
+  return JSON.stringify(snapshot);
+}
+
+/**
  * Send a draft invoice: snapshot linked requests and mark as sent
  */
 export async function sendInvoice(invoiceId) {
@@ -563,34 +597,46 @@ export async function sendInvoice(invoiceId) {
     if (invoices.length === 0) throw new Error('Invoice not found');
     if (invoices[0].status !== 'draft') throw new Error('Only draft invoices can be sent');
 
-    // Fetch all linked requests (live data) with ticket numbers
-    const [requests] = await connection.query(
-      `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours, r.website_url,
-              ft.ticket_number
-       FROM requests r
-       LEFT JOIN fluent_tickets ft ON ft.request_id = r.id
-       WHERE r.invoice_id = ?
-       ORDER BY r.date, r.time`,
-      [invoiceId]
-    );
-
-    // Build snapshot
-    const requestSnapshot = requests.map(r => ({
-      id: r.id,
-      date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : r.date,
-      time: r.time,
-      description: r.description,
-      category: r.category,
-      urgency: r.urgency,
-      estimated_hours: parseFloat(r.estimated_hours) || 0,
-      website_url: r.website_url || null,
-      ticket_number: r.ticket_number || null
-    }));
+    const requestSnapshot = await buildRequestSnapshot(invoiceId, connection);
 
     // Update invoice: set status to sent and store snapshot
     await connection.query(
       `UPDATE invoices SET status = 'sent', request_snapshot = ? WHERE id = ?`,
-      [JSON.stringify(requestSnapshot), invoiceId]
+      [requestSnapshot, invoiceId]
+    );
+
+    await connection.commit();
+    return getInvoice(invoiceId);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Revert an invoice back to draft status for editing.
+ * Keeps qbo_invoice_id and qbo_sync_token so re-sync updates rather than duplicates.
+ */
+export async function revertToDraft(invoiceId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [invoices] = await connection.query(
+      'SELECT status FROM invoices WHERE id = ?', [invoiceId]
+    );
+    if (invoices.length === 0) throw new Error('Invoice not found');
+    if (invoices[0].status === 'draft') throw new Error('Invoice is already a draft');
+
+    await connection.query(
+      `UPDATE invoices SET
+         status = 'draft',
+         qbo_sync_status = 'pending',
+         request_snapshot = NULL
+       WHERE id = ?`,
+      [invoiceId]
     );
 
     await connection.commit();
@@ -716,9 +762,9 @@ function urgencyToRate(urgency) {
  * Recalculate the free credit line item based on current support tier hours
  */
 async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
-  // Delete existing free credit line
+  // Delete existing per-tier credit lines
   await connection.query(
-    `DELETE FROM invoice_items WHERE invoice_id = ? AND item_type = 'other' AND sort_order = 99`,
+    `DELETE FROM invoice_items WHERE invoice_id = ? AND item_type = 'other' AND sort_order BETWEEN 97 AND 99`,
     [invoiceId]
   );
 
@@ -737,21 +783,23 @@ async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
 
   // Use chronological allocation (matching calculateBilling)
   const billing = calculateBilling(requests, periodStart);
-  const grossSubtotal = billing.emergencyHours * PRICING.rates.emergency
-    + billing.sameDayHours * PRICING.rates.sameDay
-    + billing.regularHours * PRICING.rates.regular;
-  const creditValue = grossSubtotal - billing.subtotal;
 
-  if (creditValue > 0 && billing.freeHoursApplied > 0) {
-    await connection.query(
-      `INSERT INTO invoice_items
-       (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
-       VALUES (?, 'other', ?, ?, ?, ?, 99)`,
-      [invoiceId, `Turbo Support Credit Applied (${billing.freeHoursApplied}h free)`,
-       billing.freeHoursApplied,
-       -(creditValue / billing.freeHoursApplied),
-       -creditValue]
-    );
+  // Insert per-tier credit lines
+  const tierCredits = [
+    { hours: billing.freeEmergencyHours, rate: PRICING.rates.emergency, label: 'High Priority', sortOrder: 97 },
+    { hours: billing.freeSameDayHours, rate: PRICING.rates.sameDay, label: 'Medium Priority', sortOrder: 98 },
+    { hours: billing.freeRegularHours, rate: PRICING.rates.regular, label: 'Low Priority', sortOrder: 99 },
+  ];
+  for (const credit of tierCredits) {
+    if (credit.hours > 0) {
+      await connection.query(
+        `INSERT INTO invoice_items
+         (invoice_id, item_type, description, quantity, unit_price, amount, sort_order)
+         VALUES (?, 'other', ?, ?, ?, ?, ?)`,
+        [invoiceId, `${credit.label} Support Credit (${credit.hours}h free)`,
+         credit.hours, -credit.rate, -(credit.hours * credit.rate), credit.sortOrder]
+      );
+    }
   }
 }
 
@@ -961,9 +1009,9 @@ export async function recalculateDraftInvoice(invoiceId) {
       [invoiceId]
     );
 
-    // Delete existing support items and free credit item
+    // Delete existing support items and per-tier credit items
     await connection.query(
-      `DELETE FROM invoice_items WHERE invoice_id = ? AND (item_type = 'support' OR (item_type = 'other' AND sort_order = 99))`,
+      `DELETE FROM invoice_items WHERE invoice_id = ? AND (item_type = 'support' OR (item_type = 'other' AND sort_order BETWEEN 97 AND 99))`,
       [invoiceId]
     );
 
@@ -1090,7 +1138,7 @@ export async function exportInvoiceCSV(invoiceId) {
   const supportItems = invoice.items.filter(i => i.item_type === 'support');
   // For sent/paid invoices, getInvoice already returns snapshot data as requests
   const supportRequests = invoice.requests || [];
-  const freeCreditItem = invoice.items.find(i => i.item_type === 'other' && i.sort_order === 99);
+  const freeCreditItems = invoice.items.filter(i => i.item_type === 'other' && i.sort_order >= 97 && i.sort_order <= 99);
 
   if (supportRequests.length > 0 || supportItems.length > 0) {
     lines.push('');
@@ -1115,17 +1163,18 @@ export async function exportInvoiceCSV(invoiceId) {
     // Total hours row
     lines.push(`,,,Total Hours,${totalHours.toFixed(2)},,,`);
 
-    // Free credit row
-    if (freeCreditItem) {
-      const freeHours = parseFloat(freeCreditItem.quantity) || 0;
-      const creditAmount = Math.abs(parseFloat(freeCreditItem.amount)) || 0;
+    // Per-tier free credit rows
+    for (const creditItem of freeCreditItems) {
+      const freeHours = parseFloat(creditItem.quantity) || 0;
+      const creditAmount = Math.abs(parseFloat(creditItem.amount)) || 0;
       if (creditAmount > 0) {
-        lines.push(`,,,Free Credit Applied,-${freeHours.toFixed(2)},,,-$${creditAmount.toFixed(2)}`);
+        const creditDesc = (creditItem.description || 'Free Credit Applied').replace(/\s*\(.*\)/, '');
+        lines.push(`,,,${creditDesc},-${freeHours.toFixed(2)},,,-$${creditAmount.toFixed(2)}`);
       }
     }
 
     const supportGross = supportItems.reduce((sum, i) => sum + parseFloat(i.amount), 0);
-    const creditDeduction = freeCreditItem ? parseFloat(freeCreditItem.amount) : 0; // negative
+    const creditDeduction = freeCreditItems.reduce((sum, i) => sum + parseFloat(i.amount), 0); // negative
     const supportSubtotal = supportGross + creditDeduction;
     lines.push(',,,,,,,');
     lines.push(`,,,,,,SUPPORT SUBTOTAL,$${supportSubtotal.toFixed(2)}`);

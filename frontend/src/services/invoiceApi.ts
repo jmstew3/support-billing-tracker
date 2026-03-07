@@ -597,6 +597,21 @@ export async function disconnectQBO(): Promise<void> {
 }
 
 /**
+ * Revert invoice back to draft for editing
+ */
+export async function revertInvoiceToDraft(id: number): Promise<Invoice> {
+  const response = await authenticatedFetch(`${API_BASE_URL}/invoices/${id}/revert-to-draft`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to revert invoice: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
  * Sync a single invoice to QBO
  */
 export async function syncInvoiceToQBO(invoiceId: number): Promise<QBOSyncResult> {
@@ -632,5 +647,6 @@ export default {
   getQBOStatus,
   connectQBO,
   disconnectQBO,
+  revertInvoiceToDraft,
   syncInvoiceToQBO,
 };

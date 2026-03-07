@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw, CloudUpload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw, CloudUpload, Loader2, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -20,7 +20,6 @@ import { createToast, type ToastMessage } from '../../../utils/toast';
 import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import {
   getInvoice,
-  sendInvoice,
   recalculateInvoice,
   payInvoice,
   updateInvoice,
@@ -33,6 +32,7 @@ import {
   exportInvoiceJSON,
   downloadFile,
   syncInvoiceToQBO,
+  revertInvoiceToDraft,
   type Invoice,
   type InvoiceItem,
   type InvoiceRequest,
@@ -165,25 +165,25 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
     }
   }
 
-  function handleSend() {
+  function handleRevertToDraft() {
     if (!invoice) return;
 
     setConfirmDialog({
       isOpen: true,
-      title: 'Mark as Sent',
-      message: `Mark invoice ${invoice.invoice_number} as sent? This will lock it from editing.`,
-      confirmText: 'Mark as Sent',
+      title: 'Revert to Draft',
+      message: `Revert invoice ${invoice.invoice_number} to draft? This will unlock it for editing. You can re-sync to QBO after making changes.`,
+      confirmText: 'Revert to Draft',
       isDestructive: false,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
-          await sendInvoice(invoice.id);
-          addToast('success', `Invoice ${invoice.invoice_number} marked as sent`);
+          await revertInvoiceToDraft(invoice.id);
+          addToast('success', `Invoice ${invoice.invoice_number} reverted to draft`);
           setEditMode(false);
           loadInvoice();
           onUpdate();
         } catch (err) {
-          addToast('error', err instanceof Error ? err.message : 'Failed to send invoice');
+          addToast('error', err instanceof Error ? err.message : 'Failed to revert invoice');
         }
       },
     });
@@ -469,13 +469,13 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 {editMode ? 'Done Editing' : 'Edit'}
               </button>
             )}
-            {isDraft && !editMode && (
+            {!isDraft && !editMode && invoice.status !== 'paid' && (
               <button
-                onClick={handleSend}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                onClick={handleRevertToDraft}
+                className="flex items-center gap-2 px-3 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 text-sm"
               >
-                <Send className="h-4 w-4" />
-                Mark as Sent
+                <RotateCcw className="h-4 w-4" />
+                Revert to Draft
               </button>
             )}
             {(invoice.status === 'sent' || invoice.status === 'overdue') && (
@@ -496,7 +496,7 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 title={invoice.qbo_sync_status === 'error' ? `Last error: ${invoice.qbo_sync_error}` : 'Sync to QuickBooks Online'}
               >
                 {syncingToQBO ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudUpload className="h-4 w-4" />}
-                {syncingToQBO ? 'Syncing...' : invoice.qbo_sync_status === 'error' ? 'Retry QBO Sync' : 'Sync to QBO'}
+                {syncingToQBO ? 'Syncing...' : invoice.qbo_sync_status === 'error' ? 'Retry QBO Sync' : isDraft ? 'Finalize & Sync to QBO' : 'Sync to QBO'}
               </button>
             )}
             {invoice.qbo_sync_status === 'synced' && (
@@ -1037,11 +1037,6 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 .filter(i => i.item_type === 'hosting')
                 .reduce((sum, i) => sum + parseFloat(i.amount), 0);
 
-              // Support credits: negative 'other' items NOT related to hosting
-              const supportCredits = items
-                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && !(i.category || '').startsWith('HOSTING_'))
-                .reduce((sum, i) => sum + parseFloat(i.amount), 0);
-
               // Hosting discount lines: negative 'other' items with HOSTING_ category
               const hostingDiscountItems = items
                 .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && (i.category || '').startsWith('HOSTING_'));
@@ -1057,10 +1052,11 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
 
               // Build discount lines (only show non-zero)
               const discounts: { label: string; amount: number }[] = [];
-              if (supportCredits < 0) {
-                const creditLabel = items.find(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && !(i.category || '').startsWith('HOSTING_'))?.description || 'Free Support Credits';
-                discounts.push({ label: creditLabel, amount: supportCredits });
-              }
+              items
+                .filter(i => i.item_type === 'other' && parseFloat(i.amount) < 0 && !(i.category || '').startsWith('HOSTING_'))
+                .forEach(item => {
+                  discounts.push({ label: item.description || 'Free Support Credits', amount: parseFloat(item.amount) });
+                });
               hostingDiscountItems.forEach(item => {
                 discounts.push({ label: item.description, amount: parseFloat(item.amount) });
               });
