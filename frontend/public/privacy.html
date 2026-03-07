@@ -19,7 +19,7 @@
       text-align: center;
     }
     header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; }
-    header p { opacity: 0.8; font-size: 0.95rem; }
+    header p { color: #fff; font-size: 0.95rem; }
     .container {
       max-width: 780px;
       margin: 2rem auto;
@@ -27,7 +27,7 @@
     }
     .updated {
       text-align: center;
-      color: #666;
+      color: #595959;
       font-size: 0.85rem;
       margin-bottom: 2rem;
     }
@@ -43,10 +43,22 @@
     ul { margin: 0.5rem 0 1rem 1.5rem; }
     li { margin-bottom: 0.4rem; }
     a { color: #0f3460; }
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      z-index: 100;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
     footer {
       text-align: center;
       padding: 2rem 1rem;
-      color: #888;
+      color: #6b6b6b;
       font-size: 0.8rem;
       border-top: 1px solid #e0e0e0;
       max-width: 780px;
@@ -55,11 +67,12 @@
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
   <header>
-    <h1>PeakOne Digital</h1>
-    <p>Privacy Policy</p>
+    <h1>Privacy Policy</h1>
+    <p>PeakOne Digital</p>
   </header>
-  <div class="container">
+  <main id="main-content" class="container">
     <p class="updated">Last updated: March 7, 2026</p>
 
     <h2>1. Introduction</h2>
@@ -132,7 +145,7 @@
     <p><strong>PeakOne Digital</strong><br>
     Email: <a href="mailto:support@peakonedigital.com">support@peakonedigital.com</a><br>
     Web: <a href="https://peakonedigital.com" target="_blank" rel="noopener">peakonedigital.com</a></p>
-  </div>
+  </main>
   <footer>&copy; 2026 PeakOne Digital. All rights reserved.</footer>
 </body>
 </html>
