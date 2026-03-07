@@ -309,6 +309,125 @@ GET /api/health
 }
 ```
 
+## QuickBooks Online
+
+### Connect (Start OAuth)
+```http
+GET /api/qbo/connect
+```
+- **Browser request**: redirects to Intuit authorization page
+- **API request**: add `?json=true` to get a JSON response:
+```json
+{
+  "authUrl": "https://appcenter.intuit.com/connect/oauth2?..."
+}
+```
+
+### OAuth Callback
+```http
+GET /api/qbo/callback
+```
+Handled automatically by Intuit redirect after authorization. Redirects the browser back to `/invoices?qbo=connected` on success.
+
+### Connection Status
+```http
+GET /api/qbo/status
+Authorization: Bearer <accessToken>
+```
+
+**Response (connected):**
+```json
+{
+  "connected": true,
+  "environment": "sandbox",
+  "companyName": "Sandbox Company",
+  "realmId": "123456789",
+  "lastRefreshed": "2026-03-07T12:00:00.000Z"
+}
+```
+
+**Response (disconnected):**
+```json
+{
+  "connected": false
+}
+```
+
+### Disconnect
+```http
+POST /api/qbo/disconnect
+Authorization: Bearer <accessToken>
+```
+Revokes tokens with Intuit and removes them from the database.
+
+**Response:**
+```json
+{
+  "disconnected": true
+}
+```
+
+### Sync Customers
+```http
+GET /api/qbo/sync/customers?dryRun=true
+Authorization: Bearer <accessToken>
+```
+Matches local customers to QBO customers by DisplayName. Default `dryRun=true` — set `dryRun=false` to write matches and create missing customers in QBO.
+
+**Response:**
+```json
+{
+  "matched": 3,
+  "created": 0,
+  "unmatched": 1,
+  "failed": 0,
+  "dryRun": true,
+  "details": [
+    { "name": "Velocity", "status": "matched", "qboId": "42", "qboName": "Velocity" }
+  ]
+}
+```
+
+### Sync Items
+```http
+GET /api/qbo/sync/items
+Authorization: Bearer <accessToken>
+```
+Fetches QBO Service items and maps them to internal invoice line item types (support hours, credits, projects, hosting). Populates the `qbo_item_mappings` table.
+
+**Response:**
+```json
+{
+  "mapped": 10,
+  "missing": 2,
+  "details": [
+    { "internalType": "support", "qboItemName": "p1 - Emergency Support", "qboItemId": "5", "status": "mapped" },
+    { "expectedQboName": "Custom Development", "status": "missing", "hint": "Create a Service item named \"Custom Development\" in QBO" }
+  ]
+}
+```
+
+### View Item Mappings
+```http
+GET /api/qbo/mappings
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+```json
+{
+  "mappings": [...],
+  "count": 10
+}
+```
+
+### Force Token Refresh
+```http
+POST /api/qbo/refresh
+Authorization: Bearer <accessToken>
+```
+Manually refresh the QBO access token (for debugging).
+
 ## Rate Limits
 
 | Endpoint | Limit | Window |
