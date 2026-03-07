@@ -12,11 +12,7 @@ import { QBOStatusBadge } from './QBOStatusBadge';
 import type { Invoice, QBOStatus } from '../../../services/invoiceApi';
 import { getQBOStatus, connectQBO, disconnectQBO } from '../../../services/invoiceApi';
 
-interface InvoicesProps {
-  onToggleMobileMenu?: () => void;
-}
-
-export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
+export function Invoices() {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -99,7 +95,6 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
         title="Invoices"
         showPeriodSelector={false}
         showViewToggle={false}
-        onToggleMobileMenu={onToggleMobileMenu}
         rightControls={<QBOStatusBadge />}
       />
 

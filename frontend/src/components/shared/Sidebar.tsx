@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Ticket, FolderKanban, BarChart3, Zap, ChevronLeft, ChevronRight, LogOut, FileText, Settings } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -9,33 +9,15 @@ import peakOneLogo from '../../assets/PeakOne Logo_onwhite_withtext.svg';
 
 interface SidebarProps {
   currentView?: ViewType;
-  isMobileOpen: boolean;
-  setIsMobileOpen: (open: boolean) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  'aria-hidden'?: boolean;
 }
 
-export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, theme, onToggleTheme }: SidebarProps) {
+export function Sidebar({ currentView = 'home', theme, onToggleTheme, 'aria-hidden': ariaHidden }: SidebarProps) {
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { logout } = useAuth();
-
-  // Close mobile menu when view changes
-  useEffect(() => {
-    setIsMobileOpen(false);
-  }, [currentView, setIsMobileOpen]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 640) {
-        setIsMobileOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const menuItems = [
     { id: 'overview' as const, label: 'Dashboard', icon: BarChart3 },
@@ -54,54 +36,40 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
   const handleLogout = async () => {
     try {
       await logout();
-      // Logout function in AuthContext will clear tokens and trigger re-render to login screen
     } catch {
       // Logout failed
     }
   };
 
   return (
-    <>
-      {/* Mobile hamburger button - moved to PageHeader, exposed via props */}
-
-      {/* Mobile overlay - only visible when menu is open on mobile */}
-      {isMobileOpen && (
-        <div
-          className="sm:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsMobileOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`
-          h-screen bg-background border-r border-border/50 flex flex-col
-          transition-all duration-300 ease-in-out
-          ${isCollapsed ? 'w-16' : 'w-60'}
-          sm:relative fixed z-40
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
-        `}
-      >
-        {/* Header */}
-        <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
-          {!isCollapsed && (
-            <div className="bg-black px-2.5 py-1 rounded">
-              <img
-                src={velocityLogo}
-                alt="Velocity Dashboard"
-                className="h-5 w-auto object-contain"
-              />
-            </div>
-          )}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden sm:block p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105"
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
-        </div>
+    <div
+      className={`
+        hidden sm:flex sm:flex-col
+        h-screen bg-background border-r border-border/50
+        transition-all duration-300 ease-in-out
+        ${isCollapsed ? 'w-16' : 'w-60'}
+      `}
+      aria-hidden={ariaHidden}
+    >
+      {/* Header */}
+      <div className="h-14 flex items-center justify-between px-3 border-b border-border/50">
+        {!isCollapsed && (
+          <div className="bg-black px-2.5 py-1 rounded">
+            <img
+              src={velocityLogo}
+              alt="Velocity Dashboard"
+              className="h-5 w-auto object-contain"
+            />
+          </div>
+        )}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1.5 rounded-md hover:bg-background/80 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+      </div>
 
       {/* Navigation menu */}
       <nav className="flex-1 py-3" aria-label="Main navigation">
@@ -211,7 +179,6 @@ export function Sidebar({ currentView = 'home', isMobileOpen, setIsMobileOpen, t
           </div>
         )}
       </div>
-      </div>
-    </>
+    </div>
   );
 }
