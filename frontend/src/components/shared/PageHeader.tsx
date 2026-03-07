@@ -1,6 +1,7 @@
 import { PeriodSelector } from './PeriodSelector';
 import { ViewModeToggle } from './ViewModeToggle';
 import type { ViewMode } from '../../contexts/PeriodContext';
+import { MobileControls } from './MobileControls';
 
 export interface PageHeaderProps {
   /**
@@ -62,6 +63,8 @@ export function PageHeader({
   rightControls,
   className = '',
 }: PageHeaderProps) {
+  const mobileControls = (showPeriodSelector || showViewToggle || rightControls);
+
   return (
     <header className={`sticky top-0 z-10 bg-background border-b ${className}`}>
       {/* Top row: Title + Controls */}
@@ -71,18 +74,16 @@ export function PageHeader({
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold tracking-tight truncate">{title}</h1>
         </div>
 
-        {/* Right side: Desktop Controls */}
+        {/* Right side: Controls */}
         <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Desktop Controls */}
           <div className="hidden sm:flex items-center gap-6">
-            {/* Period Selector */}
             {showPeriodSelector && (
               <PeriodSelector
                 type={periodSelectorType}
                 label={periodLabel}
               />
             )}
-
-            {/* View Mode Toggle */}
             {showViewToggle && (
               <ViewModeToggle
                 label={viewLabel}
@@ -90,37 +91,38 @@ export function PageHeader({
                 size="sm"
               />
             )}
-
-            {/* Additional Controls */}
             {rightControls}
           </div>
+
+          {/* Mobile Controls Trigger */}
+          {mobileControls && (
+            <div className="sm:hidden">
+              <MobileControls>
+                {showPeriodSelector && (
+                  <div className="flex flex-col items-start gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">{periodLabel}</span>
+                    <PeriodSelector
+                      type={periodSelectorType}
+                      label=""
+                    />
+                  </div>
+                )}
+                {showViewToggle && (
+                  <div className="flex flex-col items-start gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">{viewLabel}</span>
+                    <ViewModeToggle
+                      label=""
+                      availableModes={viewOptions}
+                      size="sm"
+                    />
+                  </div>
+                )}
+                {rightControls}
+              </MobileControls>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Mobile Controls Row - below header */}
-      {(showPeriodSelector || showViewToggle || rightControls) && (
-        <div className="sm:hidden px-4 py-3 border-t flex items-center gap-3 overflow-x-auto">
-          {/* Period Selector */}
-          {showPeriodSelector && (
-            <PeriodSelector
-              type={periodSelectorType}
-              label={periodLabel}
-            />
-          )}
-
-          {/* View Mode Toggle */}
-          {showViewToggle && (
-            <ViewModeToggle
-              label={viewLabel}
-              availableModes={viewOptions}
-              size="sm"
-            />
-          )}
-
-          {/* Additional Controls */}
-          {rightControls}
-        </div>
-      )}
     </header>
   );
 }

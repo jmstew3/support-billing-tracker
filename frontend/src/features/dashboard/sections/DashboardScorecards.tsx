@@ -43,9 +43,7 @@ export function DashboardScorecards({
   billingSummary,
 }: DashboardScorecardsProps) {
   return (
-    <>
-      {/* Summary Scorecards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         <Scorecard
           title="Total Revenue"
           value={formatCurrency(displayTotals?.totalRevenue || 0)}
@@ -105,10 +103,6 @@ export function DashboardScorecards({
               : 'Net hosting revenue'
           }
         />
-      </div>
-
-      {/* Average Costs and Total Discounts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Scorecard
           title="Avg Ticket Cost"
           value={formatCurrency(averageTicketCost)}
@@ -139,6 +133,5 @@ export function DashboardScorecards({
           }
         />
       </div>
-    </>
   );
 }

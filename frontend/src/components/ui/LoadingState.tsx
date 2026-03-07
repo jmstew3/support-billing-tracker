@@ -3,7 +3,7 @@ import { SkeletonTable } from './SkeletonTable';
 import { SkeletonChart } from './SkeletonChart';
 
 interface LoadingStateProps {
-  variant: 'dashboard' | 'projects' | 'hosting' | 'overview';
+  variant: 'dashboard' | 'projects' | 'hosting';
 }
 
 export function LoadingState({ variant }: LoadingStateProps) {
@@ -113,38 +113,6 @@ export function LoadingState({ variant }: LoadingStateProps) {
 
             {/* Table */}
             <SkeletonTable rows={10} columns={8} columnWidths={['22%', '12%', '12%', '15%', '8%', '12%', '8%', '11%']} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === 'overview') {
-    return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border">
-          <div className="px-8 py-4 h-16 flex items-center justify-between">
-            <div className="h-6 w-56 bg-muted animate-pulse" />
-            <div className="flex items-center gap-4">
-              <div className="h-8 w-32 bg-muted animate-pulse" />
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-8 space-y-8">
-            {/* Scorecards - 4 across for overview */}
-            <div className="grid grid-cols-4 gap-6">
-              <SkeletonScorecard />
-              <SkeletonScorecard />
-              <SkeletonScorecard />
-              <SkeletonScorecard />
-            </div>
-
-            {/* Nested breakdown table */}
-            <SkeletonTable rows={15} columns={5} columnWidths={['25%', '18%', '18%', '18%', '21%']} />
           </div>
         </div>
       </div>

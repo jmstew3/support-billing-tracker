@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { LoadingState } from '../../../components/ui/LoadingState';
 import { PageHeader } from '../../../components/shared/PageHeader';
 import { RevenueTrackerCard } from './RevenueTrackerCard';
 import { usePeriod } from '../../../contexts/PeriodContext';
@@ -14,6 +13,7 @@ import { formatMonthLabel } from '../../../utils/formatting';
 import { exportMonthlyBreakdownDetailedData, type MonthlyBreakdownExportData } from '../../../utils/csvExport';
 import { queryKeys } from '../../../lib/queryClient';
 import type { MonthlyBillingSummary } from '../../../types/billing';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 export function Dashboard() {
   const { selectedYear, selectedMonths, selectedDay, getMonthStrings, setAvailableData } = usePeriod();
@@ -256,7 +256,7 @@ export function Dashboard() {
   }, [filteredData, displayTotals, selectedMonthStrings, selectedMonths]);
 
   if (loading) {
-    return <LoadingState variant="overview" />;
+    return <DashboardSkeleton />;
   }
 
   if (error) {
