@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, Send, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw, CloudUpload, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -32,6 +32,7 @@ import {
   exportInvoiceQBOCSV,
   exportInvoiceJSON,
   downloadFile,
+  syncInvoiceToQBO,
   type Invoice,
   type InvoiceItem,
   type InvoiceRequest,
@@ -89,6 +90,9 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
 
   // Hosting snapshot loading state
   const [snapshotLoading, setSnapshotLoading] = useState(false);
+
+  // QBO sync state
+  const [syncingToQBO, setSyncingToQBO] = useState(false);
 
   const addToast = useCallback((type: ToastMessage['type'], message: string) => {
     setToasts(prev => [...prev, createToast(type, message)]);
@@ -232,6 +236,25 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
       downloadFile(csv, `${invoice.invoice_number}-qbo.csv`, 'text/csv');
     } catch (err) {
       addToast('error', err instanceof Error ? err.message : 'Failed to export QBO CSV');
+    }
+  }
+
+  async function handleSyncToQBO() {
+    if (!invoice) return;
+    setSyncingToQBO(true);
+    try {
+      const result = await syncInvoiceToQBO(invoice.id);
+      if (result.success) {
+        addToast('success', `Synced to QuickBooks (ID: ${result.qboInvoiceId})`);
+        loadInvoice();
+        onUpdate();
+      } else {
+        addToast('error', result.error || 'QBO sync failed');
+      }
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to sync to QBO');
+    } finally {
+      setSyncingToQBO(false);
     }
   }
 
@@ -463,6 +486,24 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
                 <CreditCard className="h-4 w-4" />
                 Record Payment
               </button>
+            )}
+            {/* QBO Sync Button */}
+            {invoice.qbo_sync_status !== 'synced' && !editMode && (
+              <button
+                onClick={handleSyncToQBO}
+                disabled={syncingToQBO}
+                className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title={invoice.qbo_sync_status === 'error' ? `Last error: ${invoice.qbo_sync_error}` : 'Sync to QuickBooks Online'}
+              >
+                {syncingToQBO ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudUpload className="h-4 w-4" />}
+                {syncingToQBO ? 'Syncing...' : invoice.qbo_sync_status === 'error' ? 'Retry QBO Sync' : 'Sync to QBO'}
+              </button>
+            )}
+            {invoice.qbo_sync_status === 'synced' && (
+              <span className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded" title={`QBO Invoice ID: ${invoice.qbo_invoice_id}`}>
+                <CloudUpload className="h-4 w-4" />
+                QBO Synced
+              </span>
             )}
             <div className="flex items-center gap-1 border border-border rounded overflow-hidden">
               <button

@@ -3,7 +3,7 @@
  * Main page for invoice management
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '../../../components/shared/PageHeader';
 import { InvoiceList } from './InvoiceList';
 import { InvoiceDetail } from './InvoiceDetail';
@@ -19,6 +19,23 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [qboMessage, setQboMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Handle QBO OAuth callback redirect params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qboParam = params.get('qbo');
+    if (qboParam === 'connected') {
+      setQboMessage({ type: 'success', text: 'QuickBooks Online connected successfully.' });
+    } else if (qboParam === 'error') {
+      const message = params.get('message') || 'Connection failed';
+      setQboMessage({ type: 'error', text: `QBO connection error: ${message}` });
+    }
+    // Clean up URL params
+    if (qboParam) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   function handleViewInvoice(invoice: Invoice) {
     setSelectedInvoice(invoice);
@@ -48,6 +65,18 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
         showViewToggle={false}
         onToggleMobileMenu={onToggleMobileMenu}
       />
+
+      {/* QBO Connection Banner */}
+      {qboMessage && (
+        <div className={`mx-4 mt-2 px-4 py-3 rounded text-sm flex items-center justify-between ${
+          qboMessage.type === 'success'
+            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+            : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+        }`}>
+          <span>{qboMessage.text}</span>
+          <button onClick={() => setQboMessage(null)} className="ml-4 font-medium hover:underline">Dismiss</button>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">

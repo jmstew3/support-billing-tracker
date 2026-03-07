@@ -23,6 +23,7 @@ import { sanitizeErrorMessage } from './middleware/security.js';
 import logger from './services/logger.js';
 import requestLogger from './middleware/requestLogger.js';
 import scheduler from './services/scheduler.js';
+import qboRoutes from './routes/qbo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -135,6 +136,10 @@ app.use('/api/client', clientRoutes);
 
 // Admin routes for client management (requires internal auth + admin role)
 app.use('/api/admin/clients', conditionalAuth, adminClientsRoutes);
+
+// QBO routes: OAuth flow is unprotected (browser redirects), management routes use conditionalAuth internally
+// Must be mounted BEFORE the catch-all '/api' route below
+app.use('/api/qbo', qboRoutes);
 
 // All other API routes use conditional authentication
 // (BasicAuth in production via Traefik, JWT for direct API access)
