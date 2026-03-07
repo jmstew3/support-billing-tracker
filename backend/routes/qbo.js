@@ -342,4 +342,22 @@ router.get('/mappings', conditionalAuth, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/qbo/sync/eligible-count
+ * Return the number of invoices eligible for QBO sync.
+ */
+router.get('/sync/eligible-count', conditionalAuth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) as count FROM invoices
+       WHERE status IN ('sent','paid','overdue')
+       AND qbo_sync_status IN ('pending','error')`
+    );
+    res.json({ eligible: rows[0].count });
+  } catch (error) {
+    logger.error('[QBO] Eligible count failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to get eligible count' });
+  }
+});
+
 export default router;

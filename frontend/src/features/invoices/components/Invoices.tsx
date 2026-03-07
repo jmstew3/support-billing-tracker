@@ -8,6 +8,7 @@ import { PageHeader } from '../../../components/shared/PageHeader';
 import { InvoiceList } from './InvoiceList';
 import { InvoiceDetail } from './InvoiceDetail';
 import { GenerateInvoiceModal } from './GenerateInvoiceModal';
+import { QBOStatusBadge } from './QBOStatusBadge';
 import type { Invoice, QBOStatus } from '../../../services/invoiceApi';
 import { getQBOStatus, connectQBO, disconnectQBO } from '../../../services/invoiceApi';
 
@@ -99,6 +100,7 @@ export function Invoices({ onToggleMobileMenu }: InvoicesProps) {
         showPeriodSelector={false}
         showViewToggle={false}
         onToggleMobileMenu={onToggleMobileMenu}
+        rightControls={<QBOStatusBadge />}
       />
 
       {/* QBO Connection Banner */}
