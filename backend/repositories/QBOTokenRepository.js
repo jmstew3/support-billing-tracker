@@ -13,8 +13,10 @@ export default class QBOTokenRepository {
    * @returns {Promise<Object|null>} Token record with decrypted tokens, or null
    */
   static async getActiveToken(connection = pool) {
+    const env = process.env.QBO_ENVIRONMENT || 'sandbox';
     const [rows] = await connection.query(
-      'SELECT * FROM qbo_tokens WHERE is_active = TRUE LIMIT 1'
+      'SELECT * FROM qbo_tokens WHERE is_active = TRUE AND environment = ? LIMIT 1',
+      [env]
     );
     if (!rows[0]) return null;
 
@@ -38,20 +40,22 @@ export default class QBOTokenRepository {
     const accessExpiry = new Date(Date.now() + expiresIn * 1000);
     const refreshExpiry = new Date(Date.now() + xRefreshTokenExpiresIn * 1000);
 
+    const env = process.env.QBO_ENVIRONMENT || 'sandbox';
     await connection.query(
       `INSERT INTO qbo_tokens
        (realm_id, access_token, refresh_token, access_token_expires_at,
-        refresh_token_expires_at, company_name, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, TRUE)
+        refresh_token_expires_at, company_name, environment, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
        ON DUPLICATE KEY UPDATE
          access_token = VALUES(access_token),
          refresh_token = VALUES(refresh_token),
          access_token_expires_at = VALUES(access_token_expires_at),
          refresh_token_expires_at = VALUES(refresh_token_expires_at),
          company_name = COALESCE(VALUES(company_name), company_name),
+         environment = VALUES(environment),
          is_active = TRUE`,
       [realmId, encrypt(accessToken), encrypt(refreshToken),
-       accessExpiry, refreshExpiry, companyName || null]
+       accessExpiry, refreshExpiry, companyName || null, env]
     );
   }
 

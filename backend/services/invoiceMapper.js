@@ -190,7 +190,7 @@ export async function mapInvoiceToQBO(invoice, customer) {
   }
   if (customer.email) {
     payload.BillEmail = { Address: customer.email };
-    payload.EmailStatus = 'NeedToSend';
+    payload.EmailStatus = 'NotSet';
   } else {
     payload.EmailStatus = 'NotSet';
   }
