@@ -30,11 +30,12 @@ class QBOClient {
    */
   _getOAuthClient() {
     if (!this.oauthClient) {
+      const env = process.env.QBO_ENVIRONMENT || 'sandbox';
       this.oauthClient = new OAuthClient({
         clientId: process.env.QBO_CLIENT_ID,
         clientSecret: process.env.QBO_CLIENT_SECRET,
-        environment: process.env.QBO_ENVIRONMENT || 'sandbox',
-        redirectUri: process.env.QBO_REDIRECT_URI,
+        environment: env,
+        redirectUri: process.env.QBO_REDIRECT_URI || 'http://localhost:3011/api/qbo/callback',
         logging: false
       });
     }

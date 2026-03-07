@@ -677,6 +677,29 @@ docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword veloci
 
 ## 🔧 Troubleshooting
 
+### Common Issue: QBO OAuth "Missing client_id"
+
+**Problem**: Clicking "Connect to QuickBooks" returns "The client_id query parameter is missing from the authorization request."
+
+**Root Cause**: The `.env` file uses prefixed env vars (`QBO_SANDBOX_CLIENT_ID`, `QBO_PROD_CLIENT_ID`) that get resolved to generic names (`QBO_CLIENT_ID`) at startup by `backend/config/qboEnv.js`.
+
+**Fix**: Ensure your `.env` has the prefixed vars set for your target environment:
+```bash
+QBO_ENVIRONMENT=sandbox
+QBO_SANDBOX_CLIENT_ID=your-sandbox-client-id
+QBO_SANDBOX_CLIENT_SECRET=your-sandbox-secret
+QBO_TOKEN_ENCRYPTION_KEY=   # Generate with: openssl rand -hex 32
+```
+
+**Verify**:
+```bash
+docker compose up -d --build backend
+docker compose exec backend printenv | grep QBO_CLIENT_ID
+# Should show value resolved from QBO_SANDBOX_CLIENT_ID
+```
+
+**Switching environments**: Change `QBO_ENVIRONMENT` from `sandbox` to `production` (or vice versa) in `.env`, then rebuild: `docker compose up -d --build backend`.
+
 ### Common Issue: API Error 500 After Restart
 
 **Problem**: After running `docker-compose down` and `docker-compose up`, you see:
