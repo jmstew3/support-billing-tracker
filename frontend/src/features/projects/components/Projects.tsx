@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Search, DollarSign, FolderKanban } from 'lucide-react';
 import { PageHeader } from '../../../components/shared/PageHeader';
+import { usePeriod } from '../../../contexts/PeriodContext';
 import { MonthlyRevenueTable } from './MonthlyRevenueTable';
 import { ProjectRevenueChart } from '../../../components/charts/ProjectRevenueChart';
 import { ProjectCategoryPieChart } from '../../../components/charts/ProjectCategoryPieChart';
@@ -13,6 +14,8 @@ import { queryKeys } from '../../../lib/queryClient';
 import type { Project, ProjectFilters } from '../../../types/project';
 
 export function Projects() {
+  const { getMonthStrings, setAvailableData } = usePeriod();
+
   // Filter states - shows billable projects (READY, INVOICED, PAID)
   const [filters, setFilters] = useState<ProjectFilters>({
     hostingStatus: 'ALL',
@@ -165,6 +168,42 @@ export function Projects() {
     };
   }, [readyProjects]);
 
+  // Register available data with PeriodContext
+  useEffect(() => {
+    if (billingSummary.monthlyBreakdown.length === 0) return;
+    const yearSet = new Set<number>();
+    const monthSet = new Set<number>();
+    billingSummary.monthlyBreakdown.forEach(m => {
+      const [year, month] = m.month.split('-').map(Number);
+      yearSet.add(year);
+      monthSet.add(month);
+    });
+    setAvailableData(
+      Array.from(yearSet).sort((a, b) => b - a),
+      Array.from(monthSet).sort((a, b) => a - b),
+      []
+    );
+  }, [billingSummary.monthlyBreakdown, setAvailableData]);
+
+  // Filter billingSummary by selected period
+  const selectedMonthStrings = useMemo(() => getMonthStrings(), [getMonthStrings]);
+
+  const filteredSummary = useMemo(() => {
+    const filtered = selectedMonthStrings === 'all'
+      ? billingSummary.monthlyBreakdown
+      : billingSummary.monthlyBreakdown.filter(m => selectedMonthStrings.includes(m.month));
+
+    const filteredProjectCount = filtered.reduce((sum, m) => sum + m.projectCount, 0);
+
+    return {
+      ...billingSummary,
+      monthlyBreakdown: filtered,
+      totalReadyRevenue: filtered.reduce((sum, m) => sum + m.revenue, 0),
+      totalCompletedProjects: filteredProjectCount,
+      readyProjectCount: filteredProjectCount,
+    };
+  }, [billingSummary, selectedMonthStrings]);
+
   // Loading state
   if (loading) {
     return <LoadingState variant="projects" />;
@@ -196,7 +235,7 @@ export function Projects() {
       {/* Header */}
       <PageHeader
         title="Projects"
-        showPeriodSelector={false}
+        periodSelectorType="full"
         showViewToggle={false}
       />
 
@@ -207,7 +246,7 @@ export function Projects() {
             Ready to invoice projects organized by completion month
           </p>
           <div className="text-sm text-muted-foreground">
-            {billingSummary.readyProjectCount} projects
+            {filteredSummary.readyProjectCount} projects
           </div>
         </div>
 
@@ -215,32 +254,32 @@ export function Projects() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <Scorecard
             title="Ready to Invoice"
-            value={formatCurrency(billingSummary.totalReadyRevenue)}
-            description={`${billingSummary.readyProjectCount} projects`}
+            value={formatCurrency(filteredSummary.totalReadyRevenue)}
+            description={`${filteredSummary.readyProjectCount} projects`}
             icon={<DollarSign className="h-4 w-4" />}
             variant="default"
           />
           <Scorecard
             title="Months with Projects"
-            value={billingSummary.monthlyBreakdown.length.toString()}
+            value={filteredSummary.monthlyBreakdown.length.toString()}
             description="Completion months"
             variant="default"
           />
           <Scorecard
             title="Total Completed"
-            value={billingSummary.totalCompletedProjects.toString()}
+            value={filteredSummary.totalCompletedProjects.toString()}
             description="Projects with completion date"
             variant="default"
           />
         </div>
 
         {/* Charts Section - Cumulative Billing (2/3) and Category Breakdown (1/3) */}
-        {billingSummary.monthlyBreakdown.length > 0 && (
+        {filteredSummary.monthlyBreakdown.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Project Revenue Chart - Takes 2 columns on desktop */}
             <div className="lg:col-span-2">
               <ProjectRevenueChart
-                monthlyBreakdown={billingSummary.monthlyBreakdown}
+                monthlyBreakdown={filteredSummary.monthlyBreakdown}
               />
             </div>
 
@@ -318,9 +357,9 @@ export function Projects() {
           </div>
         ) : (
           <MonthlyRevenueTable
-            monthlyBreakdown={billingSummary.monthlyBreakdown}
-            projectsWithoutCompletionDate={billingSummary.projectsWithoutCompletionDate}
-            revenueWithoutCompletionDate={billingSummary.revenueWithoutCompletionDate}
+            monthlyBreakdown={filteredSummary.monthlyBreakdown}
+            projectsWithoutCompletionDate={filteredSummary.projectsWithoutCompletionDate}
+            revenueWithoutCompletionDate={filteredSummary.revenueWithoutCompletionDate}
           />
         )}
       </div>
