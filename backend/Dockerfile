@@ -21,11 +21,6 @@ COPY . .
 # Create directory for CSV data and set ownership
 RUN mkdir -p /data
 
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app /data
-USER appuser
-
 # Expose port
 EXPOSE 3011
 
