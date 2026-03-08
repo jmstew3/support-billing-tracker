@@ -37,11 +37,7 @@ Docker Compose automatically loads the `.env` file from the project root.
 - Backend API: http://localhost:3011/api
 - MySQL: localhost:3307 (user: thaduser, password: from .env)
 
-**Dev login credentials** (auto-seeded on first startup):
-- Email: `admin@peakonedigital.com`
-- Password: `admin`
-
-If the database is fresh (no users), a dev admin is created automatically with `admin@localhost` / `admin`.
+**Login credentials** — set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`. Use the same credentials for both localhost and production.
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
 
@@ -73,72 +69,35 @@ npm run dev
 
 ## 🔒 Security & Authentication
 
-### Current Implementation: BasicAuth (Phase 1)
+### Current Implementation: JWT Authentication
 
-The application is protected by HTTP Basic Authentication at the Traefik reverse proxy level. When accessing the production URL, users will be prompted for credentials.
+The application uses JWT-based authentication with a login form at `/login`. The same credentials work for both localhost and production — there is no separate Traefik BasicAuth layer.
 
-#### Default Credentials
-- **Username:** `admin`
-- **Password:** Set via `BASIC_AUTH_USERS` in `.env` (see below)
-- **Production URL:** `https://billing.peakonedigital.com`
+- **Login URL (local):** `http://localhost:5173/login`
+- **Login URL (prod):** `https://billing.peakonedigital.com/login`
+- **Credentials:** Set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`
 
 #### Changing Authentication Credentials
 
-To update the username and password:
+Update `ADMIN_EMAIL` and/or `ADMIN_PASSWORD` in `.env`, then run the seed script:
 
-1. **Generate new credentials hash**:
 ```bash
-docker run --rm httpd:2.4-alpine htpasswd -nb typeanewusername typeanewpassword
+docker compose exec backend node db/seed_admin_user.js
 ```
 
-This will output something like:
-```
-newusername:$apr1$xyz123$hashedpasswordhere
-```
-
-2. **Update `.env` file**:
-```bash
-# Edit the BASIC_AUTH_USERS variable
-# IMPORTANT: Escape $ as $$ for docker-compose
-BASIC_AUTH_USERS=newusername:$$apr1$$xyz123$$hashedpasswordhere
-```
-
-3. **Restart the application**:
-```bash
-docker-compose up -d
-```
-
-4. **Verify the change**:
-- Access the production URL
-- Browser should prompt for new credentials
-- Enter the new username and password
+If the user already exists, it updates the password. If not, it creates a new user.
 
 #### Logging Out
 
-To log out and test new credentials:
-1. Click the **Log Out** button in the sidebar (red button below Theme toggle)
-2. Frontend sends request to logout endpoint which returns 401
-3. Browser clears cached credentials and prompts for re-authentication
-4. Enter username and password to log back in
-
-**How it works:**
-- Backend provides `/api/auth/logout` endpoint that returns `401 Unauthorized`
-- Logout endpoint is **not protected** by BasicAuth (accessed via higher-priority Traefik route)
-- Browser receives 401 response and clears its credential cache
-- Works reliably in Chrome, Firefox, and Safari
-
-**Note:** Only works in production (`billing.peakonedigital.com`). On localhost, BasicAuth is bypassed.
+Click the **Log Out** button in the sidebar. The frontend clears the stored JWT token and redirects to `/login`.
 
 #### Security Notes
-- ✅ Credentials are hashed using Apache APR1 (bcrypt variant)
-- ✅ Works over HTTPS for secure transmission
-- ✅ Protects both frontend and backend API
-- ✅ Logout button available in sidebar for re-authentication
-- ⚠️ Single shared credential for all users
-- 📝 For per-user authentication, see `docs/authentication-plan.md` (Phase 2)
-
-#### Local Development
-Local access (localhost:5173, localhost:3011) bypasses authentication. Only production access via Traefik requires credentials.
+- ✅ Passwords hashed with bcrypt (10 salt rounds)
+- ✅ Short-lived access tokens (1 hour) with 7-day refresh tokens
+- ✅ Refresh tokens stored as SHA-256 hashes in the database
+- ✅ Refresh tokens in HttpOnly cookies (XSS-proof)
+- ✅ Rate limiting: 5 login attempts per 15 minutes
+- ✅ Works over HTTPS in production
 
 ---
 
