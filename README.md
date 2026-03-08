@@ -79,11 +79,17 @@ The application uses JWT-based authentication with a login form at `/login`. The
 
 #### Changing Authentication Credentials
 
-Update `ADMIN_EMAIL` and/or `ADMIN_PASSWORD` in `.env`, then run the seed script:
+Update `ADMIN_EMAIL` and/or `ADMIN_PASSWORD` in `.env`, then rebuild and re-seed:
 
 ```bash
+# 1. Rebuild so the container picks up the new .env values
+docker compose up -d --build backend
+
+# 2. Re-seed so the database password hash matches
 docker compose exec backend node db/seed_admin_user.js
 ```
+
+The seed script reads credentials from the running container's environment, not `.env` directly. If you skip the rebuild, it will use the old values and login will fail.
 
 If the user already exists, it updates the password. If not, it creates a new user.
 
@@ -686,7 +692,7 @@ curl http://localhost:3011/api/health
 ```
 
 **Why This Happens**:
-- Docker Compose passes `PORT=3011` from `.env.docker`
+- Docker Compose passes `PORT=3011` from `.env`
 - BUT `backend/.env` has `PORT=3001`, which overwrites the Docker value
 - Backend starts on port 3001, but Docker mapped port 3011 → Connection fails
 - Vite caches compiled environment variables, serving stale API URLs after restart

@@ -1,67 +1,102 @@
 # Security & Authentication
 
-## Authentication (Phase 1 - Active)
+## Authentication
 
-**Current Implementation:** Traefik BasicAuth Middleware
+**Current Implementation:** JWT Authentication with per-user accounts
 
-The application is protected by HTTP Basic Authentication at the reverse proxy level using Traefik middleware.
-
-### Access Credentials
-- **Username:** Configured in `.env.docker` (ADMIN_EMAIL)
-- **Password:** Configured in `.env.docker` (ADMIN_PASSWORD)
-- **Storage:** `.env.docker` file (NOT committed to Git)
-- **Hash Algorithm:** Apache APR1 (MD5-based bcrypt variant)
-
-> **SECURITY NOTE:** Never commit actual credentials to documentation or version control.
-> See `.env.docker.example` for configuration template.
+The application uses JWT-based authentication. Users log in via a form at `/login`, which issues short-lived access tokens and long-lived refresh tokens.
 
 ### How It Works
-1. All requests to `billing.peakonedigital.com` and `/api` are intercepted by Traefik
-2. Browser presents authentication dialog
-3. Credentials validated against bcrypt hash in environment variable
-4. If valid, request forwarded; if invalid, 401 Unauthorized returned
 
-### Changing Credentials
+1. User submits credentials at `/login` form
+2. `POST /api/auth/login` validates email/password against bcrypt hash in database
+3. On success, returns a short-lived access token (1h) and sets an HttpOnly refresh token cookie (7d)
+4. Frontend stores access token in localStorage and attaches it as `Authorization: Bearer <token>` on API requests
+5. When the access token expires, `POST /api/auth/refresh` issues a new one using the refresh token cookie
+6. Logout (`POST /api/auth/logout`) revokes the refresh token in the database and clears the cookie
 
-**Step 1: Generate New Hash**
+### Production Hybrid Auth (`conditionalAuth`)
+
+Production uses a hybrid approach via `backend/middleware/conditionalAuth.js`:
+
+- **Production** (`billing.peakonedigital.com`): Traefik BasicAuth protects the site at the reverse proxy level. The `conditionalAuth` middleware detects the production hostname and trusts BasicAuth, looking up the admin user from the database via `ADMIN_EMAIL`. No JWT is required.
+- **Development** (localhost): Standard JWT token validation. Users must log in via the `/login` form.
+
+This prevents "double authentication" where users would need to pass BasicAuth AND provide a JWT token.
+
+> **Known Risk:** The production hostname check uses the `Host` header, which can be spoofed. See `docs/SECURITY_REVIEW_2025-01.md` for details.
+
+### Client Portal
+
+A separate JWT flow exists for client-facing access:
+
+- Login: `POST /api/auth/client/login`
+- Middleware: `backend/middleware/clientAuth.js`
+- Scope enforcement limits clients to their own data
+- Separate refresh token cookie (`client_refresh_token`)
+
+### Access Credentials
+
+- **Admin credentials:** Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`
+- **Password storage:** bcrypt with 10 salt rounds
+- **Dev auto-seed:** When `NODE_ENV=development`, the backend auto-creates `admin@localhost` / `admin` on first startup (see `backend/server.js`). This is for development convenience only.
+
+> **SECURITY NOTE:** Never commit actual credentials to documentation or version control.
+
+### Setting Up / Changing Credentials
+
+**Step 1:** Update `ADMIN_EMAIL` and/or `ADMIN_PASSWORD` in `.env`
+
+**Step 2:** Rebuild the backend container (so it picks up the new `.env` values):
 ```bash
-docker run --rm httpd:2.4-alpine htpasswd -nb newusername newpassword
+docker compose up -d --build backend
 ```
 
-**Step 2: Update `.env.docker`**
+**Step 3:** Re-seed the database (so the password hash matches):
 ```bash
-# IMPORTANT: Escape $ as $$ for docker-compose
-BASIC_AUTH_USERS=newusername:$$apr1$$xyz123$$hashedpasswordhere
+docker compose exec backend node db/seed_admin_user.js
 ```
+If the user already exists, it updates the password. If not, it creates a new admin user.
 
-**Step 3: Restart Services**
-```bash
-docker-compose --env-file .env.docker up -d
-```
+> **Important:** The seed script reads credentials from the running container's environment, not directly from `.env`. If you skip Step 2, the seed script will use the old values and login will fail.
 
 ### Logging Out
 
-Click "Log Out" in sidebar footer:
-1. Frontend sends request to `/api/auth/logout`
-2. Backend responds with 401 + `WWW-Authenticate` header
-3. Browser clears cached BasicAuth credentials
-4. Page redirects to fresh authentication prompt
+Click "Log Out" in the sidebar footer:
+1. Frontend calls `POST /api/auth/logout`
+2. Backend revokes the refresh token (SHA-256 hash deleted from database)
+3. HttpOnly refresh token cookie is cleared
+4. Frontend clears the access token from localStorage
+5. User is redirected to `/login`
 
-**Note:** BasicAuth is stateless - this is re-authentication, not true session termination.
+### Security Features
 
-### Security Considerations
-- ✅ Adequate for internal team (5-10 users), trusted networks
-- ⚠️ Single shared credential, no per-user tracking
-- 🔒 Requires HTTPS in production
-- 📝 Limited audit trail (Traefik access logs only)
+- Per-user accounts with bcrypt password hashing (10 salt rounds)
+- Short-lived access tokens (1h default, configurable via `JWT_EXPIRES_IN`)
+- Refresh tokens (7d default) stored as SHA-256 hashes in the database
+- Refresh tokens delivered via HttpOnly cookies (not exposed to JavaScript)
+- Separate `JWT_REFRESH_SECRET` required (no fallback to `JWT_SECRET`)
+- Rate limiting: 5 login attempts per 15 minutes per IP
+- Password change revokes all refresh tokens (forces re-login on all devices)
+- Session management: view active sessions, revoke individual sessions
+- Full audit logging (login success/failure, password changes)
+- HTTPS required in production
 
-### Future Enhancements (Phase 2)
-See `docs/authentication-plan.md` for:
-- JWT-based authentication with per-user accounts
-- Role-based access control (admin, viewer, editor)
-- True logout with session termination
-- User management dashboard
-- Audit logging and session tracking
+### Auth Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/auth/login` | Authenticate and get tokens |
+| POST | `/api/auth/logout` | Revoke refresh token |
+| POST | `/api/auth/refresh` | Get new access token |
+| GET | `/api/auth/me` | Get current user info |
+| POST | `/api/auth/change-password` | Change password (revokes all sessions) |
+| POST | `/api/auth/logout-all` | Revoke all sessions |
+| GET | `/api/auth/sessions` | List active sessions |
+| DELETE | `/api/auth/sessions/:id` | Revoke specific session |
+| POST | `/api/auth/client/login` | Client portal login |
+| POST | `/api/auth/client/logout` | Client portal logout |
+| POST | `/api/auth/client/refresh` | Client portal token refresh |
 
 ## Data Protection
 
@@ -72,15 +107,15 @@ See `docs/authentication-plan.md` for:
 - API credentials for Twenty CRM and FluentSupport
 
 **Storage Security:**
-- MySQL database with credentials in `.env.docker`
+- MySQL database with credentials in `.env`
 - API tokens as environment variables (not in code)
 - All containers on isolated Docker network (`velocity-network`)
 - Production access only via Traefik reverse proxy with authentication
 
 **Best Practices:**
-- Never commit `.env.docker` or `.env` files to Git
+- Never commit `.env` files to Git
 - Rotate API tokens periodically
-- Use strong passwords for MySQL and BasicAuth
+- Use strong passwords for MySQL and admin accounts
 - Keep Docker images and dependencies updated
 
 ## Database Backups

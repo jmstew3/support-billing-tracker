@@ -24,8 +24,18 @@ docker-compose up -d
 # Backend API: http://localhost:3011/api
 # Production: https://billing.peakonedigital.com
 
-# Credentials (BasicAuth) - see .env
+# Credentials: set ADMIN_EMAIL and ADMIN_PASSWORD in .env
+# Login at /login — JWT auth, same credentials for localhost and production
+# To reset password: edit .env, then rebuild + re-seed:
+#   docker compose up -d --build backend
+#   docker compose exec backend node db/seed_admin_user.js
+# (rebuild first — seed reads env from the running container, not .env directly)
 # DO NOT commit actual credentials to documentation
+#
+# Auth note: production uses conditionalAuth hybrid — Traefik BasicAuth at
+# proxy level + admin user lookup from DB. Localhost requires JWT login.
+# Dev auto-seed creates admin@localhost/admin when NODE_ENV=development.
+# See docs/SECURITY.md and backend/middleware/conditionalAuth.js for details.
 ```
 
 ### Data Processing Pipeline
