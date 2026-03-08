@@ -12,11 +12,6 @@ RUN npm ci
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app
-USER appuser
-
 # Expose port for Vite dev server
 EXPOSE 5173
 
