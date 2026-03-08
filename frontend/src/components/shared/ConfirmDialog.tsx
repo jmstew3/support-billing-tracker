@@ -83,7 +83,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         onKeyDown={handleKeyDown}
       >
         <div className="mb-4">
-          <h3 id="confirm-dialog-title" className="text-lg font-semibold text-foreground">{title}</h3>
+          <h2 id="confirm-dialog-title" className="text-lg font-semibold text-foreground">{title}</h2>
         </div>
 
         <div className="mb-6">

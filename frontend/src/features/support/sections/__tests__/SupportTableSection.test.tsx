@@ -21,6 +21,12 @@ vi.mock('../SupportTableRow', () => ({
   )
 }))
 
+vi.mock('../../components/SupportTicketCard', () => ({
+  SupportTicketCard: ({ request }: any) => (
+    <div data-testid="ticket-card">{request.Request_Summary}</div>
+  )
+}))
+
 // Don't mock Pagination - use the real component to test integration
 
 describe('SupportTableSection', () => {

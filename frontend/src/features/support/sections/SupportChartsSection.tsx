@@ -74,8 +74,8 @@ export function SupportChartsSection({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-4 sm:gap-6">
-      {/* Request Calendar - 3fr on desktop */}
-      <Card>
+      {/* Request Calendar - hidden on mobile (too complex for small screens) */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>{getCalendarTitle()}</CardTitle>
           <CardDescription>{getCalendarDescription()}</CardDescription>
@@ -89,6 +89,21 @@ export function SupportChartsSection({
             onBackToCalendar={onBackToCalendar}
             isSingleMonth={selectedMonth !== 'all'}
           />
+        </CardContent>
+      </Card>
+
+      {/* Mobile summary replacing calendar */}
+      <Card className="md:hidden">
+        <CardHeader>
+          <CardTitle>Activity Summary</CardTitle>
+          <CardDescription>
+            {calendarData.length} day{calendarData.length !== 1 ? 's' : ''} with requests
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">
+            <p>View on a larger screen for the full calendar heatmap.</p>
+          </div>
         </CardContent>
       </Card>
 

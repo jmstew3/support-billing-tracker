@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Pencil } from 'lucide-react';
 
 interface EditableNumberCellProps {
   value: number;
@@ -120,13 +121,14 @@ export const EditableNumberCell: React.FC<EditableNumberCellProps> = ({
         handleEdit();
       }}
       disabled={disabled}
-      className={`w-20 px-2 py-1 text-xs text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      className={`group/hours flex items-center gap-1 w-20 px-2 py-1 text-xs text-left rounded transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
         disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
       }`}
       title={disabled ? 'Locked — on a sent invoice' : 'Click to edit hours'}
       data-testid="editable-number-cell"
     >
       {roundedInitialValue.toFixed(2)}
+      {!disabled && <Pencil className="w-3 h-3 text-muted-foreground/0 group-hover/hours:text-muted-foreground transition-all" />}
     </button>
   );
 };

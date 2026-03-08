@@ -77,7 +77,7 @@ export function CostTrackerCard({
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
           <Zap className="h-3 w-3 inline mr-1" />
-          {costData.freeHoursApplied}h free
+          {costData.freeHoursApplied.toFixed(2)}h free
         </span>
       );
     }

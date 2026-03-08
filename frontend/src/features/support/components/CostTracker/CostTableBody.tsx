@@ -279,7 +279,7 @@ export function SinglePeriodTable({ costData }: { costData: CostData }) {
               <td className={TABLE_STYLES.cellSmall + ' font-medium'}>Free Support Hours Benefit</td>
               <td className={TABLE_STYLES.cellSmall + ' text-muted-foreground border-l border-border/40'}>-</td>
               <td className={TABLE_STYLES.cellSmall + ' text-muted-foreground border-l border-border/40'}>
-                {costData.freeHoursApplied}h free
+                {costData.freeHoursApplied.toFixed(2)}h free
               </td>
               <td className={TABLE_STYLES.cellSmall + ' border-l border-border/40'}>
                 <div className={TABLE_STYLES.successText}>

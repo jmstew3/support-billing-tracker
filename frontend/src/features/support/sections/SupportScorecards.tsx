@@ -30,7 +30,7 @@ export function SupportScorecards({
   const { mostActiveDay, mostActiveTimeRange, busiestDayOfWeek, topCategory } = activityMetrics;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
       <Scorecard
         title="Billable Requests"
         value={billableCount}
@@ -46,7 +46,7 @@ export function SupportScorecards({
               <span>{formatCurrency(costs.netTotalCost)}</span>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300">
                 <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                {costs.freeHoursApplied}h
+                {costs.freeHoursApplied.toFixed(2)}h
               </span>
             </div>
           ) : (

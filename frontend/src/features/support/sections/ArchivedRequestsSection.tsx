@@ -52,9 +52,9 @@ export function ArchivedRequestsSection({
           <div className="flex items-center space-x-2">
             <ChevronRight className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} />
             <Archive className="w-4 h-4 text-muted-foreground" />
-            <h3 className="text-xs font-semibold text-muted-foreground">
+            <h2 className="text-xs font-semibold text-muted-foreground">
               Archived Requests ({archivedRequests.length})
-            </h3>
+            </h2>
           </div>
           <span className="text-xs text-muted-foreground">
             Click to {showArchived ? 'hide' : 'show'}

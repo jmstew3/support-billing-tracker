@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 
 interface EditableCellProps {
   value: string;
@@ -107,13 +107,13 @@ export function EditableCell({ value, options, onSave, className = '', formatDis
         onClick={handleToggleOpen}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left text-foreground border border-border rounded-md bg-card transition-colors ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border hover:bg-accent'} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+        className={`group/edit flex items-center justify-between w-full px-3 py-2 text-xs text-left text-foreground border border-transparent rounded-md bg-card transition-colors ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-border hover:bg-accent'} ${isOpen ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20' : ''}`}
         title={disabled ? 'Locked — on a sent invoice' : 'Click to edit'}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
         <span>{formatDisplayValue ? formatDisplayValue(value) : value}</span>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <Pencil className={`w-3 h-3 text-muted-foreground/0 transition-all ${!disabled ? 'group-hover/edit:text-muted-foreground' : ''} ${isOpen ? '!text-muted-foreground' : ''}`} />
       </button>
 
       {isOpen && createPortal(

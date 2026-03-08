@@ -19,14 +19,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../..
 import { Table, TableBody } from '../../../components/ui/table'
 import { SupportTableHeader } from './SupportTableHeader'
 import { SupportTableRow } from './SupportTableRow'
+import { SupportTicketCard } from '../components/SupportTicketCard'
 import { Pagination } from '../../../components/shared/Pagination'
 import { FilterPanel } from '../components/FilterPanel'
-import { Search, X, ArrowUp, CalendarDays } from 'lucide-react'
+import { Search, X, ArrowUp, CalendarDays, Clock } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { ChatRequest } from '../../../types/request'
 import type { DateRangeFilter, BillingDateFilter, FilterPreset, FilterCounts, HoursRange } from '../types/filters'
 import { HOURS_RANGE_DISPLAY_NAMES } from '../types/filters'
-import { Clock } from 'lucide-react'
 
 export interface SupportTableSectionProps {
   // Data
@@ -216,12 +216,12 @@ export function SupportTableSection({
       <CardHeader className="sticky top-0 z-30 bg-card border-b border-border rounded-t-lg">
         <div className="space-y-3">
           {/* Title Row */}
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
             <div>
               <CardTitle>Billable Requests</CardTitle>
-              <CardDescription>Complete list of support requests - click category or urgency to edit</CardDescription>
+              <CardDescription className="hidden sm:block">Complete list of support requests - click category or urgency to edit</CardDescription>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               {/* Toggle for Non-Billable Items */}
               <div className="flex flex-col space-y-1">
                 <label className="flex items-center cursor-pointer group">
@@ -261,7 +261,8 @@ export function SupportTableSection({
 
                   {/* Label with count */}
                   <span className="text-xs font-medium text-foreground">
-                    Show only billable
+                    <span className="hidden sm:inline">Show only billable</span>
+                    <span className="sm:hidden">Billable only</span>
                     {nonBillableRequests.length > 0 && (
                       <span className="text-muted-foreground ml-1">
                         ({hideNonBillable ? billableFilteredRequests.length : filteredAndSortedRequests.length} of {requests.filter(r => r.Status === 'active').length})
@@ -272,7 +273,7 @@ export function SupportTableSection({
 
                 {/* Helper text */}
                 {nonBillableRequests.length > 0 && (
-                  <p className="text-xs text-muted-foreground pl-16">
+                  <p className="text-xs text-muted-foreground pl-16 hidden sm:block">
                     {hideNonBillable
                       ? `Hiding ${nonBillableRequests.length} non-billable and migration items`
                       : 'Showing all items including non-billable'}
@@ -284,8 +285,8 @@ export function SupportTableSection({
 
           {/* Bulk Selection UI */}
           {selectedRequestIds.size > 0 && (
-            <div className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <span className="text-xs font-medium text-blue-900">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <span className="text-xs font-medium text-blue-900 w-full sm:w-auto">
                 {selectedRequestIds.size} selected{selectedRequestIds.size === paginatedRequests.length && paginatedRequests.length < filteredAndSortedRequests.length ? ' (current page)' : ''}:
               </span>
 
@@ -344,7 +345,7 @@ export function SupportTableSection({
 
               {/* Action Buttons */}
               {(stagedBulkCategory || stagedBulkUrgency || stagedBulkHours !== null) ? (
-                <>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={onApplyBulkChanges}
                     className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors font-medium"
@@ -357,7 +358,7 @@ export function SupportTableSection({
                   >
                     Cancel
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   onClick={onClearSelection}
@@ -373,10 +374,10 @@ export function SupportTableSection({
 
       <CardContent className="overflow-visible">
         {/* Table Actions */}
-        <div className="flex items-center justify-between mb-4 pt-4">
-          <div className="flex items-center space-x-4 flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pt-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1">
             {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -558,8 +559,8 @@ export function SupportTableSection({
           </div>
         )}
 
-        {/* Table */}
-        <div className="overflow-x-auto -mx-4 sm:-mx-0">
+        {/* Desktop Table (hidden on mobile) */}
+        <div className="hidden md:block overflow-x-auto -mx-4 sm:-mx-0">
           <div className="inline-block min-w-full align-middle">
             <Table>
               <SupportTableHeader
@@ -600,6 +601,32 @@ export function SupportTableSection({
               </TableBody>
             </Table>
           </div>
+        </div>
+
+        {/* Mobile Card List (hidden on desktop) */}
+        <div className="md:hidden space-y-3">
+          {paginatedRequests.map((request, paginatedIndex) => {
+            const filteredIndex = startIndex + paginatedIndex
+            const actualIndex = requests.findIndex(r =>
+              r.Date === request.Date &&
+              r.Time === request.Time &&
+              r.Request_Summary === request.Request_Summary
+            )
+            return (
+              <SupportTicketCard
+                key={filteredIndex}
+                request={request}
+                index={actualIndex}
+                isSelected={selectedRequestIds.has(actualIndex)}
+                categoryOptions={categoryOptions}
+                urgencyOptions={urgencyOptions}
+                onSelectRequest={onSelectRequest}
+                onUpdateRequest={onUpdateRequest}
+                onDeleteRequest={onDeleteRequest}
+                formatTime={formatTime}
+              />
+            )
+          })}
         </div>
 
         {/* Pagination */}

@@ -237,7 +237,7 @@ function MonthlyChart({
                             Gross: {formatCurrency(data.totalCost)}
                           </p>
                           <p style={{ color: '#059669', fontSize: '12px', margin: '4px 0' }}>
-                            Free Hours: -{formatCurrency(data.freeHoursSavings)} ({data.freeHoursApplied}h)
+                            Free Hours: -{formatCurrency(data.freeHoursSavings)} ({Number(data.freeHoursApplied).toFixed(2)}h)
                           </p>
                           <p style={{ color: '#111827', fontWeight: 'bold', marginTop: '4px' }}>
                             Net Cost: {formatCurrency(data.netTotalCost)}
