@@ -75,3 +75,6 @@ backend/.env.local.example
 rollback*.sh
 coverage/
 .playwright-mcp/
+
+# Screenshots
+*.png
