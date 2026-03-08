@@ -12,7 +12,7 @@ const router = express.Router();
 router.post('/sync', async (req, res) => {
   try {
     // Get date filter from request or use default from environment
-    const dateFilter = req.body.dateFilter || process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
+    const dateFilter = req.body.dateFilter || process.env.FLUENT_DATE_FILTER || process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
 
     // Use the service to handle sync logic
     const result = await FluentSyncService.syncTickets(dateFilter);
@@ -23,7 +23,7 @@ router.post('/sync', async (req, res) => {
     console.error('[FluentSync] Sync failed:', error.message);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: 'Sync operation failed'
     });
   }
 });
@@ -44,7 +44,7 @@ router.get('/status', async (req, res) => {
 
   } catch (error) {
     console.error('[FluentSync] Failed to get status:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to get sync status' });
   }
 });
 
@@ -58,7 +58,7 @@ router.get('/scheduler', async (req, res) => {
     res.json(status);
   } catch (error) {
     console.error('[FluentSync] Failed to get scheduler status:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to get scheduler status' });
   }
 });
 
@@ -91,7 +91,7 @@ router.get('/tickets', async (req, res) => {
 
   } catch (error) {
     console.error('[FluentSync] Failed to get tickets:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to get tickets' });
   }
 });
 

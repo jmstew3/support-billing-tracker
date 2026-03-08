@@ -32,12 +32,15 @@ router.get('/connect', async (req, res) => {
     }
 
     // Generate CSRF state as a signed JWT (C3 fix — self-validating, no server storage)
+    if (!process.env.JWT_SECRET) {
+      logger.error('[QBO] JWT_SECRET is required but not configured');
+      return res.status(500).json({ error: 'Server configuration error: JWT_SECRET required' });
+    }
     const csrfPayload = {
       nonce: crypto.randomBytes(16).toString('hex'),
       exp: Math.floor(Date.now() / 1000) + 10 * 60 // 10-min expiry
     };
-    const jwtSecret = process.env.JWT_SECRET || process.env.QBO_CLIENT_SECRET;
-    const state = jwt.sign(csrfPayload, jwtSecret);
+    const state = jwt.sign(csrfPayload, process.env.JWT_SECRET);
 
     const authUrl = qboClient.getAuthorizationUrl(state);
 
@@ -68,9 +71,8 @@ router.get('/callback', async (req, res) => {
       return res.redirect(`${frontendUrl}/invoices?qbo=error&message=Missing+state+parameter`);
     }
 
-    const jwtSecret = process.env.JWT_SECRET || process.env.QBO_CLIENT_SECRET;
     try {
-      jwt.verify(state, jwtSecret);
+      jwt.verify(state, process.env.JWT_SECRET);
     } catch (jwtError) {
       logger.warn('[QBO] CSRF state validation failed', { error: jwtError.message });
       return res.redirect(`${frontendUrl}/invoices?qbo=error&message=Invalid+or+expired+state`);
@@ -220,7 +222,7 @@ router.get('/sync/customers', conditionalAuth, async (req, res) => {
       try {
         // Query QBO for customer by DisplayName
         const response = await qboClient.query(
-          `SELECT * FROM Customer WHERE DisplayName = '${customer.name.replace(/'/g, "\\'")}'`
+          `SELECT * FROM Customer WHERE DisplayName = '${customer.name.replace(/'/g, "''")}'`
         );
         const qboCustomers = response?.QueryResponse?.Customer;
 

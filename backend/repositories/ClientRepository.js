@@ -1,7 +1,7 @@
 import pool from '../db/config.js';
 
 // Twenty CRM API configuration
-const TWENTY_API_TOKEN = process.env.VITE_TWENTY_API_TOKEN || '';
+const TWENTY_API_TOKEN = process.env.TWENTY_API_TOKEN || process.env.VITE_TWENTY_API_TOKEN || '';
 const TWENTY_BASE_URL = 'https://twenny.peakonedigital.com/rest';
 
 /**

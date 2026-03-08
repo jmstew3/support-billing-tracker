@@ -30,15 +30,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const conditionalAuth = async (req, res, next) => {
   try {
-    const host = req.get('host') || '';
-    const origin = req.get('origin') || '';
+    // Use AUTH_MODE env var to determine auth strategy — never trust client headers
+    const authMode = (process.env.AUTH_MODE || 'jwt').toLowerCase();
 
-    // Check if request is from BasicAuth-protected production domain
-    const isBasicAuthProtected =
-      host.includes('billing.peakonedigital.com') ||
-      origin.includes('billing.peakonedigital.com');
-
-    if (isBasicAuthProtected) {
+    if (authMode === 'basicauth' || authMode === 'traefik') {
       // Request came through Traefik BasicAuth - user is already authenticated
       // Look up admin user from database (with caching to reduce DB load)
       const adminEmail = process.env.ADMIN_EMAIL || 'admin@yourdomain.com';
@@ -126,9 +121,7 @@ export const requireRole = (roles) => {
 
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
-        error: 'Insufficient permissions',
-        required: allowedRoles,
-        current: req.user.role
+        error: 'Insufficient permissions'
       });
     }
 

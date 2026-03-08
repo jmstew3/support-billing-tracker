@@ -1,5 +1,6 @@
 import OAuthClient from 'intuit-oauth';
 import crypto from 'crypto';
+import FormData from 'form-data';
 import pool from '../db/config.js';
 import QBOTokenRepository from '../repositories/QBOTokenRepository.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
@@ -208,6 +209,50 @@ class QBOClient {
     } catch (error) {
       return this._handleApiError(error, method, endpoint, body, realmId, options);
     }
+  }
+
+  /**
+   * Upload a file attachment to a QBO entity (e.g., Invoice).
+   * Uses multipart/form-data with the QBO Upload API.
+   * @param {string} entityType - QBO entity type (e.g., 'Invoice')
+   * @param {string} entityId - QBO entity ID
+   * @param {string} fileName - Attachment file name
+   * @param {string} contentType - MIME type (e.g., 'text/csv')
+   * @param {Buffer} buffer - File content as Buffer
+   * @returns {Promise<Object>} Parsed upload response
+   */
+  async uploadAttachment(entityType, entityId, fileName, contentType, buffer) {
+    const { client, realmId } = await this.getAuthenticatedClient();
+    const env = process.env.QBO_ENVIRONMENT || 'sandbox';
+    const baseUrl = QBO_BASE_URLS[env];
+    const minorVersion = process.env.QBO_MINOR_VERSION || '75';
+    const url = `${baseUrl}/v3/company/${realmId}/upload?minorversion=${minorVersion}`;
+
+    const metadata = JSON.stringify({
+      AttachableRef: [{ EntityRef: { type: entityType, value: entityId } }],
+      FileName: fileName,
+      ContentType: contentType
+    });
+
+    const form = new FormData();
+    form.append('file_metadata_0', metadata, {
+      contentType: 'application/json',
+      filename: 'metadata.json'
+    });
+    form.append('file_content_0', buffer, {
+      contentType,
+      filename: fileName
+    });
+
+    const response = await client.makeApiCall({
+      url,
+      method: 'POST',
+      headers: form.getHeaders(),
+      body: form.getBuffer()
+    });
+
+    if (response.json && typeof response.json === 'object') return response.json;
+    return JSON.parse(response.body);
   }
 
   /**

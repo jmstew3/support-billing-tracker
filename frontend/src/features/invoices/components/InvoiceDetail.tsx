@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Download, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw, CloudUpload, Loader2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Download, CreditCard, FileText, Pencil, X, Plus, Minus, Save, RefreshCw, CloudUpload, Loader2, RotateCcw, Paperclip, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import {
   Table,
@@ -500,9 +500,20 @@ export function InvoiceDetail({ invoiceId, onBack, onUpdate }: InvoiceDetailProp
               </button>
             )}
             {invoice.qbo_sync_status === 'synced' && (
-              <span className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded" title={`QBO Invoice ID: ${invoice.qbo_invoice_id}`}>
+              <span
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded"
+                title={
+                  invoice.qbo_attachment_id
+                    ? `QBO Invoice ID: ${invoice.qbo_invoice_id} | CSV attached (ID: ${invoice.qbo_attachment_id})`
+                    : invoice.qbo_attachment_error
+                    ? `QBO Invoice ID: ${invoice.qbo_invoice_id} | Attachment failed: ${invoice.qbo_attachment_error}`
+                    : `QBO Invoice ID: ${invoice.qbo_invoice_id}`
+                }
+              >
                 <CloudUpload className="h-4 w-4" />
                 QBO Synced
+                {invoice.qbo_attachment_id && <Paperclip className="h-3.5 w-3.5 text-emerald-500" />}
+                {!invoice.qbo_attachment_id && invoice.qbo_attachment_error && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
               </span>
             )}
             <div className="flex items-center gap-1 border border-border rounded overflow-hidden">

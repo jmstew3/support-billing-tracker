@@ -1,5 +1,5 @@
 # Development stage
-FROM node:18-alpine AS development
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
@@ -12,6 +12,11 @@ RUN npm ci
 # Copy application code
 COPY . .
 
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+USER appuser
+
 # Expose port for Vite dev server
 EXPOSE 5173
 
@@ -19,7 +24,7 @@ EXPOSE 5173
 CMD ["npm", "run", "dev:docker"]
 
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 

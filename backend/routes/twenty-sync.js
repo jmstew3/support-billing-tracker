@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Get Twenty API config from environment
 const TWENTY_API_URL = process.env.VITE_TWENTY_API_URL || 'https://twenny.peakonedigital.com/rest/supportTickets';
-const TWENTY_API_TOKEN = process.env.VITE_TWENTY_API_TOKEN || '';
+const TWENTY_API_TOKEN = process.env.TWENTY_API_TOKEN || process.env.VITE_TWENTY_API_TOKEN || '';
 
 // Transform Twenty ticket to request format
 function transformTicketToRequest(ticket) {

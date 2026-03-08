@@ -58,9 +58,7 @@ export const requireRole = (roles) => {
 
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
-        error: 'Insufficient permissions',
-        required: allowedRoles,
-        current: req.user.role
+        error: 'Insufficient permissions'
       });
     }
 

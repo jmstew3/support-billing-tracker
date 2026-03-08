@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -18,8 +18,13 @@ RUN npm ci --only=production
 # Copy application code
 COPY . .
 
-# Create directory for CSV data
+# Create directory for CSV data and set ownership
 RUN mkdir -p /data
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app /data
+USER appuser
 
 # Expose port
 EXPOSE 3011

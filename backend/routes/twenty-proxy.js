@@ -3,7 +3,7 @@ import express from 'express';
 const router = express.Router();
 
 // Twenty CRM API configuration from environment
-const TWENTY_API_TOKEN = process.env.VITE_TWENTY_API_TOKEN || '';
+const TWENTY_API_TOKEN = process.env.TWENTY_API_TOKEN || process.env.VITE_TWENTY_API_TOKEN || '';
 const TWENTY_BASE_URL = 'https://twenny.peakonedigital.com/rest';
 
 // SECURITY: Whitelist of allowed query parameters to prevent parameter pollution attacks
@@ -56,8 +56,7 @@ router.get('/projects', async (req, res) => {
   } catch (error) {
     console.error('Twenty Projects API proxy error:', error);
     res.status(500).json({
-      error: 'Failed to fetch projects from Twenty CRM',
-      message: error.message
+      error: 'Failed to fetch projects from Twenty CRM'
     });
   }
 });
@@ -89,8 +88,7 @@ router.get('/websiteProperties', async (req, res) => {
   } catch (error) {
     console.error('Twenty Website Properties API proxy error:', error);
     res.status(500).json({
-      error: 'Failed to fetch website properties from Twenty CRM',
-      message: error.message
+      error: 'Failed to fetch website properties from Twenty CRM'
     });
   }
 });

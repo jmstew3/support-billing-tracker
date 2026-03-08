@@ -4,6 +4,8 @@
  */
 
 import pool from '../db/config.js';
+import qboClient from './qboClient.js';
+import logger from './logger.js';
 
 // Pricing configuration (matches frontend config/pricing.ts)
 const PRICING = {
@@ -1096,6 +1098,36 @@ async function recalculateInvoiceTotals(connection, invoiceId) {
     'UPDATE invoices SET subtotal = ?, tax_amount = ?, total = ? WHERE id = ?',
     [subtotal, taxAmount, total, invoiceId]
   );
+}
+
+/**
+ * Generate CSV for an invoice and upload it as an attachment to the QBO invoice.
+ * @param {number} invoiceId - Local invoice ID
+ * @param {string} qboInvoiceId - QBO Invoice ID
+ * @param {string} invoiceNumber - Invoice number for the filename
+ * @returns {Promise<string>} QBO Attachable ID
+ */
+export async function attachCSVToQBOInvoice(invoiceId, qboInvoiceId, invoiceNumber) {
+  const csvContent = await exportInvoiceCSV(invoiceId);
+  const buffer = Buffer.from(csvContent, 'utf-8');
+  const fileName = `${invoiceNumber}-detail.csv`;
+
+  const response = await qboClient.uploadAttachment(
+    'Invoice', qboInvoiceId, fileName, 'text/csv', buffer
+  );
+
+  const attachable = response?.AttachableResponse?.[0]?.Attachable;
+  if (!attachable?.Id) {
+    const fault = response?.AttachableResponse?.[0]?.Fault;
+    const detail = fault?.Error?.map(e => `${e.code}: ${e.Detail || e.Message}`).join('; ') || 'No Attachable ID in response';
+    throw new Error(`QBO attachment upload failed: ${detail}`);
+  }
+
+  logger.info('[QBO Attachment] CSV attached to invoice', {
+    invoiceId, qboInvoiceId, attachableId: attachable.Id, fileName
+  });
+
+  return attachable.Id;
 }
 
 /**

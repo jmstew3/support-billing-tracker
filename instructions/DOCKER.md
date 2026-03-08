@@ -1,6 +1,6 @@
-# Docker Setup for Thad Chat Dashboard
+# Docker Setup for Support Billing Tracker
 
-This guide explains how to run the Thad Chat Dashboard using Docker, which provides a consistent development environment across all platforms.
+This guide explains how to run the Support Billing Tracker using Docker Compose.
 
 ## Prerequisites
 
@@ -10,293 +10,225 @@ This guide explains how to run the Thad Chat Dashboard using Docker, which provi
 
 ## Quick Start
 
-### 1. Clone and Navigate to Project
+### 1. Set Up Environment
 
 ```bash
-git clone [your-repo-url]
-cd thad-chat
+cp .env.example .env
+# Edit .env — set ADMIN_PASSWORD (required) and review other values
 ```
 
-### 2. Start with Docker
+### 2. Start All Services
 
 ```bash
-# Using the helper script (recommended)
-./docker-start.sh
-
-# Or manually with docker-compose
-docker-compose up
+docker compose up -d
 ```
-
-This will:
-- Start MySQL database on port 3306
-- Start backend API on port 3001
-- Start frontend dev server on port 5173
-- Automatically run database migrations
-- Set up all networking between services
 
 ### 3. Access the Application
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
+| Service | URL | Notes |
+|---------|-----|-------|
+| Frontend | http://localhost:5173 | React dashboard |
+| Backend API | http://localhost:3011/api | Express API |
+| MySQL | localhost:3307 | External port (internal 3306) |
+| Production | https://billing.peakonedigital.com | Via Traefik reverse proxy |
 
-## Docker Architecture
+### 4. Log In
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Docker Network                       │
-├─────────────────┬──────────────┬────────────────────────┤
-│                 │              │                         │
-│    MySQL        │   Backend    │      Frontend          │
-│  Container      │  Container   │     Container          │
-│                 │              │                         │
-│  Port: 3306     │  Port: 3001  │    Port: 5173         │
-│                 │              │                         │
-│  Database:      │  Express     │    React + Vite        │
-│  velocity_billing      │  API Server  │    Dev Server          │
-│                 │              │                         │
-│  Persistent     │  Depends on  │    Depends on          │
-│  Volume         │  MySQL       │    Backend             │
-└─────────────────┴──────────────┴────────────────────────┘
-```
+Credentials are set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`.
 
-## Common Docker Commands
+In development (`NODE_ENV=development`), if no admin user exists the backend auto-seeds `admin@localhost` / `admin`.
 
-### Starting Services
+To manually create or update the admin user:
 
 ```bash
-# Start all services in foreground (see logs)
-docker-compose up
-
-# Start all services in background
-docker-compose up -d
-
-# Start specific service
-docker-compose up backend
+docker compose exec backend node db/seed_admin_user.js
 ```
 
-### Stopping Services
+## Services
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Docker Network                          │
+├──────────────┬──────────────┬──────────────┬───────────────┤
+│    mysql     │   backend    │   frontend   │  mysql-backup │
+│  Port: 3307  │  Port: 3011  │  Port: 5173  │  (scheduled)  │
+│  MySQL 8.4   │  Express.js  │  React+Vite  │  mysqldump    │
+│              │              │              │               │
+│  Container:  │  Container:  │  Container:  │  Container:   │
+│  support-    │  support-    │  support-    │  support-     │
+│  billing-    │  billing-    │  billing-    │  billing-     │
+│  tracker-    │  tracker-    │  tracker-    │  tracker-     │
+│  mysql       │  backend     │  frontend    │  backup       │
+└──────────────┴──────────────┴──────────────┴───────────────┘
+```
+
+### Container Names
+
+| Service | Container Name |
+|---------|---------------|
+| mysql | `support-billing-tracker-mysql` |
+| backend | `support-billing-tracker-backend` |
+| frontend | `support-billing-tracker-frontend` |
+| mysql-backup | `support-billing-tracker-backup` |
+
+## Environment Configuration
+
+A single `.env` file in the project root configures all services. Copy from `.env.example`:
 
 ```bash
-# Stop all services
-docker-compose down
+cp .env.example .env
+```
 
-# Stop and remove volumes (full reset)
-docker-compose down -v
+Key variables:
 
-# Stop specific service
-docker-compose stop frontend
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ADMIN_EMAIL` | `admin@yourdomain.com` | Login email |
+| `ADMIN_PASSWORD` | *(required)* | Login password |
+| `MYSQL_PORT` | `3307` | External MySQL port |
+| `BACKEND_PORT` | `3011` | Backend API port |
+| `FRONTEND_PORT` | `5173` | Frontend dev server port |
+| `NODE_ENV` | `development` | Environment mode |
+| `JWT_SECRET` | — | JWT signing secret |
+| `JWT_REFRESH_SECRET` | — | Refresh token secret |
+
+Generate JWT secrets with: `openssl rand -hex 32`
+
+## Authentication
+
+The app uses JWT-based authentication. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`, then seed:
+
+```bash
+docker compose up -d --build backend
+docker compose exec backend node db/seed_admin_user.js
+```
+
+The seed script reads credentials from the **running container's** environment (not `.env` directly), so always rebuild before seeding if you changed `.env`.
+
+## Common Commands
+
+### Starting / Stopping
+
+```bash
+docker compose up -d              # Start all services (background)
+docker compose down               # Stop all services
+docker compose down -v            # Stop and remove volumes (full reset)
+docker compose restart backend    # Restart a single service
 ```
 
 ### Viewing Logs
 
 ```bash
-# View all logs
-docker-compose logs
-
-# Follow logs in real-time
-docker-compose logs -f
-
-# View specific service logs
-docker-compose logs -f backend
-```
-
-### Importing Data
-
-```bash
-# Import CSV data using helper script
-./docker-import.sh
-
-# Or import specific CSV file
-./docker-import.sh data/03_final/thad_requests_table.csv
-
-# Or manually inside container
-docker-compose exec backend npm run import
+docker compose logs -f            # Follow all logs
+docker compose logs -f backend    # Follow backend logs only
 ```
 
 ### Database Access
 
 ```bash
-# Access MySQL shell
-docker-compose exec mysql mysql -u thaduser -pthadpassword velocity_billing
+# MySQL shell
+docker exec -it support-billing-tracker-mysql mysql -u thaduser -pthadpassword velocity_billing
 
-# Run SQL query
-docker-compose exec mysql mysql -u thaduser -pthadpassword velocity_billing -e "SELECT COUNT(*) FROM requests;"
+# Run a query
+docker exec support-billing-tracker-mysql mysql -u thaduser -pthadpassword velocity_billing \
+  -e "SELECT COUNT(*) FROM requests;"
 
-# Backup database
-docker-compose exec mysql mysqldump -u root -prootpassword velocity_billing > backup.sql
+# Backup
+docker exec support-billing-tracker-mysql mysqldump -u root -prootpassword velocity_billing > backup.sql
 
-# Restore database
-docker-compose exec -T mysql mysql -u root -prootpassword velocity_billing < backup.sql
+# Restore
+docker exec -i support-billing-tracker-mysql mysql -u root -prootpassword velocity_billing < backup.sql
 ```
 
-### Rebuilding Containers
+### Rebuilding
 
 ```bash
-# Rebuild all containers
-docker-compose build
-
-# Rebuild specific service
-docker-compose build frontend
-
-# Rebuild and restart
-docker-compose up --build
+docker compose build                    # Rebuild all
+docker compose build backend            # Rebuild one service
+docker compose up -d --build backend    # Rebuild and restart
 ```
 
-## Environment Configuration
-
-### Development (Default)
-
-The default configuration in `docker-compose.yml` is set up for development:
-
-- Hot reloading enabled for both frontend and backend
-- Source code mounted as volumes for live editing
-- Debug-friendly logging
-- Default passwords (change for production!)
-
-### Production
-
-For production deployment:
-
-1. Create `.env.docker` with secure passwords:
-
-```env
-MYSQL_ROOT_PASSWORD=secure_root_password
-MYSQL_USER=thaduser
-MYSQL_PASSWORD=secure_user_password
-NODE_ENV=production
-```
-
-2. Update `docker-compose.yml`:
-
-```yaml
-frontend:
-  build:
-    target: production  # Use production stage
-  ports:
-    - "80:80"  # Serve on port 80
-```
-
-3. Build and run:
+### Importing Data
 
 ```bash
-docker-compose --env-file .env.docker up -d
+./docker-import.sh data/03_final/requests_table.csv
 ```
+
+## Production Deployment
+
+Production uses Traefik as a reverse proxy. The `docker-compose.yml` includes Traefik labels for:
+
+- `billing.peakonedigital.com` → frontend + backend `/api` routes
+- `portal.peakonedigital.com` → client portal routes
+
+The `traefik-general` external network must exist on the host.
+
+## Networking
+
+Two Docker networks are configured:
+
+| Network | Purpose |
+|---------|---------|
+| `velocity-network` | Internal communication between services |
+| `traefik-general` | External network for Traefik reverse proxy (production) |
 
 ## Troubleshooting
 
 ### Services Won't Start
 
 ```bash
-# Check service status
-docker-compose ps
+docker compose ps                 # Check service status
+docker compose logs               # Check for errors
+lsof -i :3307                    # Check if MySQL port is in use
+lsof -i :3011                    # Check if backend port is in use
+lsof -i :5173                    # Check if frontend port is in use
+```
 
-# Check logs for errors
-docker-compose logs
+### Can't Log In
 
-# Ensure ports are not in use
-lsof -i :3306  # MySQL
-lsof -i :3001  # Backend
-lsof -i :5173  # Frontend
+```bash
+# Re-seed the admin user
+docker compose up -d --build backend
+docker compose exec backend node db/seed_admin_user.js
+
+# If rate-limited (5 attempts per 15 min), restart backend
+docker compose restart backend
 ```
 
 ### Database Connection Issues
 
 ```bash
 # Check MySQL is healthy
-docker-compose exec mysql mysqladmin ping -h localhost
+docker exec support-billing-tracker-mysql mysqladmin ping -h localhost
 
 # Verify database exists
-docker-compose exec mysql mysql -u root -prootpassword -e "SHOW DATABASES;"
-
-# Recreate database
-docker-compose exec mysql mysql -u root -prootpassword -e "CREATE DATABASE IF NOT EXISTS velocity_billing;"
+docker exec support-billing-tracker-mysql mysql -u root -prootpassword -e "SHOW DATABASES;"
 ```
 
-### Frontend Can't Connect to Backend
+### Backend Port Mismatch
 
-1. Check backend is running:
+If you see API 500 errors, check for a stray `backend/.env` file that may override the Docker port:
+
 ```bash
-curl http://localhost:3001/health
+# Check the port inside the container
+docker exec support-billing-tracker-backend printenv | grep PORT
+# Should show: PORT=3011
+
+# Remove conflicting local .env if it exists
+rm -f backend/.env
+docker compose up -d --build backend
 ```
 
-2. Verify CORS settings in backend
-3. Check network connectivity:
-```bash
-docker network ls
-docker network inspect thad-chat_thad-network
-```
-
-### Changes Not Reflecting
-
-For frontend/backend code changes:
-- Ensure volumes are mounted correctly
-- Check that hot-reload is working
-- Try restarting the specific service:
+### API Health Check
 
 ```bash
-docker-compose restart frontend
-# or
-docker-compose restart backend
+curl http://localhost:3011/api/health
+# Expected: {"status":"ok","database":"connected"}
 ```
 
 ### Reset Everything
 
 ```bash
-# Stop all containers and remove volumes
-docker-compose down -v
-
-# Remove all images
-docker-compose down --rmi all
-
-# Fresh start
-docker-compose up --build
+docker compose down -v
+docker compose up --build -d
 ```
-
-## Docker Files Explained
-
-### docker-compose.yml
-
-Orchestrates all three services (MySQL, backend, frontend) with:
-- Service dependencies
-- Network configuration
-- Volume mounts
-- Environment variables
-- Health checks
-
-### frontend/Dockerfile
-
-Multi-stage build:
-- Development stage with hot-reloading
-- Production stage with nginx
-
-### backend/Dockerfile
-
-Node.js Alpine image with:
-- Wait-for-it script for MySQL
-- Health check endpoint
-- Automatic migrations
-
-### Helper Scripts
-
-- `docker-start.sh` - Easy startup with health checks
-- `docker-import.sh` - Import CSV data to MySQL
-
-## Advantages of Docker Setup
-
-1. **Consistency**: Same environment for all developers
-2. **Isolation**: No conflicts with local MySQL/Node versions
-3. **Easy Setup**: One command to run everything
-4. **Production Ready**: Same containers deploy to production
-5. **Cross-Platform**: Works on Windows, Mac, Linux
-6. **Clean**: No system-wide installations needed
-7. **Version Control**: Locked versions of all dependencies
-
-## Next Steps
-
-- Set up CI/CD pipeline with Docker
-- Deploy to cloud (AWS ECS, Google Cloud Run, etc.)
-- Add monitoring and logging services
-- Implement container orchestration with Kubernetes
-- Add Redis for caching
-- Set up nginx as reverse proxy

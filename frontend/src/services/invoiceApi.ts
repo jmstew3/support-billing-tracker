@@ -75,6 +75,8 @@ export interface Invoice {
   qbo_sync_status: 'pending' | 'synced' | 'error' | 'not_applicable';
   qbo_sync_date: string | null;
   qbo_sync_error: string | null;
+  qbo_attachment_id: string | null;
+  qbo_attachment_error: string | null;
   hosting_detail_snapshot: HostingChargeSnapshot[] | null;
   created_at: string;
   updated_at: string;

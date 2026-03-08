@@ -61,11 +61,11 @@ async function withRetry(fn, maxAttempts = 3, baseDelayMs = 1000) {
 }
 
 // Get FluentSupport config from environment
-const FLUENT_API_URL = process.env.VITE_FLUENT_API_URL || '';
-const FLUENT_USERNAME = process.env.VITE_FLUENT_API_USERNAME || '';
-const FLUENT_PASSWORD = process.env.VITE_FLUENT_API_PASSWORD || '';
-const FLUENT_DATE_FILTER = process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
-const FLUENT_MAILBOX_ID = process.env.VITE_FLUENT_MAILBOX_ID || '';
+const FLUENT_API_URL = process.env.FLUENT_API_URL || process.env.VITE_FLUENT_API_URL || '';
+const FLUENT_USERNAME = process.env.FLUENT_API_USERNAME || process.env.VITE_FLUENT_API_USERNAME || '';
+const FLUENT_PASSWORD = process.env.FLUENT_API_PASSWORD || process.env.VITE_FLUENT_API_PASSWORD || '';
+const FLUENT_DATE_FILTER = process.env.FLUENT_DATE_FILTER || process.env.VITE_FLUENT_DATE_FILTER || '2025-09-20';
+const FLUENT_MAILBOX_ID = process.env.FLUENT_MAILBOX_ID || process.env.VITE_FLUENT_MAILBOX_ID || '';
 
 /**
  * Fetch all tickets from FluentSupport API
@@ -74,7 +74,7 @@ const FLUENT_MAILBOX_ID = process.env.VITE_FLUENT_MAILBOX_ID || '';
  */
 export async function fetchFluentTickets(dateFilter = FLUENT_DATE_FILTER) {
   if (!FLUENT_API_URL || !FLUENT_USERNAME || !FLUENT_PASSWORD) {
-    throw new Error('FluentSupport API credentials not configured. Please set VITE_FLUENT_API_URL, VITE_FLUENT_API_USERNAME, and VITE_FLUENT_API_PASSWORD in .env.docker');
+    throw new Error('FluentSupport API credentials not configured. Please set FLUENT_API_URL, FLUENT_API_USERNAME, and FLUENT_API_PASSWORD in .env');
   }
 
   try {

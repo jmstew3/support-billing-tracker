@@ -116,7 +116,8 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate access token with client-specific claims
+    // Generate access token with client-specific claims and secret
+    const clientSecret = process.env.JWT_CLIENT_SECRET || process.env.JWT_SECRET;
     const accessToken = jwt.sign(
       {
         id: clientUser.id,
@@ -125,7 +126,7 @@ router.post('/login', clientLoginLimiter, async (req, res) => {
         clientId: clientUser.client_id,
         clientName: clientUser.company_name
       },
-      process.env.JWT_SECRET,
+      clientSecret,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
 
@@ -216,7 +217,8 @@ router.post('/refresh', clientAuthLimiter, async (req, res) => {
       return res.status(403).json({ error: 'Client user not found or inactive' });
     }
 
-    // Generate new access token
+    // Generate new access token with client-specific secret
+    const clientSecret = process.env.JWT_CLIENT_SECRET || process.env.JWT_SECRET;
     const accessToken = jwt.sign(
       {
         id: clientUser.id,
@@ -225,7 +227,7 @@ router.post('/refresh', clientAuthLimiter, async (req, res) => {
         clientId: clientUser.client_id,
         clientName: clientUser.company_name
       },
-      process.env.JWT_SECRET,
+      clientSecret,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
 

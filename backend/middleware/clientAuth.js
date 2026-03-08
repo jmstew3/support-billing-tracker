@@ -15,8 +15,9 @@ export const authenticateClientToken = async (req, res, next) => {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Verify token with client-specific secret (falls back to shared secret for migration)
+    const clientSecret = process.env.JWT_CLIENT_SECRET || process.env.JWT_SECRET;
+    const decoded = jwt.verify(token, clientSecret);
 
     // Must be a client token (has clientId)
     if (!decoded.clientId || decoded.role !== 'client') {

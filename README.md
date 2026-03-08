@@ -39,7 +39,7 @@ Docker Compose automatically loads the `.env` file from the project root.
 
 **Login credentials** — set via `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env`. Use the same credentials for both localhost and production.
 
-See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
+See [DOCKER.md](./instructions/DOCKER.md) for detailed Docker instructions.
 
 ### Manual Setup (Without Docker)
 
@@ -92,6 +92,22 @@ docker compose exec backend node db/seed_admin_user.js
 The seed script reads credentials from the running container's environment, not `.env` directly. If you skip the rebuild, it will use the old values and login will fail.
 
 If the user already exists, it updates the password. If not, it creates a new user.
+
+#### Login Troubleshooting
+
+**"Invalid credentials"** — password hash in the database doesn't match `.env`:
+```bash
+# Rebuild so the container picks up current .env values, then re-seed
+docker compose up -d --build backend
+docker compose exec backend node db/seed_admin_user.js
+```
+
+**"Too many login attempts"** — rate limiter (5 attempts per 15 min) has kicked in:
+```bash
+docker compose restart backend
+```
+
+**Dev auto-seed:** When `NODE_ENV=development` and no admin user exists, the backend automatically creates `admin@localhost` / `admin` on startup.
 
 #### Logging Out
 

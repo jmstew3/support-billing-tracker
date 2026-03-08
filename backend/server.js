@@ -78,8 +78,11 @@ app.use(cors({
       'https://billing.peakonedigital.com',
       'https://portal.peakonedigital.com'
     ];
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (like mobile apps or Postman) in dev only
+    if (!origin) {
+      if (process.env.NODE_ENV === 'development') return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -154,8 +157,7 @@ app.use('/api/invoices', conditionalAuth, invoiceRoutes);
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    timestamp: new Date().toISOString()
   });
 });
 

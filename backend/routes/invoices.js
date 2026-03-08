@@ -5,6 +5,7 @@
 
 import express from 'express';
 import Joi from 'joi';
+import rateLimit from 'express-rate-limit';
 import {
   getBillingSummary,
   generateInvoice,
@@ -26,14 +27,37 @@ import {
   sendInvoice,
   recalculateDraftInvoice,
   buildRequestSnapshot,
-  revertToDraft
+  revertToDraft,
+  attachCSVToQBOInvoice
 } from '../services/invoiceService.js';
 import { mapInvoiceToQBO } from '../services/invoiceMapper.js';
 import qboClient from '../services/qboClient.js';
 import pool from '../db/config.js';
 import logger from '../services/logger.js';
+import { validateId } from '../middleware/security.js';
 
 const router = express.Router();
+
+/** Escape single quotes for QBO query language (doubled single quotes) */
+const escapeQboString = (val) => String(val).replace(/'/g, "''");
+
+/** Rate limiter for invoice mutation endpoints */
+const invoiceMutationLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 30,
+  message: { error: 'Too many invoice requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+/** Rate limiter for QBO sync endpoints (more restrictive) */
+const qboSyncLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many QBO sync requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // Joi schema for QBO invoice response validation (I5 fix)
 const qboInvoiceResponseSchema = Joi.object({
@@ -59,8 +83,8 @@ router.get('/customers', async (req, res) => {
     const customers = await listCustomers(activeOnly);
     res.json({ customers });
   } catch (error) {
-    console.error('Error listing customers:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Error listing customers', { error: error.message });
+    res.status(500).json({ error: 'Failed to list customers' });
   }
 });
 
@@ -70,14 +94,17 @@ router.get('/customers', async (req, res) => {
  */
 router.get('/customers/:id', async (req, res) => {
   try {
-    const customer = await getCustomer(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid customer ID' });
+
+    const customer = await getCustomer(id);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }
     res.json(customer);
   } catch (error) {
-    console.error('Error getting customer:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Error getting customer', { error: error.message });
+    res.status(500).json({ error: 'Failed to get customer' });
   }
 });
 
@@ -103,8 +130,8 @@ router.get('/billing-summary', async (req, res) => {
     const summary = await getBillingSummary(customerId, periodStart, periodEnd);
     res.json(summary);
   } catch (error) {
-    console.error('Error getting billing summary:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Error getting billing summary', { error: error.message });
+    res.status(500).json({ error: 'Failed to get billing summary' });
   }
 });
 
@@ -136,8 +163,8 @@ router.get('/', async (req, res) => {
     const result = await listInvoices(filters);
     res.json(result);
   } catch (error) {
-    console.error('Error listing invoices:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Error listing invoices', { error: error.message });
+    res.status(500).json({ error: 'Failed to list invoices' });
   }
 });
 
@@ -147,14 +174,17 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const invoice = await getInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const invoice = await getInvoice(id);
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     res.json(invoice);
   } catch (error) {
-    console.error('Error getting invoice:', error);
-    res.status(500).json({ error: error.message });
+    logger.error('Error getting invoice', { error: error.message });
+    res.status(500).json({ error: 'Failed to get invoice' });
   }
 });
 
@@ -163,7 +193,7 @@ router.get('/:id', async (req, res) => {
  * Generate a new invoice from billing summary
  * Body: { customerId, periodStart, periodEnd, invoiceDate?, dueDate?, taxRate?, notes? }
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', invoiceMutationLimiter, async (req, res) => {
   try {
     const { customerId, periodStart, periodEnd, ...options } = req.body;
 
@@ -202,8 +232,8 @@ router.post('/generate', async (req, res) => {
     const invoice = await generateInvoice(customerId, periodStart, periodEnd, options);
     res.status(201).json(invoice);
   } catch (error) {
-    console.error('Error generating invoice:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error generating invoice', { error: error.message });
+    res.status(400).json({ error: 'Failed to generate invoice' });
   }
 });
 
@@ -212,16 +242,19 @@ router.post('/generate', async (req, res) => {
  * Update invoice (status, notes, payment info)
  * Body: { status?, notes?, internal_notes?, amount_paid?, payment_date? }
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await updateInvoice(req.params.id, req.body);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const invoice = await updateInvoice(id, req.body);
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     res.json(invoice);
   } catch (error) {
-    console.error('Error updating invoice:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error updating invoice', { error: error.message });
+    res.status(400).json({ error: 'Failed to update invoice' });
   }
 });
 
@@ -229,13 +262,16 @@ router.put('/:id', async (req, res) => {
  * DELETE /api/invoices/:id
  * Delete a draft invoice
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', invoiceMutationLimiter, async (req, res) => {
   try {
-    await deleteInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    await deleteInvoice(id);
     res.json({ success: true, message: 'Invoice deleted' });
   } catch (error) {
-    console.error('Error deleting invoice:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error deleting invoice', { error: error.message });
+    res.status(400).json({ error: 'Failed to delete invoice' });
   }
 });
 
@@ -248,13 +284,17 @@ router.delete('/:id', async (req, res) => {
  * Update a line item on a draft invoice
  * Body: { description?, quantity?, unit_price? }
  */
-router.put('/:id/items/:itemId', async (req, res) => {
+router.put('/:id/items/:itemId', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await updateInvoiceItem(req.params.id, req.params.itemId, req.body);
+    const id = validateId(req.params.id);
+    const itemId = validateId(req.params.itemId);
+    if (!id || !itemId) return res.status(400).json({ error: 'Invalid ID' });
+
+    const invoice = await updateInvoiceItem(id, itemId, req.body);
     res.json(invoice);
   } catch (error) {
-    console.error('Error updating invoice item:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error updating invoice item', { error: error.message });
+    res.status(400).json({ error: 'Failed to update invoice item' });
   }
 });
 
@@ -262,16 +302,17 @@ router.put('/:id/items/:itemId', async (req, res) => {
  * DELETE /api/invoices/:id/requests/:requestId
  * Remove a request from a draft invoice
  */
-router.delete('/:id/requests/:requestId', async (req, res) => {
+router.delete('/:id/requests/:requestId', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await unlinkRequest(
-      parseInt(req.params.id),
-      parseInt(req.params.requestId)
-    );
+    const id = validateId(req.params.id);
+    const requestId = validateId(req.params.requestId);
+    if (!id || !requestId) return res.status(400).json({ error: 'Invalid ID' });
+
+    const invoice = await unlinkRequest(id, requestId);
     res.json(invoice);
   } catch (error) {
-    console.error('Error unlinking request:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error unlinking request', { error: error.message });
+    res.status(400).json({ error: 'Failed to unlink request' });
   }
 });
 
@@ -279,16 +320,17 @@ router.delete('/:id/requests/:requestId', async (req, res) => {
  * POST /api/invoices/:id/requests/:requestId
  * Add an unbilled request to a draft invoice
  */
-router.post('/:id/requests/:requestId', async (req, res) => {
+router.post('/:id/requests/:requestId', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await linkRequest(
-      parseInt(req.params.id),
-      parseInt(req.params.requestId)
-    );
+    const id = validateId(req.params.id);
+    const requestId = validateId(req.params.requestId);
+    if (!id || !requestId) return res.status(400).json({ error: 'Invalid ID' });
+
+    const invoice = await linkRequest(id, requestId);
     res.json(invoice);
   } catch (error) {
-    console.error('Error linking request:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error linking request', { error: error.message });
+    res.status(400).json({ error: 'Failed to link request' });
   }
 });
 
@@ -298,11 +340,14 @@ router.post('/:id/requests/:requestId', async (req, res) => {
  */
 router.get('/:id/unbilled-requests', async (req, res) => {
   try {
-    const requests = await getUnbilledRequests(parseInt(req.params.id));
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const requests = await getUnbilledRequests(id);
     res.json({ requests });
   } catch (error) {
-    console.error('Error getting unbilled requests:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error getting unbilled requests', { error: error.message });
+    res.status(400).json({ error: 'Failed to get unbilled requests' });
   }
 });
 
@@ -316,8 +361,11 @@ router.get('/:id/unbilled-requests', async (req, res) => {
  */
 router.get('/:id/export/csv', async (req, res) => {
   try {
-    const csv = await exportInvoiceCSV(req.params.id);
-    const invoice = await getInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const csv = await exportInvoiceCSV(id);
+    const invoice = await getInvoice(id);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader(
@@ -326,8 +374,8 @@ router.get('/:id/export/csv', async (req, res) => {
     );
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting CSV:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error exporting CSV', { error: error.message });
+    res.status(400).json({ error: 'Failed to export CSV' });
   }
 });
 
@@ -337,8 +385,11 @@ router.get('/:id/export/csv', async (req, res) => {
  */
 router.get('/:id/export/qbo-csv', async (req, res) => {
   try {
-    const csv = await exportInvoiceQBOCSV(req.params.id);
-    const invoice = await getInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const csv = await exportInvoiceQBOCSV(id);
+    const invoice = await getInvoice(id);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader(
@@ -347,8 +398,8 @@ router.get('/:id/export/qbo-csv', async (req, res) => {
     );
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting QBO CSV:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error exporting QBO CSV', { error: error.message });
+    res.status(400).json({ error: 'Failed to export QBO CSV' });
   }
 });
 
@@ -358,8 +409,11 @@ router.get('/:id/export/qbo-csv', async (req, res) => {
  */
 router.get('/:id/export/hosting-csv', async (req, res) => {
   try {
-    const csv = await exportHostingDetailCSV(req.params.id);
-    const invoice = await getInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const csv = await exportHostingDetailCSV(id);
+    const invoice = await getInvoice(id);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader(
@@ -368,8 +422,8 @@ router.get('/:id/export/hosting-csv', async (req, res) => {
     );
     res.send(csv);
   } catch (error) {
-    console.error('Error exporting hosting detail CSV:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error exporting hosting detail CSV', { error: error.message });
+    res.status(400).json({ error: 'Failed to export hosting detail CSV' });
   }
 });
 
@@ -379,8 +433,11 @@ router.get('/:id/export/hosting-csv', async (req, res) => {
  */
 router.get('/:id/export/json', async (req, res) => {
   try {
-    const json = await exportInvoiceJSON(req.params.id);
-    const invoice = await getInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const json = await exportInvoiceJSON(id);
+    const invoice = await getInvoice(id);
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader(
@@ -389,8 +446,8 @@ router.get('/:id/export/json', async (req, res) => {
     );
     res.json(json);
   } catch (error) {
-    console.error('Error exporting JSON:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error exporting JSON', { error: error.message });
+    res.status(400).json({ error: 'Failed to export JSON' });
   }
 });
 
@@ -402,16 +459,19 @@ router.get('/:id/export/json', async (req, res) => {
  * POST /api/invoices/:id/send
  * Mark invoice as sent — snapshots linked requests for data integrity
  */
-router.post('/:id/send', async (req, res) => {
+router.post('/:id/send', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await sendInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const invoice = await sendInvoice(id);
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     res.json(invoice);
   } catch (error) {
-    console.error('Error sending invoice:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error sending invoice', { error: error.message });
+    res.status(400).json({ error: 'Failed to send invoice' });
   }
 });
 
@@ -419,13 +479,16 @@ router.post('/:id/send', async (req, res) => {
  * POST /api/invoices/:id/recalculate
  * Recalculate a draft invoice's support line items from current request data
  */
-router.post('/:id/recalculate', async (req, res) => {
+router.post('/:id/recalculate', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoice = await recalculateDraftInvoice(req.params.id);
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+    const invoice = await recalculateDraftInvoice(id);
     res.json(invoice);
   } catch (error) {
-    console.error('Error recalculating invoice:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error recalculating invoice', { error: error.message });
+    res.status(400).json({ error: 'Failed to recalculate invoice' });
   }
 });
 
@@ -434,15 +497,18 @@ router.post('/:id/recalculate', async (req, res) => {
  * Mark invoice as paid
  * Body: { amount_paid, payment_date? }
  */
-router.post('/:id/pay', async (req, res) => {
+router.post('/:id/pay', invoiceMutationLimiter, async (req, res) => {
   try {
+    const id = validateId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid invoice ID' });
+
     const { amount_paid, payment_date } = req.body;
 
     if (!amount_paid) {
       return res.status(400).json({ error: 'amount_paid is required' });
     }
 
-    const invoice = await updateInvoice(req.params.id, {
+    const invoice = await updateInvoice(id, {
       status: 'paid',
       amount_paid,
       payment_date: payment_date || new Date().toISOString().split('T')[0]
@@ -453,8 +519,8 @@ router.post('/:id/pay', async (req, res) => {
     }
     res.json(invoice);
   } catch (error) {
-    console.error('Error marking invoice paid:', error);
-    res.status(400).json({ error: error.message });
+    logger.error('Error marking invoice paid', { error: error.message });
+    res.status(400).json({ error: 'Failed to mark invoice as paid' });
   }
 });
 
@@ -467,7 +533,7 @@ router.post('/:id/pay', async (req, res) => {
  * Sync a single invoice to QuickBooks Online.
  * Creates the invoice in QBO and stores the returned QBO ID + SyncToken.
  */
-router.post('/:id/sync-qbo', async (req, res) => {
+router.post('/:id/sync-qbo', qboSyncLimiter, async (req, res) => {
   const invoiceId = parseInt(req.params.id);
 
   try {
@@ -500,7 +566,7 @@ router.post('/:id/sync-qbo', async (req, res) => {
     let existingQboInvoice = null;
     try {
       const queryResult = await qboClient.query(
-        `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${invoice.invoice_number}'`
+        `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${escapeQboString(invoice.invoice_number)}'`
       );
       const matches = queryResult?.QueryResponse?.Invoice;
       if (matches && matches.length > 0) {
@@ -585,6 +651,23 @@ router.post('/:id/sync-qbo', async (req, res) => {
       qboTotal: qboInvoice.TotalAmt
     });
 
+    // Attach CSV to the QBO invoice (non-blocking — failure does not affect sync status)
+    try {
+      const attachableId = await attachCSVToQBOInvoice(invoiceId, qboInvoice.Id, invoice.invoice_number);
+      await pool.query(
+        'UPDATE invoices SET qbo_attachment_id = ?, qbo_attachment_error = NULL WHERE id = ?',
+        [attachableId, invoiceId]
+      );
+    } catch (attachErr) {
+      logger.warn('[QBO Sync] CSV attachment failed (sync still succeeded)', {
+        invoiceId, error: attachErr.message
+      });
+      await pool.query(
+        'UPDATE invoices SET qbo_attachment_error = ? WHERE id = ?',
+        [attachErr.message.substring(0, 2000), invoiceId]
+      ).catch(() => {});
+    }
+
     // Return updated invoice
     const updated = await getInvoice(invoiceId);
     res.json({ success: true, qboInvoiceId: qboInvoice.Id, invoice: updated });
@@ -618,14 +701,16 @@ router.post('/:id/sync-qbo', async (req, res) => {
  * Revert an invoice back to draft for editing.
  * Keeps qbo_invoice_id/qbo_sync_token so re-sync updates rather than duplicates.
  */
-router.post('/:id/revert-to-draft', async (req, res) => {
+router.post('/:id/revert-to-draft', invoiceMutationLimiter, async (req, res) => {
   try {
-    const invoiceId = parseInt(req.params.id);
+    const invoiceId = validateId(req.params.id);
+    if (!invoiceId) return res.status(400).json({ error: 'Invalid invoice ID' });
+
     const updated = await revertToDraft(invoiceId);
     res.json(updated);
   } catch (error) {
     logger.error('[Invoice] Revert to draft failed', { error: error.message });
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: 'Failed to revert invoice to draft' });
   }
 });
 
@@ -634,7 +719,7 @@ router.post('/:id/revert-to-draft', async (req, res) => {
  * Sync all eligible invoices to QBO.
  * Processes sent/paid invoices with pending or error sync status.
  */
-router.post('/bulk-sync-qbo', async (req, res) => {
+router.post('/bulk-sync-qbo', qboSyncLimiter, async (req, res) => {
   try {
     // Find all eligible invoices
     const [invoices] = await pool.query(
@@ -660,7 +745,7 @@ router.post('/bulk-sync-qbo', async (req, res) => {
         // Check if invoice already exists in QBO (retry-safe)
         try {
           const queryResult = await qboClient.query(
-            `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${invoice.invoice_number}'`
+            `SELECT Id, SyncToken FROM Invoice WHERE DocNumber = '${escapeQboString(invoice.invoice_number)}'`
           );
           const matches = queryResult?.QueryResponse?.Invoice;
           if (matches && matches.length > 0) {
@@ -697,6 +782,23 @@ router.post('/bulk-sync-qbo', async (req, res) => {
           [qboInvoice.Id, qboInvoice.SyncToken, inv.id]
         );
 
+        // Attach CSV (non-blocking)
+        try {
+          const attachableId = await attachCSVToQBOInvoice(inv.id, qboInvoice.Id, invoice.invoice_number);
+          await pool.query(
+            'UPDATE invoices SET qbo_attachment_id = ?, qbo_attachment_error = NULL WHERE id = ?',
+            [attachableId, inv.id]
+          );
+        } catch (attachErr) {
+          logger.warn('[QBO Bulk Sync] CSV attachment failed', {
+            invoiceNumber: inv.invoice_number, error: attachErr.message
+          });
+          await pool.query(
+            'UPDATE invoices SET qbo_attachment_error = ? WHERE id = ?',
+            [attachErr.message.substring(0, 2000), inv.id]
+          ).catch(() => {});
+        }
+
         results.synced++;
         logger.info('[QBO Bulk Sync] Invoice synced', { invoiceNumber: inv.invoice_number, qboId: qboInvoice.Id });
       } catch (error) {
@@ -722,7 +824,7 @@ router.post('/bulk-sync-qbo', async (req, res) => {
     res.json(results);
   } catch (error) {
     logger.error('[QBO Bulk Sync] Failed', { error: error.message });
-    res.status(500).json({ error: 'Bulk sync failed: ' + error.message });
+    res.status(500).json({ error: 'Bulk sync failed' });
   }
 });
 
