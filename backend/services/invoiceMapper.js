@@ -33,6 +33,20 @@ function validateLineAmount(qty, unitPrice, amount) {
 }
 
 /**
+ * Build a human-readable billing period line for CustomerMemo.
+ * e.g. "Billing Period: March 1 – March 31, 2026"
+ */
+function buildPeriodMemo(periodStart, periodEnd) {
+  if (!periodStart || !periodEnd) return '';
+  const opts = { month: 'long', day: 'numeric' };
+  const start = new Date(periodStart + 'T00:00:00');
+  const end = new Date(periodEnd + 'T00:00:00');
+  const startStr = start.toLocaleDateString('en-US', opts);
+  const endStr = end.toLocaleDateString('en-US', { ...opts, year: 'numeric' });
+  return `Billing Period: ${startStr} \u2013 ${endStr}`;
+}
+
+/**
  * Determine the QBO item mapping lookup key for an invoice line item.
  * Applies the C2 fix: strips parenthetical suffix from dynamic credit descriptions.
  *
@@ -180,14 +194,19 @@ export async function mapInvoiceToQBO(invoice, customer) {
   if (invoice.internal_notes) {
     payload.PrivateNote = invoice.internal_notes;
   }
-  if (invoice.notes) {
-    payload.CustomerMemo = { value: invoice.notes };
+  const periodLine = buildPeriodMemo(invoice.period_start, invoice.period_end);
+  const memoValue = [periodLine, invoice.notes].filter(Boolean).join('\n\n');
+  if (memoValue) {
+    payload.CustomerMemo = { value: memoValue };
   }
   if (customer.email) {
     payload.BillEmail = { Address: customer.email };
     payload.EmailStatus = 'NotSet';
   } else {
     payload.EmailStatus = 'NotSet';
+  }
+  if (customer.email_cc) {
+    payload.BillEmailCc = { Address: customer.email_cc };
   }
 
   return payload;

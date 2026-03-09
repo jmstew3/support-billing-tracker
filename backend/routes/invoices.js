@@ -41,6 +41,23 @@ const router = express.Router();
 /** Escape single quotes for QBO query language (doubled single quotes) */
 const escapeQboString = (val) => String(val).replace(/'/g, "''");
 
+/** Map payment_terms days to QBO Term names */
+const TERMS_MAP = { 0: 'Due on receipt', 15: 'Net 15', 30: 'Net 30', 60: 'Net 60' };
+
+/** Look up the QBO SalesTermRef for a given payment_terms value */
+async function lookupSalesTermRef(paymentTerms) {
+  const termName = TERMS_MAP[paymentTerms];
+  if (!termName) return null;
+  try {
+    const result = await qboClient.query(`SELECT Id, Name FROM Term WHERE Name = '${termName}'`);
+    const terms = result?.QueryResponse?.Term;
+    return terms?.[0] ? { value: terms[0].Id } : null;
+  } catch (err) {
+    logger.warn('[QBO Sync] Term lookup failed', { error: err.message });
+    return null;
+  }
+}
+
 /** Rate limiter for invoice mutation endpoints */
 const invoiceMutationLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
@@ -562,6 +579,12 @@ router.post('/:id/sync-qbo', qboSyncLimiter, async (req, res) => {
     // Build QBO payload
     const payload = await mapInvoiceToQBO(invoice, customer);
 
+    // Add SalesTermRef if customer has payment terms
+    if (customer.payment_terms != null) {
+      const salesTermRef = await lookupSalesTermRef(customer.payment_terms);
+      if (salesTermRef) payload.SalesTermRef = salesTermRef;
+    }
+
     // Check if invoice already exists in QBO (handles retry after previous partial failure)
     let existingQboInvoice = null;
     try {
@@ -741,6 +764,12 @@ router.post('/bulk-sync-qbo', qboSyncLimiter, async (req, res) => {
         const invoice = await getInvoice(inv.id);
         const customer = await getCustomer(invoice.customer_id);
         const payload = await mapInvoiceToQBO(invoice, customer);
+
+        // Add SalesTermRef if customer has payment terms
+        if (customer.payment_terms != null) {
+          const salesTermRef = await lookupSalesTermRef(customer.payment_terms);
+          if (salesTermRef) payload.SalesTermRef = salesTermRef;
+        }
 
         // Check if invoice already exists in QBO (retry-safe)
         try {
