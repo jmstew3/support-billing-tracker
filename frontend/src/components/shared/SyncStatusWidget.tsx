@@ -232,7 +232,7 @@ export function SyncStatusWidget({
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
           <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <span className="text-xs text-amber-800 dark:text-amber-200">
-            Automatic sync disabled (dev mode)
+            Automatic sync not available
           </span>
         </div>
       )}

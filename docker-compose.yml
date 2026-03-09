@@ -77,7 +77,7 @@ services:
       # QuickBooks Online OAuth 2.0
       QBO_CLIENT_ID: ${QBO_CLIENT_ID:-}
       QBO_CLIENT_SECRET: ${QBO_CLIENT_SECRET:-}
-      QBO_REDIRECT_URI: ${QBO_REDIRECT_URI:-http://localhost:3011/api/qbo/callback}
+      QBO_REDIRECT_URI: ${QBO_REDIRECT_URI:-}
       QBO_ENVIRONMENT: ${QBO_ENVIRONMENT:-sandbox}
       QBO_REALM_ID: ${QBO_REALM_ID:-}
       QBO_TOKEN_ENCRYPTION_KEY: ${QBO_TOKEN_ENCRYPTION_KEY:-}

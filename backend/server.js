@@ -66,6 +66,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (before CORS — used by Docker healthcheck with no Origin header)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // CORS configuration
 app.use(cors({
   origin: function(origin, callback) {
@@ -78,11 +86,8 @@ app.use(cors({
       'https://billing.peakonedigital.com',
       'https://portal.peakonedigital.com'
     ];
-    // Allow requests with no origin (like mobile apps or Postman) in dev only
-    if (!origin) {
-      if (process.env.NODE_ENV === 'development') return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    }
+    // Allow requests with no origin (server-to-server, Traefik health checks, etc.)
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -152,14 +157,6 @@ app.use('/api/twenty', conditionalAuth, twentySyncRoutes);
 app.use('/api/fluent', conditionalAuth, fluentSyncRoutes);
 app.use('/api/twenty-proxy', conditionalAuth, twentyProxyRoutes);
 app.use('/api/invoices', conditionalAuth, invoiceRoutes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Error handling middleware - sanitizes error messages to prevent info leakage
 app.use((err, req, res, next) => {

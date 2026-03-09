@@ -364,18 +364,22 @@ class SchedulerService {
    */
   _getNextRunTime(cronExpression, timezone) {
     try {
-      // Parse cron expression: minute hour dayOfMonth month dayOfWeek
       const parts = cronExpression.split(' ');
       if (parts.length !== 5) return null;
 
       const [minute, hour] = parts;
+
+      // Skip complex expressions (*/N, ranges, lists) — only handle fixed times
+      if (/[*\/,-]/.test(hour) || /[*\/,-]/.test(minute)) return null;
+
+      const h = parseInt(hour);
+      const m = parseInt(minute);
+      if (isNaN(h) || isNaN(m)) return null;
+
       const now = new Date();
-
-      // Create a date in the target timezone for today at the scheduled time
       const targetTime = new Date();
-      targetTime.setHours(parseInt(hour), parseInt(minute), 0, 0);
+      targetTime.setHours(h, m, 0, 0);
 
-      // If the time has passed today, schedule for tomorrow
       if (targetTime <= now) {
         targetTime.setDate(targetTime.getDate() + 1);
       }
