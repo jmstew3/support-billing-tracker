@@ -9,6 +9,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { LoadingState } from '../../../components/ui/LoadingState'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
+import { ToastContainer } from '../../../components/shared/Toast'
+import { createToast, type ToastMessage } from '../../../utils/toast'
 
 // Extracted sections
 import { PageHeader } from '../../../components/shared/PageHeader'
@@ -120,6 +122,15 @@ export function SupportTickets() {
   // Scroll position preservation
   const scrollPositionRef = useRef<number>(0)
   const shouldPreserveScrollRef = useRef<boolean>(false)
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const addToast = useCallback((type: ToastMessage['type'], message: string) => {
+    setToasts(prev => [...prev, createToast(type, message)])
+  }, [])
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
 
   // FluentSupport sync state managed by SyncStatusWidget
 
@@ -616,7 +627,7 @@ export function SupportTickets() {
         })
       } catch (error) {
         console.error('Failed to apply bulk updates:', error)
-        // TODO: Add user notification for failed bulk update
+        addToast('error', 'Failed to apply bulk updates. Please try again.')
       }
     } else {
       // Local-only mode: apply updates directly
@@ -655,7 +666,7 @@ export function SupportTickets() {
         })
       } catch (error) {
         console.error(`Failed to update request field ${field}:`, error)
-        // TODO: Add user notification for failed update
+        addToast('error', `Failed to update ${field}. Please try again.`)
       }
     } else {
       setRequests(prevRequests => {
@@ -690,7 +701,7 @@ export function SupportTickets() {
         )
       } catch (error) {
         console.error('Failed to delete request:', error)
-        // TODO: Add user notification for failed delete operation
+        addToast('error', 'Failed to archive request. Please try again.')
       }
     } else {
       setRequests(prevRequests =>
@@ -718,7 +729,7 @@ export function SupportTickets() {
       )
     } catch (error) {
       console.error('Failed to restore request:', error)
-      // TODO: Add user notification for failed restore operation
+      addToast('error', 'Failed to restore request. Please try again.')
     }
   }
 
@@ -952,6 +963,9 @@ export function SupportTickets() {
 
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
