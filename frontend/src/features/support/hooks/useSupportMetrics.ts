@@ -66,7 +66,7 @@ export function useSupportMetrics(
 
       const dayCount: Record<string, number> = {};
       reqs.forEach(request => {
-        const effectiveDate = request.BillingDate || request.Date;
+        const effectiveDate = request.Date;
         dayCount[effectiveDate] = (dayCount[effectiveDate] || 0) + 1;
       });
 
@@ -166,7 +166,7 @@ export function useSupportMetrics(
       const dayCount: Record<string, number> = {};
 
       reqs.forEach(request => {
-        const effectiveDate = request.BillingDate || request.Date;
+        const effectiveDate = request.Date;
         const dayName = getDayOfWeek(effectiveDate);
         dayCount[dayName] = (dayCount[dayName] || 0) + 1;
       });
@@ -289,8 +289,7 @@ export function useSupportMetrics(
     );
 
     billableReqs.forEach(request => {
-      // Use BillingDate for revenue/cost calculations if set, otherwise use original Date
-      const effectiveDate = request.BillingDate || request.Date;
+      const effectiveDate = request.Date;
       const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
@@ -338,7 +337,7 @@ export function useSupportMetrics(
     const requestsByMonth = new Map<string, ChatRequest[]>();
 
     requests.forEach(request => {
-      const effectiveDate = request.BillingDate || request.Date;
+      const effectiveDate = request.Date;
       const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;
@@ -383,7 +382,7 @@ export function useSupportMetrics(
 
     // Filter requests to selected month only
     const filteredRequests = requests.filter(request => {
-      const effectiveDate = request.BillingDate || request.Date;
+      const effectiveDate = request.Date;
       const requestDate = parseLocalDate(effectiveDate);
       const year = requestDate.getFullYear();
       const month = requestDate.getMonth() + 1;

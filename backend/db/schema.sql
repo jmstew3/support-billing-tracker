@@ -20,7 +20,6 @@ CREATE TABLE requests (
   source ENUM('sms', 'ticket', 'email', 'phone', 'fluent') DEFAULT 'sms',
   website_url VARCHAR(255) DEFAULT NULL,
   estimated_hours DECIMAL(5, 2) DEFAULT 0.50,
-  billing_date DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

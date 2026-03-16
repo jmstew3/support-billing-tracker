@@ -28,7 +28,6 @@ function transformDbRow(row: any): ChatRequest {
     Status: row.Status,
     source: row.source || 'sms', // Default to 'sms' for backwards compatibility
     website_url: row.website_url || null,
-    BillingDate: row.BillingDate || null,
   };
 }
 
@@ -87,11 +86,6 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
       request_type: updates.Request_Type,
       estimated_hours: updates.EstimatedHours,
     };
-
-    // Handle billing_date separately to allow explicit null (clear)
-    if (updates.BillingDate !== undefined) {
-      payload.billing_date = updates.BillingDate;
-    }
 
     const response = await authenticatedFetch(`${ENDPOINTS.REQUESTS}/${id}`, {
       method: 'PUT',

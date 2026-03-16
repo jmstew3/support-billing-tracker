@@ -80,7 +80,6 @@ function transformDbRow(row: any): ChatRequest {
     website_url: row.website_url || null,
     fluent_id: row.fluent_id || null,
     ticket_number: row.ticket_number || null,
-    BillingDate: row.BillingDate || null,
   };
 }
 
@@ -129,11 +128,6 @@ export async function updateRequest(id: number, updates: Partial<ChatRequest>): 
       request_type: updates.Request_Type,
       estimated_hours: updates.EstimatedHours
     };
-
-    // Handle billing_date separately to allow explicit null (clear)
-    if (updates.BillingDate !== undefined) {
-      payload.billing_date = updates.BillingDate;
-    }
 
     const response = await authenticatedFetch(`${API_BASE_URL}/requests/${id}`, {
       method: 'PUT',

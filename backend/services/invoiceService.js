@@ -155,12 +155,12 @@ export async function getBillingSummary(customerId, periodStart, periodEnd) {
       `SELECT r.* FROM requests r
        INNER JOIN fluent_tickets ft ON ft.request_id = r.id
        WHERE r.customer_id = ?
-       AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+       AND r.date >= ? AND r.date <= ?
        AND r.status = 'active'
        AND r.invoice_id IS NULL
        AND r.category NOT IN ('Non-billable', 'Migration')
        AND ft.resolved_at IS NOT NULL
-       ORDER BY COALESCE(r.billing_date, r.date), r.time`,
+       ORDER BY r.date, r.time`,
       [customerId, periodStart, periodEnd]
     );
 
@@ -210,12 +210,12 @@ export async function generateInvoice(customerId, periodStart, periodEnd, option
         `SELECT r.* FROM requests r
          INNER JOIN fluent_tickets ft ON ft.request_id = r.id
          WHERE r.customer_id = ?
-         AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+         AND r.date >= ? AND r.date <= ?
          AND r.status = 'active'
          AND r.invoice_id IS NULL
          AND r.category NOT IN ('Non-billable', 'Migration')
          AND ft.resolved_at IS NOT NULL
-         ORDER BY COALESCE(r.billing_date, r.date), r.time`,
+         ORDER BY r.date, r.time`,
         [customerId, periodStart, periodEnd]
       );
 
@@ -779,7 +779,7 @@ async function recalculateFreeCreditItem(connection, invoiceId, periodStart) {
   const [requests] = await connection.query(
     `SELECT urgency, estimated_hours FROM requests
      WHERE invoice_id = ? AND status = 'active'
-     ORDER BY COALESCE(billing_date, date), time`,
+     ORDER BY date, time`,
     [invoiceId]
   );
   if (requests.length === 0) return;
@@ -979,11 +979,11 @@ export async function getUnbilledRequests(invoiceId) {
       `SELECT r.id, r.date, r.time, r.description, r.category, r.urgency, r.estimated_hours
        FROM requests r
        INNER JOIN fluent_tickets ft ON ft.request_id = r.id
-       WHERE r.customer_id = ? AND COALESCE(r.billing_date, r.date) >= ? AND COALESCE(r.billing_date, r.date) <= ?
+       WHERE r.customer_id = ? AND r.date >= ? AND r.date <= ?
        AND r.status = 'active' AND r.invoice_id IS NULL
        AND r.category NOT IN ('Non-billable', 'Migration')
        AND ft.resolved_at IS NOT NULL
-       ORDER BY COALESCE(r.billing_date, r.date), r.time`,
+       ORDER BY r.date, r.time`,
       [inv.customer_id, inv.period_start, inv.period_end]
     );
     return requests;

@@ -35,7 +35,7 @@ import { updateRequest as updateRequestAPI, bulkUpdateRequests, deleteRequest } 
 
 // Types
 import type { ChatRequest } from '../../../types/request'
-import type { DateRangeFilter, BillingDateFilter, FilterPreset } from '../types/filters'
+import type { DateRangeFilter, FilterPreset } from '../types/filters'
 
 // Filter utilities
 import { useFilterCounts, calculateActiveFilterCount } from '../hooks/useFilterCounts'
@@ -89,10 +89,6 @@ export function SupportTickets() {
   const [sourceFilter, setSourceFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRangeFilter>({ from: null, to: null })
   const [dayFilter, setDayFilter] = useState<string[]>([])
-  const [billingDateFilter, setBillingDateFilter] = useState<BillingDateFilter>(() => {
-    const saved = localStorage.getItem('billingDateFilter')
-    return saved !== null ? JSON.parse(saved) : { from: null, to: null, hasValue: 'all' }
-  })
   const [hoursFilter, setHoursFilter] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState<string>('')
 
@@ -151,7 +147,6 @@ export function SupportTickets() {
     sourceFilter,
     dateRange,
     dayFilter,
-    billingDateFilter,
     hoursFilter,
     searchQuery,
     currentPage,
@@ -200,7 +195,6 @@ export function SupportTickets() {
     sourceFilter,
     dateRange,
     dayFilter,
-    billingDateFilter,
     hoursFilter
   })
 
@@ -374,10 +368,6 @@ export function SupportTickets() {
     localStorage.setItem('hideNonBillable', JSON.stringify(hideNonBillable))
   }, [hideNonBillable])
 
-  useEffect(() => {
-    localStorage.setItem('billingDateFilter', JSON.stringify(billingDateFilter))
-  }, [billingDateFilter])
-
   // ============================================================
   // REGISTER AVAILABLE DATA WITH PERIOD CONTEXT
   // ============================================================
@@ -447,7 +437,6 @@ export function SupportTickets() {
     setSourceFilter([])
     setDateRange({ from: null, to: null })
     setDayFilter([])
-    setBillingDateFilter({ from: null, to: null, hasValue: 'all' })
     setHoursFilter([])
     setSearchQuery('')
   }, [])
@@ -459,7 +448,6 @@ export function SupportTickets() {
     setSourceFilter([])
     setDateRange({ from: null, to: null })
     setDayFilter([])
-    setBillingDateFilter({ from: null, to: null, hasValue: 'all' })
     setHoursFilter([])
 
     // Apply preset filters
@@ -477,9 +465,6 @@ export function SupportTickets() {
     }
     if (preset.filters.dayFilter) {
       setDayFilter(preset.filters.dayFilter)
-    }
-    if (preset.filters.billingDateFilter) {
-      setBillingDateFilter(preset.filters.billingDateFilter)
     }
     if (preset.filters.hoursFilter) {
       setHoursFilter(preset.filters.hoursFilter)
@@ -819,7 +804,6 @@ export function SupportTickets() {
             dayFilter={dayFilter}
             categoryFilter={categoryFilter}
             urgencyFilter={urgencyFilter}
-            billingDateFilter={billingDateFilter}
             hoursFilter={hoursFilter}
             filterCounts={filterCounts}
             activeFilterCount={activeFilterCount}
@@ -854,13 +838,6 @@ export function SupportTickets() {
             onUrgencyFilterChange={(urgencies) => {
               preserveScrollPosition()
               setUrgencyFilter(urgencies)
-              setCurrentPage(1)
-              setSelectedRequestIds(new Set())
-              setSelectAll(false)
-            }}
-            onBillingDateFilterChange={(filter) => {
-              preserveScrollPosition()
-              setBillingDateFilter(filter)
               setCurrentPage(1)
               setSelectedRequestIds(new Set())
               setSelectAll(false)

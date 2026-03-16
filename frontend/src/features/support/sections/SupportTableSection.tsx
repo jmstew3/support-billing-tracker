@@ -25,7 +25,7 @@ import { FilterPanel } from '../components/FilterPanel'
 import { Search, X, ArrowUp, CalendarDays, Clock } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import type { ChatRequest } from '../../../types/request'
-import type { DateRangeFilter, BillingDateFilter, FilterPreset, FilterCounts, HoursRange } from '../types/filters'
+import type { DateRangeFilter, FilterPreset, FilterCounts, HoursRange } from '../types/filters'
 import { HOURS_RANGE_DISPLAY_NAMES } from '../types/filters'
 
 export interface SupportTableSectionProps {
@@ -75,7 +75,6 @@ export interface SupportTableSectionProps {
   dayFilter: string[]
   categoryFilter: string[]
   urgencyFilter: string[]
-  billingDateFilter: BillingDateFilter
   hoursFilter: string[]
   filterCounts: FilterCounts
   activeFilterCount: number
@@ -84,7 +83,6 @@ export interface SupportTableSectionProps {
   onDayFilterChange: (days: string[]) => void
   onCategoryFilterChange: (categories: string[]) => void
   onUrgencyFilterChange: (urgencies: string[]) => void
-  onBillingDateFilterChange: (filter: BillingDateFilter) => void
   onHoursFilterChange: (ranges: string[]) => void
   onApplyPreset: (preset: FilterPreset) => void
   onResetFilters: () => void
@@ -149,7 +147,6 @@ export function SupportTableSection({
   dayFilter,
   categoryFilter,
   urgencyFilter,
-  billingDateFilter,
   hoursFilter,
   filterCounts,
   activeFilterCount,
@@ -158,7 +155,6 @@ export function SupportTableSection({
   onDayFilterChange,
   onCategoryFilterChange,
   onUrgencyFilterChange,
-  onBillingDateFilterChange,
   onHoursFilterChange,
   onApplyPreset,
   onResetFilters,
@@ -192,6 +188,7 @@ export function SupportTableSection({
     sourceFilter.length > 0 ||
     (dateRange.from || dateRange.to) ||
     dayFilter.length > 0 ||
+    hoursFilter.length > 0 ||
     searchQuery !== ''
   void _hasActiveFilters;
 
@@ -403,7 +400,6 @@ export function SupportTableSection({
               sourceFilter={sourceFilter}
               dateRange={dateRange}
               dayFilter={dayFilter}
-              billingDateFilter={billingDateFilter}
               hoursFilter={hoursFilter}
               categoryOptions={categoryOptions}
               urgencyOptions={urgencyOptions}
@@ -414,7 +410,6 @@ export function SupportTableSection({
               onSourceFilterChange={onSourceFilterChange}
               onDateRangeChange={onDateRangeChange}
               onDayFilterChange={onDayFilterChange}
-              onBillingDateFilterChange={onBillingDateFilterChange}
               onHoursFilterChange={onHoursFilterChange}
               onApplyPreset={onApplyPreset}
               onResetFilters={onResetFilters}
@@ -428,7 +423,7 @@ export function SupportTableSection({
         </div>
 
         {/* Active Filters Display */}
-        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || (dateRange.from || dateRange.to) || dayFilter.length > 0 || (billingDateFilter.from || billingDateFilter.to || billingDateFilter.hasValue !== 'all') || hoursFilter.length > 0) && (
+        {(categoryFilter.length > 0 || urgencyFilter.length > 0 || sourceFilter.length > 0 || (dateRange.from || dateRange.to) || dayFilter.length > 0 || hoursFilter.length > 0) && (
           <div className="flex flex-wrap gap-2 mb-4">
             {/* Category Filters */}
             {categoryFilter.map(category => (
@@ -507,31 +502,6 @@ export function SupportTableSection({
                 <button
                   onClick={() => {
                     onDateRangeChange({ from: null, to: null })
-                  }}
-                  className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-
-            {/* Billing Date Filter */}
-            {(billingDateFilter.from || billingDateFilter.to || billingDateFilter.hasValue !== 'all') && (
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs">
-                <CalendarDays className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                <span className="text-muted-foreground">Billing:</span>
-                <span className="font-medium text-blue-600 dark:text-blue-400">
-                  {billingDateFilter.hasValue === 'yes' ? 'Has Date' : billingDateFilter.hasValue === 'no' ? 'No Date' : ''}
-                  {billingDateFilter.hasValue !== 'no' && (billingDateFilter.from || billingDateFilter.to) && (
-                    <>
-                      {billingDateFilter.hasValue !== 'all' ? ' + ' : ''}
-                      {formatDateRangeDisplay({ from: billingDateFilter.from, to: billingDateFilter.to })}
-                    </>
-                  )}
-                </span>
-                <button
-                  onClick={() => {
-                    onBillingDateFilterChange({ from: null, to: null, hasValue: 'all' })
                   }}
                   className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >

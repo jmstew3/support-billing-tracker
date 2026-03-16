@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react';
 import type { ChatRequest } from '../../../types/request';
-import type { FilterCounts, BillingDateFilter } from '../types/filters';
+import type { FilterCounts } from '../types/filters';
 import { parseLocalDate, getDayOfWeek } from '../../../utils/supportHelpers';
 
 /**
@@ -63,7 +63,6 @@ export function useFilterCounts({
     const category: Record<string, number> = {};
     const day: Record<string, number> = {};
     const hours: Record<string, number> = {};
-    const billingDate = { hasValue: 0, noValue: 0 };
 
     // Calculate counts for each filter type
     periodRequests.forEach((request) => {
@@ -90,16 +89,9 @@ export function useFilterCounts({
       // Hours bucket counts
       const hoursBucket = getHoursBucket(request.EstimatedHours);
       hours[hoursBucket] = (hours[hoursBucket] || 0) + 1;
-
-      // Billing date presence counts
-      if (request.BillingDate) {
-        billingDate.hasValue++;
-      } else {
-        billingDate.noValue++;
-      }
     });
 
-    return { source, urgency, category, day, hours, billingDate };
+    return { source, urgency, category, day, hours };
   }, [requests, selectedYear, selectedMonth, selectedDay]);
 }
 
@@ -115,7 +107,6 @@ export function calculateActiveFilterCount(filters: {
   sourceFilter: string[];
   dateRange: { from: string | null; to: string | null };
   dayFilter: string[];
-  billingDateFilter: BillingDateFilter;
   hoursFilter: string[];
 }): number {
   let count = 0;
@@ -124,7 +115,6 @@ export function calculateActiveFilterCount(filters: {
   if (filters.sourceFilter.length > 0) count++;
   if (filters.dateRange.from || filters.dateRange.to) count++;
   if (filters.dayFilter.length > 0) count++;
-  if (filters.billingDateFilter.from || filters.billingDateFilter.to || filters.billingDateFilter.hasValue !== 'all') count++;
   if (filters.hoursFilter.length > 0) count++;
   return count;
 }

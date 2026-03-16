@@ -15,7 +15,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { ChatRequest } from '../../../types/request'
-import type { DateRangeFilter, BillingDateFilter } from '../types/filters'
+import type { DateRangeFilter } from '../types/filters'
 import { fetchRequests, checkAPIHealth } from '../../../utils/api'
 import { parseLocalDate, parseTimeToMinutes, getDayOfWeek } from '../../../utils/supportHelpers'
 import { categorizeRequest } from '../../../utils/dataProcessing'
@@ -33,7 +33,6 @@ interface UseSupportDataProps {
   sourceFilter: string[]
   dateRange: DateRangeFilter
   dayFilter: string[]
-  billingDateFilter: BillingDateFilter
   hoursFilter: string[]
 
   // Search
@@ -110,7 +109,6 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
     sourceFilter,
     dateRange,
     dayFilter,
-    billingDateFilter,
     hoursFilter,
     searchQuery,
     hideNonBillable,
@@ -231,21 +229,6 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
 
       if (dayFilter.length > 0 && !dayFilter.includes(requestDayOfWeek)) return false
 
-      // Billing date presence filter
-      if (billingDateFilter.hasValue === 'yes') {
-        if (!request.BillingDate) return false
-      } else if (billingDateFilter.hasValue === 'no') {
-        if (request.BillingDate) return false
-      }
-
-      // Billing date range filter (only when hasValue is 'all' or 'yes')
-      if (billingDateFilter.hasValue !== 'no' && (billingDateFilter.from || billingDateFilter.to)) {
-        const billingDate = request.BillingDate
-        if (!billingDate) return false // No billing date but range specified
-        if (billingDateFilter.from && billingDate < billingDateFilter.from) return false
-        if (billingDateFilter.to && billingDate > billingDateFilter.to) return false
-      }
-
       // Hours range filter
       if (hoursFilter.length > 0) {
         const hours = request.EstimatedHours || 0
@@ -310,14 +293,6 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
           aValue = a.EstimatedHours || 0
           bValue = b.EstimatedHours || 0
           break
-        case 'BillingDate':
-          // Sort by billing date, nulls last for ascending, first for descending
-          aValue = a.BillingDate || ''
-          bValue = b.BillingDate || ''
-          // Handle null values specially - nulls go to end for asc, beginning for desc
-          if (!a.BillingDate && b.BillingDate) return sortDirection === 'asc' ? 1 : -1
-          if (a.BillingDate && !b.BillingDate) return sortDirection === 'asc' ? -1 : 1
-          break
         case 'ticket_number':
           aValue = a.ticket_number ? parseInt(a.ticket_number, 10) : 0
           bValue = b.ticket_number ? parseInt(b.ticket_number, 10) : 0
@@ -357,7 +332,6 @@ export function useSupportData(props: UseSupportDataProps): UseSupportDataReturn
     sourceFilter,
     dateRange,
     dayFilter,
-    billingDateFilter,
     hoursFilter,
     searchQuery,
     hideNonBillable,

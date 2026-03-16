@@ -149,22 +149,6 @@ export function SupportTableHeader({
           </button>
         </TableHead>
 
-        {/* Billing Date Column with Sort */}
-        <TableHead className="min-w-[120px]">
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => onSort('BillingDate')}
-              className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
-            >
-              <span>Billing Date</span>
-              {getSortIcon('BillingDate')}
-            </button>
-            <span title="Override the original date for billing purposes. Click to edit.">
-              <Info className="w-3 h-3 text-gray-400 cursor-help" />
-            </span>
-          </div>
-        </TableHead>
-
         {/* Actions Column */}
         <TableHead className="w-20">Actions</TableHead>
       </TableRow>

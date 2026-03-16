@@ -125,15 +125,15 @@ router.get('/requests', readRateLimiter, async (req, res) => {
     }
 
     if (startDate) {
-      query += ' AND COALESCE(billing_date, date) >= ?';
-      countQuery += ' AND COALESCE(billing_date, date) >= ?';
+      query += ' AND date >= ?';
+      countQuery += ' AND date >= ?';
       params.push(startDate);
       countParams.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND COALESCE(billing_date, date) <= ?';
-      countQuery += ' AND COALESCE(billing_date, date) <= ?';
+      query += ' AND date <= ?';
+      countQuery += ' AND date <= ?';
       params.push(endDate);
       countParams.push(endDate);
     }
@@ -144,7 +144,7 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       params.push(cursor);
     }
 
-    query += ' ORDER BY COALESCE(billing_date, date) DESC, time DESC, r.id DESC';
+    query += ' ORDER BY date DESC, time DESC, r.id DESC';
 
     // Apply limit if provided (pagination mode)
     // Note: Using query() instead of execute() because MySQL prepared statements
@@ -172,7 +172,6 @@ router.get('/requests', readRateLimiter, async (req, res) => {
       website_url: row.website_url || null, // Include website URL from FluentSupport
       fluent_id: row.fluent_id || null, // FluentSupport ticket ID
       ticket_number: row.ticket_number || null, // FluentSupport ticket number (e.g. "2001")
-      BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
       invoice_status: row.invoice_status || null, // Status of linked invoice (null, 'draft', 'sent', etc.)
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
@@ -234,7 +233,6 @@ router.get('/requests/:id', readRateLimiter, async (req, res) => {
       Status: row.status,
       source: row.source || 'sms',
       website_url: row.website_url || null,
-      BillingDate: row.billing_date ? row.billing_date.toISOString().split('T')[0] : null,
       CreatedAt: row.created_at,
       UpdatedAt: row.updated_at
     };
@@ -273,7 +271,7 @@ router.put('/requests/:id', async (req, res) => {
     const updates = req.body;
 
     // If request is linked to a non-draft invoice, block billing field changes
-    if (updates.estimated_hours !== undefined || updates.urgency !== undefined || updates.billing_date !== undefined) {
+    if (updates.estimated_hours !== undefined || updates.urgency !== undefined) {
       const [linked] = await pool.execute(
         `SELECT i.status, i.invoice_number FROM invoices i
          JOIN requests r ON r.invoice_id = i.id
@@ -288,7 +286,7 @@ router.put('/requests/:id', async (req, res) => {
     }
 
     // Build dynamic update query with validation
-    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours', 'billing_date'];
+    const allowedFields = ['category', 'urgency', 'effort', 'status', 'description', 'request_type', 'estimated_hours'];
     const updateFields = [];
     const updateValues = [];
 
@@ -323,16 +321,6 @@ router.put('/requests/:id', async (req, res) => {
           // Limit description length
           if (value.length > 10000) {
             return res.status(400).json({ error: 'Description too long (max 10000 characters)' });
-          }
-        } else if (field === 'billing_date') {
-          // Allow null to clear, or validate date format
-          if (value !== null && value !== '') {
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(value)) {
-              return res.status(400).json({ error: 'Invalid billing_date format (use YYYY-MM-DD)' });
-            }
-          } else {
-            value = null; // Normalize empty string to null
           }
         }
 
