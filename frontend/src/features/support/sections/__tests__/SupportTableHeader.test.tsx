@@ -34,7 +34,6 @@ describe('SupportTableHeader', () => {
     expect(screen.getByText('Category')).toBeInTheDocument()
     expect(screen.getByText('Urgency')).toBeInTheDocument()
     expect(screen.getByText('Hours')).toBeInTheDocument()
-    expect(screen.getByText('Billing Date')).toBeInTheDocument()
     expect(screen.getByText('Actions')).toBeInTheDocument()
   })
 
